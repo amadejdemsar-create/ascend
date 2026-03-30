@@ -10,27 +10,27 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 ## Current Position
 
 Phase: 1 of 11 (Foundation)
-Plan: 3 of 4 in current phase
-Status: Executing
-Last activity: 2026-03-30, completed 01-03 Service Layer
+Plan: 4 of 4 in current phase (COMPLETE)
+Status: Phase 1 Complete
+Last activity: 2026-03-30, completed 01-04 API Routes and Authentication
 
-Progress: [███░░░░░░░] 6%
+Progress: [████░░░░░░] 9%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: ~25 min
-- Total execution time: ~1.3 hours
+- Total plans completed: 4
+- Average duration: ~20 min
+- Total execution time: ~1.4 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-foundation | 3/4 | ~76 min | ~25 min |
+| 01-foundation | 4/4 | ~81 min | ~20 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (~45 min), 01-02 (~26 min), 01-03 (~5 min)
+- Last 5 plans: 01-01 (~45 min), 01-02 (~26 min), 01-03 (~5 min), 01-04 (~5 min)
 - Trend: Getting faster as infrastructure stabilizes; pure code plans much faster than infra
 
 *Updated after each plan completion*
@@ -56,6 +56,9 @@ Recent decisions affecting current work:
 - [01-03]: Used z.input<> for exported types so callers can omit fields with Zod defaults (priority, color)
 - [01-03]: Service Layer as plain TypeScript object modules, not classes
 - [01-03]: Goal service auto-sets completedAt on status transition to COMPLETED
+- [01-04]: Used Zod v4 error.issues (not error.errors) for validation error details in API responses
+- [01-04]: Thin route handler pattern: auth + parse + service call + response for all endpoints
+- [01-04]: Progress endpoints nested under /api/goals/[id]/progress for RESTful resource hierarchy
 
 ### Pending Todos
 
@@ -71,6 +74,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-30
-Stopped at: Completed 01-03-PLAN.md (Service Layer)
+Stopped at: Completed 01-04-PLAN.md (API Routes and Authentication)
 Resume file: None
-Next: 01-04-PLAN.md (API Routes and Authentication)
+Next: Phase 01-foundation complete. Next phase: 02 (per ROADMAP.md)

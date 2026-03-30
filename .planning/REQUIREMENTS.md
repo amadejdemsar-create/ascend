@@ -158,7 +158,7 @@
 - [x] **INFRA-02**: PostgreSQL database running as Dokploy container on Hostinger VPS
 - [x] **INFRA-03**: Next.js 16 app deployed via Dokploy with auto-deploy from GitHub
 - [x] **INFRA-04**: Domain: ascend.nativeai.agency with SSL
-- [ ] **INFRA-05**: API key authentication for MCP endpoints
+- [x] **INFRA-05**: API key authentication for MCP endpoints
 
 ## v2 Requirements
 
@@ -317,7 +317,7 @@
 | INFRA-02 | Phase 1 | Complete (01-01) |
 | INFRA-03 | Phase 1 | Complete (01-01) |
 | INFRA-04 | Phase 1 | Complete (01-01) |
-| INFRA-05 | Phase 1 | Pending |
+| INFRA-05 | Phase 1 | Complete |
 
 **Coverage:**
 - v1 requirements: 110 total (corrected from initial count of 93)
