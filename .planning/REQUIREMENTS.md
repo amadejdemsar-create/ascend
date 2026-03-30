@@ -7,10 +7,10 @@
 
 ### Goal Management
 
-- [ ] **GOAL-01**: User can create a goal with a title, selecting one of four horizons (yearly, quarterly, monthly, weekly)
-- [ ] **GOAL-02**: User can link a goal to a parent goal (quarterly to yearly, monthly to quarterly, weekly to monthly)
-- [ ] **GOAL-03**: User can set SMART fields (Specific, Measurable, Attainable, Relevant, Timely) on yearly and quarterly goals
-- [ ] **GOAL-04**: User can set simple fields (title, status, priority, deadline, notes) on monthly and weekly goals
+- [x] **GOAL-01**: User can create a goal with a title, selecting one of four horizons (yearly, quarterly, monthly, weekly)
+- [x] **GOAL-02**: User can link a goal to a parent goal (quarterly to yearly, monthly to quarterly, weekly to monthly)
+- [x] **GOAL-03**: User can set SMART fields (Specific, Measurable, Attainable, Relevant, Timely) on yearly and quarterly goals
+- [x] **GOAL-04**: User can set simple fields (title, status, priority, deadline, notes) on monthly and weekly goals
 - [ ] **GOAL-05**: User can edit any field on an existing goal
 - [ ] **GOAL-06**: User can delete a goal (with confirmation if it has children)
 - [ ] **GOAL-07**: User can set a goal's status (not started, in progress, completed, abandoned)
@@ -19,8 +19,8 @@
 - [ ] **GOAL-10**: User can create a recurring goal with frequency (daily, weekly, monthly) that auto-generates instances
 - [ ] **GOAL-11**: User can view a goal's children (sub-goals at the next horizon level)
 - [ ] **GOAL-12**: Completing all children of a goal suggests completing the parent (progress rollup)
-- [ ] **GOAL-13**: User can create a goal via inline add (quick, minimal fields) for simple tasks
-- [ ] **GOAL-14**: User can create a goal via modal dialog (full fields) for SMART goals
+- [x] **GOAL-13**: User can create a goal via inline add (quick, minimal fields) for simple tasks
+- [x] **GOAL-14**: User can create a goal via modal dialog (full fields) for SMART goals
 
 ### Progress Tracking
 
@@ -208,10 +208,10 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| GOAL-01 | Phase 2 | Pending |
-| GOAL-02 | Phase 2 | Pending |
-| GOAL-03 | Phase 2 | Pending |
-| GOAL-04 | Phase 2 | Pending |
+| GOAL-01 | Phase 2 | Complete |
+| GOAL-02 | Phase 2 | Complete |
+| GOAL-03 | Phase 2 | Complete |
+| GOAL-04 | Phase 2 | Complete |
 | GOAL-05 | Phase 2 | Pending |
 | GOAL-06 | Phase 2 | Pending |
 | GOAL-07 | Phase 2 | Pending |
@@ -220,8 +220,8 @@
 | GOAL-10 | Phase 9 | Pending |
 | GOAL-11 | Phase 2 | Pending |
 | GOAL-12 | Phase 2 | Pending |
-| GOAL-13 | Phase 2 | Pending |
-| GOAL-14 | Phase 2 | Pending |
+| GOAL-13 | Phase 2 | Complete |
+| GOAL-14 | Phase 2 | Complete |
 | PROG-01 | Phase 4 | Pending |
 | PROG-02 | Phase 4 | Pending |
 | PROG-03 | Phase 4 | Pending |
