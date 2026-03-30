@@ -54,4 +54,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["sh", "-c", "if [ -d prisma/migrations ]; then ./node_modules/.bin/prisma migrate deploy; fi && node server.js"]
+CMD ["sh", "-c", "if [ -d prisma/migrations ]; then ./node_modules/.bin/prisma migrate deploy && ./node_modules/.bin/tsx prisma/seed.ts; fi && node server.js"]
