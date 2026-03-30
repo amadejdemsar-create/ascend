@@ -1,5 +1,5 @@
 // Ascend: Goal tracking app
-// Prisma 7 schema
+// Prisma 7 schema with complete data models
 
 generator client {
   provider = "prisma-client"
@@ -8,4 +8,173 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// Enums
+
+enum Horizon {
+  YEARLY
+  QUARTERLY
+  MONTHLY
+  WEEKLY
+}
+
+enum GoalStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+// Models
+
+model User {
+  id         String      @id @default(cuid())
+  email      String?     @unique
+  name       String?
+  apiKey     String      @unique @default(cuid())
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  goals      Goal[]
+  categories Category[]
+  stats      UserStats?
+  xpEvents   XpEvent[]
+}
+
+model Goal {
+  id           String     @id @default(cuid())
+  userId       String
+  title        String
+  description  String?
+  horizon      Horizon
+  status       GoalStatus @default(NOT_STARTED)
+  priority     Priority   @default(MEDIUM)
+
+  // Adjacency list hierarchy (self-reference)
+  parentId     String?
+  parent       Goal?      @relation("GoalHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children     Goal[]     @relation("GoalHierarchy")
+
+  // Category
+  categoryId   String?
+  category     Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  // SMART fields
+  specific     String?
+  measurable   String?
+  attainable   String?
+  relevant     String?
+  timely       String?
+
+  // Progress tracking
+  progress     Int        @default(0)
+  targetValue  Float?
+  currentValue Float?
+  unit         String?
+
+  // Dates
+  startDate    DateTime?
+  deadline     DateTime?
+  completedAt  DateTime?
+
+  // Ordering
+  sortOrder    Int        @default(0)
+
+  // Notes
+  notes        String?
+
+  // Relations
+  progressLogs ProgressLog[]
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  // Indexes
+  @@index([userId])
+  @@index([parentId])
+  @@index([categoryId])
+  @@index([horizon, userId])
+  @@index([status, userId])
+  @@index([deadline])
+}
+
+model Category {
+  id        String     @id @default(cuid())
+  userId    String
+  name      String
+  color     String     @default("#4F46E5")
+  icon      String?
+
+  // Hierarchy (self-reference for unlimited nesting)
+  parentId  String?
+  parent    Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children  Category[] @relation("CategoryHierarchy")
+
+  // Ordering
+  sortOrder Int        @default(0)
+
+  // Relations
+  goals     Goal[]
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  // Constraints
+  @@unique([userId, name, parentId])
+  @@index([userId])
+  @@index([parentId])
+}
+
+model ProgressLog {
+  id        String   @id @default(cuid())
+  goalId    String
+  value     Float
+  note      String?
+  createdAt DateTime @default(now())
+
+  goal      Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@index([goalId])
+  @@index([createdAt])
+}
+
+model UserStats {
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  totalXp        Int       @default(0)
+  level          Int       @default(1)
+  currentStreak  Int       @default(0)
+  longestStreak  Int       @default(0)
+  lastActiveDate DateTime?
+  weeklyScore    Int       @default(0)
+  weekStartDate  DateTime?
+  goalsCompleted Int       @default(0)
+  updatedAt      DateTime  @updatedAt
+
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model XpEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  amount    Int
+  source    String
+  goalId    String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
 }
