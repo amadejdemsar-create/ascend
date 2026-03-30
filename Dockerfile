@@ -1,6 +1,6 @@
 FROM node:22-alpine AS base
 
-# Stage 1: Install dependencies
+# Stage 1: Install all dependencies
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
@@ -16,7 +16,14 @@ ENV DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholde
 RUN npx prisma generate
 RUN npm run build
 
-# Stage 3: Production runner
+# Stage 3: Install production-only dependencies (for prisma CLI at runtime)
+FROM base AS prod-deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+# Stage 4: Production runner
 FROM base AS runner
 WORKDIR /app
 
@@ -27,6 +34,11 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
 COPY --from=builder /app/public ./public
+
+# Copy production node_modules (includes prisma CLI with full dependency tree)
+COPY --from=prod-deps /app/node_modules ./node_modules
+
+# Copy standalone output over top (server.js, package.json, and standalone's node_modules)
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
@@ -34,10 +46,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/generated ./generated
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
-COPY --from=builder /app/node_modules/dotenv ./node_modules/dotenv
 
 USER nextjs
 
