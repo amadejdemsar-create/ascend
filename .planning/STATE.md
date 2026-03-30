@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 ## Current Position
 
 Phase: 1 of 11 (Foundation)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: Executing
-Last activity: 2026-03-30, completed 01-01 scaffold and deploy
+Last activity: 2026-03-30, completed 01-02 Prisma schema, migrations, seed
 
-Progress: [█░░░░░░░░░] 2%
+Progress: [██░░░░░░░░] 4%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: ~45 min
-- Total execution time: ~0.75 hours
+- Total plans completed: 2
+- Average duration: ~36 min
+- Total execution time: ~1.2 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-foundation | 1/4 | ~45 min | ~45 min |
+| 01-foundation | 2/4 | ~71 min | ~36 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (~45 min)
-- Trend: First plan, baseline established
+- Last 5 plans: 01-01 (~45 min), 01-02 (~26 min)
+- Trend: Getting faster as infrastructure stabilizes
 
 *Updated after each plan completion*
 
@@ -50,6 +50,9 @@ Recent decisions affecting current work:
 - [01-01]: Standalone Next.js output for minimal Docker image
 - [01-01]: Prisma migrate deploy runs at container startup with graceful skip if no migrations exist
 - [01-01]: Deployed to Dokploy personal VPS with Traefik auto-SSL
+- [01-02]: Generated migration SQL via prisma migrate diff (no local PostgreSQL)
+- [01-02]: Moved prisma and tsx to production dependencies for runtime migration/seeding
+- [01-02]: Seed runs idempotently at every container startup after migration
 
 ### Pending Todos
 
@@ -65,6 +68,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-30
-Stopped at: Completed 01-01-PLAN.md (scaffold and deploy)
+Stopped at: Completed 01-02-PLAN.md (Prisma schema, migrations, seed)
 Resume file: None
-Next: 01-02-PLAN.md (Prisma schema, migrations, seed)
+Next: 01-03-PLAN.md (Service Layer)
