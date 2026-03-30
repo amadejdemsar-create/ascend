@@ -51,13 +51,13 @@
 ### Views
 
 - [ ] **VIEW-01**: User can switch between List, Board, Tree, and Timeline views
-- [ ] **VIEW-02**: List view shows goals in a flat sortable table with columns (title, status, progress, priority, deadline, category, horizon)
+- [x] **VIEW-02**: List view shows goals in a flat sortable table with columns (title, status, progress, priority, deadline, category, horizon)
 - [ ] **VIEW-03**: Board/Kanban view shows goals as cards grouped by status or horizon (user-selectable grouping)
 - [ ] **VIEW-04**: Tree view shows the full goal hierarchy (yearly > quarterly > monthly > weekly) as an expandable/collapsible tree
 - [ ] **VIEW-05**: Timeline view shows a horizontal year line with quarter markers, expandable to months and weeks
 - [ ] **VIEW-06**: Timeline goals appear as interactive nodes on the line at their horizon level
 - [ ] **VIEW-07**: Clicking a goal node on the timeline expands details inline (children, progress, notes)
-- [ ] **VIEW-08**: All views support filtering by category, horizon, status, and priority
+- [x] **VIEW-08**: All views support filtering by category, horizon, status, and priority
 - [x] **VIEW-09**: All views support sorting by priority, deadline, creation date, and title
 - [x] **VIEW-10**: User's last selected view and filters persist across sessions
 
@@ -240,13 +240,13 @@
 | DASH-05 | Phase 4 | Pending |
 | DASH-06 | Phase 4 | Pending |
 | VIEW-01 | Phase 3 | Pending |
-| VIEW-02 | Phase 3 | Pending |
+| VIEW-02 | Phase 3 | Complete |
 | VIEW-03 | Phase 6 | Pending |
 | VIEW-04 | Phase 6 | Pending |
 | VIEW-05 | Phase 7 | Pending |
 | VIEW-06 | Phase 7 | Pending |
 | VIEW-07 | Phase 7 | Pending |
-| VIEW-08 | Phase 3 | Pending |
+| VIEW-08 | Phase 3 | Complete |
 | VIEW-09 | Phase 3 | Complete |
 | VIEW-10 | Phase 3 | Complete |
 | DND-01 | Phase 8 | Pending |
