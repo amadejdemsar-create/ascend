@@ -17,6 +17,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { SidebarCategoryTree } from "@/components/categories/sidebar-category-tree";
 import { mainNavItems, secondaryNavItems } from "@/components/layout/nav-config";
 
 export function AppSidebar() {
@@ -68,9 +69,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel>Categories</SidebarGroupLabel>
           <SidebarGroupContent>
-            <p className="px-2 text-xs text-muted-foreground">
-              Coming in Phase 3
-            </p>
+            <SidebarCategoryTree />
           </SidebarGroupContent>
         </SidebarGroup>
 
