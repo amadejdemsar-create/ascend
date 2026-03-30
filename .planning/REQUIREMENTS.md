@@ -121,10 +121,10 @@
 
 ### Theme and Design
 
-- [ ] **THEME-01**: Dark and light themes available, following system preference by default
-- [ ] **THEME-02**: User can manually override theme preference (persisted)
-- [ ] **THEME-03**: Design uses NativeAI color palette (indigo #4F46E5, violet #8B5CF6, dark bg #0F0F14)
-- [ ] **THEME-04**: Typography: Inter for body/UI, Playfair Display for headlines, JetBrains Mono for data
+- [x] **THEME-01**: Dark and light themes available, following system preference by default
+- [x] **THEME-02**: User can manually override theme preference (persisted)
+- [x] **THEME-03**: Design uses NativeAI color palette (indigo #4F46E5, violet #8B5CF6, dark bg #0F0F14)
+- [x] **THEME-04**: Typography: Inter for body/UI, Playfair Display for headlines, JetBrains Mono for data
 - [ ] **THEME-05**: Rich animations throughout: page transitions, hover effects, animated counters, parallax timeline, view transitions (React 19 View Transitions API)
 
 ### Data Management
@@ -292,10 +292,10 @@
 | NAV-03 | Phase 2 | Pending |
 | NAV-04 | Phase 2 | Pending |
 | NAV-05 | Phase 2 | Pending |
-| THEME-01 | Phase 2 | Pending |
-| THEME-02 | Phase 2 | Pending |
-| THEME-03 | Phase 2 | Pending |
-| THEME-04 | Phase 2 | Pending |
+| THEME-01 | Phase 2 | Complete |
+| THEME-02 | Phase 2 | Complete |
+| THEME-03 | Phase 2 | Complete |
+| THEME-04 | Phase 2 | Complete |
 | THEME-05 | Phase 11 | Pending |
 | DATA-01 | Phase 10 | Pending |
 | DATA-02 | Phase 10 | Pending |
