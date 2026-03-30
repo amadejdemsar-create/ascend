@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 ## Current Position
 
 Phase: 1 of 11 (Foundation)
-Plan: 2 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: Executing
-Last activity: 2026-03-30, completed 01-02 Prisma schema, migrations, seed
+Last activity: 2026-03-30, completed 01-03 Service Layer
 
-Progress: [██░░░░░░░░] 4%
+Progress: [███░░░░░░░] 6%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: ~36 min
-- Total execution time: ~1.2 hours
+- Total plans completed: 3
+- Average duration: ~25 min
+- Total execution time: ~1.3 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-foundation | 2/4 | ~71 min | ~36 min |
+| 01-foundation | 3/4 | ~76 min | ~25 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (~45 min), 01-02 (~26 min)
-- Trend: Getting faster as infrastructure stabilizes
+- Last 5 plans: 01-01 (~45 min), 01-02 (~26 min), 01-03 (~5 min)
+- Trend: Getting faster as infrastructure stabilizes; pure code plans much faster than infra
 
 *Updated after each plan completion*
 
@@ -53,6 +53,9 @@ Recent decisions affecting current work:
 - [01-02]: Generated migration SQL via prisma migrate diff (no local PostgreSQL)
 - [01-02]: Moved prisma and tsx to production dependencies for runtime migration/seeding
 - [01-02]: Seed runs idempotently at every container startup after migration
+- [01-03]: Used z.input<> for exported types so callers can omit fields with Zod defaults (priority, color)
+- [01-03]: Service Layer as plain TypeScript object modules, not classes
+- [01-03]: Goal service auto-sets completedAt on status transition to COMPLETED
 
 ### Pending Todos
 
@@ -68,6 +71,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-30
-Stopped at: Completed 01-02-PLAN.md (Prisma schema, migrations, seed)
+Stopped at: Completed 01-03-PLAN.md (Service Layer)
 Resume file: None
-Next: 01-03-PLAN.md (Service Layer)
+Next: 01-04-PLAN.md (API Routes and Authentication)
