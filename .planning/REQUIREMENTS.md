@@ -1,0 +1,220 @@
+# Requirements: Ascend
+
+**Defined:** 2026-03-30
+**Core Value:** Give the user instant clarity on what to focus on right now by connecting daily actions to yearly ambitions, with measurable progress tracking that makes consistency visible and rewarding.
+
+## v1 Requirements
+
+### Goal Management
+
+- [ ] **GOAL-01**: User can create a goal with a title, selecting one of four horizons (yearly, quarterly, monthly, weekly)
+- [ ] **GOAL-02**: User can link a goal to a parent goal (quarterly to yearly, monthly to quarterly, weekly to monthly)
+- [ ] **GOAL-03**: User can set SMART fields (Specific, Measurable, Attainable, Relevant, Timely) on yearly and quarterly goals
+- [ ] **GOAL-04**: User can set simple fields (title, status, priority, deadline, notes) on monthly and weekly goals
+- [ ] **GOAL-05**: User can edit any field on an existing goal
+- [ ] **GOAL-06**: User can delete a goal (with confirmation if it has children)
+- [ ] **GOAL-07**: User can set a goal's status (not started, in progress, completed, abandoned)
+- [ ] **GOAL-08**: User can set a goal's priority (high, medium, low)
+- [ ] **GOAL-09**: User can set a measurable target on a goal (target value, current value, unit)
+- [ ] **GOAL-10**: User can create a recurring goal with frequency (daily, weekly, monthly) that auto-generates instances
+- [ ] **GOAL-11**: User can view a goal's children (sub-goals at the next horizon level)
+- [ ] **GOAL-12**: Completing all children of a goal suggests completing the parent (progress rollup)
+- [ ] **GOAL-13**: User can create a goal via inline add (quick, minimal fields) for simple tasks
+- [ ] **GOAL-14**: User can create a goal via modal dialog (full fields) for SMART goals
+
+### Progress Tracking
+
+- [ ] **PROG-01**: User can increment progress on a measurable goal with a quick +1 button (or custom amount)
+- [ ] **PROG-02**: User can add a progress entry with an optional note (e.g., "+1 client: Signed Hotel Marko")
+- [ ] **PROG-03**: User can view progress history (all entries with timestamps and notes) for any goal
+- [ ] **PROG-04**: Progress percentage is calculated automatically from current value vs target value
+- [ ] **PROG-05**: Parent goal progress aggregates from children's completion status
+
+### Categories
+
+- [ ] **CAT-01**: User can create a category with name, color, and icon (Lucide icon)
+- [ ] **CAT-02**: User can nest categories to unlimited depth (e.g., Business > NativeAI > Content)
+- [ ] **CAT-03**: User can edit a category's name, color, and icon
+- [ ] **CAT-04**: User can delete a category (with option to reassign or delete contained goals)
+- [ ] **CAT-05**: User can reorder categories via drag and drop
+- [ ] **CAT-06**: App ships with suggested default categories (Business, Personal, Health, Finance, Learning) that user can modify or delete
+
+### Dashboard
+
+- [ ] **DASH-01**: Dashboard is the default landing page when opening the app
+- [ ] **DASH-02**: Dashboard shows "This Week's Focus" widget with top priority weekly goals
+- [ ] **DASH-03**: Dashboard shows "Progress Overview" widget with completion % per category as visual bars
+- [ ] **DASH-04**: Dashboard shows "Streaks & Stats" widget with active streaks, goals completed this month, completion rate, current XP/level
+- [ ] **DASH-05**: Dashboard shows "Upcoming Deadlines" widget with goals due in the next 7 and 14 days
+- [ ] **DASH-06**: Dashboard widgets update in real time when goals are modified
+
+### Views
+
+- [ ] **VIEW-01**: User can switch between List, Board, Tree, and Timeline views
+- [ ] **VIEW-02**: List view shows goals in a flat sortable table with columns (title, status, progress, priority, deadline, category, horizon)
+- [ ] **VIEW-03**: Board/Kanban view shows goals as cards grouped by status or horizon (user-selectable grouping)
+- [ ] **VIEW-04**: Tree view shows the full goal hierarchy (yearly > quarterly > monthly > weekly) as an expandable/collapsible tree
+- [ ] **VIEW-05**: Timeline view shows a horizontal year line with quarter markers, expandable to months and weeks
+- [ ] **VIEW-06**: Timeline goals appear as interactive nodes on the line at their horizon level
+- [ ] **VIEW-07**: Clicking a goal node on the timeline expands details inline (children, progress, notes)
+- [ ] **VIEW-08**: All views support filtering by category, horizon, status, and priority
+- [ ] **VIEW-09**: All views support sorting by priority, deadline, creation date, and title
+- [ ] **VIEW-10**: User's last selected view and filters persist across sessions
+
+### Drag and Drop
+
+- [ ] **DND-01**: User can reorder goals within a list by dragging
+- [ ] **DND-02**: User can move a goal between horizons by dragging (e.g., promote weekly to monthly)
+- [ ] **DND-03**: User can move a goal between categories by dragging
+- [ ] **DND-04**: Drag and drop works across List, Board, and Tree views
+- [ ] **DND-05**: Visual feedback during drag (ghost element, drop targets highlighted)
+
+### Gamification
+
+- [ ] **GAME-01**: Each goal completion awards XP based on horizon level (yearly > quarterly > monthly > weekly) and priority
+- [ ] **GAME-02**: User has a level that increases as XP accumulates, with a level-up celebration animation
+- [ ] **GAME-03**: Recurring goals track streaks (consecutive completions without missing)
+- [ ] **GAME-04**: Weekly score aggregates completed goals, streaks maintained, and progress made
+- [ ] **GAME-05**: Satisfying completion animation plays when a goal is marked complete (confetti for milestones, checkmark for tasks)
+- [ ] **GAME-06**: Progress bars animate smoothly when progress is added
+- [ ] **GAME-07**: Dashboard displays current level, XP progress to next level, active streaks, and weekly score
+
+### Command Palette and Keyboard
+
+- [ ] **CMD-01**: Cmd+K opens a command palette overlay
+- [ ] **CMD-02**: Command palette searches across all goals by title and description
+- [ ] **CMD-03**: Command palette offers quick actions (new goal, switch view, toggle theme, navigate to category)
+- [ ] **CMD-04**: Command palette navigates to specific categories and subcategories
+- [ ] **CMD-05**: Keyboard shortcuts for: navigation between views, create new goal, mark goal complete, open/close sidebar, toggle theme
+- [ ] **CMD-06**: Keyboard shortcut reference accessible via `?` key
+
+### MCP Server
+
+- [ ] **MCP-01**: MCP server runs on Streamable HTTP transport at a dedicated endpoint
+- [ ] **MCP-02**: MCP authenticates via API key (Bearer token in Authorization header)
+- [ ] **MCP-03**: MCP tool: create_goal (with all fields including parent, SMART, recurring)
+- [ ] **MCP-04**: MCP tool: get_goal (by ID, returns full details including children and progress)
+- [ ] **MCP-05**: MCP tool: update_goal (partial update of any field)
+- [ ] **MCP-06**: MCP tool: delete_goal (with cascade option for children)
+- [ ] **MCP-07**: MCP tool: list_goals (filter by horizon, category, status, priority, parent; pagination)
+- [ ] **MCP-08**: MCP tool: search_goals (full-text search across titles, descriptions, notes)
+- [ ] **MCP-09**: MCP tool: add_progress (increment value with optional note)
+- [ ] **MCP-10**: MCP tool: get_progress_history (for a specific goal)
+- [ ] **MCP-11**: MCP tool: create_category / update_category / delete_category / list_categories
+- [ ] **MCP-12**: MCP tool: get_dashboard (returns this week's focus, progress overview, streaks, deadlines)
+- [ ] **MCP-13**: MCP tool: get_current_priorities (weekly goals sorted by priority and deadline)
+- [ ] **MCP-14**: MCP tool: complete_goals (bulk complete multiple goals by ID)
+- [ ] **MCP-15**: MCP tool: move_goal (change horizon or parent)
+- [ ] **MCP-16**: MCP tool: get_timeline (structured year/quarter/month/week view with goals)
+- [ ] **MCP-17**: MCP tool: get_stats (XP, level, streaks, weekly score, completion rates)
+- [ ] **MCP-18**: MCP tool: export_data (JSON, CSV, Markdown format)
+- [ ] **MCP-19**: MCP tool: import_data (JSON format, including migration from old todos.json)
+- [ ] **MCP-20**: MCP tool: get_settings / update_settings (theme, default view, preferences)
+
+### Layout and Navigation
+
+- [ ] **NAV-01**: Desktop layout has a collapsible sidebar (full sidebar or icons-only)
+- [ ] **NAV-02**: Sidebar shows: navigation (Dashboard, views), categories tree, settings link
+- [ ] **NAV-03**: Mobile layout has a bottom tab bar with main views (Dashboard, Goals, Timeline, Settings)
+- [ ] **NAV-04**: Mobile has a hamburger menu for secondary navigation (categories, archive, export)
+- [ ] **NAV-05**: Responsive breakpoints: mobile (<768px), tablet (768-1024px), desktop (>1024px)
+
+### Theme and Design
+
+- [ ] **THEME-01**: Dark and light themes available, following system preference by default
+- [ ] **THEME-02**: User can manually override theme preference (persisted)
+- [ ] **THEME-03**: Design uses NativeAI color palette (indigo #4F46E5, violet #8B5CF6, dark bg #0F0F14)
+- [ ] **THEME-04**: Typography: Inter for body/UI, Playfair Display for headlines, JetBrains Mono for data
+- [ ] **THEME-05**: Rich animations throughout: page transitions, hover effects, animated counters, parallax timeline, view transitions (React 19 View Transitions API)
+
+### Data Management
+
+- [ ] **DATA-01**: Import existing todos.json into the goal hierarchy (map categories, projects, tasks to appropriate levels)
+- [ ] **DATA-02**: Export goals as JSON (full structured backup)
+- [ ] **DATA-03**: Export goals as CSV (spreadsheet-friendly flat export)
+- [ ] **DATA-04**: Export goals as Markdown (human-readable summary)
+- [ ] **DATA-05**: Export goals as PDF report (formatted progress report with visual charts)
+- [ ] **DATA-06**: Export goals as DOCX (formatted document)
+- [ ] **DATA-07**: Automated database backups via cron pg_dump
+- [ ] **DATA-08**: Manual export button accessible from settings
+
+### Onboarding
+
+- [ ] **ONBD-01**: First-time user sees a choice: guided wizard, AI-guided setup (via MCP), or skip
+- [ ] **ONBD-02**: Guided wizard walks through: create categories, set a yearly goal, break it into quarterly
+- [ ] **ONBD-03**: AI-guided setup works via MCP (external AI asks questions, creates structure through MCP tools)
+- [ ] **ONBD-04**: Skip option drops user into empty dashboard with contextual hints
+
+### PWA
+
+- [ ] **PWA-01**: App is installable from browser (manifest.json, service worker, icons)
+- [ ] **PWA-02**: Installed PWA opens in standalone mode (no browser chrome)
+- [ ] **PWA-03**: Offline read: cached dashboard and recently viewed goals available without network
+- [ ] **PWA-04**: Offline writes queue and sync when connectivity returns
+
+### Infrastructure
+
+- [ ] **INFRA-01**: Multi-user database schema with user_id on all tables (even though v1 is single-user)
+- [ ] **INFRA-02**: PostgreSQL database running as Dokploy container on Hostinger VPS
+- [ ] **INFRA-03**: Next.js 16 app deployed via Dokploy with auto-deploy from GitHub
+- [ ] **INFRA-04**: Domain: ascend.nativeai.agency with SSL
+- [ ] **INFRA-05**: API key authentication for MCP endpoints
+
+## v2 Requirements
+
+### Notifications
+- **NOTF-01**: User receives push notifications for approaching deadlines
+- **NOTF-02**: User receives weekly email digest with progress summary
+- **NOTF-03**: User can configure notification preferences
+
+### Multi-user
+- **MULTI-01**: User can create an account with email/password
+- **MULTI-02**: OAuth authentication (Google, GitHub)
+- **MULTI-03**: Each user has isolated data
+
+### Advanced Integrations
+- **INTG-01**: Google Calendar sync (weekly goals auto-create as calendar events)
+- **INTG-02**: Todoist import (one-time migration)
+- **INTG-03**: Webhook on goal events (completion, progress, creation)
+- **INTG-04**: OAuth for MCP authentication
+
+### Native Apps
+- **NATIVE-01**: iOS app via Capacitor/Expo
+- **NATIVE-02**: Android app via Capacitor/Expo
+- **NATIVE-03**: macOS/Windows desktop app
+
+### AI Features (Paid)
+- **AI-01**: Built-in AI chat for goal-setting assistance
+- **AI-02**: AI-suggested goal breakdowns (yearly to quarterly to monthly)
+- **AI-03**: Smart scheduling suggestions based on patterns
+
+### Calendar View
+- **CAL-01**: Goals/tasks plotted on a calendar by deadline
+- **CAL-02**: Calendar syncs with external calendars
+
+## Out of Scope
+
+| Feature | Reason |
+|---------|--------|
+| Social features / leaderboards | Personal goal tracking is private. Social pressure creates anxiety. Gamification is self-referential. |
+| Team collaboration / shared goals | Massive complexity (permissions, roles, conflicts). Multi-user schema ready but UI is single-user v1. |
+| Complex project management (Gantt, dependencies) | Ascend is a goal tracker, not a PM tool. Goal hierarchy is simple parent-child. |
+| Calendar sync in v1 | Calendar is a different domain. Achievable through MCP + /calendar skill. |
+| Offline-first architecture | Full offline with conflict resolution is extreme complexity. Offline-read + queued writes is sufficient. |
+| Note-taking / knowledge management | Notion/Obsidian are better. Goal notes field is sufficient. |
+| Built-in AI chat in v1 | Expensive, competing with tools users already have. MCP server is the AI integration layer. |
+
+## Traceability
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| (populated during roadmap creation) | | |
+
+**Coverage:**
+- v1 requirements: 93 total
+- Mapped to phases: 0
+- Unmapped: 93
+
+---
+*Requirements defined: 2026-03-30*
+*Last updated: 2026-03-30 after initial definition*
