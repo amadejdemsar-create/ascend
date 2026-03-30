@@ -36,13 +36,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Service Layer functions for goal CRUD, category CRUD, and hierarchy validation return correct results when called programmatically (verified by seed scripts or test calls)
   4. Adjacency list hierarchy enforces valid parent-child relationships (quarterly can only parent under yearly, monthly under quarterly, weekly under monthly)
   5. API key authentication middleware rejects unauthenticated requests and accepts valid Bearer tokens
-**Plans**: TBD
+**Plans:** 4 plans
 
 Plans:
-- [ ] 01-01: Project scaffolding and deployment pipeline
-- [ ] 01-02: Database schema and Prisma models
-- [ ] 01-03: Service Layer (goals, categories, hierarchy, progress)
-- [ ] 01-04: API key authentication and API routes
+- [ ] 01-01-PLAN.md — Scaffold Next.js 16 project, Dockerfile, Prisma config, deploy to Dokploy
+- [ ] 01-02-PLAN.md — Complete Prisma schema (6 models), migrations, Prisma Client singleton, seed test user
+- [ ] 01-03-PLAN.md — Service Layer (goal CRUD, category CRUD, hierarchy validation, Zod schemas, tree queries)
+- [ ] 01-04-PLAN.md — API key authentication and REST API route handlers for goals and categories
 
 ### Phase 2: App Shell and Goal Management
 **Goal**: Users can see and interact with their goals through a functional app layout with navigation, theming, and full goal CRUD including hierarchy
@@ -230,7 +230,7 @@ Note: Phase 5 (MCP Server) can execute in parallel with Phases 2-4 since both de
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/4 | Not started | - |
+| 1. Foundation | 0/4 | Planning complete | - |
 | 2. App Shell and Goal Management | 0/5 | Not started | - |
 | 3. Categories, List View, and Filtering | 0/5 | Not started | - |
 | 4. Dashboard and Progress Tracking | 0/5 | Not started | - |
