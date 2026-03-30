@@ -13,6 +13,7 @@ export const goalService = {
         userId,
         ...(filters?.horizon && { horizon: filters.horizon }),
         ...(filters?.status && { status: filters.status }),
+        ...(filters?.priority && { priority: filters.priority }),
         ...(filters?.categoryId && { categoryId: filters.categoryId }),
         ...(filters?.parentId !== undefined && { parentId: filters.parentId }),
       },

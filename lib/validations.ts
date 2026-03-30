@@ -35,6 +35,7 @@ export const updateGoalSchema = createGoalSchema.partial().extend({
 export const goalFiltersSchema = z.object({
   horizon: horizonEnum.optional(),
   status: statusEnum.optional(),
+  priority: priorityEnum.optional(),
   categoryId: z.string().optional(),
   parentId: z.string().nullable().optional(),
 });

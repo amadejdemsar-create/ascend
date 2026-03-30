@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
     const rawFilters: Record<string, string | null> = {};
     if (searchParams.has("horizon")) rawFilters.horizon = searchParams.get("horizon");
     if (searchParams.has("status")) rawFilters.status = searchParams.get("status");
+    if (searchParams.has("priority")) rawFilters.priority = searchParams.get("priority");
     if (searchParams.has("categoryId")) rawFilters.categoryId = searchParams.get("categoryId");
     if (searchParams.has("parentId")) rawFilters.parentId = searchParams.get("parentId");
 

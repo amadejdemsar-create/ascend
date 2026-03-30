@@ -1,5 +1,15 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { SortingState } from "@tanstack/react-table";
+
+export type ViewType = "cards" | "list" | "board" | "tree" | "timeline";
+
+export interface ActiveFilters {
+  horizon?: "YEARLY" | "QUARTERLY" | "MONTHLY" | "WEEKLY";
+  status?: "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED" | "ABANDONED";
+  priority?: "LOW" | "MEDIUM" | "HIGH";
+  categoryId?: string;
+}
 
 interface GoalEditData {
   id: string;
@@ -26,11 +36,18 @@ interface UIStore {
   goalModalMode: "create" | "edit";
   goalModalHorizon: "YEARLY" | "QUARTERLY" | "MONTHLY" | "WEEKLY" | null;
   goalEditData: GoalEditData | null;
+  activeView: ViewType;
+  activeFilters: ActiveFilters;
+  activeSorting: SortingState;
   toggleSidebar: () => void;
   selectGoal: (id: string | null) => void;
   openGoalModal: (mode: "create" | "edit", horizon?: string) => void;
   closeGoalModal: () => void;
   setGoalEditData: (data: GoalEditData) => void;
+  setActiveView: (view: ViewType) => void;
+  setActiveFilters: (filters: ActiveFilters) => void;
+  setActiveSorting: (sorting: SortingState) => void;
+  resetFilters: () => void;
 }
 
 export const useUIStore = create<UIStore>()(
@@ -42,6 +59,9 @@ export const useUIStore = create<UIStore>()(
       goalModalMode: "create",
       goalModalHorizon: null,
       goalEditData: null,
+      activeView: "cards",
+      activeFilters: {},
+      activeSorting: [],
       toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
       selectGoal: (id) => set({ selectedGoalId: id }),
       openGoalModal: (mode, horizon) =>
@@ -53,10 +73,31 @@ export const useUIStore = create<UIStore>()(
         }),
       closeGoalModal: () => set({ goalModalOpen: false, goalEditData: null }),
       setGoalEditData: (data) => set({ goalEditData: data }),
+      setActiveView: (view) => set({ activeView: view }),
+      setActiveFilters: (filters) => set({ activeFilters: filters }),
+      setActiveSorting: (sorting) => set({ activeSorting: sorting }),
+      resetFilters: () => set({ activeFilters: {}, activeSorting: [] }),
     }),
     {
       name: "ascend-ui",
-      partialize: (state) => ({ sidebarCollapsed: state.sidebarCollapsed }),
+      version: 1,
+      migrate: (persistedState: unknown, version: number) => {
+        if (version === 0) {
+          return {
+            ...(persistedState as Record<string, unknown>),
+            activeView: "cards",
+            activeFilters: {},
+            activeSorting: [],
+          };
+        }
+        return persistedState as Record<string, unknown>;
+      },
+      partialize: (state) => ({
+        sidebarCollapsed: state.sidebarCollapsed,
+        activeView: state.activeView,
+        activeFilters: state.activeFilters,
+        activeSorting: state.activeSorting,
+      }),
     }
   )
 );
