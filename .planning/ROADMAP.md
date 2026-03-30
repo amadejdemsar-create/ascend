@@ -13,7 +13,7 @@ Ascend delivers a personal goal tracking web app that connects yearly ambitions 
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Database schema, Service Layer, project scaffolding, infrastructure setup (completed 2026-03-30)
-- [ ] **Phase 2: App Shell and Goal Management** - Layout, navigation, theming, goal CRUD with hierarchy and forms
+- [x] **Phase 2: App Shell and Goal Management** - Layout, navigation, theming, goal CRUD with hierarchy and forms (completed 2026-03-30)
 - [ ] **Phase 3: Categories, List View, and Filtering** - Category system, list view, filtering/sorting, view persistence
 - [ ] **Phase 4: Dashboard and Progress Tracking** - Landing page widgets, progress increment/history, rollup
 - [ ] **Phase 5: MCP Server** - Streamable HTTP endpoint with all tools, API key auth, transport validation
@@ -231,7 +231,7 @@ Note: Phase 5 (MCP Server) can execute in parallel with Phases 2-4 since both de
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 1/4 | Complete    | 2026-03-30 |
-| 2. App Shell and Goal Management | 1/4 | In Progress | - |
+| 2. App Shell and Goal Management | 4/4 | Complete    | 2026-03-30 |
 | 3. Categories, List View, and Filtering | 0/5 | Not started | - |
 | 4. Dashboard and Progress Tracking | 0/5 | Not started | - |
 | 5. MCP Server | 0/6 | Not started | - |
