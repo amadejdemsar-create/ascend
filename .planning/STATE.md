@@ -50,6 +50,7 @@ Progress: [██████░░░░] 20%
 *Updated after each plan completion*
 | Phase 02 P03 | 3min | 2 tasks | 6 files |
 | Phase 02 P04 | 5min | 3 tasks | 11 files |
+| Phase 03 P01 | 4min | 2 tasks | 7 files |
 | Phase 03 P02 | 2min | 2 tasks | 5 files |
 
 ## Accumulated Context
@@ -91,6 +92,9 @@ Recent decisions affecting current work:
 - [02-04]: Two-panel desktop layout with responsive single-panel on mobile (detail overlays list)
 - [02-04]: Rollup suggestion via sonner toast when completing a goal whose siblings are all complete
 - [02-04]: UIStore extended with goalEditData and setGoalEditData for edit mode in GoalModal
+- [03-01]: Used findFirst + create pattern for category seeding (NULL != NULL in PostgreSQL composite unique)
+- [03-01]: DynamicIcon from lucide-react/dynamic for runtime icon rendering by name string
+- [03-01]: Curated 20 default icons shown when search is empty, full 1941 icon set searchable
 - [03-02]: Zustand persist bumped to version 1 with migration callback; ActiveFilters uses literal union types
 
 ### Pending Todos
@@ -107,6 +111,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-30
-Stopped at: Completed 03-02-PLAN.md (State Foundation)
+Stopped at: Completed 03-01-PLAN.md (Category CRUD Hooks, Form, and Seed)
 Resume file: None
 Next: Continue with 03-03 (next plan in Phase 3)

@@ -32,12 +32,12 @@
 
 ### Categories
 
-- [ ] **CAT-01**: User can create a category with name, color, and icon (Lucide icon)
+- [x] **CAT-01**: User can create a category with name, color, and icon (Lucide icon)
 - [ ] **CAT-02**: User can nest categories to unlimited depth (e.g., Business > NativeAI > Content)
 - [ ] **CAT-03**: User can edit a category's name, color, and icon
 - [ ] **CAT-04**: User can delete a category (with option to reassign or delete contained goals)
 - [ ] **CAT-05**: User can reorder categories via drag and drop
-- [ ] **CAT-06**: App ships with suggested default categories (Business, Personal, Health, Finance, Learning) that user can modify or delete
+- [x] **CAT-06**: App ships with suggested default categories (Business, Personal, Health, Finance, Learning) that user can modify or delete
 
 ### Dashboard
 
@@ -227,12 +227,12 @@
 | PROG-03 | Phase 4 | Pending |
 | PROG-04 | Phase 4 | Pending |
 | PROG-05 | Phase 4 | Pending |
-| CAT-01 | Phase 3 | Pending |
+| CAT-01 | Phase 3 | Complete |
 | CAT-02 | Phase 3 | Pending |
 | CAT-03 | Phase 3 | Pending |
 | CAT-04 | Phase 3 | Pending |
 | CAT-05 | Phase 3 | Pending |
-| CAT-06 | Phase 3 | Pending |
+| CAT-06 | Phase 3 | Complete |
 | DASH-01 | Phase 4 | Pending |
 | DASH-02 | Phase 4 | Pending |
 | DASH-03 | Phase 4 | Pending |
