@@ -13,23 +13,25 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
-interface GoalModalProps {
-  editGoalId?: string;
-  editInitialData?: Partial<CreateGoalInput & { id: string }>;
-}
-
-export function GoalModal({ editGoalId, editInitialData }: GoalModalProps) {
-  const { goalModalOpen, goalModalMode, goalModalHorizon, closeGoalModal } =
-    useUIStore();
+export function GoalModal() {
+  const {
+    goalModalOpen,
+    goalModalMode,
+    goalModalHorizon,
+    goalEditData,
+    closeGoalModal,
+  } = useUIStore();
   const createGoal = useCreateGoal();
   const updateGoal = useUpdateGoal();
 
   const isSubmitting = createGoal.isPending || updateGoal.isPending;
 
-  const initialData: Partial<CreateGoalInput & { id: string }> = {
-    ...(editInitialData ?? {}),
+  const initialData = {
+    ...(goalEditData ?? {}),
     ...(goalModalHorizon ? { horizon: goalModalHorizon } : {}),
-  };
+  } as Partial<CreateGoalInput & { id: string }>;
+
+  const editGoalId = goalEditData?.id;
 
   async function handleSubmit(data: CreateGoalInput | UpdateGoalInput) {
     try {

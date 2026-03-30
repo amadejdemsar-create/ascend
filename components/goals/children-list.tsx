@@ -23,7 +23,7 @@ interface ChildGoal {
 }
 
 interface ChildrenListProps {
-  children: ChildGoal[];
+  goals: ChildGoal[];
   parentHorizon: string;
   onSelectGoal: (id: string) => void;
 }
@@ -35,7 +35,7 @@ function getChildHorizon(parentHorizon: string): string | null {
 }
 
 export function ChildrenList({
-  children,
+  goals,
   parentHorizon,
   onSelectGoal,
 }: ChildrenListProps) {
@@ -44,11 +44,11 @@ export function ChildrenList({
 
   return (
     <div className="space-y-2">
-      {children.length === 0 ? (
+      {goals.length === 0 ? (
         <p className="text-sm text-muted-foreground">No sub-goals yet.</p>
       ) : (
         <ul className="space-y-1">
-          {children.map((child) => (
+          {goals.map((child) => (
             <li key={child.id}>
               <button
                 type="button"
