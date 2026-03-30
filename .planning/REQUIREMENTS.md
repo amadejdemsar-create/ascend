@@ -58,8 +58,8 @@
 - [ ] **VIEW-06**: Timeline goals appear as interactive nodes on the line at their horizon level
 - [ ] **VIEW-07**: Clicking a goal node on the timeline expands details inline (children, progress, notes)
 - [ ] **VIEW-08**: All views support filtering by category, horizon, status, and priority
-- [ ] **VIEW-09**: All views support sorting by priority, deadline, creation date, and title
-- [ ] **VIEW-10**: User's last selected view and filters persist across sessions
+- [x] **VIEW-09**: All views support sorting by priority, deadline, creation date, and title
+- [x] **VIEW-10**: User's last selected view and filters persist across sessions
 
 ### Drag and Drop
 
@@ -247,8 +247,8 @@
 | VIEW-06 | Phase 7 | Pending |
 | VIEW-07 | Phase 7 | Pending |
 | VIEW-08 | Phase 3 | Pending |
-| VIEW-09 | Phase 3 | Pending |
-| VIEW-10 | Phase 3 | Pending |
+| VIEW-09 | Phase 3 | Complete |
+| VIEW-10 | Phase 3 | Complete |
 | DND-01 | Phase 8 | Pending |
 | DND-02 | Phase 8 | Pending |
 | DND-03 | Phase 8 | Pending |
