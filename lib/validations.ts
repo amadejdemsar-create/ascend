@@ -57,10 +57,11 @@ export const addProgressSchema = z.object({
   note: z.string().optional(),
 });
 
-// Exported inferred types
-export type CreateGoalInput = z.infer<typeof createGoalSchema>;
-export type UpdateGoalInput = z.infer<typeof updateGoalSchema>;
+// Exported types
+// Using z.input so callers can omit fields with defaults (priority, color)
+export type CreateGoalInput = z.input<typeof createGoalSchema>;
+export type UpdateGoalInput = z.input<typeof updateGoalSchema>;
 export type GoalFilters = z.infer<typeof goalFiltersSchema>;
-export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
-export type UpdateCategoryInput = z.infer<typeof updateCategorySchema>;
+export type CreateCategoryInput = z.input<typeof createCategorySchema>;
+export type UpdateCategoryInput = z.input<typeof updateCategorySchema>;
 export type AddProgressInput = z.infer<typeof addProgressSchema>;
