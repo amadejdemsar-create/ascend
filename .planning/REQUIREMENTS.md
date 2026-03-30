@@ -113,11 +113,11 @@
 
 ### Layout and Navigation
 
-- [ ] **NAV-01**: Desktop layout has a collapsible sidebar (full sidebar or icons-only)
-- [ ] **NAV-02**: Sidebar shows: navigation (Dashboard, views), categories tree, settings link
-- [ ] **NAV-03**: Mobile layout has a bottom tab bar with main views (Dashboard, Goals, Timeline, Settings)
-- [ ] **NAV-04**: Mobile has a hamburger menu for secondary navigation (categories, archive, export)
-- [ ] **NAV-05**: Responsive breakpoints: mobile (<768px), tablet (768-1024px), desktop (>1024px)
+- [x] **NAV-01**: Desktop layout has a collapsible sidebar (full sidebar or icons-only)
+- [x] **NAV-02**: Sidebar shows: navigation (Dashboard, views), categories tree, settings link
+- [x] **NAV-03**: Mobile layout has a bottom tab bar with main views (Dashboard, Goals, Timeline, Settings)
+- [x] **NAV-04**: Mobile has a hamburger menu for secondary navigation (categories, archive, export)
+- [x] **NAV-05**: Responsive breakpoints: mobile (<768px), tablet (768-1024px), desktop (>1024px)
 
 ### Theme and Design
 
@@ -287,11 +287,11 @@
 | MCP-18 | Phase 5 | Pending |
 | MCP-19 | Phase 5 | Pending |
 | MCP-20 | Phase 5 | Pending |
-| NAV-01 | Phase 2 | Pending |
-| NAV-02 | Phase 2 | Pending |
-| NAV-03 | Phase 2 | Pending |
-| NAV-04 | Phase 2 | Pending |
-| NAV-05 | Phase 2 | Pending |
+| NAV-01 | Phase 2 | Complete |
+| NAV-02 | Phase 2 | Complete |
+| NAV-03 | Phase 2 | Complete |
+| NAV-04 | Phase 2 | Complete |
+| NAV-05 | Phase 2 | Complete |
 | THEME-01 | Phase 2 | Complete |
 | THEME-02 | Phase 2 | Complete |
 | THEME-03 | Phase 2 | Complete |

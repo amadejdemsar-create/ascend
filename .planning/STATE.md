@@ -8,7 +8,7 @@ progress:
   total_phases: 1
   completed_phases: 1
   total_plans: 4
-  completed_plans: 5
+  completed_plans: 6
 ---
 
 # Project State
@@ -23,17 +23,17 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 ## Current Position
 
 Phase: 2 of 11 (App Shell and Goal Management)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: Executing Phase 2
-Last activity: 2026-03-30, completed 02-01 Dependencies, Theme, and Provider Setup
+Last activity: 2026-03-30, completed 02-02 App Shell Layout
 
-Progress: [████░░░░░░] 11%
+Progress: [█████░░░░░] 14%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
-- Average duration: ~18 min
+- Total plans completed: 6
+- Average duration: ~15 min
 - Total execution time: ~1.5 hours
 
 **By Phase:**
@@ -41,11 +41,11 @@ Progress: [████░░░░░░] 11%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-foundation | 4/4 | ~81 min | ~20 min |
-| 02-app-shell-and-goal-management | 1/4 | ~5 min | ~5 min |
+| 02-app-shell-and-goal-management | 2/4 | ~7 min | ~3.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-02 (~26 min), 01-03 (~5 min), 01-04 (~5 min), 02-01 (~5 min)
-- Trend: Pure code plans consistently fast (~5 min); dependency and config tasks also quick when partially pre-staged
+- Last 5 plans: 01-03 (~5 min), 01-04 (~5 min), 02-01 (~5 min), 02-02 (~2 min)
+- Trend: Pure code plans consistently fast (~2-5 min); UI component creation very efficient
 
 *Updated after each plan completion*
 
@@ -77,6 +77,9 @@ Recent decisions affecting current work:
 - [02-01]: Zustand persist uses partialize to only save sidebarCollapsed to localStorage
 - [02-01]: QueryClient uses useState singleton pattern to prevent server-side cache leaks
 - [02-01]: shadcn/ui components installed via codegen for full source control
+- [02-02]: Nav config as plain TypeScript arrays driving both sidebar and tab bar for single source of truth
+- [02-02]: Route group (app) pattern scopes shell layout to content pages only, API routes unaffected
+- [02-02]: Bottom tab bar includes all nav items plus Menu button for mobile drawer
 
 ### Pending Todos
 
@@ -92,6 +95,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-30
-Stopped at: Completed 02-01-PLAN.md (Dependencies, Theme, and Provider Setup)
+Stopped at: Completed 02-02-PLAN.md (App Shell Layout)
 Resume file: None
-Next: Continue with 02-02-PLAN.md (App Shell Layout)
+Next: Continue with 02-03-PLAN.md (Goal Management UI)
