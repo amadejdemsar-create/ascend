@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { DynamicIcon } from "lucide-react/dynamic";
+import type { IconName } from "lucide-react/dynamic";
 import type { CreateGoalInput, UpdateGoalInput } from "@/lib/validations";
 import { HORIZON_ORDER } from "@/lib/constants";
+import { useCategories } from "@/lib/hooks/use-categories";
 import { GoalParentSelect } from "@/components/goals/goal-parent-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +30,33 @@ interface GoalFormProps {
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH"] as const;
 
 const SMART_HORIZONS = new Set(["YEARLY", "QUARTERLY"]);
+
+interface CategoryTreeNode {
+  id: string;
+  name: string;
+  color: string;
+  icon: string | null;
+  children: CategoryTreeNode[];
+}
+
+interface FlatCategory {
+  id: string;
+  name: string;
+  color: string;
+  icon: string | null;
+  depth: number;
+}
+
+function flattenCategoryTree(nodes: CategoryTreeNode[], depth = 0): FlatCategory[] {
+  const result: FlatCategory[] = [];
+  for (const node of nodes) {
+    result.push({ id: node.id, name: node.name, color: node.color, icon: node.icon, depth });
+    if (node.children.length > 0) {
+      result.push(...flattenCategoryTree(node.children, depth + 1));
+    }
+  }
+  return result;
+}
 
 export function GoalForm({
   mode,
@@ -56,8 +86,14 @@ export function GoalForm({
     initialData?.targetValue?.toString() ?? ""
   );
   const [unit, setUnit] = useState(initialData?.unit ?? "");
+  const [categoryId, setCategoryId] = useState<string | undefined>(
+    (initialData as Record<string, unknown> | undefined)?.categoryId as string | undefined
+  );
   const [notes, setNotes] = useState(initialData?.notes ?? "");
   const [titleError, setTitleError] = useState("");
+
+  const { data: categoryTree } = useCategories();
+  const flatCategories = flattenCategoryTree((categoryTree ?? []) as CategoryTreeNode[]);
 
   const showSmartFields = SMART_HORIZONS.has(horizon);
 
@@ -76,6 +112,7 @@ export function GoalForm({
       priority: priority as CreateGoalInput["priority"],
       ...(description && { description }),
       ...(parentId && { parentId }),
+      ...(categoryId && { categoryId }),
       ...(deadline && { deadline: new Date(deadline).toISOString() }),
       ...(showSmartFields && specific && { specific }),
       ...(showSmartFields && measurable && { measurable }),
@@ -187,15 +224,38 @@ export function GoalForm({
         onChange={setParentId}
       />
 
-      {/* Category select (placeholder) */}
+      {/* Category select */}
       <div className="space-y-2">
         <Label>Category</Label>
-        <Select disabled>
+        <Select
+          value={categoryId ?? "__none__"}
+          onValueChange={(val) =>
+            setCategoryId(!val || val === "__none__" ? undefined : val)
+          }
+        >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Category selection coming in Phase 3" />
+            <SelectValue placeholder="No category" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="placeholder">Placeholder</SelectItem>
+            <SelectItem value="__none__">No category</SelectItem>
+            {flatCategories.map((cat) => (
+              <SelectItem key={cat.id} value={cat.id}>
+                <span className="flex items-center gap-2">
+                  <span
+                    className="inline-block size-2 shrink-0 rounded-full"
+                    style={{ backgroundColor: cat.color }}
+                  />
+                  <DynamicIcon
+                    name={(cat.icon ?? "folder") as IconName}
+                    className="size-3.5 shrink-0"
+                  />
+                  <span>
+                    {cat.depth > 0 ? "\u00A0\u00A0".repeat(cat.depth) : ""}
+                    {cat.name}
+                  </span>
+                </span>
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
