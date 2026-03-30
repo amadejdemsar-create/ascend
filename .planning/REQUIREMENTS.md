@@ -208,13 +208,122 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (populated during roadmap creation) | | |
+| GOAL-01 | Phase 2 | Pending |
+| GOAL-02 | Phase 2 | Pending |
+| GOAL-03 | Phase 2 | Pending |
+| GOAL-04 | Phase 2 | Pending |
+| GOAL-05 | Phase 2 | Pending |
+| GOAL-06 | Phase 2 | Pending |
+| GOAL-07 | Phase 2 | Pending |
+| GOAL-08 | Phase 2 | Pending |
+| GOAL-09 | Phase 2 | Pending |
+| GOAL-10 | Phase 9 | Pending |
+| GOAL-11 | Phase 2 | Pending |
+| GOAL-12 | Phase 2 | Pending |
+| GOAL-13 | Phase 2 | Pending |
+| GOAL-14 | Phase 2 | Pending |
+| PROG-01 | Phase 4 | Pending |
+| PROG-02 | Phase 4 | Pending |
+| PROG-03 | Phase 4 | Pending |
+| PROG-04 | Phase 4 | Pending |
+| PROG-05 | Phase 4 | Pending |
+| CAT-01 | Phase 3 | Pending |
+| CAT-02 | Phase 3 | Pending |
+| CAT-03 | Phase 3 | Pending |
+| CAT-04 | Phase 3 | Pending |
+| CAT-05 | Phase 3 | Pending |
+| CAT-06 | Phase 3 | Pending |
+| DASH-01 | Phase 4 | Pending |
+| DASH-02 | Phase 4 | Pending |
+| DASH-03 | Phase 4 | Pending |
+| DASH-04 | Phase 4 | Pending |
+| DASH-05 | Phase 4 | Pending |
+| DASH-06 | Phase 4 | Pending |
+| VIEW-01 | Phase 3 | Pending |
+| VIEW-02 | Phase 3 | Pending |
+| VIEW-03 | Phase 6 | Pending |
+| VIEW-04 | Phase 6 | Pending |
+| VIEW-05 | Phase 7 | Pending |
+| VIEW-06 | Phase 7 | Pending |
+| VIEW-07 | Phase 7 | Pending |
+| VIEW-08 | Phase 3 | Pending |
+| VIEW-09 | Phase 3 | Pending |
+| VIEW-10 | Phase 3 | Pending |
+| DND-01 | Phase 8 | Pending |
+| DND-02 | Phase 8 | Pending |
+| DND-03 | Phase 8 | Pending |
+| DND-04 | Phase 8 | Pending |
+| DND-05 | Phase 8 | Pending |
+| GAME-01 | Phase 9 | Pending |
+| GAME-02 | Phase 9 | Pending |
+| GAME-03 | Phase 9 | Pending |
+| GAME-04 | Phase 9 | Pending |
+| GAME-05 | Phase 9 | Pending |
+| GAME-06 | Phase 9 | Pending |
+| GAME-07 | Phase 9 | Pending |
+| CMD-01 | Phase 10 | Pending |
+| CMD-02 | Phase 10 | Pending |
+| CMD-03 | Phase 10 | Pending |
+| CMD-04 | Phase 10 | Pending |
+| CMD-05 | Phase 10 | Pending |
+| CMD-06 | Phase 10 | Pending |
+| MCP-01 | Phase 5 | Pending |
+| MCP-02 | Phase 5 | Pending |
+| MCP-03 | Phase 5 | Pending |
+| MCP-04 | Phase 5 | Pending |
+| MCP-05 | Phase 5 | Pending |
+| MCP-06 | Phase 5 | Pending |
+| MCP-07 | Phase 5 | Pending |
+| MCP-08 | Phase 5 | Pending |
+| MCP-09 | Phase 5 | Pending |
+| MCP-10 | Phase 5 | Pending |
+| MCP-11 | Phase 5 | Pending |
+| MCP-12 | Phase 5 | Pending |
+| MCP-13 | Phase 5 | Pending |
+| MCP-14 | Phase 5 | Pending |
+| MCP-15 | Phase 5 | Pending |
+| MCP-16 | Phase 5 | Pending |
+| MCP-17 | Phase 5 | Pending |
+| MCP-18 | Phase 5 | Pending |
+| MCP-19 | Phase 5 | Pending |
+| MCP-20 | Phase 5 | Pending |
+| NAV-01 | Phase 2 | Pending |
+| NAV-02 | Phase 2 | Pending |
+| NAV-03 | Phase 2 | Pending |
+| NAV-04 | Phase 2 | Pending |
+| NAV-05 | Phase 2 | Pending |
+| THEME-01 | Phase 2 | Pending |
+| THEME-02 | Phase 2 | Pending |
+| THEME-03 | Phase 2 | Pending |
+| THEME-04 | Phase 2 | Pending |
+| THEME-05 | Phase 11 | Pending |
+| DATA-01 | Phase 10 | Pending |
+| DATA-02 | Phase 10 | Pending |
+| DATA-03 | Phase 10 | Pending |
+| DATA-04 | Phase 10 | Pending |
+| DATA-05 | Phase 10 | Pending |
+| DATA-06 | Phase 10 | Pending |
+| DATA-07 | Phase 10 | Pending |
+| DATA-08 | Phase 10 | Pending |
+| ONBD-01 | Phase 11 | Pending |
+| ONBD-02 | Phase 11 | Pending |
+| ONBD-03 | Phase 11 | Pending |
+| ONBD-04 | Phase 11 | Pending |
+| PWA-01 | Phase 11 | Pending |
+| PWA-02 | Phase 11 | Pending |
+| PWA-03 | Phase 11 | Pending |
+| PWA-04 | Phase 11 | Pending |
+| INFRA-01 | Phase 1 | Pending |
+| INFRA-02 | Phase 1 | Pending |
+| INFRA-03 | Phase 1 | Pending |
+| INFRA-04 | Phase 1 | Pending |
+| INFRA-05 | Phase 1 | Pending |
 
 **Coverage:**
-- v1 requirements: 93 total
-- Mapped to phases: 0
-- Unmapped: 93
+- v1 requirements: 110 total (corrected from initial count of 93)
+- Mapped to phases: 110
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-30*
-*Last updated: 2026-03-30 after initial definition*
+*Last updated: 2026-03-30 after roadmap creation*
