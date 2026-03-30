@@ -73,14 +73,14 @@ Plans:
   3. User can view all goals in a flat sortable table with columns for title, status, progress, priority, deadline, category, and horizon
   4. User can filter goals by category, horizon, status, and priority, and sort by priority, deadline, creation date, or title
   5. User's selected view and active filters persist across browser sessions
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 03-01: Category CRUD UI with nesting, colors, and icons
-- [ ] 03-02: Default categories and sidebar category tree
-- [ ] 03-03: List view with sortable table columns
-- [ ] 03-04: Filtering and sorting system across views
-- [ ] 03-05: View and filter preference persistence
+- [ ] 03-01-PLAN.md — Category mutation hooks, form components (color/icon pickers), default categories seed
+- [ ] 03-02-PLAN.md — Install TanStack Table, extend UI store with view/filter/sort persistence
+- [ ] 03-03-PLAN.md — Sidebar category tree, category manage dialog, activate goal form category select
+- [ ] 03-04-PLAN.md — List view with TanStack Table columns, sortable headers, and filter bar
+- [ ] 03-05-PLAN.md — View switcher, category delete dialog, compose goals page with all Phase 3 components
 
 ### Phase 4: Dashboard and Progress Tracking
 **Goal**: Users land on a dashboard that answers "what should I focus on right now?" with progress tracking that connects daily actions to measurable outcomes
