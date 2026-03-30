@@ -155,9 +155,9 @@
 ### Infrastructure
 
 - [ ] **INFRA-01**: Multi-user database schema with user_id on all tables (even though v1 is single-user)
-- [ ] **INFRA-02**: PostgreSQL database running as Dokploy container on Hostinger VPS
-- [ ] **INFRA-03**: Next.js 16 app deployed via Dokploy with auto-deploy from GitHub
-- [ ] **INFRA-04**: Domain: ascend.nativeai.agency with SSL
+- [x] **INFRA-02**: PostgreSQL database running as Dokploy container on Hostinger VPS
+- [x] **INFRA-03**: Next.js 16 app deployed via Dokploy with auto-deploy from GitHub
+- [x] **INFRA-04**: Domain: ascend.nativeai.agency with SSL
 - [ ] **INFRA-05**: API key authentication for MCP endpoints
 
 ## v2 Requirements
@@ -314,9 +314,9 @@
 | PWA-03 | Phase 11 | Pending |
 | PWA-04 | Phase 11 | Pending |
 | INFRA-01 | Phase 1 | Pending |
-| INFRA-02 | Phase 1 | Pending |
-| INFRA-03 | Phase 1 | Pending |
-| INFRA-04 | Phase 1 | Pending |
+| INFRA-02 | Phase 1 | Complete (01-01) |
+| INFRA-03 | Phase 1 | Complete (01-01) |
+| INFRA-04 | Phase 1 | Complete (01-01) |
 | INFRA-05 | Phase 1 | Pending |
 
 **Coverage:**

@@ -39,7 +39,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans:** 4 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Scaffold Next.js 16 project, Dockerfile, Prisma config, deploy to Dokploy
+- [x] 01-01-PLAN.md — Scaffold Next.js 16 project, Dockerfile, Prisma config, deploy to Dokploy
 - [ ] 01-02-PLAN.md — Complete Prisma schema (6 models), migrations, Prisma Client singleton, seed test user
 - [ ] 01-03-PLAN.md — Service Layer (goal CRUD, category CRUD, hierarchy validation, Zod schemas, tree queries)
 - [ ] 01-04-PLAN.md — API key authentication and REST API route handlers for goals and categories
@@ -230,7 +230,7 @@ Note: Phase 5 (MCP Server) can execute in parallel with Phases 2-4 since both de
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/4 | Planning complete | - |
+| 1. Foundation | 1/4 | In progress | - |
 | 2. App Shell and Goal Management | 0/5 | Not started | - |
 | 3. Categories, List View, and Filtering | 0/5 | Not started | - |
 | 4. Dashboard and Progress Tracking | 0/5 | Not started | - |
