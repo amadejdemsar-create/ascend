@@ -110,6 +110,9 @@ Recent decisions affecting current work:
 - [03-05]: Horizon tabs sync with store activeFilters while remaining as prominent UI element
 - [03-05]: Future views render placeholder messages indicating target phase
 - [03-05]: Category delete uses native radio inputs for minimal dependency surface
+- [04-01]: JavaScript re-sort with PRIORITY_ORDER map for weekly focus goals to avoid Prisma enum ordinal ambiguity
+- [04-01]: UserStats defaults to zero XP, level 1, zero streak when record does not exist yet (Phase 9 safety)
+- [04-01]: Two-batch Promise.all strategy for dashboard aggregation queries
 - [04-02]: Local hook definitions in component files for parallel wave independence (useLogProgress, useProgressHistory)
 - [04-02]: Used render prop instead of asChild for base-ui PopoverTrigger and SheetTrigger
 
