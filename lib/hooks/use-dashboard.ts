@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queries/keys";
 import type { DashboardData } from "@/lib/services/dashboard-service";
@@ -21,11 +22,30 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   return res.json();
 }
 
+// Module-level flag to prevent re-triggering recurring generation on every refetch
+let recurringGenerated = false;
+
 export function useDashboard() {
-  return useQuery({
+  const query = useQuery({
     queryKey: queryKeys.dashboard(),
     queryFn: () => fetchJson<DashboardData>("/api/dashboard"),
   });
+
+  // Trigger recurring instance generation once per session on first successful load
+  useEffect(() => {
+    if (query.data && !recurringGenerated) {
+      recurringGenerated = true;
+      // Fire and forget: generate recurring instances in the background
+      fetch("/api/goals/recurring/generate", {
+        method: "POST",
+        headers,
+      }).catch(() => {
+        // Silently ignore errors (endpoint may not exist yet)
+      });
+    }
+  }, [query.data]);
+
+  return query;
 }
 
 export function useLogProgress() {

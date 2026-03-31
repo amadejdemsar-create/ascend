@@ -4,10 +4,12 @@ import {
   Flame,
   CalendarCheck,
   Percent,
-  Target,
   CheckCircle2,
+  Trophy,
+  Zap,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { XpProgressBar } from "@/components/ui/xp-progress-bar";
 import type { StatsData } from "@/lib/services/dashboard-service";
 
 interface StreaksStatsWidgetProps {
@@ -15,6 +17,22 @@ interface StreaksStatsWidgetProps {
 }
 
 const statItems = [
+  {
+    key: "level" as const,
+    label: "Level",
+    icon: Trophy,
+  },
+  {
+    key: "weeklyScore" as const,
+    label: "Weekly score",
+    icon: Zap,
+    suffix: "pts",
+  },
+  {
+    key: "activeStreaks" as const,
+    label: "Active streaks",
+    icon: Flame,
+  },
   {
     key: "completedThisMonth" as const,
     label: "Completed this month",
@@ -26,7 +44,6 @@ const statItems = [
     icon: Percent,
     suffix: "%",
   },
-  { key: "totalGoals" as const, label: "Total goals", icon: Target },
   {
     key: "totalCompleted" as const,
     label: "Total completed",
@@ -39,12 +56,18 @@ export function StreaksStatsWidget({ stats }: StreaksStatsWidgetProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Flame className="size-4 text-muted-foreground" />
-          Stats
+          <Trophy className="size-4 text-muted-foreground" />
+          Level & Stats
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 gap-4">
+      <CardContent className="space-y-4">
+        <XpProgressBar
+          current={stats.xpToNext.current}
+          needed={stats.xpToNext.needed}
+          percentage={stats.xpToNext.percentage}
+          level={stats.level}
+        />
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           {statItems.map((item) => {
             const Icon = item.icon;
             const value = stats[item.key];
@@ -53,7 +76,7 @@ export function StreaksStatsWidget({ stats }: StreaksStatsWidgetProps) {
                 <Icon className="size-4 text-muted-foreground" />
                 <p className="font-mono text-2xl font-bold">
                   {value}
-                  {item.suffix ?? ""}
+                  {item.suffix ? ` ${item.suffix}` : ""}
                 </p>
                 <p className="text-xs text-muted-foreground">{item.label}</p>
               </div>
