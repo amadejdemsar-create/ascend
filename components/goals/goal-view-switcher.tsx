@@ -25,7 +25,7 @@ const VIEW_OPTIONS: Array<{
 }> = [
   { value: "cards", label: "Cards", icon: LayoutGrid, enabled: true },
   { value: "list", label: "List", icon: List, enabled: true },
-  { value: "board", label: "Board", icon: Columns3, enabled: false },
+  { value: "board", label: "Board", icon: Columns3, enabled: true },
   { value: "tree", label: "Tree", icon: GitBranch, enabled: false },
   { value: "timeline", label: "Timeline", icon: GanttChart, enabled: false },
 ];

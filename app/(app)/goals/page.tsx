@@ -9,6 +9,7 @@ import { GoalModal } from "@/components/goals/goal-modal";
 import { GoalViewSwitcher } from "@/components/goals/goal-view-switcher";
 import { GoalFilterBar } from "@/components/goals/goal-filter-bar";
 import { GoalListView } from "@/components/goals/goal-list-view";
+import { GoalBoardView } from "@/components/goals/goal-board-view";
 import { QuickAdd } from "@/components/goals/quick-add";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,7 +32,6 @@ const HORIZON_FILTERS = [
 ];
 
 const PLACEHOLDER_VIEWS: Record<string, { icon: typeof Columns3Icon; label: string }> = {
-  board: { icon: Columns3Icon, label: "Board view coming in Phase 6" },
   tree: { icon: GitBranchIcon, label: "Tree view coming in Phase 6" },
   timeline: { icon: GanttChartIcon, label: "Timeline view coming in Phase 7" },
 };
@@ -109,6 +109,14 @@ export default function GoalsPage() {
             <PlusIcon className="size-3.5" />
             Create Goal
           </Button>
+        </div>
+      );
+    }
+
+    if (activeView === "board") {
+      return (
+        <div className="p-4">
+          <GoalBoardView goals={goalList} />
         </div>
       );
     }
