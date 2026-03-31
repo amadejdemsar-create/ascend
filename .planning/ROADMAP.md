@@ -112,12 +112,12 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 05-01: MCP transport setup and protocol handshake validation
-- [ ] 05-02: Goal CRUD tools (create, get, update, delete, list, search)
-- [ ] 05-03: Progress, hierarchy, and bulk operation tools
-- [ ] 05-04: Dashboard, stats, priorities, and timeline tools
-- [ ] 05-05: Category, settings, import, and export tools
-- [ ] 05-06: End-to-end validation with Claude Code and other MCP clients
+- [x] 05-01: MCP transport setup and protocol handshake validation
+- [x] 05-02: Goal CRUD tools (create, get, update, delete, list, search)
+- [x] 05-03: Progress, hierarchy, and bulk operation tools
+- [x] 05-04: Dashboard, stats, priorities, and timeline tools
+- [x] 05-05: Category, settings, import, and export tools
+- [x] 05-06: End-to-end validation with Claude Code and other MCP clients
 
 ### Phase 6: Board and Tree Views
 **Goal**: Users can visualize goals as kanban cards grouped by status or horizon and as an expandable hierarchical tree showing the full yearly-to-weekly cascade
@@ -228,11 +228,11 @@ Note: Phase 5 (MCP Server) can execute in parallel with Phases 2-4 since both de
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 1/4 | Complete    | 2026-03-30 |
+| 1. Foundation | 4/4 | Complete    | 2026-03-30 |
 | 2. App Shell and Goal Management | 4/4 | Complete    | 2026-03-30 |
-| 3. Categories, List View, and Filtering | 0/5 | Not started | - |
-| 4. Dashboard and Progress Tracking | 0/5 | Not started | - |
-| 5. MCP Server | 0/6 | Not started | - |
+| 3. Categories, List View, and Filtering | 5/5 | Complete    | 2026-03-31 |
+| 4. Dashboard and Progress Tracking | 3/3 | Complete    | 2026-03-31 |
+| 5. MCP Server | 6/6 | Complete    | 2026-03-31 |
 | 6. Board and Tree Views | 0/2 | Not started | - |
 | 7. Timeline View | 0/3 | Not started | - |
 | 8. Drag and Drop | 0/3 | Not started | - |
