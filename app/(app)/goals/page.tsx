@@ -1,8 +1,10 @@
 "use client";
 
-import { useGoals } from "@/lib/hooks/use-goals";
+import { useCallback } from "react";
+import { useGoals, useGoalTree, useReorderGoals } from "@/lib/hooks/use-goals";
 import { useUIStore } from "@/lib/stores/ui-store";
 import { HORIZON_ORDER } from "@/lib/constants";
+import { DndGoalProvider } from "@/components/goals/dnd-goal-provider";
 import { GoalCard } from "@/components/goals/goal-card";
 import { GoalDetail } from "@/components/goals/goal-detail";
 import { GoalModal } from "@/components/goals/goal-modal";
@@ -18,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlusIcon, TargetIcon } from "lucide-react";
 import type { GoalFilters } from "@/lib/validations";
+import type { GoalDragOverlayData } from "@/components/goals/goal-drag-overlay";
 
 const HORIZON_FILTERS = [
   { value: "ALL", label: "All" },
@@ -49,6 +52,8 @@ export default function GoalsPage() {
   })();
 
   const { data: goals, isLoading } = useGoals(filters);
+  const { data: treeData } = useGoalTree();
+  const reorderMutation = useReorderGoals();
 
   interface GoalListItem {
     id: string;
@@ -75,6 +80,64 @@ export default function GoalsPage() {
       horizon: value === "ALL" ? undefined : (value as typeof activeFilters.horizon),
     });
   }
+
+  const findGoal = useCallback(
+    (id: string): GoalDragOverlayData | null => {
+      const g = goalList.find((gl) => gl.id === id);
+      return g
+        ? {
+            id: g.id,
+            title: g.title,
+            priority: g.priority,
+            category: g.category
+              ? { name: g.category.name, color: g.category.color }
+              : null,
+          }
+        : null;
+    },
+    [goalList],
+  );
+
+  const handleDragEndExtra = useCallback(
+    (event: unknown) => {
+      const evt = event as { canceled?: boolean; operation?: { source?: { type?: string; id?: unknown; data?: unknown } } };
+      if (evt.canceled) return;
+      const source = evt.operation?.source;
+      if (!source) return;
+
+      if (source.type === "goal-row") {
+        // List reorder: persist all visible goals in their current order
+        const items = goalList.map((g, i) => ({ id: g.id, sortOrder: i }));
+        reorderMutation.mutate(items);
+        return;
+      }
+
+      if (source.type === "tree-node") {
+        // Tree reorder: find siblings in the same parent group
+        const parentId = (source.data as Record<string, unknown>)?.parentId as string | null;
+        function findSiblings(nodes: unknown[], pid: string | null): unknown[] {
+          if (pid === null) return nodes;
+          for (const node of nodes) {
+            const n = node as { id: string; children?: unknown[] };
+            if (n.id === pid) return n.children ?? [];
+            const found = findSiblings(n.children ?? [], pid);
+            if (found.length > 0) return found;
+          }
+          return [];
+        }
+        const siblings = findSiblings(treeData ?? [], parentId);
+        if (siblings.length > 1) {
+          reorderMutation.mutate(
+            siblings.map((g, i) => ({
+              id: (g as { id: string }).id,
+              sortOrder: i,
+            })),
+          );
+        }
+      }
+    },
+    [goalList, treeData, reorderMutation],
+  );
 
   // Render content based on active view
   function renderContent() {
@@ -114,9 +177,11 @@ export default function GoalsPage() {
 
     if (activeView === "tree") {
       return (
-        <div className="p-4">
-          <GoalTreeView />
-        </div>
+        <DndGoalProvider findGoal={findGoal} onDragEndExtra={handleDragEndExtra}>
+          <div className="p-4">
+            <GoalTreeView />
+          </div>
+        </DndGoalProvider>
       );
     }
 
@@ -130,9 +195,11 @@ export default function GoalsPage() {
 
     if (activeView === "list") {
       return (
-        <div className="p-4">
-          <GoalListView goals={goalList} />
-        </div>
+        <DndGoalProvider findGoal={findGoal} onDragEndExtra={handleDragEndExtra}>
+          <div className="p-4">
+            <GoalListView goals={goalList} />
+          </div>
+        </DndGoalProvider>
       );
     }
 

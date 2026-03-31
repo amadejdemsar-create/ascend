@@ -52,8 +52,8 @@ export function GoalTreeView() {
 
   return (
     <div className="space-y-0.5">
-      {filteredGoals.map((goal) => (
-        <GoalTreeNode key={goal.id} goal={goal} depth={0} />
+      {filteredGoals.map((goal, index) => (
+        <GoalTreeNode key={goal.id} goal={goal} depth={0} index={index} parentId={null} />
       ))}
     </div>
   );

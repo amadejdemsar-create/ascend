@@ -5,7 +5,7 @@ import { DragDropProvider, DragOverlay } from "@dnd-kit/react";
 import type { DragStartEvent, DragEndEvent } from "@dnd-kit/react";
 import { GoalDragOverlay } from "./goal-drag-overlay";
 import type { GoalDragOverlayData } from "./goal-drag-overlay";
-import { useReorderGoals, useUpdateGoal } from "@/lib/hooks/use-goals";
+import { useUpdateGoal } from "@/lib/hooks/use-goals";
 import { toast } from "sonner";
 
 type DragStartEventArg = Parameters<DragStartEvent>[0];
@@ -15,10 +15,11 @@ interface DndGoalProviderProps {
   children: React.ReactNode;
   /** Called to look up goal data for the drag overlay by source.id */
   findGoal?: (id: string) => GoalDragOverlayData | null;
+  /** Called after the default onDragEnd handler for view-specific reorder logic */
+  onDragEndExtra?: (event: DragEndEventArg) => void;
 }
 
-export function DndGoalProvider({ children, findGoal }: DndGoalProviderProps) {
-  const reorderMutation = useReorderGoals();
+export function DndGoalProvider({ children, findGoal, onDragEndExtra }: DndGoalProviderProps) {
   const updateMutation = useUpdateGoal();
   const draggedGoalRef = useRef<GoalDragOverlayData | null>(null);
 
@@ -88,8 +89,11 @@ export function DndGoalProvider({ children, findGoal }: DndGoalProviderProps) {
         );
         return;
       }
+
+      // Call view-specific handler for reorder persistence
+      onDragEndExtra?.(event);
     },
-    [updateMutation, reorderMutation],
+    [updateMutation, onDragEndExtra],
   );
 
   return (

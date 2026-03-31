@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, GripVertical } from "lucide-react";
+import { useSortable } from "@dnd-kit/react/sortable";
 import { GoalPriorityBadge } from "@/components/goals/goal-priority-badge";
 import {
   Collapsible,
@@ -29,21 +30,34 @@ const STATUS_LABELS: Record<string, string> = {
 interface GoalTreeNodeProps {
   goal: TreeGoal;
   depth: number;
+  index: number;
+  parentId: string | null;
 }
 
 export const GoalTreeNode = React.memo(function GoalTreeNode({
   goal,
   depth,
+  index,
+  parentId,
 }: GoalTreeNodeProps) {
   const [expanded, setExpanded] = useState(depth < 2);
   const selectedGoalId = useUIStore((s) => s.selectedGoalId);
   const selectGoal = useUIStore((s) => s.selectGoal);
 
+  const { ref: sortableRef, handleRef, isDragging } = useSortable({
+    id: goal.id,
+    index,
+    type: "tree-node",
+    accept: "tree-node",
+    group: parentId ?? "root",
+    data: { parentId },
+  });
+
   const hasChildren = goal.children.length > 0;
   const isSelected = selectedGoalId === goal.id;
 
   return (
-    <div>
+    <div ref={sortableRef} className={cn(isDragging && "opacity-40")}>
       <Collapsible open={expanded} onOpenChange={setExpanded}>
         <div
           className={cn(
@@ -54,6 +68,14 @@ export const GoalTreeNode = React.memo(function GoalTreeNode({
           )}
           style={{ paddingLeft: `${depth * 1.25 + 0.5}rem` }}
         >
+          {/* Drag handle */}
+          <span
+            ref={handleRef}
+            className="inline-flex cursor-grab text-muted-foreground hover:text-foreground shrink-0"
+          >
+            <GripVertical className="size-3.5" />
+          </span>
+
           {/* Expand/collapse chevron */}
           {hasChildren ? (
             <CollapsibleTrigger
@@ -119,8 +141,14 @@ export const GoalTreeNode = React.memo(function GoalTreeNode({
         {/* Children (animated collapse) */}
         {hasChildren && (
           <CollapsibleContent>
-            {goal.children.map((child) => (
-              <GoalTreeNode key={child.id} goal={child} depth={depth + 1} />
+            {goal.children.map((child, i) => (
+              <GoalTreeNode
+                key={child.id}
+                goal={child}
+                depth={depth + 1}
+                index={i}
+                parentId={goal.id}
+              />
             ))}
           </CollapsibleContent>
         )}
