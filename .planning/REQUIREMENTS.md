@@ -98,13 +98,13 @@
 - [ ] **MCP-06**: MCP tool: delete_goal (with cascade option for children)
 - [ ] **MCP-07**: MCP tool: list_goals (filter by horizon, category, status, priority, parent; pagination)
 - [ ] **MCP-08**: MCP tool: search_goals (full-text search across titles, descriptions, notes)
-- [ ] **MCP-09**: MCP tool: add_progress (increment value with optional note)
-- [ ] **MCP-10**: MCP tool: get_progress_history (for a specific goal)
+- [x] **MCP-09**: MCP tool: add_progress (increment value with optional note)
+- [x] **MCP-10**: MCP tool: get_progress_history (for a specific goal)
 - [ ] **MCP-11**: MCP tool: create_category / update_category / delete_category / list_categories
 - [ ] **MCP-12**: MCP tool: get_dashboard (returns this week's focus, progress overview, streaks, deadlines)
 - [ ] **MCP-13**: MCP tool: get_current_priorities (weekly goals sorted by priority and deadline)
-- [ ] **MCP-14**: MCP tool: complete_goals (bulk complete multiple goals by ID)
-- [ ] **MCP-15**: MCP tool: move_goal (change horizon or parent)
+- [x] **MCP-14**: MCP tool: complete_goals (bulk complete multiple goals by ID)
+- [x] **MCP-15**: MCP tool: move_goal (change horizon or parent)
 - [ ] **MCP-16**: MCP tool: get_timeline (structured year/quarter/month/week view with goals)
 - [ ] **MCP-17**: MCP tool: get_stats (XP, level, streaks, weekly score, completion rates)
 - [ ] **MCP-18**: MCP tool: export_data (JSON, CSV, Markdown format)
@@ -275,13 +275,13 @@
 | MCP-06 | Phase 5 | Pending |
 | MCP-07 | Phase 5 | Pending |
 | MCP-08 | Phase 5 | Pending |
-| MCP-09 | Phase 5 | Pending |
-| MCP-10 | Phase 5 | Pending |
+| MCP-09 | Phase 5 | Complete |
+| MCP-10 | Phase 5 | Complete |
 | MCP-11 | Phase 5 | Pending |
 | MCP-12 | Phase 5 | Pending |
 | MCP-13 | Phase 5 | Pending |
-| MCP-14 | Phase 5 | Pending |
-| MCP-15 | Phase 5 | Pending |
+| MCP-14 | Phase 5 | Complete |
+| MCP-15 | Phase 5 | Complete |
 | MCP-16 | Phase 5 | Pending |
 | MCP-17 | Phase 5 | Pending |
 | MCP-18 | Phase 5 | Pending |

@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in-progress
-last_updated: "2026-03-31T11:16:24Z"
+last_updated: "2026-03-31T11:21:16Z"
 progress:
   total_phases: 5
   completed_phases: 4
-  total_plans: 17
-  completed_plans: 17
+  total_plans: 22
+  completed_plans: 20
 ---
 
 # Project State
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 ## Current Position
 
 Phase: 5 of 11 (MCP Server) IN PROGRESS
-Plan: 1 of 6 in current phase (1 complete)
+Plan: 5 of 6 in current phase (4 complete)
 Status: Executing Phase 5
-Last activity: 2026-03-31, completed 05-01 MCP Server Infrastructure
+Last activity: 2026-03-31, completed 05-04 Dashboard Tools
 
 Progress: [████████░░] 39%
 
@@ -59,6 +59,8 @@ Progress: [████████░░] 39%
 | Phase 04 P02 | 2min | 2 tasks | 3 files |
 | Phase 04 P03 | 2min | 2 tasks | 8 files |
 | Phase 05 P01 | 6min | 2 tasks | 7 files |
+| Phase 05 P03 | 2min | 2 tasks | 3 files |
+| Phase 05 P04 | 2min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -123,6 +125,11 @@ Recent decisions affecting current work:
 - [05-01]: Extended goalService.list() with optional skip/take rather than querying Prisma directly from MCP tools
 - [05-01]: enableJsonResponse:true on transport for clean JSON responses instead of SSE streams
 - [04-03]: Stats widget omits XP/level/streak display since Phase 9 gamification will populate them
+- [Phase 05-03]: add_progress returns updated goal state (currentValue, targetValue, progress %) alongside log entry for immediate feedback
+- [Phase 05-03]: complete_goals uses per-item try/catch for partial failure tolerance instead of atomic batch
+- [Phase 05-03]: move_goal delegates hierarchy validation entirely to goalService.update, no duplicate checks in tool handler
+- [05-04]: Reused PRIORITY_ORDER map pattern from dashboard-service.ts for consistent priority sorting in get_current_priorities
+- [05-04]: All dashboard tools append raw JSON after formatted text for dual human/programmatic consumption
 
 ### Pending Todos
 
@@ -138,6 +145,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-31
-Stopped at: Completed 05-01-PLAN.md (MCP Server Infrastructure)
+Stopped at: Completed 05-03-PLAN.md (Progress and Bulk Tools)
 Resume file: None
-Next: Phase 5 Plan 2 (progress, category, dashboard, bulk, data, and settings tool handlers)
+Next: Phase 5 Plan 4 (category and dashboard tool handlers)
