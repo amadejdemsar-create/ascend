@@ -24,6 +24,25 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   return res.json();
 }
 
+export interface TreeGoal {
+  id: string;
+  title: string;
+  status: string;
+  horizon: string;
+  priority: "LOW" | "MEDIUM" | "HIGH";
+  progress: number;
+  deadline: string | null;
+  category: { id: string; name: string; color: string; icon: string | null } | null;
+  children: TreeGoal[];
+}
+
+export function useGoalTree() {
+  return useQuery({
+    queryKey: queryKeys.goals.tree(),
+    queryFn: () => fetchJson<TreeGoal[]>("/api/goals/tree"),
+  });
+}
+
 export function useGoals(filters?: GoalFilters) {
   return useQuery({
     queryKey: queryKeys.goals.list(filters),
