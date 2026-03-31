@@ -54,7 +54,7 @@
 - [x] **VIEW-02**: List view shows goals in a flat sortable table with columns (title, status, progress, priority, deadline, category, horizon)
 - [x] **VIEW-03**: Board/Kanban view shows goals as cards grouped by status or horizon (user-selectable grouping)
 - [x] **VIEW-04**: Tree view shows the full goal hierarchy (yearly > quarterly > monthly > weekly) as an expandable/collapsible tree
-- [ ] **VIEW-05**: Timeline view shows a horizontal year line with quarter markers, expandable to months and weeks
+- [x] **VIEW-05**: Timeline view shows a horizontal year line with quarter markers, expandable to months and weeks
 - [ ] **VIEW-06**: Timeline goals appear as interactive nodes on the line at their horizon level
 - [ ] **VIEW-07**: Clicking a goal node on the timeline expands details inline (children, progress, notes)
 - [x] **VIEW-08**: All views support filtering by category, horizon, status, and priority
@@ -243,7 +243,7 @@
 | VIEW-02 | Phase 3 | Complete |
 | VIEW-03 | Phase 6 | Complete |
 | VIEW-04 | Phase 6 | Complete |
-| VIEW-05 | Phase 7 | Pending |
+| VIEW-05 | Phase 7 | Complete |
 | VIEW-06 | Phase 7 | Pending |
 | VIEW-07 | Phase 7 | Pending |
 | VIEW-08 | Phase 3 | Complete |
