@@ -192,14 +192,14 @@ Plans:
   3. User can import existing todos.json data with categories and tasks mapped to appropriate goal hierarchy levels
   4. User can export goals as JSON, CSV, Markdown, formatted PDF report with charts, and DOCX from the settings page
   5. Automated database backups run via cron pg_dump, and a manual export button is accessible from settings
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 10-01: Command palette (Cmd+K search, quick actions, category navigation)
-- [ ] 10-02: Keyboard shortcuts system and reference overlay
-- [ ] 10-03: Data migration from todos.json
-- [ ] 10-04: Export formats (JSON, CSV, Markdown, PDF, DOCX)
-- [ ] 10-05: Automated backups and manual export button
+- [ ] 10-01-PLAN.md — Command palette with cmdk: Cmd+K search, quick actions, category navigation, search API endpoint
+- [ ] 10-02-PLAN.md — Keyboard shortcuts hook and reference overlay (number keys for views, n/b/t/d/s shortcuts, ? reference)
+- [ ] 10-03-PLAN.md — Data import endpoint, shared import helpers, file upload UI on settings page
+- [ ] 10-04-PLAN.md — Export service (JSON, CSV, Markdown, PDF, DOCX), download API endpoint, export UI on settings page
+- [ ] 10-05-PLAN.md — Automated database backups via Dokploy native pg_dump configuration
 
 ### Phase 11: Onboarding, PWA, and Polish
 **Goal**: New users get a guided first experience, the app installs as a PWA on any device, and rich animations make every interaction feel premium
