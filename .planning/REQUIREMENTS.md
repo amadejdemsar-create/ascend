@@ -129,7 +129,7 @@
 
 ### Data Management
 
-- [ ] **DATA-01**: Import existing todos.json into the goal hierarchy (map categories, projects, tasks to appropriate levels)
+- [x] **DATA-01**: Import existing todos.json into the goal hierarchy (map categories, projects, tasks to appropriate levels)
 - [ ] **DATA-02**: Export goals as JSON (full structured backup)
 - [ ] **DATA-03**: Export goals as CSV (spreadsheet-friendly flat export)
 - [ ] **DATA-04**: Export goals as Markdown (human-readable summary)
@@ -297,7 +297,7 @@
 | THEME-03 | Phase 2 | Complete |
 | THEME-04 | Phase 2 | Complete |
 | THEME-05 | Phase 11 | Pending |
-| DATA-01 | Phase 10 | Pending |
+| DATA-01 | Phase 10 | Complete |
 | DATA-02 | Phase 10 | Pending |
 | DATA-03 | Phase 10 | Pending |
 | DATA-04 | Phase 10 | Pending |
