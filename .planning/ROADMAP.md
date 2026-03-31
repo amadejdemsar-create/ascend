@@ -211,14 +211,14 @@ Plans:
   3. Installed PWA provides offline read access to the dashboard and recently viewed goals, and queues writes for sync when connectivity returns
   4. Rich animations are present throughout: page transitions, hover effects, animated counters, parallax timeline scrolling, and view transitions use React 19 View Transitions API
   5. Animations respect the user's prefers-reduced-motion system setting
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 11-01: Onboarding flow (wizard, AI-guided, skip paths)
-- [ ] 11-02: PWA manifest, service worker, and installability
-- [ ] 11-03: Offline read cache and write queue with sync
-- [ ] 11-04: Rich animations and view transitions
-- [ ] 11-05: Reduced motion support and final polish
+- [ ] 11-01-PLAN.md — Onboarding flow: schema migration, three-path choice (wizard, MCP guide, skip), contextual hints
+- [ ] 11-02-PLAN.md — PWA manifest, service worker, icons, install prompt, standalone mode
+- [ ] 11-03-PLAN.md — Offline read cache (network-first API caching) and IndexedDB write queue with auto-sync
+- [ ] 11-04-PLAN.md — Rich animations: ViewTransition page transitions, animated counters, hover effects, progress bar animations
+- [ ] 11-05-PLAN.md — Reduced motion support, offline connectivity indicator, final polish
 
 ## Progress
 
@@ -238,4 +238,4 @@ Note: Phase 5 (MCP Server) can execute in parallel with Phases 2-4 since both de
 | 8. Drag and Drop | 0/3 | Not started | - |
 | 9. Gamification and Recurring Goals | 1/4 | In Progress | - |
 | 10. Command Palette and Data Management | 4/5 | Complete    | 2026-03-31 |
-| 11. Onboarding, PWA, and Polish | 0/5 | Not started | - |
+| 11. Onboarding, PWA, and Polish | 0/5 | Planned | - |
