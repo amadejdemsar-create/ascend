@@ -20,6 +20,7 @@ const GOAL_TOOL_NAMES = new Set([
 
 const PROGRESS_TOOL_NAMES = new Set(["add_progress", "get_progress_history"]);
 const BULK_TOOL_NAMES = new Set(["complete_goals", "move_goal"]);
+const DASHBOARD_TOOLS = new Set(["get_dashboard", "get_current_priorities", "get_stats", "get_timeline"]);
 
 /**
  * Create an MCP Server instance scoped to a specific user.
@@ -55,8 +56,12 @@ export function createAscendMcpServer(userId: string): Server {
       return handleBulkTool(userId, name, args ?? {});
     }
 
+    if (DASHBOARD_TOOLS.has(name)) {
+      return handleDashboardTool(userId, name, args ?? {});
+    }
+
     // Subsequent plans will add handlers for category,
-    // dashboard, data, and settings tools.
+    // data, and settings tools.
     return {
       content: [{ type: "text" as const, text: "Tool not yet implemented" }],
       isError: true,
