@@ -85,8 +85,8 @@
 - [ ] **CMD-02**: Command palette searches across all goals by title and description
 - [ ] **CMD-03**: Command palette offers quick actions (new goal, switch view, toggle theme, navigate to category)
 - [ ] **CMD-04**: Command palette navigates to specific categories and subcategories
-- [ ] **CMD-05**: Keyboard shortcuts for: navigation between views, create new goal, mark goal complete, open/close sidebar, toggle theme
-- [ ] **CMD-06**: Keyboard shortcut reference accessible via `?` key
+- [x] **CMD-05**: Keyboard shortcuts for: navigation between views, create new goal, mark goal complete, open/close sidebar, toggle theme
+- [x] **CMD-06**: Keyboard shortcut reference accessible via `?` key
 
 ### MCP Server
 
@@ -265,8 +265,8 @@
 | CMD-02 | Phase 10 | Pending |
 | CMD-03 | Phase 10 | Pending |
 | CMD-04 | Phase 10 | Pending |
-| CMD-05 | Phase 10 | Pending |
-| CMD-06 | Phase 10 | Pending |
+| CMD-05 | Phase 10 | Complete |
+| CMD-06 | Phase 10 | Complete |
 | MCP-01 | Phase 5 | Complete |
 | MCP-02 | Phase 5 | Complete |
 | MCP-03 | Phase 5 | Complete |
