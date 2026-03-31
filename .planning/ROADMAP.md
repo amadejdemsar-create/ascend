@@ -127,11 +127,11 @@ Plans:
   1. User can switch to Board view and see goals as cards organized into columns, with selectable grouping by status or horizon
   2. User can switch to Tree view and see the full goal hierarchy (yearly > quarterly > monthly > weekly) as an expandable and collapsible tree
   3. Both views respect active filters (category, horizon, status, priority) and sort settings
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 06-01: Board/Kanban view with configurable column grouping
-- [ ] 06-02: Tree view with hierarchical expand/collapse
+- [ ] 06-01-PLAN.md — Board/Kanban view with grouping toggle (status or horizon), compact board cards, UI store persistence
+- [ ] 06-02-PLAN.md — Tree view with API route, useGoalTree hook, recursive expand/collapse nodes, client-side filter pruning
 
 ### Phase 7: Timeline View
 **Goal**: Users can visualize their entire year on a horizontal timeline with goals positioned at their horizon level, providing a planning perspective that no other personal goal app offers
