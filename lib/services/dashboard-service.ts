@@ -53,6 +53,7 @@ export interface DashboardData {
   progressOverview: CategoryProgress[];
   streaksStats: StatsData;
   upcomingDeadlines: DeadlineGoal[];
+  onboardingComplete: boolean;
 }
 
 // Explicit priority ordering to avoid Prisma enum ordinal ambiguity
@@ -115,8 +116,8 @@ export const dashboardService = {
         }),
       ]);
 
-    // Parallel batch 2: totals for completion rate + user stats + active streaks
-    const [totalGoals, totalCompleted, userStats, activeStreaksCount] = await Promise.all([
+    // Parallel batch 2: totals for completion rate + user stats + active streaks + onboarding
+    const [totalGoals, totalCompleted, userStats, activeStreaksCount, userRecord] = await Promise.all([
       prisma.goal.count({ where: { userId } }),
       prisma.goal.count({ where: { userId, status: "COMPLETED" } }),
       prisma.userStats.findUnique({ where: { userId } }),
@@ -128,6 +129,7 @@ export const dashboardService = {
           currentStreak: { gt: 0 },
         },
       }),
+      prisma.user.findUnique({ where: { id: userId }, select: { onboardingComplete: true } }),
     ]);
 
     // Sort weekly focus in JS to guarantee correct priority ordering
@@ -225,7 +227,13 @@ export const dashboardService = {
       xpToNext: xpToNextLevel(userStats?.totalXp ?? 0),
     };
 
-    return { weeklyFocus, progressOverview, streaksStats, upcomingDeadlines };
+    return {
+      weeklyFocus,
+      progressOverview,
+      streaksStats,
+      upcomingDeadlines,
+      onboardingComplete: userRecord?.onboardingComplete ?? false,
+    };
   },
 
   /**
