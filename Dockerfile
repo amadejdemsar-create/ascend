@@ -49,6 +49,9 @@ COPY --from=builder /app/generated ./generated
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
+# Copy lib files needed by seed script at runtime
+COPY --from=builder /app/lib/constants.ts ./lib/constants.ts
+
 USER nextjs
 
 EXPOSE 3000
