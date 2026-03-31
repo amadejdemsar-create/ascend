@@ -147,8 +147,8 @@
 
 ### PWA
 
-- [ ] **PWA-01**: App is installable from browser (manifest.json, service worker, icons)
-- [ ] **PWA-02**: Installed PWA opens in standalone mode (no browser chrome)
+- [x] **PWA-01**: App is installable from browser (manifest.json, service worker, icons)
+- [x] **PWA-02**: Installed PWA opens in standalone mode (no browser chrome)
 - [ ] **PWA-03**: Offline read: cached dashboard and recently viewed goals available without network
 - [ ] **PWA-04**: Offline writes queue and sync when connectivity returns
 
@@ -309,8 +309,8 @@
 | ONBD-02 | Phase 11 | Pending |
 | ONBD-03 | Phase 11 | Pending |
 | ONBD-04 | Phase 11 | Pending |
-| PWA-01 | Phase 11 | Pending |
-| PWA-02 | Phase 11 | Pending |
+| PWA-01 | Phase 11 | Complete |
+| PWA-02 | Phase 11 | Complete |
 | PWA-03 | Phase 11 | Pending |
 | PWA-04 | Phase 11 | Pending |
 | INFRA-01 | Phase 1 | Complete |
