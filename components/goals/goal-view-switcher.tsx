@@ -27,7 +27,7 @@ const VIEW_OPTIONS: Array<{
   { value: "list", label: "List", icon: List, enabled: true },
   { value: "board", label: "Board", icon: Columns3, enabled: true },
   { value: "tree", label: "Tree", icon: GitBranch, enabled: true },
-  { value: "timeline", label: "Timeline", icon: GanttChart, enabled: false },
+  { value: "timeline", label: "Timeline", icon: GanttChart, enabled: true },
 ];
 
 export function GoalViewSwitcher() {

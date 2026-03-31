@@ -11,16 +11,12 @@ import { GoalFilterBar } from "@/components/goals/goal-filter-bar";
 import { GoalListView } from "@/components/goals/goal-list-view";
 import { GoalBoardView } from "@/components/goals/goal-board-view";
 import { GoalTreeView } from "@/components/goals/goal-tree-view";
+import { GoalTimelineView } from "@/components/goals/goal-timeline-view";
 import { QuickAdd } from "@/components/goals/quick-add";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  PlusIcon,
-  TargetIcon,
-  Columns3Icon,
-  GanttChartIcon,
-} from "lucide-react";
+import { PlusIcon, TargetIcon } from "lucide-react";
 import type { GoalFilters } from "@/lib/validations";
 
 const HORIZON_FILTERS = [
@@ -30,10 +26,6 @@ const HORIZON_FILTERS = [
     label: h.charAt(0) + h.slice(1).toLowerCase(),
   })),
 ];
-
-const PLACEHOLDER_VIEWS: Record<string, { icon: typeof Columns3Icon; label: string }> = {
-  timeline: { icon: GanttChartIcon, label: "Timeline view coming in Phase 7" },
-};
 
 export default function GoalsPage() {
   const activeView = useUIStore((s) => s.activeView);
@@ -128,14 +120,10 @@ export default function GoalsPage() {
       );
     }
 
-    // Future views show placeholder
-    const placeholder = PLACEHOLDER_VIEWS[activeView];
-    if (placeholder) {
-      const Icon = placeholder.icon;
+    if (activeView === "timeline") {
       return (
-        <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-          <Icon className="size-12 text-muted-foreground/40 mb-4" />
-          <p className="text-sm text-muted-foreground">{placeholder.label}</p>
+        <div className="p-4">
+          <GoalTimelineView />
         </div>
       );
     }
