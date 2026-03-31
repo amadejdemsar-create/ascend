@@ -59,6 +59,7 @@ export function useCreateGoal() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard() });
     },
   });
 }
@@ -76,6 +77,7 @@ export function useUpdateGoal() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.goals.detail(id),
       });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard() });
     },
   });
 }
@@ -87,6 +89,7 @@ export function useDeleteGoal() {
       fetchJson(`/api/goals/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard() });
     },
   });
 }
