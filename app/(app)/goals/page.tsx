@@ -10,6 +10,7 @@ import { GoalViewSwitcher } from "@/components/goals/goal-view-switcher";
 import { GoalFilterBar } from "@/components/goals/goal-filter-bar";
 import { GoalListView } from "@/components/goals/goal-list-view";
 import { GoalBoardView } from "@/components/goals/goal-board-view";
+import { GoalTreeView } from "@/components/goals/goal-tree-view";
 import { QuickAdd } from "@/components/goals/quick-add";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,7 +19,6 @@ import {
   PlusIcon,
   TargetIcon,
   Columns3Icon,
-  GitBranchIcon,
   GanttChartIcon,
 } from "lucide-react";
 import type { GoalFilters } from "@/lib/validations";
@@ -32,7 +32,6 @@ const HORIZON_FILTERS = [
 ];
 
 const PLACEHOLDER_VIEWS: Record<string, { icon: typeof Columns3Icon; label: string }> = {
-  tree: { icon: GitBranchIcon, label: "Tree view coming in Phase 6" },
   timeline: { icon: GanttChartIcon, label: "Timeline view coming in Phase 7" },
 };
 
@@ -117,6 +116,14 @@ export default function GoalsPage() {
       return (
         <div className="p-4">
           <GoalBoardView goals={goalList} />
+        </div>
+      );
+    }
+
+    if (activeView === "tree") {
+      return (
+        <div className="p-4">
+          <GoalTreeView />
         </div>
       );
     }
