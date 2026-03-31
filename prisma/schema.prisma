@@ -32,6 +32,12 @@ enum Priority {
   HIGH
 }
 
+enum RecurringFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
 // Models
 
 model User {
@@ -90,6 +96,17 @@ model Goal {
   // Notes
   notes        String?
 
+  // Recurring goal fields
+  isRecurring          Boolean              @default(false)
+  recurringFrequency   RecurringFrequency?
+  recurringInterval    Int?                 @default(1)
+  recurringSourceId    String?
+  recurringSource      Goal?                @relation("RecurringInstances", fields: [recurringSourceId], references: [id], onDelete: SetNull)
+  recurringInstances   Goal[]               @relation("RecurringInstances")
+  currentStreak        Int                  @default(0)
+  longestStreak        Int                  @default(0)
+  lastCompletedInstance DateTime?
+
   // Relations
   progressLogs ProgressLog[]
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -105,6 +122,7 @@ model Goal {
   @@index([horizon, userId])
   @@index([status, userId])
   @@index([deadline])
+  @@index([recurringSourceId])
 }
 
 model Category {

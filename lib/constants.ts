@@ -26,6 +26,33 @@ export const PRIORITY_MULTIPLIER: Record<string, number> = {
   HIGH: 1.5,
 };
 
+// Level formula functions (quadratic: 100 * level^2)
+// Level 1 = 100 XP, Level 2 = 400 XP, Level 5 = 2500 XP
+export function xpForLevel(level: number): number {
+  return 100 * level * level;
+}
+
+export function levelFromXp(totalXp: number): number {
+  return Math.floor(Math.sqrt(totalXp / 100));
+}
+
+export function xpToNextLevel(totalXp: number): {
+  current: number;
+  needed: number;
+  percentage: number;
+} {
+  const currentLevel = levelFromXp(totalXp);
+  const currentLevelXp = xpForLevel(currentLevel);
+  const nextLevelXp = xpForLevel(currentLevel + 1);
+  const xpIntoLevel = totalXp - currentLevelXp;
+  const xpNeeded = nextLevelXp - currentLevelXp;
+  return {
+    current: xpIntoLevel,
+    needed: xpNeeded,
+    percentage: xpNeeded > 0 ? Math.round((xpIntoLevel / xpNeeded) * 100) : 0,
+  };
+}
+
 // Category color presets
 export const CATEGORY_COLORS = [
   { value: "#4F46E5", label: "Indigo" },

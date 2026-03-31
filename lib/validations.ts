@@ -4,6 +4,7 @@ import { z } from "zod";
 export const horizonEnum = z.enum(["YEARLY", "QUARTERLY", "MONTHLY", "WEEKLY"]);
 export const statusEnum = z.enum(["NOT_STARTED", "IN_PROGRESS", "COMPLETED", "ABANDONED"]);
 export const priorityEnum = z.enum(["LOW", "MEDIUM", "HIGH"]);
+export const recurringFrequencyEnum = z.enum(["DAILY", "WEEKLY", "MONTHLY"]);
 
 // Goal schemas
 export const createGoalSchema = z.object({
@@ -23,6 +24,9 @@ export const createGoalSchema = z.object({
   targetValue: z.number().optional(),
   unit: z.string().optional(),
   notes: z.string().optional(),
+  isRecurring: z.boolean().optional(),
+  recurringFrequency: recurringFrequencyEnum.optional(),
+  recurringInterval: z.number().int().min(1).optional(),
 });
 
 export const updateGoalSchema = createGoalSchema.partial().extend({
