@@ -74,10 +74,10 @@
 - [x] **GAME-01**: Each goal completion awards XP based on horizon level (yearly > quarterly > monthly > weekly) and priority
 - [x] **GAME-02**: User has a level that increases as XP accumulates, with a level-up celebration animation
 - [ ] **GAME-03**: Recurring goals track streaks (consecutive completions without missing)
-- [ ] **GAME-04**: Weekly score aggregates completed goals, streaks maintained, and progress made
+- [x] **GAME-04**: Weekly score aggregates completed goals, streaks maintained, and progress made
 - [ ] **GAME-05**: Satisfying completion animation plays when a goal is marked complete (confetti for milestones, checkmark for tasks)
 - [ ] **GAME-06**: Progress bars animate smoothly when progress is added
-- [ ] **GAME-07**: Dashboard displays current level, XP progress to next level, active streaks, and weekly score
+- [x] **GAME-07**: Dashboard displays current level, XP progress to next level, active streaks, and weekly score
 
 ### Command Palette and Keyboard
 
@@ -257,10 +257,10 @@
 | GAME-01 | Phase 9 | Complete |
 | GAME-02 | Phase 9 | Complete |
 | GAME-03 | Phase 9 | Pending |
-| GAME-04 | Phase 9 | Pending |
+| GAME-04 | Phase 9 | Complete |
 | GAME-05 | Phase 9 | Pending |
 | GAME-06 | Phase 9 | Pending |
-| GAME-07 | Phase 9 | Pending |
+| GAME-07 | Phase 9 | Complete |
 | CMD-01 | Phase 10 | Pending |
 | CMD-02 | Phase 10 | Pending |
 | CMD-03 | Phase 10 | Pending |
