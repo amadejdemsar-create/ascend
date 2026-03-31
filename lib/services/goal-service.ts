@@ -7,7 +7,11 @@ export const goalService = {
    * List goals for a user with optional filters.
    * Ordered by sortOrder ascending, then createdAt descending.
    */
-  async list(userId: string, filters?: GoalFilters) {
+  async list(
+    userId: string,
+    filters?: GoalFilters,
+    pagination?: { skip?: number; take?: number },
+  ) {
     return prisma.goal.findMany({
       where: {
         userId,
@@ -19,6 +23,8 @@ export const goalService = {
       },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
       include: { category: true },
+      ...(pagination?.skip != null && { skip: pagination.skip }),
+      ...(pagination?.take != null && { take: pagination.take }),
     });
   },
 
