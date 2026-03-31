@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
-import { addDays, startOfMonth, endOfMonth } from "date-fns";
+import { addDays, startOfMonth, endOfMonth, startOfWeek } from "date-fns";
+import { xpToNextLevel } from "@/lib/constants";
 
 // --- Types ---
 
@@ -31,6 +32,10 @@ export interface StatsData {
   currentXp: number;
   level: number;
   currentStreak: number;
+  weeklyScore: number;
+  longestStreak: number;
+  activeStreaks: number;
+  xpToNext: { current: number; needed: number; percentage: number };
 }
 
 export interface DeadlineGoal {
@@ -110,11 +115,19 @@ export const dashboardService = {
         }),
       ]);
 
-    // Parallel batch 2: totals for completion rate + user stats
-    const [totalGoals, totalCompleted, userStats] = await Promise.all([
+    // Parallel batch 2: totals for completion rate + user stats + active streaks
+    const [totalGoals, totalCompleted, userStats, activeStreaksCount] = await Promise.all([
       prisma.goal.count({ where: { userId } }),
       prisma.goal.count({ where: { userId, status: "COMPLETED" } }),
       prisma.userStats.findUnique({ where: { userId } }),
+      prisma.goal.count({
+        where: {
+          userId,
+          isRecurring: true,
+          recurringSourceId: null,
+          currentStreak: { gt: 0 },
+        },
+      }),
     ]);
 
     // Sort weekly focus in JS to guarantee correct priority ordering
@@ -188,6 +201,16 @@ export const dashboardService = {
 
     // Build stats with safe defaults when UserStats is not yet populated
     const completionRate = totalGoals > 0 ? Math.round((totalCompleted / totalGoals) * 100) : 0;
+
+    // Check and reset weekly score if weekStartDate is stale (before current Monday)
+    let weeklyScore = userStats?.weeklyScore ?? 0;
+    if (userStats?.weekStartDate) {
+      const currentWeekStart = startOfWeek(now, { weekStartsOn: 1 });
+      if (userStats.weekStartDate.getTime() < currentWeekStart.getTime()) {
+        weeklyScore = 0;
+      }
+    }
+
     const streaksStats: StatsData = {
       completedThisMonth,
       totalGoals,
@@ -196,6 +219,10 @@ export const dashboardService = {
       currentXp: userStats?.totalXp ?? 0,
       level: userStats?.level ?? 1,
       currentStreak: userStats?.currentStreak ?? 0,
+      weeklyScore,
+      longestStreak: userStats?.longestStreak ?? 0,
+      activeStreaks: activeStreaksCount,
+      xpToNext: xpToNextLevel(userStats?.totalXp ?? 0),
     };
 
     return { weeklyFocus, progressOverview, streaksStats, upcomingDeadlines };
