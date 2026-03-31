@@ -61,6 +61,8 @@ Progress: [████████░░] 39%
 | Phase 05 P01 | 6min | 2 tasks | 7 files |
 | Phase 05 P03 | 2min | 2 tasks | 3 files |
 | Phase 05 P04 | 2min | 2 tasks | 2 files |
+| Phase 05 P02 | 3min | 2 tasks | 2 files |
+| Phase 05 P05 | 2min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -130,6 +132,12 @@ Recent decisions affecting current work:
 - [Phase 05-03]: move_goal delegates hierarchy validation entirely to goalService.update, no duplicate checks in tool handler
 - [05-04]: Reused PRIORITY_ORDER map pattern from dashboard-service.ts for consistent priority sorting in get_current_priorities
 - [05-04]: All dashboard tools append raw JSON after formatted text for dual human/programmatic consumption
+- [05-02]: Used ZodError instanceof check to return structured validation errors distinct from runtime errors
+- [05-02]: Added notes field to goal search for comprehensive text search across title, description, and notes
+- [05-02]: Capped list_goals limit at 100 to prevent excessive database queries
+- [05-05]: Settings tools return sensible defaults without persistence since no UserSettings model exists yet
+- [05-05]: Import sorts goals by horizon (YEARLY first) so parent goals exist before children that reference them
+- [05-05]: Old todos.json migration detects format by presence of tasks/projects/todos keys, maps tasks to WEEKLY goals
 
 ### Pending Todos
 
@@ -145,6 +153,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-31
-Stopped at: Completed 05-04-PLAN.md (Dashboard Tools)
+Stopped at: Completed 05-05-PLAN.md (Category and Data Tools)
 Resume file: None
-Next: Phase 5 Plan 5 (next MCP tool set)
+Next: Phase 5 Plan 6 (final MCP validation and deployment)
