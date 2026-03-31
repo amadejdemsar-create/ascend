@@ -8,6 +8,8 @@ import { handleGoalTool } from "./tools/goal-tools.js";
 import { handleProgressTool } from "./tools/progress-tools.js";
 import { handleBulkTool } from "./tools/bulk-tools.js";
 import { handleDashboardTool } from "./tools/dashboard-tools.js";
+import { handleCategoryTool } from "./tools/category-tools.js";
+import { handleDataTool } from "./tools/data-tools.js";
 
 const GOAL_TOOL_NAMES = new Set([
   "create_goal",
@@ -21,6 +23,8 @@ const GOAL_TOOL_NAMES = new Set([
 const PROGRESS_TOOL_NAMES = new Set(["add_progress", "get_progress_history"]);
 const BULK_TOOL_NAMES = new Set(["complete_goals", "move_goal"]);
 const DASHBOARD_TOOLS = new Set(["get_dashboard", "get_current_priorities", "get_stats", "get_timeline"]);
+const CATEGORY_TOOLS = new Set(["create_category", "update_category", "delete_category", "list_categories"]);
+const DATA_TOOLS = new Set(["export_data", "import_data", "get_settings", "update_settings"]);
 
 /**
  * Create an MCP Server instance scoped to a specific user.
@@ -60,10 +64,17 @@ export function createAscendMcpServer(userId: string): Server {
       return handleDashboardTool(userId, name, args ?? {});
     }
 
-    // Subsequent plans will add handlers for category,
-    // data, and settings tools.
+    if (CATEGORY_TOOLS.has(name)) {
+      return handleCategoryTool(userId, name, args ?? {});
+    }
+
+    if (DATA_TOOLS.has(name)) {
+      return handleDataTool(userId, name, args ?? {});
+    }
+
+    // All 22 tool definitions are now routed. This fallback should never be reached.
     return {
-      content: [{ type: "text" as const, text: "Tool not yet implemented" }],
+      content: [{ type: "text" as const, text: `Unknown tool: ${name}` }],
       isError: true,
     };
   });
