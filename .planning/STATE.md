@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-31T15:35:02.366Z"
+last_updated: "2026-03-31T15:35:11.547Z"
 progress:
   total_phases: 10
   completed_phases: 9
@@ -194,6 +194,8 @@ Recent decisions affecting current work:
 - [Phase 10-02]: App layout converted to client component for keyboard shortcut hooks; server component children still work via React props composition
 - [Phase 10-02]: Modifier key guard (metaKey/ctrlKey) returns early so Cmd+K and browser shortcuts pass through unmodified
 - [Phase 10-02]: Single-key shortcuts only; chord shortcuts (g then d) skipped in favor of single key "d" for dashboard
+- [Phase 10]: Used cmdk CommandDialog for accessible keyboard-navigable palette with built-in filtering
+- [Phase 10]: 200ms debounce on goal search API calls; dynamic category actions flatten tree for navigability
 
 ### Pending Todos
 

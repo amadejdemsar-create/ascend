@@ -81,10 +81,10 @@
 
 ### Command Palette and Keyboard
 
-- [ ] **CMD-01**: Cmd+K opens a command palette overlay
-- [ ] **CMD-02**: Command palette searches across all goals by title and description
-- [ ] **CMD-03**: Command palette offers quick actions (new goal, switch view, toggle theme, navigate to category)
-- [ ] **CMD-04**: Command palette navigates to specific categories and subcategories
+- [x] **CMD-01**: Cmd+K opens a command palette overlay
+- [x] **CMD-02**: Command palette searches across all goals by title and description
+- [x] **CMD-03**: Command palette offers quick actions (new goal, switch view, toggle theme, navigate to category)
+- [x] **CMD-04**: Command palette navigates to specific categories and subcategories
 - [x] **CMD-05**: Keyboard shortcuts for: navigation between views, create new goal, mark goal complete, open/close sidebar, toggle theme
 - [x] **CMD-06**: Keyboard shortcut reference accessible via `?` key
 
@@ -261,10 +261,10 @@
 | GAME-05 | Phase 9 | Complete |
 | GAME-06 | Phase 9 | Complete |
 | GAME-07 | Phase 9 | Complete |
-| CMD-01 | Phase 10 | Pending |
-| CMD-02 | Phase 10 | Pending |
-| CMD-03 | Phase 10 | Pending |
-| CMD-04 | Phase 10 | Pending |
+| CMD-01 | Phase 10 | Complete |
+| CMD-02 | Phase 10 | Complete |
+| CMD-03 | Phase 10 | Complete |
+| CMD-04 | Phase 10 | Complete |
 | CMD-05 | Phase 10 | Complete |
 | CMD-06 | Phase 10 | Complete |
 | MCP-01 | Phase 5 | Complete |
