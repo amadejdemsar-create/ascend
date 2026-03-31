@@ -99,7 +99,7 @@ export function DndGoalProvider({ children, findGoal, onDragEndExtra }: DndGoalP
   return (
     <DragDropProvider onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       {children}
-      <DragOverlay>
+      <DragOverlay dropAnimation={{ duration: 200, easing: "ease-out" }}>
         <GoalDragOverlay goal={draggedGoalRef.current} />
       </DragOverlay>
     </DragDropProvider>

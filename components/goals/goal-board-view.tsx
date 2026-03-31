@@ -218,7 +218,7 @@ export function GoalBoardView({ goals }: GoalBoardViewProps) {
         </div>
       </div>
 
-      <DragOverlay>
+      <DragOverlay dropAnimation={{ duration: 200, easing: "ease-out" }}>
         {(source) => {
           const goal = goals.find((g) => g.id === String(source?.id));
           if (!goal) return null;
@@ -228,6 +228,7 @@ export function GoalBoardView({ goals }: GoalBoardViewProps) {
                 id: goal.id,
                 title: goal.title,
                 priority: goal.priority,
+                progress: goal.progress,
                 category: goal.category
                   ? { name: goal.category.name, color: goal.category.color }
                   : null,

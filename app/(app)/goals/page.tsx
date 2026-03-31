@@ -89,6 +89,7 @@ export default function GoalsPage() {
             id: g.id,
             title: g.title,
             priority: g.priority,
+            progress: g.progress,
             category: g.category
               ? { name: g.category.name, color: g.category.color }
               : null,
