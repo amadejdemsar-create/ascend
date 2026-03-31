@@ -5,6 +5,9 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { TOOL_DEFINITIONS } from "./schemas.js";
 import { handleGoalTool } from "./tools/goal-tools.js";
+import { handleProgressTool } from "./tools/progress-tools.js";
+import { handleBulkTool } from "./tools/bulk-tools.js";
+import { handleDashboardTool } from "./tools/dashboard-tools.js";
 
 const GOAL_TOOL_NAMES = new Set([
   "create_goal",
@@ -14,6 +17,9 @@ const GOAL_TOOL_NAMES = new Set([
   "list_goals",
   "search_goals",
 ]);
+
+const PROGRESS_TOOL_NAMES = new Set(["add_progress", "get_progress_history"]);
+const BULK_TOOL_NAMES = new Set(["complete_goals", "move_goal"]);
 
 /**
  * Create an MCP Server instance scoped to a specific user.
@@ -41,8 +47,16 @@ export function createAscendMcpServer(userId: string): Server {
       return handleGoalTool(userId, name, args ?? {});
     }
 
-    // Subsequent plans will add handlers for progress, category,
-    // dashboard, bulk, data, and settings tools.
+    if (PROGRESS_TOOL_NAMES.has(name)) {
+      return handleProgressTool(userId, name, args ?? {});
+    }
+
+    if (BULK_TOOL_NAMES.has(name)) {
+      return handleBulkTool(userId, name, args ?? {});
+    }
+
+    // Subsequent plans will add handlers for category,
+    // dashboard, data, and settings tools.
     return {
       content: [{ type: "text" as const, text: "Tool not yet implemented" }],
       isError: true,
