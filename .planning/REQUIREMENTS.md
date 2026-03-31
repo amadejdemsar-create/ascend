@@ -41,12 +41,12 @@
 
 ### Dashboard
 
-- [ ] **DASH-01**: Dashboard is the default landing page when opening the app
-- [ ] **DASH-02**: Dashboard shows "This Week's Focus" widget with top priority weekly goals
-- [ ] **DASH-03**: Dashboard shows "Progress Overview" widget with completion % per category as visual bars
-- [ ] **DASH-04**: Dashboard shows "Streaks & Stats" widget with active streaks, goals completed this month, completion rate, current XP/level
-- [ ] **DASH-05**: Dashboard shows "Upcoming Deadlines" widget with goals due in the next 7 and 14 days
-- [ ] **DASH-06**: Dashboard widgets update in real time when goals are modified
+- [x] **DASH-01**: Dashboard is the default landing page when opening the app
+- [x] **DASH-02**: Dashboard shows "This Week's Focus" widget with top priority weekly goals
+- [x] **DASH-03**: Dashboard shows "Progress Overview" widget with completion % per category as visual bars
+- [x] **DASH-04**: Dashboard shows "Streaks & Stats" widget with active streaks, goals completed this month, completion rate, current XP/level
+- [x] **DASH-05**: Dashboard shows "Upcoming Deadlines" widget with goals due in the next 7 and 14 days
+- [x] **DASH-06**: Dashboard widgets update in real time when goals are modified
 
 ### Views
 
@@ -233,12 +233,12 @@
 | CAT-04 | Phase 3 | Complete |
 | CAT-05 | Phase 3 | Complete |
 | CAT-06 | Phase 3 | Complete |
-| DASH-01 | Phase 4 | Pending |
-| DASH-02 | Phase 4 | Pending |
-| DASH-03 | Phase 4 | Pending |
-| DASH-04 | Phase 4 | Pending |
-| DASH-05 | Phase 4 | Pending |
-| DASH-06 | Phase 4 | Pending |
+| DASH-01 | Phase 4 | Complete |
+| DASH-02 | Phase 4 | Complete |
+| DASH-03 | Phase 4 | Complete |
+| DASH-04 | Phase 4 | Complete |
+| DASH-05 | Phase 4 | Complete |
+| DASH-06 | Phase 4 | Complete |
 | VIEW-01 | Phase 3 | Complete |
 | VIEW-02 | Phase 3 | Complete |
 | VIEW-03 | Phase 6 | Pending |
