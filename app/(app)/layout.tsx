@@ -7,6 +7,7 @@ import { BottomTabBar } from "@/components/layout/bottom-tab-bar";
 import { useKeyboardShortcuts } from "@/lib/hooks/use-keyboard-shortcuts";
 import { KeyboardShortcuts } from "@/components/command-palette/keyboard-shortcuts";
 import { CommandPalette } from "@/components/command-palette/command-palette";
+import { OfflineSyncProvider } from "@/components/pwa/offline-sync-provider";
 
 export default function AppLayout({
   children,
@@ -22,19 +23,21 @@ export default function AppLayout({
   useKeyboardShortcuts(toggleShortcutRef);
 
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <main className="flex-1 p-4 md:p-6 pb-20 md:pb-6">
+    <OfflineSyncProvider>
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset>
+          <main className="flex-1 p-4 md:p-6 pb-20 md:pb-6">
             <ViewTransition>{children}</ViewTransition>
           </main>
-      </SidebarInset>
-      <BottomTabBar />
-      <CommandPalette />
-      <KeyboardShortcuts
-        open={shortcutRefOpen}
-        onOpenChange={setShortcutRefOpen}
-      />
-    </SidebarProvider>
+        </SidebarInset>
+        <BottomTabBar />
+        <CommandPalette />
+        <KeyboardShortcuts
+          open={shortcutRefOpen}
+          onOpenChange={setShortcutRefOpen}
+        />
+      </SidebarProvider>
+    </OfflineSyncProvider>
   );
 }
