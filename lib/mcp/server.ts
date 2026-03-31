@@ -3,13 +3,13 @@ import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { TOOL_DEFINITIONS } from "./schemas.js";
-import { handleGoalTool } from "./tools/goal-tools.js";
-import { handleProgressTool } from "./tools/progress-tools.js";
-import { handleBulkTool } from "./tools/bulk-tools.js";
-import { handleDashboardTool } from "./tools/dashboard-tools.js";
-import { handleCategoryTool } from "./tools/category-tools.js";
-import { handleDataTool } from "./tools/data-tools.js";
+import { TOOL_DEFINITIONS } from "./schemas";
+import { handleGoalTool } from "./tools/goal-tools";
+import { handleProgressTool } from "./tools/progress-tools";
+import { handleBulkTool } from "./tools/bulk-tools";
+import { handleDashboardTool } from "./tools/dashboard-tools";
+import { handleCategoryTool } from "./tools/category-tools";
+import { handleDataTool } from "./tools/data-tools";
 
 const GOAL_TOOL_NAMES = new Set([
   "create_goal",
