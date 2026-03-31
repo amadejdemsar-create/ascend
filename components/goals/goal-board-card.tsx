@@ -40,11 +40,11 @@ export function GoalBoardCard({ goal, index, column, isSelected, groupBy }: Goal
       type="button"
       onClick={() => selectGoal(goal.id)}
       className={cn(
-        "w-full rounded-lg border bg-card p-2.5 text-left transition-all hover:shadow-sm",
+        "w-full rounded-lg border bg-card p-2.5 text-left transition-all duration-150 hover:shadow-sm",
         isSelected
           ? "ring-2 ring-primary border-primary"
           : "border-border hover:border-primary/40",
-        isDragging && "opacity-40"
+        isDragging && "opacity-30 scale-95 bg-muted/40"
       )}
     >
       <div className="flex items-start justify-between gap-1.5">

@@ -29,7 +29,7 @@ function SortableGoalRow({
   index: number;
   children: React.ReactNode;
 }) {
-  const { ref, handleRef, isDragging } = useSortable({
+  const { ref, handleRef, isDragging, isDropTarget } = useSortable({
     id: goalId,
     index,
     type: "goal-row",
@@ -37,11 +37,21 @@ function SortableGoalRow({
   });
 
   return (
-    <TableRow ref={ref} className={cn("hover:bg-muted/50", isDragging && "opacity-40")}>
+    <TableRow
+      ref={ref}
+      className={cn(
+        "hover:bg-muted/50 transition-colors",
+        isDragging && "opacity-30 bg-muted/30",
+        isDropTarget && !isDragging && "bg-primary/5 border-t-2 border-t-primary"
+      )}
+    >
       <TableCell className="w-10 px-2">
         <span
           ref={handleRef}
-          className="inline-flex cursor-grab text-muted-foreground hover:text-foreground"
+          className={cn(
+            "inline-flex text-muted-foreground hover:text-foreground",
+            isDragging ? "cursor-grabbing" : "cursor-grab"
+          )}
         >
           <GripVertical className="size-4" />
         </span>

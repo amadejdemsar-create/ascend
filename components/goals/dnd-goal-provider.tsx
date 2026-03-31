@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef, useCallback } from "react";
-import { DragDropProvider, DragOverlay } from "@dnd-kit/react";
+import { DragDropProvider, DragOverlay, PointerSensor } from "@dnd-kit/react";
 import type { DragStartEvent, DragEndEvent } from "@dnd-kit/react";
+import { PointerActivationConstraints } from "@dnd-kit/dom";
 import { GoalDragOverlay } from "./goal-drag-overlay";
 import type { GoalDragOverlayData } from "./goal-drag-overlay";
 import { useUpdateGoal } from "@/lib/hooks/use-goals";
@@ -97,7 +98,17 @@ export function DndGoalProvider({ children, findGoal, onDragEndExtra }: DndGoalP
   );
 
   return (
-    <DragDropProvider onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+    <DragDropProvider
+      sensors={[
+        PointerSensor.configure({
+          activationConstraints: [
+            new PointerActivationConstraints.Distance({ value: 8 }),
+          ],
+        }),
+      ]}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
       {children}
       <DragOverlay dropAnimation={{ duration: 200, easing: "ease-out" }}>
         <GoalDragOverlay goal={draggedGoalRef.current} />

@@ -29,8 +29,8 @@ export function GoalBoardColumn({ columnKey, label, goals, groupBy }: GoalBoardC
     <div
       ref={columnRef}
       className={cn(
-        "flex flex-col rounded-lg border bg-muted/30 overflow-hidden",
-        isDropTarget && "ring-2 ring-primary/50 bg-primary/5"
+        "flex flex-col rounded-lg border bg-muted/30 overflow-hidden transition-all duration-150",
+        isDropTarget && "ring-2 ring-primary/50 bg-primary/5 border-primary/30"
       )}
     >
       {/* Column header */}

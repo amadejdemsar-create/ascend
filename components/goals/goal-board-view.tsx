@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { DragDropProvider, DragOverlay } from "@dnd-kit/react";
+import { DragDropProvider, DragOverlay, PointerSensor } from "@dnd-kit/react";
+import { PointerActivationConstraints } from "@dnd-kit/dom";
 import { move } from "@dnd-kit/helpers";
 import { GoalBoardColumn } from "@/components/goals/goal-board-column";
 import { GoalDragOverlay } from "@/components/goals/goal-drag-overlay";
@@ -98,6 +99,13 @@ export function GoalBoardView({ goals }: GoalBoardViewProps) {
 
   return (
     <DragDropProvider
+      sensors={[
+        PointerSensor.configure({
+          activationConstraints: [
+            new PointerActivationConstraints.Distance({ value: 8 }),
+          ],
+        }),
+      ]}
       onDragStart={() => {
         snapshot.current = { ...items };
         for (const key of Object.keys(snapshot.current)) {

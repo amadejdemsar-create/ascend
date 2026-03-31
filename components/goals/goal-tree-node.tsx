@@ -44,7 +44,7 @@ export const GoalTreeNode = React.memo(function GoalTreeNode({
   const selectedGoalId = useUIStore((s) => s.selectedGoalId);
   const selectGoal = useUIStore((s) => s.selectGoal);
 
-  const { ref: sortableRef, handleRef, isDragging } = useSortable({
+  const { ref: sortableRef, handleRef, isDragging, isDropTarget } = useSortable({
     id: goal.id,
     index,
     type: "tree-node",
@@ -57,21 +57,25 @@ export const GoalTreeNode = React.memo(function GoalTreeNode({
   const isSelected = selectedGoalId === goal.id;
 
   return (
-    <div ref={sortableRef} className={cn(isDragging && "opacity-40")}>
+    <div ref={sortableRef} className={cn(isDragging && "opacity-30 bg-muted/30 rounded-md")}>
       <Collapsible open={expanded} onOpenChange={setExpanded}>
         <div
           className={cn(
             "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
             isSelected
               ? "bg-primary/10 ring-1 ring-primary/30"
-              : "hover:bg-muted/60"
+              : "hover:bg-muted/60",
+            !isDragging && isDropTarget && "bg-primary/5 border-l-2 border-l-primary"
           )}
           style={{ paddingLeft: `${depth * 1.25 + 0.5}rem` }}
         >
           {/* Drag handle */}
           <span
             ref={handleRef}
-            className="inline-flex cursor-grab text-muted-foreground hover:text-foreground shrink-0"
+            className={cn(
+              "inline-flex shrink-0 text-muted-foreground hover:text-foreground",
+              isDragging ? "cursor-grabbing" : "cursor-grab"
+            )}
           >
             <GripVertical className="size-3.5" />
           </span>
