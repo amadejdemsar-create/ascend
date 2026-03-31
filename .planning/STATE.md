@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-31T19:22:33.889Z"
+last_updated: "2026-03-31T19:25:14.588Z"
 progress:
   total_phases: 11
   completed_phases: 9
   total_plans: 43
-  completed_plans: 38
+  completed_plans: 39
 ---
 
 # Project State
@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 ## Current Position
 
 Phase: 11 of 11 (Onboarding, PWA, and Polish)
-Plan: 2 of 5 in current phase (2 complete)
-Status: Executing Phase 11, plan 02 (PWA Setup) complete
-Last activity: 2026-03-31, completed 11-02 PWA Setup
+Plan: 5 of 5 in current phase (4 complete)
+Status: Executing Phase 11, plan 04 (Animations & Micro-interactions) complete
+Last activity: 2026-03-31, completed 11-04 Animations & Micro-interactions
 
-Progress: [████████████████████████████░] 97%
+Progress: [█████████████████████████████░] 98%
 
 ## Performance Metrics
 
@@ -80,6 +80,7 @@ Progress: [███████████████████████
 | Phase 10 P04 | 4min | 2 tasks | 8 files |
 | Phase 10 P01 | 4min | 2 tasks | 7 files |
 | Phase 11 P02 | 6min | 2 tasks | 10 files |
+| Phase 11 P04 | 9min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -204,6 +205,9 @@ Recent decisions affecting current work:
 - [Phase 11]: Minimal service worker that passes through all fetch requests; caching strategies deferred to Plan 03
 - [Phase 11]: Generated PWA icons via sharp script committed as static PNGs rather than runtime SVG conversion
 - [Phase 11]: Install prompt positioned above mobile tab bar (bottom-16) with localStorage dismissal persistence
+- [Phase 11]: Keep completionRate as raw non-animated value since percentage animation looks odd
+- [Phase 11]: Skip hover-lift on board card to avoid dnd-kit transform conflicts
+- [Phase 11]: Animated counter respects prefers-reduced-motion by setting value instantly
 
 ### Pending Todos
 
@@ -219,6 +223,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-31
-Stopped at: Completed 11-02-PLAN.md (PWA Setup)
+Stopped at: Completed 11-04-PLAN.md (Animations & Micro-interactions)
 Resume file: None
-Next: Continue Phase 11 (plan 03 next)
+Next: Continue Phase 11 (plan 05 next)
