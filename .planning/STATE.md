@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-31T14:26:02Z"
+last_updated: "2026-03-31T14:35:13Z"
 progress:
   total_phases: 7
   completed_phases: 7
   total_plans: 26
-  completed_plans: 26
+  completed_plans: 27
 ---
 
 # Project State
@@ -18,14 +18,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-30)
 
 **Core value:** Give the user instant clarity on what to focus on right now by connecting daily actions to yearly ambitions, with measurable progress tracking that makes consistency visible and rewarding.
-**Current focus:** Phase 7 complete, ready for Phase 8
+**Current focus:** Phase 8 in progress, DnD wiring complete for all views
 
 ## Current Position
 
 Phase: 8 of 11 (Drag and Drop) IN PROGRESS
-Plan: 1 of 3 in current phase (1 complete)
-Status: Plan 08-01 complete, continuing with 08-02
-Last activity: 2026-03-31, completed 08-01 DnD Foundation (dnd-kit, reorder API, provider)
+Plan: 2 of 3 in current phase (2 complete)
+Status: Plan 08-02 complete, continuing with 08-03
+Last activity: 2026-03-31, completed 08-02 List/Board/Tree DnD wiring
 
 Progress: [████████████████████████████] 100%
 
@@ -69,6 +69,7 @@ Progress: [███████████████████████
 | Phase 07 P01 | 3min | 2 tasks | 7 files |
 | Phase 07 P02 | 2min | 2 tasks | 2 files |
 | Phase 08 P01 | 4min | 2 tasks | 7 files |
+| Phase 08 P02 | 6min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -162,6 +163,10 @@ Recent decisions affecting current work:
 - [Phase 08-01]: Used Parameters<DragStartEvent>[0] type extraction because @dnd-kit/react exports event types as function signatures, not event objects
 - [Phase 08-01]: Made updateGoalSchema parentId nullable to support detaching goals from parents on horizon change
 - [Phase 08-01]: DndGoalProvider is intentionally minimal; individual views handle their own sortable reorder logic
+- [Phase 08-02]: Board view manages its own DragDropProvider because it needs onDragOver with move() for optimistic cross-column reorder
+- [Phase 08-02]: Only one DragDropProvider active at a time since views render conditionally based on activeView
+- [Phase 08-02]: DndGoalProvider enhanced with onDragEndExtra callback for List and Tree reorder persistence
+- [Phase 08-02]: Zustand persist bumped to version 4 with identity migration for BoardGroupBy category type widening
 
 ### Pending Todos
 
@@ -177,6 +182,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-31
-Stopped at: Completed 08-01-PLAN.md (DnD Foundation)
+Stopped at: Completed 08-02-PLAN.md (List/Board/Tree DnD wiring)
 Resume file: None
-Next: 08-02-PLAN.md (List and Board View DnD)
+Next: 08-03-PLAN.md (DnD Visual Feedback)
