@@ -145,6 +145,7 @@ export const goalService = {
         OR: [
           { title: { contains: query, mode: "insensitive" } },
           { description: { contains: query, mode: "insensitive" } },
+          { notes: { contains: query, mode: "insensitive" } },
         ],
       },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
