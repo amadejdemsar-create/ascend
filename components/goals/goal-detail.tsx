@@ -30,6 +30,8 @@ import {
   TargetIcon,
   ArrowLeftIcon,
 } from "lucide-react";
+import { ProgressIncrement } from "@/components/goals/progress-increment";
+import { ProgressHistorySheet } from "@/components/goals/progress-history-sheet";
 
 const HORIZON_LABELS: Record<string, string> = {
   YEARLY: "Yearly",
@@ -331,6 +333,15 @@ export function GoalDetail({ goalId, onClose, isMobileOverlay }: GoalDetailProps
                     )}%`,
                   }}
                 />
+              </div>
+              <div className="mt-2 flex items-center justify-between">
+                <ProgressIncrement
+                  goalId={goalId}
+                  unit={goal.unit}
+                  currentValue={goal.currentValue}
+                  targetValue={goal.targetValue}
+                />
+                <ProgressHistorySheet goalId={goalId} goalTitle={goal.title} />
               </div>
             </div>
           ) : showTargetInputs ? (
