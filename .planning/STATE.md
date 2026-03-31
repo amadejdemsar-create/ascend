@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-31T19:25:14.588Z"
+last_updated: "2026-03-31T19:26:47.841Z"
 progress:
   total_phases: 11
   completed_phases: 9
   total_plans: 43
-  completed_plans: 39
+  completed_plans: 40
 ---
 
 # Project State
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 ## Current Position
 
 Phase: 11 of 11 (Onboarding, PWA, and Polish)
-Plan: 5 of 5 in current phase (4 complete)
-Status: Executing Phase 11, plan 04 (Animations & Micro-interactions) complete
-Last activity: 2026-03-31, completed 11-04 Animations & Micro-interactions
+Plan: 3 of 5 in current phase complete (01, 02, 04 done; 03, 05 remaining)
+Status: Executing Phase 11, plan 01 (Onboarding) complete
+Last activity: 2026-03-31, completed 11-01 Onboarding
 
 Progress: [█████████████████████████████░] 98%
 
@@ -81,6 +81,7 @@ Progress: [███████████████████████
 | Phase 10 P01 | 4min | 2 tasks | 7 files |
 | Phase 11 P02 | 6min | 2 tasks | 10 files |
 | Phase 11 P04 | 9min | 2 tasks | 6 files |
+| Phase 11 P01 | 10min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -208,6 +209,8 @@ Recent decisions affecting current work:
 - [Phase 11]: Keep completionRate as raw non-animated value since percentage animation looks odd
 - [Phase 11]: Skip hover-lift on board card to avoid dnd-kit transform conflicts
 - [Phase 11]: Animated counter respects prefers-reduced-motion by setting value instantly
+- [Phase 11]: Migration uses DEFAULT true for existing rows so seeded test user is treated as already onboarded
+- [Phase 11]: MCP guide polls dashboard every 5s to detect goals created via external MCP tools
 
 ### Pending Todos
 
@@ -223,6 +226,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-31
-Stopped at: Completed 11-04-PLAN.md (Animations & Micro-interactions)
+Stopped at: Completed 11-01-PLAN.md (Onboarding)
 Resume file: None
-Next: Continue Phase 11 (plan 05 next)
+Next: Continue Phase 11 (plans 03 and 05 remaining)

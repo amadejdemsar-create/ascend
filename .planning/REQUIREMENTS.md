@@ -140,10 +140,10 @@
 
 ### Onboarding
 
-- [ ] **ONBD-01**: First-time user sees a choice: guided wizard, AI-guided setup (via MCP), or skip
-- [ ] **ONBD-02**: Guided wizard walks through: create categories, set a yearly goal, break it into quarterly
-- [ ] **ONBD-03**: AI-guided setup works via MCP (external AI asks questions, creates structure through MCP tools)
-- [ ] **ONBD-04**: Skip option drops user into empty dashboard with contextual hints
+- [x] **ONBD-01**: First-time user sees a choice: guided wizard, AI-guided setup (via MCP), or skip
+- [x] **ONBD-02**: Guided wizard walks through: create categories, set a yearly goal, break it into quarterly
+- [x] **ONBD-03**: AI-guided setup works via MCP (external AI asks questions, creates structure through MCP tools)
+- [x] **ONBD-04**: Skip option drops user into empty dashboard with contextual hints
 
 ### PWA
 
@@ -305,10 +305,10 @@
 | DATA-06 | Phase 10 | Complete |
 | DATA-07 | Phase 10 | Pending |
 | DATA-08 | Phase 10 | Complete |
-| ONBD-01 | Phase 11 | Pending |
-| ONBD-02 | Phase 11 | Pending |
-| ONBD-03 | Phase 11 | Pending |
-| ONBD-04 | Phase 11 | Pending |
+| ONBD-01 | Phase 11 | Complete |
+| ONBD-02 | Phase 11 | Complete |
+| ONBD-03 | Phase 11 | Complete |
+| ONBD-04 | Phase 11 | Complete |
 | PWA-01 | Phase 11 | Complete |
 | PWA-02 | Phase 11 | Complete |
 | PWA-03 | Phase 11 | Pending |
