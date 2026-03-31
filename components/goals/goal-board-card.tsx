@@ -64,7 +64,7 @@ export function GoalBoardCard({ goal, index, column, isSelected, groupBy }: Goal
       {goal.progress > 0 && (
         <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
           <div
-            className="h-full rounded-full bg-primary transition-all"
+            className="h-full rounded-full bg-primary transition-all duration-500 ease-in-out"
             style={{ width: `${Math.min(goal.progress, 100)}%` }}
           />
         </div>

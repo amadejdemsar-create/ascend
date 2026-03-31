@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { useUpdateGoal } from "@/lib/hooks/use-goals";
+import { useCelebrations } from "@/lib/hooks/use-celebrations";
 import {
   Select,
   SelectContent,
@@ -10,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 const STATUS_OPTIONS = [
   { value: "NOT_STARTED", label: "Not Started", color: "bg-muted-foreground" },
@@ -22,27 +24,54 @@ interface GoalStatusSelectProps {
   goalId: string;
   currentStatus: string;
   parentId?: string | null;
+  horizon?: string;
   onStatusChange?: (newStatus: string) => void;
+}
+
+interface XpResponse {
+  amount: number;
+  totalXp: number;
+  level: number;
+  leveledUp: boolean;
+  weeklyScore: number;
 }
 
 export function GoalStatusSelect({
   goalId,
   currentStatus,
   parentId,
+  horizon,
   onStatusChange,
 }: GoalStatusSelectProps) {
   const updateGoal = useUpdateGoal();
+  const { celebrateGoalComplete, celebrateLevelUp } = useCelebrations();
   const [pending, setPending] = useState(false);
+  const [showCheckmark, setShowCheckmark] = useState(false);
 
   async function handleChange(newStatus: string | null) {
     if (!newStatus || newStatus === currentStatus) return;
     setPending(true);
     try {
-      await updateGoal.mutateAsync({
+      const result = (await updateGoal.mutateAsync({
         id: goalId,
         data: { status: newStatus as "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED" | "ABANDONED" },
-      });
+      })) as { _xp?: XpResponse };
+
       onStatusChange?.(newStatus);
+
+      // Trigger celebrations on completion
+      if (newStatus === "COMPLETED" && horizon) {
+        const { showCheckmark: shouldShowCheckmark } = celebrateGoalComplete(horizon);
+        if (shouldShowCheckmark) {
+          setShowCheckmark(true);
+          setTimeout(() => setShowCheckmark(false), 1000);
+        }
+      }
+
+      // Trigger level-up fireworks after a brief delay
+      if (result?._xp?.leveledUp) {
+        setTimeout(() => celebrateLevelUp(), 500);
+      }
 
       if (newStatus === "COMPLETED" && parentId) {
         checkParentRollup(parentId);
@@ -99,31 +128,62 @@ export function GoalStatusSelect({
   }
 
   return (
-    <Select
-      value={currentStatus}
-      onValueChange={handleChange}
-      disabled={pending}
-    >
-      <SelectTrigger className="w-full">
-        <SelectValue>
-          <span className="flex items-center gap-2">
-            <span
-              className={`inline-block size-2 rounded-full ${STATUS_OPTIONS.find((s) => s.value === currentStatus)?.color ?? "bg-muted-foreground"}`}
-            />
-            {STATUS_OPTIONS.find((s) => s.value === currentStatus)?.label ?? currentStatus}
-          </span>
-        </SelectValue>
-      </SelectTrigger>
-      <SelectContent>
-        {STATUS_OPTIONS.map((opt) => (
-          <SelectItem key={opt.value} value={opt.value}>
+    <div className="relative">
+      <Select
+        value={currentStatus}
+        onValueChange={handleChange}
+        disabled={pending}
+      >
+        <SelectTrigger className="w-full">
+          <SelectValue>
             <span className="flex items-center gap-2">
-              <span className={`inline-block size-2 rounded-full ${opt.color}`} />
-              {opt.label}
+              <span
+                className={`inline-block size-2 rounded-full ${STATUS_OPTIONS.find((s) => s.value === currentStatus)?.color ?? "bg-muted-foreground"}`}
+              />
+              {STATUS_OPTIONS.find((s) => s.value === currentStatus)?.label ?? currentStatus}
             </span>
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          {STATUS_OPTIONS.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>
+              <span className="flex items-center gap-2">
+                <span className={`inline-block size-2 rounded-full ${opt.color}`} />
+                {opt.label}
+              </span>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      {/* Animated checkmark overlay for MONTHLY/WEEKLY completions */}
+      {showCheckmark && (
+        <span
+          className={cn(
+            "absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-green-500 text-white",
+            "animate-in zoom-in-50 duration-300",
+          )}
+        >
+          <svg
+            className="size-3"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={3}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path
+              d="M5 13l4 4L19 7"
+              className="animate-in slide-in-from-left-1 duration-300"
+              style={{
+                strokeDasharray: 24,
+                strokeDashoffset: 0,
+              }}
+            />
+          </svg>
+        </span>
+      )}
+    </div>
   );
 }

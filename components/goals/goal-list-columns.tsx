@@ -82,7 +82,7 @@ export const columns: ColumnDef<GoalListItem>[] = [
         <div className="flex items-center gap-2">
           <div className="h-2 w-16 overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full rounded-full bg-primary transition-all"
+              className="h-full rounded-full bg-primary transition-all duration-500 ease-in-out"
               style={{ width: `${Math.min(progress, 100)}%` }}
             />
           </div>

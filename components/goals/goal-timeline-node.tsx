@@ -73,7 +73,7 @@ function GoalTimelineNodeComponent({
             {goal.progress > 0 && goal.progress < 100 && (
               <div className="h-1 w-8 overflow-hidden rounded-full bg-muted shrink-0">
                 <div
-                  className="h-full rounded-full bg-primary"
+                  className="h-full rounded-full bg-primary transition-all duration-500 ease-in-out"
                   style={{ width: `${Math.min(goal.progress, 100)}%` }}
                 />
               </div>
@@ -105,7 +105,7 @@ function GoalTimelineNodeComponent({
                 </div>
                 <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                   <div
-                    className="h-full rounded-full bg-primary transition-all"
+                    className="h-full rounded-full bg-primary transition-all duration-500 ease-in-out"
                     style={{
                       width: `${Math.min(goal.progress, 100)}%`,
                     }}

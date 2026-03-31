@@ -270,6 +270,7 @@ export function GoalDetail({ goalId, onClose, isMobileOverlay }: GoalDetailProps
               goalId={goalId}
               currentStatus={goal.status}
               parentId={goal.parentId}
+              horizon={goal.horizon}
             />
           </div>
           <div className="space-y-1">

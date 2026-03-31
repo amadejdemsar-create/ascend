@@ -134,7 +134,7 @@ export const GoalTreeNode = React.memo(function GoalTreeNode({
             {goal.progress > 0 && (
               <div className="h-1.5 w-12 overflow-hidden rounded-full bg-muted">
                 <div
-                  className="h-full rounded-full bg-primary transition-all"
+                  className="h-full rounded-full bg-primary transition-all duration-500 ease-in-out"
                   style={{ width: `${Math.min(goal.progress, 100)}%` }}
                 />
               </div>
