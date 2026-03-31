@@ -128,3 +128,55 @@
     @apply font-sans;
   }
 }
+
+/* View transition animations */
+::view-transition-old(.page-transition) {
+  animation: vt-fade-out 200ms ease-out;
+}
+
+::view-transition-new(.page-transition) {
+  animation: vt-fade-in 200ms ease-in;
+}
+
+::view-transition-new(*) {
+  animation: vt-slide-up 200ms ease-out;
+}
+
+@keyframes vt-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes vt-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes vt-slide-up {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Hover micro-interactions */
+.hover-lift {
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.08);
+}
+
+.hover-glow {
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.hover-glow:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 16px rgb(var(--primary) / 0.15);
+}
+
+/* Smooth animated progress bars */
+.progress-bar-animated {
+  transition: width 600ms cubic-bezier(0.4, 0, 0.2, 1);
+}
