@@ -1,4 +1,5 @@
 import { goalService } from "@/lib/services/goal-service";
+import { gamificationService } from "@/lib/services/gamification-service";
 
 type McpContent = { content: Array<{ type: "text"; text: string }>; isError?: boolean };
 
@@ -24,11 +25,29 @@ export async function handleBulkTool(
         }
 
         const succeeded: string[] = [];
+        const skipped: string[] = [];
         const failed: Array<{ id: string; error: string }> = [];
+        let totalXpAwarded = 0;
 
         for (const id of ids) {
           try {
+            const existing = await goalService.getById(userId, id);
+            if (!existing) {
+              failed.push({ id, error: "Goal not found" });
+              continue;
+            }
+            if (existing.status === "COMPLETED") {
+              skipped.push(id);
+              continue;
+            }
             await goalService.update(userId, id, { status: "COMPLETED" });
+            const xpResult = await gamificationService.awardXp(
+              userId,
+              id,
+              existing.horizon,
+              existing.priority,
+            );
+            totalXpAwarded += xpResult.amount;
             succeeded.push(id);
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
@@ -36,7 +55,9 @@ export async function handleBulkTool(
           }
         }
 
-        const text = `Completed ${succeeded.length}/${ids.length} goals.${failed.length > 0 ? "\nFailed: " + JSON.stringify(failed) : ""}`;
+        let text = `Completed ${succeeded.length}/${ids.length} goals. +${totalXpAwarded} XP earned.`;
+        if (skipped.length > 0) text += `\nSkipped ${skipped.length} already completed.`;
+        if (failed.length > 0) text += `\nFailed: ${JSON.stringify(failed)}`;
         return { content: [{ type: "text", text }] };
       }
 

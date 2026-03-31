@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateApiKey, unauthorizedResponse, handleApiError } from "@/lib/auth";
 import { goalService } from "@/lib/services/goal-service";
+import { gamificationService } from "@/lib/services/gamification-service";
 import { updateGoalSchema } from "@/lib/validations";
 
 export async function GET(
@@ -33,7 +34,29 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
     const data = updateGoalSchema.parse(body);
+
+    // Check previous status before updating (for XP award on completion)
+    const existing = data.status === "COMPLETED"
+      ? await goalService.getById(auth.userId, id)
+      : null;
+
     const goal = await goalService.update(auth.userId, id, data);
+
+    // Award XP only on genuine transition to COMPLETED (not re-completion)
+    if (
+      data.status === "COMPLETED" &&
+      existing &&
+      existing.status !== "COMPLETED"
+    ) {
+      const xpResult = await gamificationService.awardXp(
+        auth.userId,
+        id,
+        existing.horizon,
+        existing.priority,
+      );
+      return NextResponse.json({ ...goal, _xp: xpResult });
+    }
+
     return NextResponse.json(goal);
   } catch (error) {
     return handleApiError(error);
