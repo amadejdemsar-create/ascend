@@ -30,6 +30,7 @@ export const updateGoalSchema = createGoalSchema.partial().extend({
   progress: z.number().min(0).max(100).optional(),
   currentValue: z.number().optional(),
   sortOrder: z.number().optional(),
+  parentId: z.string().nullable().optional(),
 });
 
 export const goalFiltersSchema = z.object({
