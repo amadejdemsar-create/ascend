@@ -1,6 +1,7 @@
 "use client";
 
 import { format } from "date-fns";
+import { useSortable } from "@dnd-kit/react/sortable";
 import { GoalPriorityBadge } from "@/components/goals/goal-priority-badge";
 import { useUIStore, type BoardGroupBy } from "@/lib/stores/ui-store";
 import { cn } from "@/lib/utils";
@@ -15,22 +16,35 @@ const STATUS_LABELS: Record<string, string> = {
 
 interface GoalBoardCardProps {
   goal: GoalListItem;
+  index: number;
+  column: string;
   isSelected: boolean;
   groupBy: BoardGroupBy;
 }
 
-export function GoalBoardCard({ goal, isSelected, groupBy }: GoalBoardCardProps) {
+export function GoalBoardCard({ goal, index, column, isSelected, groupBy }: GoalBoardCardProps) {
   const selectGoal = useUIStore((s) => s.selectGoal);
+
+  const { ref, isDragging } = useSortable({
+    id: goal.id,
+    index,
+    type: "goal-card",
+    accept: "goal-card",
+    group: column,
+    data: { goal },
+  });
 
   return (
     <button
+      ref={ref}
       type="button"
       onClick={() => selectGoal(goal.id)}
       className={cn(
         "w-full rounded-lg border bg-card p-2.5 text-left transition-all hover:shadow-sm",
         isSelected
           ? "ring-2 ring-primary border-primary"
-          : "border-border hover:border-primary/40"
+          : "border-border hover:border-primary/40",
+        isDragging && "opacity-40"
       )}
     >
       <div className="flex items-start justify-between gap-1.5">

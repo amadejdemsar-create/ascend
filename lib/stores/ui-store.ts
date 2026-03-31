@@ -30,7 +30,7 @@ interface GoalEditData {
   notes?: string | null;
 }
 
-export type BoardGroupBy = "status" | "horizon";
+export type BoardGroupBy = "status" | "horizon" | "category";
 
 interface UIStore {
   sidebarCollapsed: boolean;
@@ -95,7 +95,7 @@ export const useUIStore = create<UIStore>()(
     }),
     {
       name: "ascend-ui",
-      version: 3,
+      version: 4,
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as Record<string, unknown>;
         if (version === 0) {
@@ -121,6 +121,9 @@ export const useUIStore = create<UIStore>()(
             timelineZoom: "quarter",
             timelineYear: new Date().getFullYear(),
           };
+        }
+        if (version === 3) {
+          return state;
         }
         return state;
       },

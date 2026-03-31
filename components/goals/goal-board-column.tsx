@@ -1,7 +1,10 @@
 "use client";
 
+import { useDroppable } from "@dnd-kit/react";
+import { CollisionPriority } from "@dnd-kit/abstract";
 import { GoalBoardCard } from "@/components/goals/goal-board-card";
 import { useUIStore, type BoardGroupBy } from "@/lib/stores/ui-store";
+import { cn } from "@/lib/utils";
 import type { GoalListItem } from "@/components/goals/goal-list-columns";
 
 interface GoalBoardColumnProps {
@@ -11,11 +14,25 @@ interface GoalBoardColumnProps {
   groupBy: BoardGroupBy;
 }
 
-export function GoalBoardColumn({ label, goals, groupBy }: GoalBoardColumnProps) {
+export function GoalBoardColumn({ columnKey, label, goals, groupBy }: GoalBoardColumnProps) {
   const selectedGoalId = useUIStore((s) => s.selectedGoalId);
 
+  const { ref: columnRef, isDropTarget } = useDroppable({
+    id: `column-${columnKey}`,
+    type: "column",
+    accept: "goal-card",
+    collisionPriority: CollisionPriority.Low,
+    data: { columnKey },
+  });
+
   return (
-    <div className="flex flex-col rounded-lg border bg-muted/30 overflow-hidden">
+    <div
+      ref={columnRef}
+      className={cn(
+        "flex flex-col rounded-lg border bg-muted/30 overflow-hidden",
+        isDropTarget && "ring-2 ring-primary/50 bg-primary/5"
+      )}
+    >
       {/* Column header */}
       <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 border-b">
         <span className="text-sm font-medium">{label}</span>
@@ -31,10 +48,12 @@ export function GoalBoardColumn({ label, goals, groupBy }: GoalBoardColumnProps)
             No goals
           </p>
         )}
-        {goals.map((goal) => (
+        {goals.map((goal, index) => (
           <GoalBoardCard
             key={goal.id}
             goal={goal}
+            index={index}
+            column={columnKey}
             isSelected={selectedGoalId === goal.id}
             groupBy={groupBy}
           />

@@ -6,6 +6,8 @@ import {
   getSortedRowModel,
   flexRender,
 } from "@tanstack/react-table";
+import { useSortable } from "@dnd-kit/react/sortable";
+import { GripVertical } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -16,6 +18,38 @@ import {
 } from "@/components/ui/table";
 import { columns, type GoalListItem } from "@/components/goals/goal-list-columns";
 import { useUIStore } from "@/lib/stores/ui-store";
+import { cn } from "@/lib/utils";
+
+function SortableGoalRow({
+  goalId,
+  index,
+  children,
+}: {
+  goalId: string;
+  index: number;
+  children: React.ReactNode;
+}) {
+  const { ref, handleRef, isDragging } = useSortable({
+    id: goalId,
+    index,
+    type: "goal-row",
+    accept: "goal-row",
+  });
+
+  return (
+    <TableRow ref={ref} className={cn("hover:bg-muted/50", isDragging && "opacity-40")}>
+      <TableCell className="w-10 px-2">
+        <span
+          ref={handleRef}
+          className="inline-flex cursor-grab text-muted-foreground hover:text-foreground"
+        >
+          <GripVertical className="size-4" />
+        </span>
+      </TableCell>
+      {children}
+    </TableRow>
+  );
+}
 
 interface GoalListViewProps {
   goals: GoalListItem[];
@@ -44,6 +78,7 @@ export function GoalListView({ goals }: GoalListViewProps) {
       <TableHeader>
         {table.getHeaderGroups().map((headerGroup) => (
           <TableRow key={headerGroup.id}>
+            <TableHead className="w-10" />
             {headerGroup.headers.map((header) => (
               <TableHead key={header.id}>
                 {header.isPlaceholder
@@ -59,19 +94,19 @@ export function GoalListView({ goals }: GoalListViewProps) {
       </TableHeader>
       <TableBody>
         {table.getRowModel().rows.length > 0 ? (
-          table.getRowModel().rows.map((row) => (
-            <TableRow key={row.id} className="hover:bg-muted/50">
+          table.getRowModel().rows.map((row, index) => (
+            <SortableGoalRow key={row.id} goalId={row.original.id} index={index}>
               {row.getVisibleCells().map((cell) => (
                 <TableCell key={cell.id}>
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </TableCell>
               ))}
-            </TableRow>
+            </SortableGoalRow>
           ))
         ) : (
           <TableRow>
             <TableCell
-              colSpan={columns.length}
+              colSpan={columns.length + 1}
               className="h-24 text-center text-muted-foreground"
             >
               No goals match your filters
