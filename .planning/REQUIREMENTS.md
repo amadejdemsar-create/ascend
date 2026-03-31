@@ -63,11 +63,11 @@
 
 ### Drag and Drop
 
-- [ ] **DND-01**: User can reorder goals within a list by dragging
+- [x] **DND-01**: User can reorder goals within a list by dragging
 - [ ] **DND-02**: User can move a goal between horizons by dragging (e.g., promote weekly to monthly)
 - [ ] **DND-03**: User can move a goal between categories by dragging
 - [ ] **DND-04**: Drag and drop works across List, Board, and Tree views
-- [ ] **DND-05**: Visual feedback during drag (ghost element, drop targets highlighted)
+- [x] **DND-05**: Visual feedback during drag (ghost element, drop targets highlighted)
 
 ### Gamification
 
@@ -249,11 +249,11 @@
 | VIEW-08 | Phase 3 | Complete |
 | VIEW-09 | Phase 3 | Complete |
 | VIEW-10 | Phase 3 | Complete |
-| DND-01 | Phase 8 | Pending |
+| DND-01 | Phase 8 | Complete |
 | DND-02 | Phase 8 | Pending |
 | DND-03 | Phase 8 | Pending |
 | DND-04 | Phase 8 | Pending |
-| DND-05 | Phase 8 | Pending |
+| DND-05 | Phase 8 | Complete |
 | GAME-01 | Phase 9 | Pending |
 | GAME-02 | Phase 9 | Pending |
 | GAME-03 | Phase 9 | Pending |

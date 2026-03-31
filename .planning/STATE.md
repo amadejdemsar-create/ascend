@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-31T14:04:26.759Z"
+last_updated: "2026-03-31T14:26:02Z"
 progress:
   total_phases: 7
   completed_phases: 7
@@ -22,10 +22,10 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 
 ## Current Position
 
-Phase: 7 of 11 (Timeline View) COMPLETE
-Plan: 2 of 2 in current phase (2 complete)
-Status: Phase 7 complete, ready for Phase 8
-Last activity: 2026-03-31, completed 07-02 Timeline Goal Nodes and Interactivity
+Phase: 8 of 11 (Drag and Drop) IN PROGRESS
+Plan: 1 of 3 in current phase (1 complete)
+Status: Plan 08-01 complete, continuing with 08-02
+Last activity: 2026-03-31, completed 08-01 DnD Foundation (dnd-kit, reorder API, provider)
 
 Progress: [████████████████████████████] 100%
 
@@ -68,6 +68,7 @@ Progress: [███████████████████████
 | Phase 06 P02 | 3min | 2 tasks | 6 files |
 | Phase 07 P01 | 3min | 2 tasks | 7 files |
 | Phase 07 P02 | 2min | 2 tasks | 2 files |
+| Phase 08 P01 | 4min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -158,6 +159,9 @@ Recent decisions affecting current work:
 - [Phase 07-02]: TreeGoal lacks startDate; hasDates determined solely by goal.deadline presence
 - [Phase 07-02]: Today marker uses absolute positioning with calc() for mixed unit label/percentage placement
 - [Phase 07-02]: CSS grid-auto-flow: row dense handles overlap stacking without manual row assignment
+- [Phase 08-01]: Used Parameters<DragStartEvent>[0] type extraction because @dnd-kit/react exports event types as function signatures, not event objects
+- [Phase 08-01]: Made updateGoalSchema parentId nullable to support detaching goals from parents on horizon change
+- [Phase 08-01]: DndGoalProvider is intentionally minimal; individual views handle their own sortable reorder logic
 
 ### Pending Todos
 
@@ -173,6 +177,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-31
-Stopped at: Completed 07-02-PLAN.md (Timeline Goal Nodes and Interactivity)
+Stopped at: Completed 08-01-PLAN.md (DnD Foundation)
 Resume file: None
-Next: Phase 8 (Drag and Drop)
+Next: 08-02-PLAN.md (List and Board View DnD)
