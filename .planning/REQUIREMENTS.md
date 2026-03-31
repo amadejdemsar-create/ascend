@@ -24,9 +24,9 @@
 
 ### Progress Tracking
 
-- [ ] **PROG-01**: User can increment progress on a measurable goal with a quick +1 button (or custom amount)
-- [ ] **PROG-02**: User can add a progress entry with an optional note (e.g., "+1 client: Signed Hotel Marko")
-- [ ] **PROG-03**: User can view progress history (all entries with timestamps and notes) for any goal
+- [x] **PROG-01**: User can increment progress on a measurable goal with a quick +1 button (or custom amount)
+- [x] **PROG-02**: User can add a progress entry with an optional note (e.g., "+1 client: Signed Hotel Marko")
+- [x] **PROG-03**: User can view progress history (all entries with timestamps and notes) for any goal
 - [ ] **PROG-04**: Progress percentage is calculated automatically from current value vs target value
 - [ ] **PROG-05**: Parent goal progress aggregates from children's completion status
 
@@ -222,9 +222,9 @@
 | GOAL-12 | Phase 2 | Complete |
 | GOAL-13 | Phase 2 | Complete |
 | GOAL-14 | Phase 2 | Complete |
-| PROG-01 | Phase 4 | Pending |
-| PROG-02 | Phase 4 | Pending |
-| PROG-03 | Phase 4 | Pending |
+| PROG-01 | Phase 4 | Complete |
+| PROG-02 | Phase 4 | Complete |
+| PROG-03 | Phase 4 | Complete |
 | PROG-04 | Phase 4 | Pending |
 | PROG-05 | Phase 4 | Pending |
 | CAT-01 | Phase 3 | Complete |
