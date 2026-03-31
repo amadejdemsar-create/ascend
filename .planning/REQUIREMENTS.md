@@ -16,7 +16,7 @@
 - [x] **GOAL-07**: User can set a goal's status (not started, in progress, completed, abandoned)
 - [x] **GOAL-08**: User can set a goal's priority (high, medium, low)
 - [x] **GOAL-09**: User can set a measurable target on a goal (target value, current value, unit)
-- [ ] **GOAL-10**: User can create a recurring goal with frequency (daily, weekly, monthly) that auto-generates instances
+- [x] **GOAL-10**: User can create a recurring goal with frequency (daily, weekly, monthly) that auto-generates instances
 - [x] **GOAL-11**: User can view a goal's children (sub-goals at the next horizon level)
 - [x] **GOAL-12**: Completing all children of a goal suggests completing the parent (progress rollup)
 - [x] **GOAL-13**: User can create a goal via inline add (quick, minimal fields) for simple tasks
@@ -73,7 +73,7 @@
 
 - [x] **GAME-01**: Each goal completion awards XP based on horizon level (yearly > quarterly > monthly > weekly) and priority
 - [x] **GAME-02**: User has a level that increases as XP accumulates, with a level-up celebration animation
-- [ ] **GAME-03**: Recurring goals track streaks (consecutive completions without missing)
+- [x] **GAME-03**: Recurring goals track streaks (consecutive completions without missing)
 - [x] **GAME-04**: Weekly score aggregates completed goals, streaks maintained, and progress made
 - [ ] **GAME-05**: Satisfying completion animation plays when a goal is marked complete (confetti for milestones, checkmark for tasks)
 - [ ] **GAME-06**: Progress bars animate smoothly when progress is added
@@ -217,7 +217,7 @@
 | GOAL-07 | Phase 2 | Complete |
 | GOAL-08 | Phase 2 | Complete |
 | GOAL-09 | Phase 2 | Complete |
-| GOAL-10 | Phase 9 | Pending |
+| GOAL-10 | Phase 9 | Complete |
 | GOAL-11 | Phase 2 | Complete |
 | GOAL-12 | Phase 2 | Complete |
 | GOAL-13 | Phase 2 | Complete |
@@ -256,7 +256,7 @@
 | DND-05 | Phase 8 | Complete |
 | GAME-01 | Phase 9 | Complete |
 | GAME-02 | Phase 9 | Complete |
-| GAME-03 | Phase 9 | Pending |
+| GAME-03 | Phase 9 | Complete |
 | GAME-04 | Phase 9 | Complete |
 | GAME-05 | Phase 9 | Pending |
 | GAME-06 | Phase 9 | Pending |

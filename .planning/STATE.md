@@ -72,6 +72,7 @@ Progress: [█████████████████████░░
 | Phase 08 P02 | 6min | 2 tasks | 9 files |
 | Phase 08 P03 | 4min | 2 tasks | 8 files |
 | Phase 09 P01 | 3min | 2 tasks | 7 files |
+| Phase 09 P02 | 3min | 2 tasks | 6 files |
 | Phase 09 P03 | 2min | 2 tasks | 4 files |
 
 ## Accumulated Context
@@ -177,6 +178,11 @@ Recent decisions affecting current work:
 - [Phase 09-01]: Weekly score auto-reset via date-fns startOfWeek comparison in gamification service
 - [Phase 09-01]: MCP complete_goals skips already-completed goals, preventing duplicate XP awards
 - [Phase 09]: Caller-responsible pattern: API route and MCP handler check previous status before calling awardXp
+- [Phase 09-02]: Lazy generation pattern: instances created on demand via /generate endpoint, not on a cron schedule
+- [Phase 09-02]: Grace period for daily recurring: streak only broken if today exceeds nextDueDate + 1 day
+- [Phase 09-02]: Instance title includes date range label (Week of Mar 31, January 2026) for identification
+- [Phase 09-02]: Inline switch toggle using native button role=switch instead of adding Switch UI component
+- [Phase 09-02]: Streak update wired into existing PATCH handler, returned as _streak field alongside _xp
 - [Phase 09-03]: Module-level flag for once-per-session recurring generation trigger; fire-and-forget POST with silent catch for optional endpoints
 
 ### Pending Todos
