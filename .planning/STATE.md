@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: unknown
-last_updated: "2026-03-31T10:14:20.868Z"
+status: in-progress
+last_updated: "2026-03-31T11:16:24Z"
 progress:
-  total_phases: 4
+  total_phases: 5
   completed_phases: 4
-  total_plans: 16
-  completed_plans: 16
+  total_plans: 17
+  completed_plans: 17
 ---
 
 # Project State
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 
 ## Current Position
 
-Phase: 4 of 11 (Dashboard and Progress Tracking) COMPLETE
-Plan: 3 of 3 in current phase (all done)
-Status: Phase 4 complete
-Last activity: 2026-03-31, completed 04-03 Dashboard Widgets and Page Composition
+Phase: 5 of 11 (MCP Server) IN PROGRESS
+Plan: 1 of 6 in current phase (1 complete)
+Status: Executing Phase 5
+Last activity: 2026-03-31, completed 05-01 MCP Server Infrastructure
 
-Progress: [████████░░] 36%
+Progress: [████████░░] 39%
 
 ## Performance Metrics
 
@@ -58,6 +58,7 @@ Progress: [████████░░] 36%
 | Phase 04 P01 | 2min | 2 tasks | 5 files |
 | Phase 04 P02 | 2min | 2 tasks | 3 files |
 | Phase 04 P03 | 2min | 2 tasks | 8 files |
+| Phase 05 P01 | 6min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -117,6 +118,10 @@ Recent decisions affecting current work:
 - [04-02]: Local hook definitions in component files for parallel wave independence (useLogProgress, useProgressHistory)
 - [04-02]: Used render prop instead of asChild for base-ui PopoverTrigger and SheetTrigger
 - [04-03]: Widgets receive data as props rather than fetching their own data, single useDashboard() call
+- [05-01]: Used WebStandardStreamableHTTPServerTransport for native Next.js App Router compatibility (no bridge code)
+- [05-01]: Low-level Server class with raw JSON Schema tool definitions to avoid Zod v3/v4 ambiguity
+- [05-01]: Extended goalService.list() with optional skip/take rather than querying Prisma directly from MCP tools
+- [05-01]: enableJsonResponse:true on transport for clean JSON responses instead of SSE streams
 - [04-03]: Stats widget omits XP/level/streak display since Phase 9 gamification will populate them
 
 ### Pending Todos
@@ -133,6 +138,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-31
-Stopped at: Completed 04-03-PLAN.md (Dashboard Widgets and Page Composition)
+Stopped at: Completed 05-01-PLAN.md (MCP Server Infrastructure)
 Resume file: None
-Next: Phase 5 (MCP Server) or next sequential phase
+Next: Phase 5 Plan 2 (progress, category, dashboard, bulk, data, and settings tool handlers)

@@ -90,8 +90,8 @@
 
 ### MCP Server
 
-- [ ] **MCP-01**: MCP server runs on Streamable HTTP transport at a dedicated endpoint
-- [ ] **MCP-02**: MCP authenticates via API key (Bearer token in Authorization header)
+- [x] **MCP-01**: MCP server runs on Streamable HTTP transport at a dedicated endpoint
+- [x] **MCP-02**: MCP authenticates via API key (Bearer token in Authorization header)
 - [ ] **MCP-03**: MCP tool: create_goal (with all fields including parent, SMART, recurring)
 - [ ] **MCP-04**: MCP tool: get_goal (by ID, returns full details including children and progress)
 - [ ] **MCP-05**: MCP tool: update_goal (partial update of any field)
@@ -267,8 +267,8 @@
 | CMD-04 | Phase 10 | Pending |
 | CMD-05 | Phase 10 | Pending |
 | CMD-06 | Phase 10 | Pending |
-| MCP-01 | Phase 5 | Pending |
-| MCP-02 | Phase 5 | Pending |
+| MCP-01 | Phase 5 | Complete |
+| MCP-02 | Phase 5 | Complete |
 | MCP-03 | Phase 5 | Pending |
 | MCP-04 | Phase 5 | Pending |
 | MCP-05 | Phase 5 | Pending |
