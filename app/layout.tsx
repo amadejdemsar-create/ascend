@@ -3,6 +3,8 @@ import { Inter, Playfair_Display, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { ServiceWorkerRegistration } from "@/components/pwa/sw-registration";
+import { InstallPrompt } from "@/components/pwa/install-prompt";
 import "./globals.css";
 
 const inter = Inter({
@@ -49,6 +51,8 @@ export default function RootLayout({
           <QueryProvider>
             {children}
             <Toaster />
+            <ServiceWorkerRegistration />
+            <InstallPrompt />
           </QueryProvider>
         </ThemeProvider>
       </body>
