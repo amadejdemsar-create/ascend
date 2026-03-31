@@ -130,13 +130,13 @@
 ### Data Management
 
 - [x] **DATA-01**: Import existing todos.json into the goal hierarchy (map categories, projects, tasks to appropriate levels)
-- [ ] **DATA-02**: Export goals as JSON (full structured backup)
-- [ ] **DATA-03**: Export goals as CSV (spreadsheet-friendly flat export)
-- [ ] **DATA-04**: Export goals as Markdown (human-readable summary)
-- [ ] **DATA-05**: Export goals as PDF report (formatted progress report with visual charts)
-- [ ] **DATA-06**: Export goals as DOCX (formatted document)
+- [x] **DATA-02**: Export goals as JSON (full structured backup)
+- [x] **DATA-03**: Export goals as CSV (spreadsheet-friendly flat export)
+- [x] **DATA-04**: Export goals as Markdown (human-readable summary)
+- [x] **DATA-05**: Export goals as PDF report (formatted progress report with visual charts)
+- [x] **DATA-06**: Export goals as DOCX (formatted document)
 - [ ] **DATA-07**: Automated database backups via cron pg_dump
-- [ ] **DATA-08**: Manual export button accessible from settings
+- [x] **DATA-08**: Manual export button accessible from settings
 
 ### Onboarding
 
@@ -298,13 +298,13 @@
 | THEME-04 | Phase 2 | Complete |
 | THEME-05 | Phase 11 | Pending |
 | DATA-01 | Phase 10 | Complete |
-| DATA-02 | Phase 10 | Pending |
-| DATA-03 | Phase 10 | Pending |
-| DATA-04 | Phase 10 | Pending |
-| DATA-05 | Phase 10 | Pending |
-| DATA-06 | Phase 10 | Pending |
+| DATA-02 | Phase 10 | Complete |
+| DATA-03 | Phase 10 | Complete |
+| DATA-04 | Phase 10 | Complete |
+| DATA-05 | Phase 10 | Complete |
+| DATA-06 | Phase 10 | Complete |
 | DATA-07 | Phase 10 | Pending |
-| DATA-08 | Phase 10 | Pending |
+| DATA-08 | Phase 10 | Complete |
 | ONBD-01 | Phase 11 | Pending |
 | ONBD-02 | Phase 11 | Pending |
 | ONBD-03 | Phase 11 | Pending |

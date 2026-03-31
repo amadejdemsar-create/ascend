@@ -8,7 +8,7 @@ progress:
   total_phases: 10
   completed_phases: 9
   total_plans: 38
-  completed_plans: 36
+  completed_plans: 37
 ---
 
 # Project State
@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 ## Current Position
 
 Phase: 10 of 11 (Command Palette and Data Management)
-Plan: 3 of 5 in current phase (3 complete)
-Status: Executing Phase 10, plan 03 (Data Import) complete
-Last activity: 2026-03-31, completed 10-03 Data Import
+Plan: 4 of 5 in current phase (4 complete)
+Status: Executing Phase 10, plan 04 (Data Export) complete
+Last activity: 2026-03-31, completed 10-04 Data Export
 
-Progress: [███████████████████████████░░] 89%
+Progress: [████████████████████████████░] 97%
 
 ## Performance Metrics
 
@@ -77,6 +77,7 @@ Progress: [███████████████████████
 | Phase 09 P04 | 3min | 2 tasks | 10 files |
 | Phase 10 P03 | 2min | 2 tasks | 5 files |
 | Phase 10 P02 | 2min | 2 tasks | 3 files |
+| Phase 10 P04 | 4min | 2 tasks | 8 files |
 | Phase 10 P01 | 4min | 2 tasks | 7 files |
 
 ## Accumulated Context
@@ -196,6 +197,9 @@ Recent decisions affecting current work:
 - [Phase 10-02]: Single-key shortcuts only; chord shortcuts (g then d) skipped in favor of single key "d" for dashboard
 - [Phase 10]: Used cmdk CommandDialog for accessible keyboard-navigable palette with built-in filtering
 - [Phase 10]: 200ms debounce on goal search API calls; dynamic category actions flatten tree for navigability
+- [Phase 10-04]: Extracted CSV/Markdown formatting to shared export-helpers.ts for zero duplication between MCP tools and export service
+- [Phase 10-04]: FORMAT_CONFIG map pattern in API route for clean format dispatch instead of switch statement
+- [Phase 10-04]: Blob download via fetch with Bearer token since anchor tags cannot set Authorization headers
 
 ### Pending Todos
 
@@ -211,6 +215,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-31
-Stopped at: Completed 10-03-PLAN.md (Data Import)
+Stopped at: Completed 10-04-PLAN.md (Data Export)
 Resume file: None
-Next: Continue Phase 10 (plan 04 next)
+Next: Continue Phase 10 (plan 05 next)
