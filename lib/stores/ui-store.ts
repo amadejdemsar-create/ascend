@@ -29,6 +29,8 @@ interface GoalEditData {
   notes?: string | null;
 }
 
+export type BoardGroupBy = "status" | "horizon";
+
 interface UIStore {
   sidebarCollapsed: boolean;
   selectedGoalId: string | null;
@@ -39,6 +41,7 @@ interface UIStore {
   activeView: ViewType;
   activeFilters: ActiveFilters;
   activeSorting: SortingState;
+  boardGroupBy: BoardGroupBy;
   toggleSidebar: () => void;
   selectGoal: (id: string | null) => void;
   openGoalModal: (mode: "create" | "edit", horizon?: string) => void;
@@ -47,6 +50,7 @@ interface UIStore {
   setActiveView: (view: ViewType) => void;
   setActiveFilters: (filters: ActiveFilters) => void;
   setActiveSorting: (sorting: SortingState) => void;
+  setBoardGroupBy: (groupBy: BoardGroupBy) => void;
   resetFilters: () => void;
 }
 
@@ -62,6 +66,7 @@ export const useUIStore = create<UIStore>()(
       activeView: "cards",
       activeFilters: {},
       activeSorting: [],
+      boardGroupBy: "status",
       toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
       selectGoal: (id) => set({ selectedGoalId: id }),
       openGoalModal: (mode, horizon) =>
@@ -76,27 +81,37 @@ export const useUIStore = create<UIStore>()(
       setActiveView: (view) => set({ activeView: view }),
       setActiveFilters: (filters) => set({ activeFilters: filters }),
       setActiveSorting: (sorting) => set({ activeSorting: sorting }),
+      setBoardGroupBy: (groupBy) => set({ boardGroupBy: groupBy }),
       resetFilters: () => set({ activeFilters: {}, activeSorting: [] }),
     }),
     {
       name: "ascend-ui",
-      version: 1,
+      version: 2,
       migrate: (persistedState: unknown, version: number) => {
+        const state = persistedState as Record<string, unknown>;
         if (version === 0) {
           return {
-            ...(persistedState as Record<string, unknown>),
+            ...state,
             activeView: "cards",
             activeFilters: {},
             activeSorting: [],
+            boardGroupBy: "status",
           };
         }
-        return persistedState as Record<string, unknown>;
+        if (version === 1) {
+          return {
+            ...state,
+            boardGroupBy: "status",
+          };
+        }
+        return state;
       },
       partialize: (state) => ({
         sidebarCollapsed: state.sidebarCollapsed,
         activeView: state.activeView,
         activeFilters: state.activeFilters,
         activeSorting: state.activeSorting,
+        boardGroupBy: state.boardGroupBy,
       }),
     }
   )
