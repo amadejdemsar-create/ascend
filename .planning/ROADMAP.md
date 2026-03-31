@@ -174,13 +174,13 @@ Plans:
   2. User can create recurring goals (daily, weekly, monthly) that auto-generate instances, and consecutive completions build streaks
   3. Dashboard displays current level, XP progress to next level, active streaks, and weekly score
   4. A satisfying animation plays when a goal is completed (confetti for milestones, checkmark for tasks), and progress bars animate smoothly
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 09-01: XP and level system (calculation, persistence, level-up logic)
-- [ ] 09-02: Recurring goals (templates, instance generation, streak tracking)
-- [ ] 09-03: Weekly score computation and dashboard gamification widgets
-- [ ] 09-04: Completion animations and progress bar transitions
+- [ ] 09-01-PLAN.md — Gamification service, level formula, schema extension, XP wired into API and MCP
+- [ ] 09-02-PLAN.md — Recurring goals service, instance generation, streak tracking, recurring UI in form and detail
+- [ ] 09-03-PLAN.md — Dashboard gamification widgets (XP bar, level, streaks, weekly score), recurring generation trigger
+- [ ] 09-04-PLAN.md — Celebration animations (confetti, checkmark, level-up fireworks) and progress bar transitions
 
 ### Phase 10: Command Palette and Data Management
 **Goal**: Power users can navigate and act on goals instantly through keyboard shortcuts and a search-driven command palette, with full data portability through import and export
@@ -236,6 +236,6 @@ Note: Phase 5 (MCP Server) can execute in parallel with Phases 2-4 since both de
 | 6. Board and Tree Views | 0/2 | Not started | - |
 | 7. Timeline View | 0/3 | Not started | - |
 | 8. Drag and Drop | 0/3 | Not started | - |
-| 9. Gamification and Recurring Goals | 0/4 | Not started | - |
+| 9. Gamification and Recurring Goals | 0/4 | Planned | - |
 | 10. Command Palette and Data Management | 0/5 | Not started | - |
 | 11. Onboarding, PWA, and Polish | 0/5 | Not started | - |
