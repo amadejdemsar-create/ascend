@@ -1,11 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { toast } from "sonner";
 import { ArrowUp, ArrowDown, Trash2 } from "lucide-react";
 import {
   useCreateCategory,
   useUpdateCategory,
-  useDeleteCategory,
 } from "@/lib/hooks/use-categories";
 import {
   Dialog,
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CategoryForm } from "./category-form";
+import { CategoryDeleteDialog } from "./category-delete-dialog";
 import type { CreateCategoryInput } from "@/lib/validations";
 
 interface CategoryTreeNode {
@@ -65,7 +66,7 @@ export function CategoryManageDialog({
 }: CategoryManageDialogProps) {
   const createMutation = useCreateCategory();
   const updateMutation = useUpdateCategory();
-  const deleteMutation = useDeleteCategory();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const flatList = flattenCategories(allCategories);
 
@@ -126,20 +127,13 @@ export function CategoryManageDialog({
     );
   }
 
-  function handleDelete() {
+  function handleDeleteClick() {
     if (!category) return;
-    deleteMutation.mutate(category.id, {
-      onSuccess: () => {
-        toast.success("Category deleted");
-        onOpenChange(false);
-      },
-      onError: (error) => {
-        toast.error(error.message);
-      },
-    });
+    setDeleteDialogOpen(true);
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -180,8 +174,7 @@ export function CategoryManageDialog({
               type="button"
               variant="destructive"
               size="sm"
-              onClick={handleDelete}
-              disabled={deleteMutation.isPending}
+              onClick={handleDeleteClick}
             >
               <Trash2 className="size-4" />
               <span className="ml-1">Delete</span>
@@ -208,5 +201,15 @@ export function CategoryManageDialog({
         />
       </DialogContent>
     </Dialog>
+
+    {mode === "edit" && category && (
+      <CategoryDeleteDialog
+        category={{ id: category.id, name: category.name, _count: { goals: 0 } }}
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={() => onOpenChange(false)}
+      />
+    )}
+    </>
   );
 }
