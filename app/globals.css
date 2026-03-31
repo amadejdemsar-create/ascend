@@ -180,3 +180,27 @@
 .progress-bar-animated {
   transition: width 600ms cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* Accessibility: respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+
+  .hover-lift,
+  .hover-glow,
+  .progress-bar-animated {
+    transition: none !important;
+  }
+
+  .hover-lift:hover {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  .hover-glow:hover {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+}
