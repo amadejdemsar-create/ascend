@@ -45,7 +45,7 @@ export function GoalCard({ goal, onSelect, isSelected }: GoalCardProps) {
       type="button"
       onClick={() => onSelect(goal.id)}
       className={cn(
-        "w-full rounded-lg border bg-card p-3 text-left transition-all hover:shadow-sm",
+        "w-full rounded-lg border bg-card p-3 text-left transition-all hover:shadow-sm hover-lift",
         isSelected
           ? "ring-2 ring-primary border-primary"
           : "border-border hover:border-primary/40"
@@ -70,7 +70,7 @@ export function GoalCard({ goal, onSelect, isSelected }: GoalCardProps) {
       {goal.progress > 0 && (
         <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
           <div
-            className="h-full rounded-full bg-primary transition-all duration-500 ease-in-out"
+            className="h-full rounded-full bg-primary transition-all duration-500 ease-in-out progress-bar-animated"
             style={{ width: `${Math.min(goal.progress, 100)}%` }}
           />
         </div>

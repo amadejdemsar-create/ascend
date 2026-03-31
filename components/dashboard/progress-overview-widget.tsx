@@ -14,7 +14,7 @@ export function ProgressOverviewWidget({
   const sorted = [...categories].sort((a, b) => b.percentage - a.percentage);
 
   return (
-    <Card>
+    <Card className="hover-lift">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <BarChart3 className="size-4 text-muted-foreground" />
@@ -44,7 +44,7 @@ export function ProgressOverviewWidget({
                 </div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                   <div
-                    className="h-full rounded-full transition-all"
+                    className="h-full rounded-full transition-all progress-bar-animated"
                     style={{
                       backgroundColor: cat.color,
                       width: `${cat.percentage}%`,
