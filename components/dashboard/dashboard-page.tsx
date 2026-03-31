@@ -1,7 +1,10 @@
 "use client";
 
+import { useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useDashboard } from "@/lib/hooks/use-dashboard";
 import { useUIStore } from "@/lib/stores/ui-store";
+import { queryKeys } from "@/lib/queries/keys";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,10 +12,30 @@ import { WeeklyFocusWidget } from "./weekly-focus-widget";
 import { ProgressOverviewWidget } from "./progress-overview-widget";
 import { StreaksStatsWidget } from "./streaks-stats-widget";
 import { UpcomingDeadlinesWidget } from "./upcoming-deadlines-widget";
+import { OnboardingGate } from "@/components/onboarding/onboarding-gate";
+import { ContextualHints } from "@/components/onboarding/contextual-hints";
+
+const API_KEY = process.env.NEXT_PUBLIC_API_KEY!;
 
 export function DashboardPage() {
   const { data, isLoading, isError, error, refetch } = useDashboard();
   const openGoalModal = useUIStore((s) => s.openGoalModal);
+  const queryClient = useQueryClient();
+
+  const handleOnboardingComplete = useCallback(async () => {
+    try {
+      await fetch("/api/goals/onboarding", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${API_KEY}`,
+        },
+      });
+    } catch {
+      // Silently continue; the onboarding will be marked next time
+    }
+    queryClient.invalidateQueries({ queryKey: queryKeys.dashboard() });
+  }, [queryClient]);
 
   return (
     <div>
@@ -50,24 +73,31 @@ export function DashboardPage() {
         </Card>
       )}
 
-      {data && data.streaksStats.totalGoals === 0 && (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
-            <h2 className="font-serif text-2xl font-bold">
-              Welcome to Ascend
-            </h2>
-            <p className="max-w-sm text-sm text-muted-foreground">
-              Start by creating your first yearly goal. Everything flows from
-              there.
-            </p>
-            <Button onClick={() => openGoalModal("create", "YEARLY")}>
-              Create your first goal
-            </Button>
-          </CardContent>
-        </Card>
+      {data && data.onboardingComplete === false && (
+        <OnboardingGate onComplete={handleOnboardingComplete} />
       )}
 
-      {data && data.streaksStats.totalGoals > 0 && (
+      {data && data.onboardingComplete !== false && data.streaksStats.totalGoals === 0 && (
+        <>
+          <ContextualHints />
+          <Card>
+            <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
+              <h2 className="font-serif text-2xl font-bold">
+                Welcome to Ascend
+              </h2>
+              <p className="max-w-sm text-sm text-muted-foreground">
+                Start by creating your first yearly goal. Everything flows from
+                there.
+              </p>
+              <Button onClick={() => openGoalModal("create", "YEARLY")}>
+                Create your first goal
+              </Button>
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      {data && data.onboardingComplete !== false && data.streaksStats.totalGoals > 0 && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <WeeklyFocusWidget goals={data.weeklyFocus} />
           <ProgressOverviewWidget categories={data.progressOverview} />
