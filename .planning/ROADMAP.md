@@ -92,14 +92,12 @@ Plans:
   3. User can view the full progress history (timestamped entries with notes) for any goal
   4. Progress percentage calculates automatically from current value vs target value, and parent goal progress aggregates from children
   5. Dashboard widgets update in real time when goals are modified elsewhere in the app
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 04-01: Dashboard page layout and widget framework
-- [ ] 04-02: Weekly Focus and Upcoming Deadlines widgets
-- [ ] 04-03: Progress Overview and Streaks/Stats widgets
-- [ ] 04-04: Progress tracking UI (increment button, notes, history view)
-- [ ] 04-05: Real-time widget updates and progress rollup
+- [ ] 04-01-PLAN.md — Dashboard service, API endpoint, query keys, hooks, and Card component
+- [ ] 04-02-PLAN.md — Progress tracking UI (increment button, custom amount popover, history sheet)
+- [ ] 04-03-PLAN.md — Dashboard page with four widget components and cross-invalidation
 
 ### Phase 5: MCP Server
 **Goal**: Any AI assistant can read and write goals through a comprehensive MCP endpoint, making Ascend the single source of truth for goal management across all AI tools
