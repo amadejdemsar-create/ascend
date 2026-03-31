@@ -71,8 +71,8 @@
 
 ### Gamification
 
-- [ ] **GAME-01**: Each goal completion awards XP based on horizon level (yearly > quarterly > monthly > weekly) and priority
-- [ ] **GAME-02**: User has a level that increases as XP accumulates, with a level-up celebration animation
+- [x] **GAME-01**: Each goal completion awards XP based on horizon level (yearly > quarterly > monthly > weekly) and priority
+- [x] **GAME-02**: User has a level that increases as XP accumulates, with a level-up celebration animation
 - [ ] **GAME-03**: Recurring goals track streaks (consecutive completions without missing)
 - [ ] **GAME-04**: Weekly score aggregates completed goals, streaks maintained, and progress made
 - [ ] **GAME-05**: Satisfying completion animation plays when a goal is marked complete (confetti for milestones, checkmark for tasks)
@@ -254,8 +254,8 @@
 | DND-03 | Phase 8 | Complete |
 | DND-04 | Phase 8 | Complete |
 | DND-05 | Phase 8 | Complete |
-| GAME-01 | Phase 9 | Pending |
-| GAME-02 | Phase 9 | Pending |
+| GAME-01 | Phase 9 | Complete |
+| GAME-02 | Phase 9 | Complete |
 | GAME-03 | Phase 9 | Pending |
 | GAME-04 | Phase 9 | Pending |
 | GAME-05 | Phase 9 | Pending |

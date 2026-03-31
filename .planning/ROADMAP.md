@@ -177,7 +177,7 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 09-01-PLAN.md — Gamification service, level formula, schema extension, XP wired into API and MCP
+- [x] 09-01-PLAN.md — Gamification service, level formula, schema extension, XP wired into API and MCP
 - [ ] 09-02-PLAN.md — Recurring goals service, instance generation, streak tracking, recurring UI in form and detail
 - [ ] 09-03-PLAN.md — Dashboard gamification widgets (XP bar, level, streaks, weekly score), recurring generation trigger
 - [ ] 09-04-PLAN.md — Celebration animations (confetti, checkmark, level-up fireworks) and progress bar transitions
@@ -236,6 +236,6 @@ Note: Phase 5 (MCP Server) can execute in parallel with Phases 2-4 since both de
 | 6. Board and Tree Views | 0/2 | Not started | - |
 | 7. Timeline View | 0/3 | Not started | - |
 | 8. Drag and Drop | 0/3 | Not started | - |
-| 9. Gamification and Recurring Goals | 0/4 | Planned | - |
+| 9. Gamification and Recurring Goals | 1/4 | In Progress | - |
 | 10. Command Palette and Data Management | 0/5 | Not started | - |
 | 11. Onboarding, PWA, and Polish | 0/5 | Not started | - |
