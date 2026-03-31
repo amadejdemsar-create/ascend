@@ -58,6 +58,15 @@ export const addProgressSchema = z.object({
   note: z.string().optional(),
 });
 
+// Reorder schema
+export const reorderGoalsSchema = z.object({
+  items: z.array(z.object({
+    id: z.string(),
+    sortOrder: z.number().int().min(0),
+  })).min(1).max(200),
+});
+export type ReorderGoalsInput = z.infer<typeof reorderGoalsSchema>;
+
 // Exported types
 // Using z.input so callers can omit fields with defaults (priority, color)
 export type CreateGoalInput = z.input<typeof createGoalSchema>;

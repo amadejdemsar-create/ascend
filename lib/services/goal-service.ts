@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import type { CreateGoalInput, UpdateGoalInput, GoalFilters, AddProgressInput } from "@/lib/validations";
+import type { CreateGoalInput, UpdateGoalInput, GoalFilters, AddProgressInput, ReorderGoalsInput } from "@/lib/validations";
 import { validateHierarchy } from "@/lib/services/hierarchy-helpers";
 
 export const goalService = {
@@ -185,6 +185,21 @@ export const goalService = {
     });
 
     return log;
+  },
+
+  /**
+   * Batch update sortOrder for multiple goals in a single transaction.
+   * The where clause includes userId to ensure users can only reorder their own goals.
+   */
+  async reorderGoals(userId: string, items: ReorderGoalsInput["items"]) {
+    await prisma.$transaction(
+      items.map(({ id, sortOrder }) =>
+        prisma.goal.update({
+          where: { id, userId },
+          data: { sortOrder },
+        })
+      )
+    );
   },
 
   /**

@@ -112,3 +112,17 @@ export function useDeleteGoal() {
     },
   });
 }
+
+export function useReorderGoals() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (items: { id: string; sortOrder: number }[]) =>
+      fetchJson("/api/goals/reorder", {
+        method: "POST",
+        body: JSON.stringify({ items }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.goals.all() });
+    },
+  });
+}
