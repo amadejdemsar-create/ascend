@@ -8,7 +8,7 @@ progress:
   total_phases: 11
   completed_phases: 9
   total_plans: 43
-  completed_plans: 40
+  completed_plans: 41
 ---
 
 # Project State
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 ## Current Position
 
 Phase: 11 of 11 (Onboarding, PWA, and Polish)
-Plan: 3 of 5 in current phase complete (01, 02, 04 done; 03, 05 remaining)
-Status: Executing Phase 11, plan 01 (Onboarding) complete
-Last activity: 2026-03-31, completed 11-01 Onboarding
+Plan: 4 of 5 in current phase complete (01, 02, 03, 04 done; 05 remaining)
+Status: Executing Phase 11, plan 03 (Offline Caching and Sync) complete
+Last activity: 2026-03-31, completed 11-03 Offline Caching and Sync
 
 Progress: [█████████████████████████████░] 98%
 
@@ -82,6 +82,7 @@ Progress: [███████████████████████
 | Phase 11 P02 | 6min | 2 tasks | 10 files |
 | Phase 11 P04 | 9min | 2 tasks | 6 files |
 | Phase 11 P01 | 10min | 2 tasks | 10 files |
+| Phase 11 P03 | 2min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -211,6 +212,9 @@ Recent decisions affecting current work:
 - [Phase 11]: Animated counter respects prefers-reduced-motion by setting value instantly
 - [Phase 11]: Migration uses DEFAULT true for existing rows so seeded test user is treated as already onboarded
 - [Phase 11]: MCP guide polls dashboard every 5s to detect goals created via external MCP tools
+- [Phase 11-03]: Duplicated CACHED_API_ROUTES in sw.js because service worker is plain JS and cannot import TS modules
+- [Phase 11-03]: Module-level singleton for IndexedDB connection promise to avoid repeated openDB calls
+- [Phase 11-03]: OfflineSyncProvider wraps entire app layout for React Query context access during post-drain invalidation
 
 ### Pending Todos
 
@@ -226,6 +230,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-31
-Stopped at: Completed 11-01-PLAN.md (Onboarding)
+Stopped at: Completed 11-03-PLAN.md (Offline Caching and Sync)
 Resume file: None
-Next: Continue Phase 11 (plans 03 and 05 remaining)
+Next: Continue Phase 11 (plan 05 remaining)
