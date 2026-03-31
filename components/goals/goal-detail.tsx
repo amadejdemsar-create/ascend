@@ -29,6 +29,8 @@ import {
   Trash2Icon,
   TargetIcon,
   ArrowLeftIcon,
+  RepeatIcon,
+  FlameIcon,
 } from "lucide-react";
 import { ProgressIncrement } from "@/components/goals/progress-increment";
 import { ProgressHistorySheet } from "@/components/goals/progress-history-sheet";
@@ -41,6 +43,12 @@ const HORIZON_LABELS: Record<string, string> = {
 };
 
 const SMART_HORIZONS = new Set(["YEARLY", "QUARTERLY"]);
+
+const FREQUENCY_LABELS: Record<string, string> = {
+  DAILY: "daily",
+  WEEKLY: "weekly",
+  MONTHLY: "monthly",
+};
 
 const SMART_FIELDS = [
   { key: "specific", label: "Specific", placeholder: "What exactly will you accomplish?" },
@@ -218,10 +226,27 @@ export function GoalDetail({ goalId, onClose, isMobileOverlay }: GoalDetailProps
               {goal.title}
             </button>
           )}
-          <div className="mt-1 flex items-center gap-1.5">
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
             <Badge variant="ghost" className="text-[0.65rem] px-1.5 py-0">
               {HORIZON_LABELS[goal.horizon] ?? goal.horizon}
             </Badge>
+            {goal.isRecurring && !goal.recurringSourceId && (
+              <Badge variant="ghost" className="text-[0.65rem] px-1.5 py-0 gap-1">
+                <RepeatIcon className="size-2.5" />
+                Repeats {FREQUENCY_LABELS[goal.recurringFrequency] ?? "weekly"}
+                {goal.recurringInterval > 1 && ` (every ${goal.recurringInterval})`}
+              </Badge>
+            )}
+            {goal.recurringSourceId && (
+              <button
+                type="button"
+                onClick={() => selectGoal(goal.recurringSourceId)}
+                className="text-[0.65rem] text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
+              >
+                <RepeatIcon className="size-2.5" />
+                Instance of template
+              </button>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -263,6 +288,22 @@ export function GoalDetail({ goalId, onClose, isMobileOverlay }: GoalDetailProps
             </Select>
           </div>
         </div>
+
+        {/* Recurring streak info (templates only) */}
+        {goal.isRecurring && !goal.recurringSourceId && (
+          <div className="flex items-center gap-4 rounded-lg border border-border p-3">
+            <div className="flex items-center gap-1.5">
+              <FlameIcon className="size-4 text-orange-500" />
+              <span className="text-sm font-medium">{goal.currentStreak}</span>
+              <span className="text-xs text-muted-foreground">current streak</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <FlameIcon className="size-4 text-muted-foreground" />
+              <span className="text-sm font-medium">{goal.longestStreak}</span>
+              <span className="text-xs text-muted-foreground">best</span>
+            </div>
+          </div>
+        )}
 
         {/* SMART fields (only for YEARLY/QUARTERLY) */}
         {SMART_HORIZONS.has(goal.horizon) && (

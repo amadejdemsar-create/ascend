@@ -19,6 +19,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const RECURRING_HORIZONS = new Set(["WEEKLY", "MONTHLY"]);
+
 interface GoalFormProps {
   mode: "create" | "edit";
   initialData?: Partial<CreateGoalInput & { id: string }>;
@@ -90,12 +92,22 @@ export function GoalForm({
     (initialData as Record<string, unknown> | undefined)?.categoryId as string | undefined
   );
   const [notes, setNotes] = useState(initialData?.notes ?? "");
+  const [isRecurring, setIsRecurring] = useState(
+    (initialData as Record<string, unknown> | undefined)?.isRecurring === true
+  );
+  const [recurringFrequency, setRecurringFrequency] = useState<string>(
+    ((initialData as Record<string, unknown> | undefined)?.recurringFrequency as string) ?? "WEEKLY"
+  );
+  const [recurringInterval, setRecurringInterval] = useState<string>(
+    ((initialData as Record<string, unknown> | undefined)?.recurringInterval as number)?.toString() ?? "1"
+  );
   const [titleError, setTitleError] = useState("");
 
   const { data: categoryTree } = useCategories();
   const flatCategories = flattenCategoryTree((categoryTree ?? []) as CategoryTreeNode[]);
 
   const showSmartFields = SMART_HORIZONS.has(horizon);
+  const showRecurring = RECURRING_HORIZONS.has(horizon);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -122,6 +134,11 @@ export function GoalForm({
       ...(targetValue && { targetValue: Number(targetValue) }),
       ...(unit && { unit }),
       ...(notes && { notes }),
+      ...(showRecurring && isRecurring && {
+        isRecurring: true,
+        recurringFrequency: recurringFrequency as "DAILY" | "WEEKLY" | "MONTHLY",
+        recurringInterval: Number(recurringInterval) || 1,
+      }),
     };
 
     onSubmit(data);
@@ -353,6 +370,67 @@ export function GoalForm({
           rows={2}
         />
       </div>
+
+      {/* Recurring goal fields (WEEKLY/MONTHLY horizons only) */}
+      {showRecurring && (
+        <div className="space-y-3 rounded-lg border border-border p-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">Recurring Goal</p>
+              <p className="text-xs text-muted-foreground">
+                Automatically generate new instances on a schedule
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isRecurring}
+              onClick={() => setIsRecurring(!isRecurring)}
+              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors ${
+                isRecurring ? "bg-primary" : "bg-muted"
+              }`}
+            >
+              <span
+                className={`pointer-events-none block size-4 rounded-full bg-background shadow-sm transition-transform ${
+                  isRecurring ? "translate-x-4" : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
+
+          {isRecurring && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Frequency</Label>
+                <Select
+                  value={recurringFrequency}
+                  onValueChange={(val) => setRecurringFrequency(val as string)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="DAILY">Daily</SelectItem>
+                    <SelectItem value="WEEKLY">Weekly</SelectItem>
+                    <SelectItem value="MONTHLY">Monthly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="recurring-interval">Every N periods</Label>
+                <Input
+                  id="recurring-interval"
+                  type="number"
+                  min={1}
+                  value={recurringInterval}
+                  onChange={(e) => setRecurringInterval(e.target.value)}
+                  placeholder="1"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex justify-end gap-2 pt-2">
