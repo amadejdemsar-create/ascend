@@ -1,0 +1,262 @@
+/* ============================================
+   Ascend Landing Page – Custom Styles
+   Isolated from app interior styles.
+   ============================================ */
+
+/* --- Noise texture overlay --- */
+.landing-noise::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+/* --- Floating gradient orbs --- */
+.landing-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.15;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.landing-orb-1 {
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, #8B5CF6 0%, transparent 70%);
+  top: -200px;
+  right: -100px;
+  animation: landing-float-1 20s ease-in-out infinite;
+}
+
+.landing-orb-2 {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, #4F46E5 0%, transparent 70%);
+  bottom: -150px;
+  left: -100px;
+  animation: landing-float-2 25s ease-in-out infinite;
+}
+
+.landing-orb-3 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, #7C3AED 0%, transparent 70%);
+  top: 40%;
+  left: 50%;
+  animation: landing-float-3 18s ease-in-out infinite;
+}
+
+@keyframes landing-float-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-40px, 30px) scale(1.05); }
+  66% { transform: translate(20px, -20px) scale(0.95); }
+}
+
+@keyframes landing-float-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -40px) scale(1.08); }
+  66% { transform: translate(-20px, 20px) scale(0.92); }
+}
+
+@keyframes landing-float-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-30px, -30px) scale(1.1); }
+}
+
+/* --- Gradient text utility --- */
+.landing-gradient-text {
+  background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 50%, #4F46E5 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* --- Glassmorphic nav --- */
+.landing-glass-nav {
+  background: rgba(15, 15, 20, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+}
+
+/* --- Section divider gradient line --- */
+.landing-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(139, 92, 246, 0.3) 20%,
+    rgba(79, 70, 229, 0.5) 50%,
+    rgba(139, 92, 246, 0.3) 80%,
+    transparent 100%
+  );
+}
+
+/* --- Animated gradient border cards --- */
+.landing-gradient-border {
+  position: relative;
+  background: rgba(22, 22, 29, 0.8);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.landing-gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(139, 92, 246, 0.15) 0%,
+    rgba(79, 70, 229, 0.08) 50%,
+    rgba(139, 92, 246, 0.15) 100%
+  );
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  pointer-events: none;
+  transition: background 0.4s ease;
+}
+
+.landing-gradient-border:hover::before {
+  background: linear-gradient(
+    135deg,
+    rgba(139, 92, 246, 0.5) 0%,
+    rgba(79, 70, 229, 0.3) 30%,
+    rgba(124, 58, 237, 0.5) 60%,
+    rgba(139, 92, 246, 0.5) 100%
+  );
+}
+
+/* --- Shimmer effect for CTA button --- */
+.landing-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.landing-shimmer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 100%
+  );
+  animation: landing-shimmer 3s ease-in-out infinite;
+}
+
+@keyframes landing-shimmer {
+  0% { left: -100%; }
+  100% { left: 200%; }
+}
+
+/* --- Pulse glow for stats --- */
+.landing-pulse-glow {
+  animation: landing-pulse 4s ease-in-out infinite;
+}
+
+@keyframes landing-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.1); }
+  50% { box-shadow: 0 0 30px rgba(139, 92, 246, 0.2); }
+}
+
+/* --- Hierarchy cascade connector --- */
+.landing-cascade-line {
+  position: relative;
+}
+
+.landing-cascade-line::after {
+  content: "";
+  position: absolute;
+  left: 24px;
+  top: 100%;
+  width: 2px;
+  height: 32px;
+  background: linear-gradient(180deg, rgba(139, 92, 246, 0.5) 0%, rgba(79, 70, 229, 0.1) 100%);
+}
+
+/* --- Stagger fade-in animation --- */
+.landing-fade-in {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: landing-fade-up 0.6s ease-out forwards;
+}
+
+.landing-fade-in-delay-1 { animation-delay: 0.1s; }
+.landing-fade-in-delay-2 { animation-delay: 0.2s; }
+.landing-fade-in-delay-3 { animation-delay: 0.3s; }
+.landing-fade-in-delay-4 { animation-delay: 0.4s; }
+
+@keyframes landing-fade-up {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- Feature bento sizing --- */
+.landing-bento-wide {
+  grid-column: span 2;
+}
+
+@media (max-width: 768px) {
+  .landing-bento-wide {
+    grid-column: span 1;
+  }
+}
+
+/* --- Smooth scroll --- */
+.landing-page {
+  scroll-behavior: smooth;
+}
+
+/* --- Hierarchy level indicator --- */
+.landing-level-dot {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.landing-level-dot-1 {
+  background: rgba(139, 92, 246, 0.2);
+  color: #A78BFA;
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+}
+
+.landing-level-dot-2 {
+  background: rgba(99, 102, 241, 0.2);
+  color: #818CF8;
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
+}
+
+.landing-level-dot-3 {
+  background: rgba(79, 70, 229, 0.2);
+  color: #6366F1;
+  box-shadow: 0 0 20px rgba(79, 70, 229, 0.15);
+}
+
+.landing-level-dot-4 {
+  background: rgba(67, 56, 202, 0.2);
+  color: #4F46E5;
+  box-shadow: 0 0 20px rgba(67, 56, 202, 0.15);
+}

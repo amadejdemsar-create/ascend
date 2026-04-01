@@ -24,7 +24,6 @@ export function AppSidebar() {
   const pathname = usePathname();
 
   function isActive(href: string) {
-    if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
   }
 
@@ -33,7 +32,7 @@ export function AppSidebar() {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" render={<Link href="/" />} tooltip="Ascend">
+            <SidebarMenuButton size="lg" render={<Link href="/dashboard" />} tooltip="Ascend">
               <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                 <Target className="size-4" />
               </div>

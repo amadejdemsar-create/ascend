@@ -79,7 +79,7 @@ export function useKeyboardShortcuts(onToggleShortcutRef: () => void) {
           break;
         case "d":
           e.preventDefault();
-          router.push("/");
+          router.push("/dashboard");
           break;
         case "s":
           e.preventDefault();

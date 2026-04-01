@@ -49,7 +49,7 @@ export function useCommandActions(): CommandAction[] {
         id: "nav-dashboard",
         label: "Go to Dashboard",
         icon: LayoutDashboard,
-        onSelect: () => router.push("/"),
+        onSelect: () => router.push("/dashboard"),
         group: "Navigation",
       },
       {

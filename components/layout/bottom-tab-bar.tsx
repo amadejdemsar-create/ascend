@@ -15,7 +15,6 @@ export function BottomTabBar() {
   const allItems = [...mainNavItems, ...secondaryNavItems];
 
   function isActive(href: string) {
-    if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
   }
 
