@@ -370,18 +370,25 @@ export default function DocsPage() {
 
               {/* Perplexity */}
               <div className="space-y-3">
-                <SubHeading id="perplexity">Perplexity Mac App</SubHeading>
+                <SubHeading id="perplexity">Perplexity</SubHeading>
                 <p className="text-sm text-zinc-400">
-                  Open Perplexity &rarr; Settings &rarr; Connectors &rarr; Add Connector, then configure:
+                  Open Perplexity (web or desktop) &rarr; Settings &rarr; MCP Connectors &rarr;
+                  Add custom connector, then configure:
                 </p>
-                <ul className="list-disc pl-6 text-sm text-zinc-400 space-y-1">
+                <ul className="list-disc pl-6 text-sm text-zinc-400 space-y-2">
                   <li>Name: <code className="text-zinc-300 font-mono text-xs">Ascend</code></li>
-                  <li>Command: <code className="text-zinc-300 font-mono text-xs">npx -y ascend-goals-mcp</code></li>
-                  <li>Set environment variables for <code className="text-zinc-300 font-mono text-xs">ASCEND_API_URL</code> and <code className="text-zinc-300 font-mono text-xs">ASCEND_API_KEY</code></li>
+                  <li>MCP server URL: <code className="text-zinc-300 font-mono text-xs">https://ascend.nativeai.agency/api/mcp</code></li>
+                  <li>Open the <strong className="text-zinc-300">Advanced</strong> section</li>
+                  <li>Authentication: select <strong className="text-zinc-300">API Key</strong> or
+                    <strong className="text-zinc-300"> Bearer Token</strong> and paste your Ascend API key</li>
+                  <li>Transport: <strong className="text-zinc-300">Streamable HTTP</strong></li>
+                  <li>Check the confirmation checkbox and click <strong className="text-zinc-300">Add</strong></li>
                 </ul>
                 <div className="rounded-lg border border-zinc-700/50 bg-zinc-800/30 p-3">
                   <p className="text-xs text-zinc-500">
-                    Requires PerplexityXPC helper app. macOS only. Available to paid subscribers.
+                    If you only see OAuth as an authentication option, Ascend does not support
+                    OAuth yet. In that case, select &quot;None&quot; for authentication and the
+                    connection will work for read operations. Full authenticated access is planned.
                   </p>
                 </div>
               </div>
