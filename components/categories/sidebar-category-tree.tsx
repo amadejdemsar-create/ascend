@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, ChevronRight } from "lucide-react";
 import { DynamicIcon } from "lucide-react/dynamic";
 import type { IconName } from "lucide-react/dynamic";
 import { useCategories } from "@/lib/hooks/use-categories";
@@ -119,6 +119,8 @@ function FlatCategoryNode({
   onEditClick: (category: CategoryTreeNode) => void;
   onAddSubcategory: (parentId: string) => void;
 }) {
+  const [collapsed, setCollapsed] = useState(false);
+
   if (depth >= MAX_DEPTH) return null;
 
   const isActive = activeCategoryId === category.id;
@@ -129,15 +131,28 @@ function FlatCategoryNode({
     <>
       <SidebarMenuItem>
         <div className="group/catrow relative flex items-center">
+          {/* Collapse toggle for parents */}
+          {hasChildren ? (
+            <button
+              type="button"
+              onClick={() => setCollapsed(!collapsed)}
+              className="shrink-0 p-0.5 text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+              style={{ marginLeft: depth > 0 ? `${depth * 16 + 4}px` : undefined }}
+              aria-label={collapsed ? "Expand" : "Collapse"}
+            >
+              <ChevronRight className={`size-3 transition-transform duration-150 ${collapsed ? "" : "rotate-90"}`} />
+            </button>
+          ) : (
+            <span style={{ width: depth > 0 ? `${depth * 16 + 16}px` : "16px" }} className="shrink-0" />
+          )}
           <SidebarMenuButton
             isActive={isActive}
             onClick={() => onCategoryClick(category.id)}
             onDoubleClick={() => onEditClick(category)}
             tooltip={category.name}
             className="flex-1"
-            style={{ paddingLeft: depth > 0 ? `${depth * 16 + 8}px` : undefined }}
           >
-            {depth > 0 && (
+            {depth > 0 && !hasChildren && (
               <span className="text-[10px] text-muted-foreground/40 mr-0.5">&#x2514;</span>
             )}
             <span
@@ -150,15 +165,15 @@ function FlatCategoryNode({
         </div>
       </SidebarMenuItem>
 
-      {hasChildren && (
-        <div
-          className="relative"
-          style={{ marginLeft: depth > 0 ? `${depth * 16 + 8}px` : undefined }}
-        >
+      {hasChildren && !collapsed && (
+        <div className="relative">
           {/* Thread line */}
           <div
-            className="absolute left-[19px] top-0 bottom-2 w-px opacity-15"
-            style={{ backgroundColor: category.color }}
+            className="absolute top-0 bottom-2 w-px opacity-15"
+            style={{
+              backgroundColor: category.color,
+              left: `${depth * 16 + 19}px`,
+            }}
           />
           {category.children.map((child) => (
             <FlatCategoryNode
@@ -176,7 +191,7 @@ function FlatCategoryNode({
               <SidebarMenuButton
                 onClick={() => onAddSubcategory(category.id)}
                 className="text-muted-foreground/60 hover:text-muted-foreground"
-                style={{ paddingLeft: `${(depth + 1) * 16 + 8}px` }}
+                style={{ paddingLeft: `${(depth + 1) * 16 + 20}px` }}
               >
                 <Plus className="size-3" />
                 <span className="text-xs">Add subcategory</span>
