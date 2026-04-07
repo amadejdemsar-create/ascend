@@ -7,6 +7,7 @@ import { BottomTabBar } from "@/components/layout/bottom-tab-bar";
 import { useKeyboardShortcuts } from "@/lib/hooks/use-keyboard-shortcuts";
 import { KeyboardShortcuts } from "@/components/command-palette/keyboard-shortcuts";
 import { CommandPalette } from "@/components/command-palette/command-palette";
+import { GoalModal } from "@/components/goals/goal-modal";
 import { OfflineSyncProvider } from "@/components/pwa/offline-sync-provider";
 import { OfflineIndicator } from "@/components/pwa/offline-indicator";
 
@@ -35,6 +36,7 @@ export default function AppLayout({
         </SidebarInset>
         <BottomTabBar />
         <CommandPalette />
+        <GoalModal />
         <KeyboardShortcuts
           open={shortcutRefOpen}
           onOpenChange={setShortcutRefOpen}

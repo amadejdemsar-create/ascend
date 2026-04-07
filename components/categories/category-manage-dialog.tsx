@@ -35,6 +35,7 @@ interface CategoryManageDialogProps {
   mode: "create" | "edit";
   category: CategoryTreeNode | null;
   allCategories: CategoryTreeNode[];
+  defaultParentId?: string | null;
 }
 
 function flattenCategories(
@@ -63,6 +64,7 @@ export function CategoryManageDialog({
   mode,
   category,
   allCategories,
+  defaultParentId,
 }: CategoryManageDialogProps) {
   const createMutation = useCreateCategory();
   const updateMutation = useUpdateCategory();
@@ -183,7 +185,7 @@ export function CategoryManageDialog({
         )}
 
         <CategoryForm
-          key={category?.id ?? "create"}
+          key={category?.id ?? `create-${defaultParentId ?? "root"}`}
           initialData={
             mode === "edit" && category
               ? {
@@ -193,7 +195,9 @@ export function CategoryManageDialog({
                   icon: category.icon,
                   parentId: category.parentId,
                 }
-              : undefined
+              : defaultParentId
+                ? { id: "", name: "", color: "#6366f1", parentId: defaultParentId }
+                : undefined
           }
           categories={flatList}
           onSubmit={handleSubmit}

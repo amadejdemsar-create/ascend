@@ -7,7 +7,6 @@ import { HORIZON_ORDER } from "@/lib/constants";
 import { DndGoalProvider } from "@/components/goals/dnd-goal-provider";
 import { GoalCard } from "@/components/goals/goal-card";
 import { GoalDetail } from "@/components/goals/goal-detail";
-import { GoalModal } from "@/components/goals/goal-modal";
 import { GoalViewSwitcher } from "@/components/goals/goal-view-switcher";
 import { GoalFilterBar } from "@/components/goals/goal-filter-bar";
 import { GoalListView } from "@/components/goals/goal-list-view";
@@ -294,8 +293,6 @@ export default function GoalsPage() {
           </div>
         )}
       </div>
-
-      <GoalModal />
     </>
   );
 }
