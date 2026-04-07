@@ -131,27 +131,20 @@ function FlatCategoryNode({
     <>
       <SidebarMenuItem>
         <div className="group/catrow relative flex items-center">
-          {/* Collapse toggle for parents */}
-          {hasChildren ? (
-            <button
-              type="button"
-              onClick={() => setCollapsed(!collapsed)}
-              className="shrink-0 p-0.5 text-muted-foreground/40 hover:text-muted-foreground transition-colors"
-              style={{ marginLeft: depth > 0 ? `${depth * 16 + 4}px` : undefined }}
-              aria-label={collapsed ? "Expand" : "Collapse"}
-            >
-              <ChevronRight className={`size-3 transition-transform duration-150 ${collapsed ? "" : "rotate-90"}`} />
-            </button>
-          ) : (
-            <span style={{ width: depth > 0 ? `${depth * 16 + 16}px` : "16px" }} className="shrink-0" />
-          )}
           <SidebarMenuButton
             isActive={isActive}
-            onClick={() => onCategoryClick(category.id)}
+            onClick={() => {
+              if (hasChildren) setCollapsed(!collapsed);
+              onCategoryClick(category.id);
+            }}
             onDoubleClick={() => onEditClick(category)}
             tooltip={category.name}
             className="flex-1"
+            style={{ paddingLeft: depth > 0 ? `${depth * 16 + 8}px` : undefined }}
           >
+            {hasChildren && (
+              <ChevronRight className={`size-3.5 shrink-0 text-muted-foreground transition-transform duration-150 ${collapsed ? "" : "rotate-90"}`} />
+            )}
             {depth > 0 && !hasChildren && (
               <span className="text-[10px] text-muted-foreground/40 mr-0.5">&#x2514;</span>
             )}
