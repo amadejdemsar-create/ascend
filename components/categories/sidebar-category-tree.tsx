@@ -119,13 +119,13 @@ function FlatCategoryNode({
   onEditClick: (category: CategoryTreeNode) => void;
   onAddSubcategory: (parentId: string) => void;
 }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [expanded, setExpanded] = useState(category.children.length > 0);
 
   if (depth >= MAX_DEPTH) return null;
 
   const isActive = activeCategoryId === category.id;
   const iconName = (category.icon ?? "folder") as IconName;
-  const hasChildren = category.children.length > 0;
+  const canExpand = depth < MAX_DEPTH - 1;
 
   return (
     <>
@@ -134,7 +134,7 @@ function FlatCategoryNode({
           <SidebarMenuButton
             isActive={isActive}
             onClick={() => {
-              if (hasChildren) setCollapsed(!collapsed);
+              if (canExpand) setExpanded(!expanded);
               onCategoryClick(category.id);
             }}
             onDoubleClick={() => onEditClick(category)}
@@ -142,10 +142,10 @@ function FlatCategoryNode({
             className="flex-1"
             style={{ paddingLeft: depth > 0 ? `${depth * 16 + 8}px` : undefined }}
           >
-            {hasChildren && (
-              <ChevronRight className={`size-3.5 shrink-0 text-muted-foreground transition-transform duration-150 ${collapsed ? "" : "rotate-90"}`} />
+            {canExpand && (
+              <ChevronRight className={`size-3.5 shrink-0 text-muted-foreground transition-transform duration-150 ${expanded ? "rotate-90" : ""}`} />
             )}
-            {depth > 0 && !hasChildren && (
+            {depth > 0 && !canExpand && (
               <span className="text-[10px] text-muted-foreground/40 mr-0.5">&#x2514;</span>
             )}
             <span
@@ -158,16 +158,18 @@ function FlatCategoryNode({
         </div>
       </SidebarMenuItem>
 
-      {hasChildren && !collapsed && (
+      {expanded && canExpand && (
         <div className="relative">
           {/* Thread line */}
-          <div
-            className="absolute top-0 bottom-2 w-px opacity-15"
-            style={{
-              backgroundColor: category.color,
-              left: `${depth * 16 + 19}px`,
-            }}
-          />
+          {category.children.length > 0 && (
+            <div
+              className="absolute top-0 bottom-2 w-px opacity-15"
+              style={{
+                backgroundColor: category.color,
+                left: `${depth * 16 + 19}px`,
+              }}
+            />
+          )}
           {category.children.map((child) => (
             <FlatCategoryNode
               key={child.id}
@@ -179,18 +181,16 @@ function FlatCategoryNode({
               onAddSubcategory={onAddSubcategory}
             />
           ))}
-          {depth < MAX_DEPTH - 1 && (
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                onClick={() => onAddSubcategory(category.id)}
-                className="text-muted-foreground/60 hover:text-muted-foreground"
-                style={{ paddingLeft: `${(depth + 1) * 16 + 20}px` }}
-              >
-                <Plus className="size-3" />
-                <span className="text-xs">Add subcategory</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          )}
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={() => onAddSubcategory(category.id)}
+              className="text-muted-foreground/60 hover:text-muted-foreground"
+              style={{ paddingLeft: `${(depth + 1) * 16 + 20}px` }}
+            >
+              <Plus className="size-3" />
+              <span className="text-xs">Add subcategory</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
         </div>
       )}
     </>
