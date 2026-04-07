@@ -1,15 +1,14 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
-import { useGoalTree } from "@/lib/hooks/use-goals";
+import React, { useEffect, useRef, useMemo } from "react";
+import { useGoals } from "@/lib/hooks/use-goals";
 import { useUIStore } from "@/lib/stores/ui-store";
 import {
   getTimeSegments,
   getGoalColumns,
-  flattenByHorizon,
   type TimelineZoom,
+  type TimelineGoal,
 } from "@/lib/timeline-utils";
-import { filterTree } from "@/lib/tree-filter";
 import { GoalTimelineNode } from "@/components/goals/goal-timeline-node";
 import { differenceInDays } from "date-fns";
 import { ChevronLeft, ChevronRight, GanttChart, SearchX } from "lucide-react";
@@ -69,12 +68,52 @@ export function GoalTimelineView() {
   const setTimelineYear = useUIStore((s) => s.setTimelineYear);
   const activeFilters = useUIStore((s) => s.activeFilters);
 
-  const { data: tree, isLoading } = useGoalTree();
-  const scrollRef = useRef<HTMLDivElement>(null);
+  interface GoalItem {
+    id: string;
+    title: string;
+    status: string;
+    horizon: string;
+    priority: "LOW" | "MEDIUM" | "HIGH";
+    progress: number;
+    deadline: string | null;
+    category: { id: string; name: string; color: string; icon: string | null } | null;
+  }
 
-  const filteredTree = filterTree(tree ?? [], activeFilters);
+  const { data: allGoals, isLoading } = useGoals();
+  const scrollRef = useRef<HTMLDivElement>(null);
   const segments = getTimeSegments(timelineYear, timelineZoom);
-  const goalsByHorizon = flattenByHorizon(filteredTree);
+
+  const goalsByHorizon = useMemo(() => {
+    const goals = (allGoals ?? []) as GoalItem[];
+    const result: Record<string, TimelineGoal[]> = {
+      YEARLY: [],
+      QUARTERLY: [],
+      MONTHLY: [],
+      WEEKLY: [],
+    };
+    for (const g of goals) {
+      if (g.status === "ABANDONED") continue;
+      if (activeFilters.horizon && g.horizon !== activeFilters.horizon) continue;
+      if (activeFilters.status && g.status !== activeFilters.status) continue;
+      if (activeFilters.priority && g.priority !== activeFilters.priority) continue;
+      if (activeFilters.categoryId && g.category?.id !== activeFilters.categoryId) continue;
+      if (result[g.horizon]) {
+        result[g.horizon].push({
+          id: g.id,
+          title: g.title,
+          status: g.status,
+          horizon: g.horizon,
+          priority: g.priority,
+          progress: g.progress,
+          deadline: g.deadline,
+          category: g.category,
+          children: [],
+          depth: 0,
+        });
+      }
+    }
+    return result;
+  }, [allGoals, activeFilters]);
 
   const minColWidth = getMinWidth(timelineZoom);
   const gridCols = `8rem repeat(${segments.length}, minmax(${minColWidth}, 1fr))`;
@@ -99,8 +138,9 @@ export function GoalTimelineView() {
     });
   }, [timelineYear, timelineZoom]);
 
-  const hasGoals = (tree ?? []).length > 0;
-  const hasFilteredGoals = filteredTree.length > 0;
+  const totalGoals = Object.values(goalsByHorizon).reduce((sum, arr) => sum + arr.length, 0);
+  const hasGoals = (allGoals ?? []).length > 0;
+  const hasFilteredGoals = totalGoals > 0;
 
   return (
     <div className="space-y-3">
