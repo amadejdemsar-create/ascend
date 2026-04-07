@@ -95,6 +95,15 @@ export function WeeklyFocusWidget({ goals }: WeeklyFocusWidgetProps) {
   );
 }
 
+const HORIZONS = ["YEARLY", "QUARTERLY", "MONTHLY", "WEEKLY"] as const;
+const HORIZON_LABEL: Record<string, string> = {
+  YEARLY: "Yearly",
+  QUARTERLY: "Quarterly",
+  MONTHLY: "Monthly",
+  WEEKLY: "Weekly",
+};
+const PRIORITIES = ["HIGH", "MEDIUM", "LOW"] as const;
+
 function WeeklyFocusPicker({
   open,
   onOpenChange,
@@ -105,6 +114,8 @@ function WeeklyFocusPicker({
   onCreateNew: () => void;
 }) {
   const [search, setSearch] = useState("");
+  const [horizonFilter, setHorizonFilter] = useState<string | null>(null);
+  const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
   const { data: allGoals, isLoading } = useGoals();
   const openGoalModal = useUIStore((s) => s.openGoalModal);
 
@@ -121,63 +132,110 @@ function WeeklyFocusPicker({
     (g) => g.status !== "COMPLETED" && g.status !== "ABANDONED"
   );
 
-  const filtered = search.trim()
-    ? goals.filter((g) => g.title.toLowerCase().includes(search.toLowerCase()))
-    : goals;
+  const filtered = goals.filter((g) => {
+    if (search.trim() && !g.title.toLowerCase().includes(search.toLowerCase())) return false;
+    if (horizonFilter && g.horizon !== horizonFilter) return false;
+    if (priorityFilter && g.priority !== priorityFilter) return false;
+    return true;
+  });
 
-  function handlePickGoal(goal: GoalItem) {
-    // Create a weekly sub-goal linked to the picked goal
+  function handlePickGoal(_goal: GoalItem) {
     onOpenChange(false);
     openGoalModal("create", "WEEKLY");
-    // The modal opens with WEEKLY preset; user can set the parent manually
-    // This is the simplest flow without custom API work
   }
-
-  const HORIZON_LABEL: Record<string, string> = {
-    YEARLY: "Yearly",
-    QUARTERLY: "Quarterly",
-    MONTHLY: "Monthly",
-    WEEKLY: "Weekly",
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Set Weekly Focus</DialogTitle>
+          <p className="text-sm text-muted-foreground">
+            Create a new weekly goal or pick an existing goal to focus on.
+          </p>
         </DialogHeader>
 
-        <Button variant="outline" className="w-full justify-start" onClick={onCreateNew}>
+        <Button variant="outline" className="w-full justify-start shrink-0" onClick={onCreateNew}>
           <Plus className="size-4" />
           Create new weekly goal
         </Button>
 
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search existing goals..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-          {search && (
-            <button
-              type="button"
-              onClick={() => setSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <X className="size-3.5" />
-            </button>
-          )}
+        <div className="space-y-2 shrink-0">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search goals..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-wrap gap-1.5">
+            {HORIZONS.map((h) => (
+              <button
+                key={h}
+                type="button"
+                onClick={() => setHorizonFilter(horizonFilter === h ? null : h)}
+                className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors ${
+                  horizonFilter === h
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {HORIZON_LABEL[h]}
+              </button>
+            ))}
+            <span className="w-px h-5 bg-border self-center" />
+            {PRIORITIES.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPriorityFilter(priorityFilter === p ? null : p)}
+                className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors ${
+                  priorityFilter === p
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {p.charAt(0) + p.slice(1).toLowerCase()}
+              </button>
+            ))}
+            {(horizonFilter || priorityFilter) && (
+              <button
+                type="button"
+                onClick={() => { setHorizonFilter(null); setPriorityFilter(null); }}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="max-h-64 overflow-y-auto space-y-0.5">
+        <div className="flex-1 min-h-0 overflow-y-auto space-y-0.5 -mx-2 px-2">
           {isLoading && (
-            <p className="py-4 text-center text-sm text-muted-foreground">Loading...</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">Loading...</p>
           )}
           {!isLoading && filtered.length === 0 && (
-            <p className="py-4 text-center text-sm text-muted-foreground">
-              {search ? "No goals match your search." : "No active goals found."}
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              {search || horizonFilter || priorityFilter
+                ? "No goals match your filters."
+                : "No active goals found."}
+            </p>
+          )}
+          {!isLoading && filtered.length > 0 && (
+            <p className="text-xs text-muted-foreground mb-1">
+              {filtered.length} goal{filtered.length !== 1 ? "s" : ""}
             </p>
           )}
           {filtered.map((goal) => (
@@ -185,16 +243,18 @@ function WeeklyFocusPicker({
               key={goal.id}
               type="button"
               onClick={() => handlePickGoal(goal)}
-              className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-muted transition-colors text-left"
+              className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm hover:bg-muted transition-colors text-left"
             >
-              {goal.category && (
+              {goal.category ? (
                 <span
                   className="size-2 shrink-0 rounded-full"
                   style={{ backgroundColor: goal.category.color }}
                 />
+              ) : (
+                <span className="size-2 shrink-0 rounded-full bg-muted-foreground/20" />
               )}
-              <span className="flex-1 truncate">{goal.title}</span>
-              <span className="text-[10px] text-muted-foreground uppercase">
+              <span className="flex-1 min-w-0 truncate">{goal.title}</span>
+              <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
                 {HORIZON_LABEL[goal.horizon] ?? goal.horizon}
               </span>
               <GoalPriorityBadge priority={goal.priority} />
