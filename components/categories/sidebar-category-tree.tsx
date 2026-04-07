@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronRight, Plus, Settings } from "lucide-react";
+import { ChevronRight, Plus } from "lucide-react";
 import { DynamicIcon } from "lucide-react/dynamic";
 import type { IconName } from "lucide-react/dynamic";
 import { useCategories } from "@/lib/hooks/use-categories";
@@ -91,26 +91,10 @@ export function SidebarCategoryTree() {
         ))}
 
         <SidebarMenuItem>
-          <div className="flex items-center gap-1 px-2 py-1">
-            <SidebarMenuButton
-              onClick={handleCreateClick}
-              tooltip="Add category"
-              className="flex-1"
-            >
-              <Plus className="size-4" />
-              <span className="text-xs">Add</span>
-            </SidebarMenuButton>
-            <SidebarMenuButton
-              onClick={() => {
-                setDialogMode("create");
-                setEditCategory(null);
-                setDialogOpen(true);
-              }}
-              tooltip="Manage categories"
-            >
-              <Settings className="size-4" />
-            </SidebarMenuButton>
-          </div>
+          <SidebarMenuButton onClick={handleCreateClick} tooltip="Add category">
+            <Plus className="size-4" />
+            <span className="text-xs">Add category</span>
+          </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
 
@@ -158,7 +142,7 @@ function CategoryNode({
               />
             }
           >
-            <ChevronRight className="size-4 shrink-0 transition-transform duration-200 group-data-[panel-open]/collapsible:rotate-90" />
+            <ChevronRight className="size-4 shrink-0 transition-transform duration-200 group-data-[open]/collapsible:rotate-90" />
             <span
               className="inline-block size-2 shrink-0 rounded-full"
               style={{ backgroundColor: category.color }}
@@ -237,7 +221,7 @@ function SubCategoryNode({
               />
             }
           >
-            <ChevronRight className="size-3 shrink-0 transition-transform duration-200 group-data-[panel-open]/collapsible:rotate-90" />
+            <ChevronRight className="size-3 shrink-0 transition-transform duration-200 group-data-[open]/collapsible:rotate-90" />
             <span
               className="inline-block size-2 shrink-0 rounded-full"
               style={{ backgroundColor: category.color }}

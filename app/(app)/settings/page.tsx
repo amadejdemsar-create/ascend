@@ -1,3 +1,4 @@
+import { ApiKeySection } from "@/components/settings/api-key-section";
 import { ImportSection } from "@/components/settings/import-section";
 import { ExportSection } from "@/components/settings/export-section";
 
@@ -9,6 +10,7 @@ export default function SettingsPage() {
         Manage your data and preferences.
       </p>
       <div className="mt-6 max-w-2xl space-y-6">
+        <ApiKeySection />
         <ImportSection />
         <ExportSection />
       </div>

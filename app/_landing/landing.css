@@ -182,7 +182,7 @@
 .landing-cascade-line::after {
   content: "";
   position: absolute;
-  left: 24px;
+  left: var(--cascade-left, 24px);
   top: 100%;
   width: 2px;
   height: 32px;

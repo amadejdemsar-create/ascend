@@ -13,42 +13,36 @@ const features = [
     description:
       "Weekly focus, progress overview, streaks, and upcoming deadlines in one view.",
     icon: LayoutDashboard,
-    wide: true,
   },
   {
     title: "Gamification",
     description:
       "XP, levels, streaks, and celebrations that make progress feel rewarding.",
     icon: Trophy,
-    wide: false,
   },
   {
     title: "Command Palette",
     description:
       "Cmd+K to search, navigate, and create goals instantly.",
     icon: Search,
-    wide: false,
   },
   {
     title: "Keyboard Shortcuts",
     description:
       "Full keyboard navigation so you can manage goals without touching the mouse.",
     icon: Keyboard,
-    wide: false,
   },
   {
     title: "Recurring Goals",
     description:
       "Set it once, then track weekly or monthly streaks automatically.",
     icon: Repeat,
-    wide: true,
   },
   {
     title: "AI Integration (MCP)",
     description:
       "Connect Claude or any AI assistant via Model Context Protocol to manage your goals.",
     icon: Bot,
-    wide: false,
   },
 ];
 
@@ -72,9 +66,7 @@ export function FeaturesSection() {
           {features.map((feature) => (
             <div
               key={feature.title}
-              className={`landing-gradient-border p-6 transition-transform hover:-translate-y-1 ${
-                feature.wide ? "landing-bento-wide" : ""
-              }`}
+              className="landing-gradient-border p-6 transition-transform hover:-translate-y-1"
             >
               <div className="mb-4 flex size-11 items-center justify-center rounded-lg bg-violet-500/10">
                 <feature.icon className="size-5 text-violet-400" />

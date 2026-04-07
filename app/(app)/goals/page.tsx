@@ -237,7 +237,7 @@ export default function GoalsPage() {
                 <GoalViewSwitcher />
                 <Button size="sm" onClick={() => openGoalModal("create")}>
                   <PlusIcon className="size-3.5" />
-                  New Goal
+                  <span className="hidden sm:inline">New Goal</span>
                 </Button>
               </div>
             </div>

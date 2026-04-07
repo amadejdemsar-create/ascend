@@ -58,7 +58,7 @@ export function HierarchySection() {
               className={`relative flex items-start gap-5 ${
                 idx < levels.length - 1 ? "landing-cascade-line pb-10" : ""
               }`}
-              style={{ paddingLeft: `${idx * 24}px` }}
+              style={{ paddingLeft: `${idx * 24}px`, '--cascade-left': `${idx * 24 + 24}px` } as React.CSSProperties}
             >
               {/* Level indicator */}
               <div className={`landing-level-dot ${level.dotClass}`}>

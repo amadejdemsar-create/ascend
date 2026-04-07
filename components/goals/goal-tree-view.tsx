@@ -28,7 +28,10 @@ export function GoalTreeView() {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <GitBranch className="size-12 text-muted-foreground/40 mb-4" />
-        <p className="text-sm text-muted-foreground">No goals in hierarchy</p>
+        <p className="text-sm font-medium text-muted-foreground">No goals in hierarchy</p>
+        <p className="mt-2 max-w-sm text-xs text-muted-foreground/70">
+          Goals appear here when they have parent/child relationships. Set a &quot;Parent Goal&quot; when creating or editing a goal to build your hierarchy.
+        </p>
       </div>
     );
   }

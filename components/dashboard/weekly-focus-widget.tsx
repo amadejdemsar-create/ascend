@@ -1,15 +1,17 @@
 "use client";
 
-import { Target } from "lucide-react";
+import { Target, Plus } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { GoalPriorityBadge } from "@/components/goals/goal-priority-badge";
 import type { WeeklyFocusGoal } from "@/lib/services/dashboard-service";
 
 interface WeeklyFocusWidgetProps {
   goals: WeeklyFocusGoal[];
+  onCreateWeekly?: () => void;
 }
 
-export function WeeklyFocusWidget({ goals }: WeeklyFocusWidgetProps) {
+export function WeeklyFocusWidget({ goals, onCreateWeekly }: WeeklyFocusWidgetProps) {
   const display = goals.slice(0, 5);
 
   return (
@@ -22,9 +24,17 @@ export function WeeklyFocusWidget({ goals }: WeeklyFocusWidgetProps) {
       </CardHeader>
       <CardContent>
         {display.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No weekly goals set. Create one from the Goals page to stay focused.
-          </p>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              No weekly goals set. Create one to stay focused.
+            </p>
+            {onCreateWeekly && (
+              <Button variant="outline" size="sm" onClick={onCreateWeekly}>
+                <Plus className="size-3.5" />
+                Set weekly focus
+              </Button>
+            )}
+          </div>
         ) : (
           <div className="space-y-3">
             {display.map((goal) => (

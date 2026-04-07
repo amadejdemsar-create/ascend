@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ChevronRight } from "lucide-react";
 import { DynamicIcon } from "lucide-react/dynamic";
 import type { IconName } from "lucide-react/dynamic";
 import type { CreateGoalInput, UpdateGoalInput } from "@/lib/validations";
@@ -11,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -102,6 +104,15 @@ export function GoalForm({
     ((initialData as Record<string, unknown> | undefined)?.recurringInterval as number)?.toString() ?? "1"
   );
   const [titleError, setTitleError] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(() => {
+    if (mode === "edit") {
+      return !!(initialData?.description || initialData?.deadline || initialData?.parentId ||
+                initialData?.targetValue || initialData?.unit || initialData?.notes ||
+                initialData?.specific || initialData?.measurable || initialData?.attainable ||
+                initialData?.relevant || initialData?.timely);
+    }
+    return false;
+  });
 
   const { data: categoryTree } = useCategories();
   const flatCategories = flattenCategoryTree((categoryTree ?? []) as CategoryTreeNode[]);
@@ -146,6 +157,8 @@ export function GoalForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* === Basic Fields (always visible) === */}
+
       {/* Title */}
       <div className="space-y-2">
         <Label htmlFor="goal-title">
@@ -164,18 +177,6 @@ export function GoalForm({
         {titleError && (
           <p className="text-sm text-destructive">{titleError}</p>
         )}
-      </div>
-
-      {/* Description */}
-      <div className="space-y-2">
-        <Label htmlFor="goal-description">Description</Label>
-        <Textarea
-          id="goal-description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Optional description..."
-          rows={2}
-        />
       </div>
 
       {/* Horizon + Priority row */}
@@ -223,24 +224,6 @@ export function GoalForm({
         </div>
       </div>
 
-      {/* Deadline */}
-      <div className="space-y-2">
-        <Label htmlFor="goal-deadline">Deadline</Label>
-        <Input
-          id="goal-deadline"
-          type="date"
-          value={deadline}
-          onChange={(e) => setDeadline(e.target.value)}
-        />
-      </div>
-
-      {/* Parent select */}
-      <GoalParentSelect
-        horizon={horizon}
-        value={parentId}
-        onChange={setParentId}
-      />
-
       {/* Category select */}
       <div className="space-y-2">
         <Label>Category</Label>
@@ -277,156 +260,200 @@ export function GoalForm({
         </Select>
       </div>
 
-      {/* SMART fields (only for yearly/quarterly) */}
-      {showSmartFields && (
-        <div className="space-y-3 rounded-lg border border-border p-3">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            SMART Goal Fields
-          </p>
-          <div className="space-y-2">
-            <Label htmlFor="goal-specific">Specific</Label>
-            <Textarea
-              id="goal-specific"
-              value={specific}
-              onChange={(e) => setSpecific(e.target.value)}
-              placeholder="What exactly will you accomplish?"
-              rows={2}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="goal-measurable">Measurable</Label>
-            <Textarea
-              id="goal-measurable"
-              value={measurable}
-              onChange={(e) => setMeasurable(e.target.value)}
-              placeholder="How will you measure success?"
-              rows={2}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="goal-attainable">Attainable</Label>
-            <Textarea
-              id="goal-attainable"
-              value={attainable}
-              onChange={(e) => setAttainable(e.target.value)}
-              placeholder="Is this goal realistic and achievable?"
-              rows={2}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="goal-relevant">Relevant</Label>
-            <Textarea
-              id="goal-relevant"
-              value={relevant}
-              onChange={(e) => setRelevant(e.target.value)}
-              placeholder="Why does this goal matter?"
-              rows={2}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="goal-timely">Timely</Label>
-            <Textarea
-              id="goal-timely"
-              value={timely}
-              onChange={(e) => setTimely(e.target.value)}
-              placeholder="What is the timeline and key milestones?"
-              rows={2}
-            />
-          </div>
-        </div>
-      )}
+      {/* === Advanced Fields Toggle === */}
+      <button
+        type="button"
+        onClick={() => setShowAdvanced(!showAdvanced)}
+        className="flex w-full items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
+      >
+        <ChevronRight className={cn("size-4 transition-transform", showAdvanced && "rotate-90")} />
+        Advanced options
+      </button>
 
-      {/* Target value + Unit */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2">
-          <Label htmlFor="goal-target">Target Value</Label>
-          <Input
-            id="goal-target"
-            type="number"
-            value={targetValue}
-            onChange={(e) => setTargetValue(e.target.value)}
-            placeholder="e.g., 100"
+      {showAdvanced && (
+        <div className="space-y-4">
+          {/* Description */}
+          <div className="space-y-2">
+            <Label htmlFor="goal-description">Description</Label>
+            <Textarea
+              id="goal-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Optional description..."
+              rows={2}
+            />
+          </div>
+
+          {/* Deadline */}
+          <div className="space-y-2">
+            <Label htmlFor="goal-deadline">Deadline</Label>
+            <Input
+              id="goal-deadline"
+              type="date"
+              value={deadline}
+              onChange={(e) => setDeadline(e.target.value)}
+            />
+          </div>
+
+          {/* Parent select */}
+          <GoalParentSelect
+            horizon={horizon}
+            value={parentId}
+            onChange={setParentId}
           />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="goal-unit">Unit</Label>
-          <Input
-            id="goal-unit"
-            value={unit}
-            onChange={(e) => setUnit(e.target.value)}
-            placeholder="e.g., clients, articles, km"
-          />
-        </div>
-      </div>
 
-      {/* Notes */}
-      <div className="space-y-2">
-        <Label htmlFor="goal-notes">Notes</Label>
-        <Textarea
-          id="goal-notes"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Any additional notes..."
-          rows={2}
-        />
-      </div>
-
-      {/* Recurring goal fields (WEEKLY/MONTHLY horizons only) */}
-      {showRecurring && (
-        <div className="space-y-3 rounded-lg border border-border p-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">Recurring Goal</p>
-              <p className="text-xs text-muted-foreground">
-                Automatically generate new instances on a schedule
-              </p>
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={isRecurring}
-              onClick={() => setIsRecurring(!isRecurring)}
-              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors ${
-                isRecurring ? "bg-primary" : "bg-muted"
-              }`}
-            >
-              <span
-                className={`pointer-events-none block size-4 rounded-full bg-background shadow-sm transition-transform ${
-                  isRecurring ? "translate-x-4" : "translate-x-0"
-                }`}
+          {/* Target value + Unit */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="goal-target">Target Value</Label>
+              <Input
+                id="goal-target"
+                type="number"
+                value={targetValue}
+                onChange={(e) => setTargetValue(e.target.value)}
+                placeholder="e.g., 100"
               />
-            </button>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="goal-unit">Unit</Label>
+              <Input
+                id="goal-unit"
+                value={unit}
+                onChange={(e) => setUnit(e.target.value)}
+                placeholder="e.g., clients, articles, km"
+              />
+            </div>
           </div>
 
-          {isRecurring && (
-            <div className="grid grid-cols-2 gap-3">
+          {/* Notes */}
+          <div className="space-y-2">
+            <Label htmlFor="goal-notes">Notes</Label>
+            <Textarea
+              id="goal-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Any additional notes..."
+              rows={2}
+            />
+          </div>
+
+          {/* SMART fields (only for yearly/quarterly) */}
+          {showSmartFields && (
+            <div className="space-y-3 rounded-lg border border-border p-3">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                SMART Goal Fields
+              </p>
               <div className="space-y-2">
-                <Label>Frequency</Label>
-                <Select
-                  value={recurringFrequency}
-                  onValueChange={(val) => setRecurringFrequency(val as string)}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="DAILY">Daily</SelectItem>
-                    <SelectItem value="WEEKLY">Weekly</SelectItem>
-                    <SelectItem value="MONTHLY">Monthly</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="recurring-interval">Every N periods</Label>
-                <Input
-                  id="recurring-interval"
-                  type="number"
-                  min={1}
-                  value={recurringInterval}
-                  onChange={(e) => setRecurringInterval(e.target.value)}
-                  placeholder="1"
+                <Label htmlFor="goal-specific">Specific</Label>
+                <Textarea
+                  id="goal-specific"
+                  value={specific}
+                  onChange={(e) => setSpecific(e.target.value)}
+                  placeholder="What exactly will you accomplish?"
+                  rows={2}
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="goal-measurable">Measurable</Label>
+                <Textarea
+                  id="goal-measurable"
+                  value={measurable}
+                  onChange={(e) => setMeasurable(e.target.value)}
+                  placeholder="How will you measure success?"
+                  rows={2}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="goal-attainable">Attainable</Label>
+                <Textarea
+                  id="goal-attainable"
+                  value={attainable}
+                  onChange={(e) => setAttainable(e.target.value)}
+                  placeholder="Is this goal realistic and achievable?"
+                  rows={2}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="goal-relevant">Relevant</Label>
+                <Textarea
+                  id="goal-relevant"
+                  value={relevant}
+                  onChange={(e) => setRelevant(e.target.value)}
+                  placeholder="Why does this goal matter?"
+                  rows={2}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="goal-timely">Timely</Label>
+                <Textarea
+                  id="goal-timely"
+                  value={timely}
+                  onChange={(e) => setTimely(e.target.value)}
+                  placeholder="What is the timeline and key milestones?"
+                  rows={2}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Recurring goal fields (WEEKLY/MONTHLY horizons only) */}
+          {showRecurring && (
+            <div className="space-y-3 rounded-lg border border-border p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">Recurring Goal</p>
+                  <p className="text-xs text-muted-foreground">
+                    Automatically generate new instances on a schedule
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={isRecurring}
+                  onClick={() => setIsRecurring(!isRecurring)}
+                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors ${
+                    isRecurring ? "bg-primary" : "bg-muted"
+                  }`}
+                >
+                  <span
+                    className={`pointer-events-none block size-4 rounded-full bg-background shadow-sm transition-transform ${
+                      isRecurring ? "translate-x-4" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {isRecurring && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Frequency</Label>
+                    <Select
+                      value={recurringFrequency}
+                      onValueChange={(val) => setRecurringFrequency(val as string)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="DAILY">Daily</SelectItem>
+                        <SelectItem value="WEEKLY">Weekly</SelectItem>
+                        <SelectItem value="MONTHLY">Monthly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="recurring-interval">Every N periods</Label>
+                    <Input
+                      id="recurring-interval"
+                      type="number"
+                      min={1}
+                      value={recurringInterval}
+                      onChange={(e) => setRecurringInterval(e.target.value)}
+                      placeholder="1"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

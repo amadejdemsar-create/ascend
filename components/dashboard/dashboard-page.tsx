@@ -8,6 +8,7 @@ import { queryKeys } from "@/lib/queries/keys";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PlusIcon } from "lucide-react";
 import { WeeklyFocusWidget } from "./weekly-focus-widget";
 import { ProgressOverviewWidget } from "./progress-overview-widget";
 import { StreaksStatsWidget } from "./streaks-stats-widget";
@@ -98,12 +99,26 @@ export function DashboardPage() {
       )}
 
       {data && data.onboardingComplete !== false && data.streaksStats.totalGoals > 0 && (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <WeeklyFocusWidget goals={data.weeklyFocus} />
-          <ProgressOverviewWidget categories={data.progressOverview} />
-          <StreaksStatsWidget stats={data.streaksStats} />
-          <UpcomingDeadlinesWidget goals={data.upcomingDeadlines} />
-        </div>
+        <>
+          {/* Quick Actions */}
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => openGoalModal("create", "WEEKLY")}>
+              <PlusIcon className="size-3.5" />
+              New Weekly Goal
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => openGoalModal("create", "YEARLY")}>
+              <PlusIcon className="size-3.5" />
+              New Yearly Goal
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <WeeklyFocusWidget goals={data.weeklyFocus} onCreateWeekly={() => openGoalModal("create", "WEEKLY")} />
+            <ProgressOverviewWidget categories={data.progressOverview} />
+            <StreaksStatsWidget stats={data.streaksStats} />
+            <UpcomingDeadlinesWidget goals={data.upcomingDeadlines} />
+          </div>
+        </>
       )}
     </div>
   );

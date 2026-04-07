@@ -35,15 +35,16 @@ const PRIORITY_OPTIONS = [
 interface CategoryFlat {
   id: string;
   name: string;
+  depth: number;
   children?: CategoryFlat[];
 }
 
-function flattenCategories(nodes: CategoryFlat[]): CategoryFlat[] {
+function flattenCategories(nodes: CategoryFlat[], depth = 0): CategoryFlat[] {
   const result: CategoryFlat[] = [];
   for (const node of nodes) {
-    result.push(node);
+    result.push({ ...node, depth });
     if (node.children?.length) {
-      result.push(...flattenCategories(node.children));
+      result.push(...flattenCategories(node.children, depth + 1));
     }
   }
   return result;
@@ -133,13 +134,17 @@ export function GoalFilterBar() {
         onValueChange={(v) => handleChange("categoryId", v)}
       >
         <SelectTrigger className="h-8 w-[160px]">
-          <SelectValue placeholder="All categories" />
+          <SelectValue placeholder="All categories">
+            {activeFilters.categoryId
+              ? flatCategories.find((c) => c.id === activeFilters.categoryId)?.name ?? "All categories"
+              : undefined}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="">All categories</SelectItem>
           {flatCategories.map((cat) => (
             <SelectItem key={cat.id} value={cat.id}>
-              {cat.name}
+              {cat.depth > 0 ? "\u00A0\u00A0".repeat(cat.depth) : ""}{cat.name}
             </SelectItem>
           ))}
         </SelectContent>

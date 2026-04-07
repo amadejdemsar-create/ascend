@@ -243,7 +243,10 @@ export function GoalTimelineView() {
       {!isLoading && !hasGoals && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <GanttChart className="size-12 text-muted-foreground/40 mb-4" />
-          <p className="text-sm text-muted-foreground">No goals in timeline</p>
+          <p className="text-sm font-medium text-muted-foreground">No goals in timeline</p>
+          <p className="mt-2 max-w-sm text-xs text-muted-foreground/70">
+            Goals need a deadline to appear on the timeline. Add deadlines to your goals from the goal detail panel or when creating new goals.
+          </p>
         </div>
       )}
 

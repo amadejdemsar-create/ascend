@@ -24,6 +24,12 @@ export function LandingNav() {
           >
             How It Works
           </a>
+          <a
+            href="/docs"
+            className="text-sm text-zinc-400 transition-colors hover:text-white"
+          >
+            Docs
+          </a>
         </div>
 
         <Link
