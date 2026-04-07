@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronRight, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { DynamicIcon } from "lucide-react/dynamic";
 import type { IconName } from "lucide-react/dynamic";
 import { useCategories } from "@/lib/hooks/use-categories";
@@ -10,15 +10,7 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarMenuSubButton,
 } from "@/components/ui/sidebar";
-import {
-  Collapsible,
-  CollapsibleTrigger,
-  CollapsibleContent,
-} from "@/components/ui/collapsible";
 import { CategoryManageDialog } from "./category-manage-dialog";
 
 interface CategoryTreeNode {
@@ -43,7 +35,6 @@ export function SidebarCategoryTree() {
 
   function handleCategoryClick(categoryId: string) {
     if (activeFilters.categoryId === categoryId) {
-      // Toggle off if already selected
       const { categoryId: _, ...rest } = activeFilters;
       setActiveFilters(rest);
     } else {
@@ -82,7 +73,7 @@ export function SidebarCategoryTree() {
     <>
       <SidebarMenu>
         {treeData.map((category) => (
-          <CategoryNode
+          <FlatCategoryNode
             key={category.id}
             category={category}
             depth={0}
@@ -113,7 +104,7 @@ export function SidebarCategoryTree() {
   );
 }
 
-function CategoryNode({
+function FlatCategoryNode({
   category,
   depth,
   activeCategoryId,
@@ -132,126 +123,69 @@ function CategoryNode({
 
   const isActive = activeCategoryId === category.id;
   const iconName = (category.icon ?? "folder") as IconName;
+  const hasChildren = category.children.length > 0;
 
   return (
-    <Collapsible className="group/collapsible">
+    <>
       <SidebarMenuItem>
-        <CollapsibleTrigger
-          render={
-            <SidebarMenuButton
-              isActive={isActive}
-              onClick={() => onCategoryClick(category.id)}
-              onDoubleClick={() => onEditClick(category)}
-              tooltip={category.name}
-            />
-          }
-        >
-          <ChevronRight className="size-4 shrink-0 transition-transform duration-200 group-data-[open]/collapsible:rotate-90" />
-          <span
-            className="inline-block size-2 shrink-0 rounded-full"
-            style={{ backgroundColor: category.color }}
-          />
-          <DynamicIcon name={iconName} className="size-4 shrink-0" />
-          <span className="truncate">{category.name}</span>
-        </CollapsibleTrigger>
-
-        <CollapsibleContent>
-          <SidebarMenuSub>
-            {category.children.map((child) => (
-              <SubCategoryNode
-                key={child.id}
-                category={child}
-                depth={depth + 1}
-                activeCategoryId={activeCategoryId}
-                onCategoryClick={onCategoryClick}
-                onEditClick={onEditClick}
-                onAddSubcategory={onAddSubcategory}
-              />
-            ))}
-            {depth < MAX_DEPTH - 1 && (
-              <SidebarMenuSubItem>
-                <SidebarMenuSubButton
-                  onClick={() => onAddSubcategory(category.id)}
-                >
-                  <Plus className="size-3 shrink-0" />
-                  <span className="truncate text-xs text-muted-foreground">Add subcategory</span>
-                </SidebarMenuSubButton>
-              </SidebarMenuSubItem>
+        <div className="group/catrow relative flex items-center">
+          <SidebarMenuButton
+            isActive={isActive}
+            onClick={() => onCategoryClick(category.id)}
+            onDoubleClick={() => onEditClick(category)}
+            tooltip={category.name}
+            className="flex-1"
+            style={{ paddingLeft: depth > 0 ? `${depth * 16 + 8}px` : undefined }}
+          >
+            {depth > 0 && (
+              <span className="text-[10px] text-muted-foreground/40 mr-0.5">&#x2514;</span>
             )}
-          </SidebarMenuSub>
-        </CollapsibleContent>
+            <span
+              className="inline-block size-2 shrink-0 rounded-full"
+              style={{ backgroundColor: category.color }}
+            />
+            <DynamicIcon name={iconName} className="size-4 shrink-0" />
+            <span className="truncate">{category.name}</span>
+          </SidebarMenuButton>
+          {depth < MAX_DEPTH - 1 && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddSubcategory(category.id);
+              }}
+              className="absolute right-1 opacity-0 group-hover/catrow:opacity-100 transition-opacity rounded-md p-1 hover:bg-sidebar-accent text-muted-foreground hover:text-foreground"
+              aria-label={`Add subcategory to ${category.name}`}
+            >
+              <Plus className="size-3" />
+            </button>
+          )}
+        </div>
       </SidebarMenuItem>
-    </Collapsible>
-  );
-}
 
-function SubCategoryNode({
-  category,
-  depth,
-  activeCategoryId,
-  onCategoryClick,
-  onEditClick,
-  onAddSubcategory,
-}: {
-  category: CategoryTreeNode;
-  depth: number;
-  activeCategoryId?: string;
-  onCategoryClick: (id: string) => void;
-  onEditClick: (category: CategoryTreeNode) => void;
-  onAddSubcategory: (parentId: string) => void;
-}) {
-  if (depth >= MAX_DEPTH) return null;
-
-  const isActive = activeCategoryId === category.id;
-  const iconName = (category.icon ?? "folder") as IconName;
-
-  return (
-    <Collapsible className="group/collapsible">
-      <SidebarMenuSubItem>
-        <CollapsibleTrigger
-          render={
-            <SidebarMenuSubButton
-              isActive={isActive}
-              onClick={() => onCategoryClick(category.id)}
-              onDoubleClick={() => onEditClick(category)}
-            />
-          }
+      {hasChildren && (
+        <div
+          className="relative"
+          style={{ marginLeft: depth > 0 ? `${depth * 16 + 8}px` : undefined }}
         >
-          <ChevronRight className="size-3 shrink-0 transition-transform duration-200 group-data-[open]/collapsible:rotate-90" />
-          <span
-            className="inline-block size-2 shrink-0 rounded-full"
+          {/* Thread line */}
+          <div
+            className="absolute left-[19px] top-0 bottom-2 w-px opacity-15"
             style={{ backgroundColor: category.color }}
           />
-          <DynamicIcon name={iconName} className="size-3.5 shrink-0" />
-          <span className="truncate">{category.name}</span>
-        </CollapsibleTrigger>
-
-        <CollapsibleContent>
-          <SidebarMenuSub>
-            {category.children.map((child) => (
-              <SubCategoryNode
-                key={child.id}
-                category={child}
-                depth={depth + 1}
-                activeCategoryId={activeCategoryId}
-                onCategoryClick={onCategoryClick}
-                onEditClick={onEditClick}
-                onAddSubcategory={onAddSubcategory}
-              />
-            ))}
-            {depth < MAX_DEPTH - 1 && (
-              <SidebarMenuSubItem>
-                <SidebarMenuSubButton
-                  onClick={() => onAddSubcategory(category.id)}
-                >
-                  <Plus className="size-3 shrink-0" />
-                  <span className="truncate text-xs text-muted-foreground">Add subcategory</span>
-                </SidebarMenuSubButton>
-              </SidebarMenuSubItem>
-            )}
-          </SidebarMenuSub>
-        </CollapsibleContent>
-      </SidebarMenuSubItem>
-    </Collapsible>
+          {category.children.map((child) => (
+            <FlatCategoryNode
+              key={child.id}
+              category={child}
+              depth={depth + 1}
+              activeCategoryId={activeCategoryId}
+              onCategoryClick={onCategoryClick}
+              onEditClick={onEditClick}
+              onAddSubcategory={onAddSubcategory}
+            />
+          ))}
+        </div>
+      )}
+    </>
   );
 }

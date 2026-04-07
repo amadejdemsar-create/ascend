@@ -144,7 +144,10 @@ export function GoalFilterBar() {
           <SelectItem value="">All categories</SelectItem>
           {flatCategories.map((cat) => (
             <SelectItem key={cat.id} value={cat.id}>
-              {cat.depth > 0 ? "\u00A0\u00A0".repeat(cat.depth) : ""}{cat.name}
+              <span style={{ paddingLeft: cat.depth > 0 ? `${cat.depth * 12}px` : undefined }}>
+                {cat.depth > 0 && <span className="text-[10px] text-muted-foreground/50 mr-1">&#x2514;</span>}
+                {cat.name}
+              </span>
             </SelectItem>
           ))}
         </SelectContent>

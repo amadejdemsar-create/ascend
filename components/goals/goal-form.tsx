@@ -240,7 +240,10 @@ export function GoalForm({
             <SelectItem value="__none__">No category</SelectItem>
             {flatCategories.map((cat) => (
               <SelectItem key={cat.id} value={cat.id}>
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-2" style={{ paddingLeft: cat.depth > 0 ? `${cat.depth * 16}px` : undefined }}>
+                  {cat.depth > 0 && (
+                    <span className="text-[10px] text-muted-foreground/50">&#x2514;</span>
+                  )}
                   <span
                     className="inline-block size-2 shrink-0 rounded-full"
                     style={{ backgroundColor: cat.color }}
@@ -249,10 +252,7 @@ export function GoalForm({
                     name={(cat.icon ?? "folder") as IconName}
                     className="size-3.5 shrink-0"
                   />
-                  <span>
-                    {cat.depth > 0 ? "\u00A0\u00A0".repeat(cat.depth) : ""}
-                    {cat.name}
-                  </span>
+                  <span>{cat.name}</span>
                 </span>
               </SelectItem>
             ))}
