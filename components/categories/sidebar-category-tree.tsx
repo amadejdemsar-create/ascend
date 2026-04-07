@@ -85,8 +85,8 @@ export function SidebarCategoryTree() {
         ))}
 
         <SidebarMenuItem>
-          <SidebarMenuButton onClick={() => handleCreateClick()} tooltip="Add category">
-            <Plus className="size-4" />
+          <SidebarMenuButton onClick={() => handleCreateClick()} tooltip="Add category" className="text-muted-foreground/60 hover:text-muted-foreground">
+            <Plus className="size-3" />
             <span className="text-xs">Add category</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
