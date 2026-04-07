@@ -147,19 +147,6 @@ function FlatCategoryNode({
             <DynamicIcon name={iconName} className="size-4 shrink-0" />
             <span className="truncate">{category.name}</span>
           </SidebarMenuButton>
-          {depth < MAX_DEPTH - 1 && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddSubcategory(category.id);
-              }}
-              className="absolute right-1 opacity-0 group-hover/catrow:opacity-100 transition-opacity rounded-md p-1 hover:bg-sidebar-accent text-muted-foreground hover:text-foreground"
-              aria-label={`Add subcategory to ${category.name}`}
-            >
-              <Plus className="size-3" />
-            </button>
-          )}
         </div>
       </SidebarMenuItem>
 
@@ -184,6 +171,18 @@ function FlatCategoryNode({
               onAddSubcategory={onAddSubcategory}
             />
           ))}
+          {depth < MAX_DEPTH - 1 && (
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={() => onAddSubcategory(category.id)}
+                className="text-muted-foreground/60 hover:text-muted-foreground"
+                style={{ paddingLeft: `${(depth + 1) * 16 + 8}px` }}
+              >
+                <Plus className="size-3" />
+                <span className="text-xs">Add subcategory</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
         </div>
       )}
     </>

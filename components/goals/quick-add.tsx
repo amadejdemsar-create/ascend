@@ -54,7 +54,7 @@ export function QuickAdd() {
   }
 
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-border p-1.5">
+    <div className="flex items-center gap-1.5 rounded-lg border border-border p-1.5 min-w-0">
       <Input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
@@ -67,7 +67,7 @@ export function QuickAdd() {
         value={horizon}
         onValueChange={(val) => setHorizon(val as string)}
       >
-        <SelectTrigger size="sm" className="w-12 shrink-0">
+        <SelectTrigger size="sm" className="w-14 shrink-0">
           <SelectValue>
             {HORIZON_ABBREV[horizon]}
           </SelectValue>
