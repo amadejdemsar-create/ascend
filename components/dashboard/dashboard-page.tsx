@@ -113,7 +113,7 @@ export function DashboardPage() {
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <WeeklyFocusWidget goals={data.weeklyFocus} onCreateWeekly={() => openGoalModal("create", "WEEKLY")} />
+            <WeeklyFocusWidget goals={data.weeklyFocus} />
             <ProgressOverviewWidget categories={data.progressOverview} />
             <StreaksStatsWidget stats={data.streaksStats} />
             <UpcomingDeadlinesWidget goals={data.upcomingDeadlines} />
