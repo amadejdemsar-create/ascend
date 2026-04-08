@@ -10,7 +10,7 @@ import { GoalDetail } from "@/components/goals/goal-detail";
 import { GoalViewSwitcher } from "@/components/goals/goal-view-switcher";
 import { GoalFilterBar } from "@/components/goals/goal-filter-bar";
 import { GoalListView } from "@/components/goals/goal-list-view";
-import { GoalBoardView } from "@/components/goals/goal-board-view";
+
 import { GoalTreeView } from "@/components/goals/goal-tree-view";
 import { GoalTimelineView } from "@/components/goals/goal-timeline-view";
 import { QuickAdd } from "@/components/goals/quick-add";
@@ -214,14 +214,6 @@ export default function GoalsPage() {
             <PlusIcon className="size-3.5" />
             Create Goal
           </Button>
-        </div>
-      );
-    }
-
-    if (activeView === "board") {
-      return (
-        <div className="p-4">
-          <GoalBoardView goals={goalList} />
         </div>
       );
     }

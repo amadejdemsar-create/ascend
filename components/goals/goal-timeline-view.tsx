@@ -66,6 +66,8 @@ export function GoalTimelineView() {
   const setTimelineZoom = useUIStore((s) => s.setTimelineZoom);
   const timelineYear = useUIStore((s) => s.timelineYear);
   const setTimelineYear = useUIStore((s) => s.setTimelineYear);
+  const timelineMonth = useUIStore((s) => s.timelineMonth);
+  const setTimelineMonth = useUIStore((s) => s.setTimelineMonth);
   const activeFilters = useUIStore((s) => s.activeFilters);
 
   interface GoalItem {
@@ -82,7 +84,7 @@ export function GoalTimelineView() {
 
   const { data: allGoals, isLoading } = useGoals();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const segments = getTimeSegments(timelineYear, timelineZoom);
+  const segments = getTimeSegments(timelineYear, timelineZoom, timelineMonth);
 
   const goalsByHorizon = useMemo(() => {
     const goals = (allGoals ?? []) as GoalItem[];
@@ -148,24 +150,48 @@ export function GoalTimelineView() {
     <div className="space-y-3">
       {/* Controls bar */}
       <div className="flex items-center justify-between gap-3">
-        {/* Year navigation */}
+        {/* Period navigation */}
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="icon"
             className="size-8"
-            onClick={() => setTimelineYear(timelineYear - 1)}
+            onClick={() => {
+              if (timelineZoom === "month") {
+                if (timelineMonth === 0) {
+                  setTimelineYear(timelineYear - 1);
+                  setTimelineMonth(11);
+                } else {
+                  setTimelineMonth(timelineMonth - 1);
+                }
+              } else {
+                setTimelineYear(timelineYear - 1);
+              }
+            }}
           >
             <ChevronLeft className="size-4" />
           </Button>
-          <span className="font-mono text-sm font-semibold w-12 text-center">
-            {timelineYear}
+          <span className="font-mono text-sm font-semibold min-w-[5rem] text-center">
+            {timelineZoom === "month"
+              ? new Date(timelineYear, timelineMonth).toLocaleDateString("en", { month: "short", year: "numeric" })
+              : timelineYear}
           </span>
           <Button
             variant="ghost"
             size="icon"
             className="size-8"
-            onClick={() => setTimelineYear(timelineYear + 1)}
+            onClick={() => {
+              if (timelineZoom === "month") {
+                if (timelineMonth === 11) {
+                  setTimelineYear(timelineYear + 1);
+                  setTimelineMonth(0);
+                } else {
+                  setTimelineMonth(timelineMonth + 1);
+                }
+              } else {
+                setTimelineYear(timelineYear + 1);
+              }
+            }}
           >
             <ChevronRight className="size-4" />
           </Button>

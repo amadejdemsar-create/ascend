@@ -10,6 +10,7 @@ import {
   endOfWeek,
   startOfYear,
   endOfYear,
+  getISOWeek,
 } from "date-fns";
 import type { TreeGoal } from "@/lib/hooks/use-goals";
 
@@ -31,7 +32,7 @@ export interface TimelineGoal extends TreeGoal {
  * Generate time segments for a given year at the specified zoom level.
  * Each segment maps to one or more CSS grid columns.
  */
-export function getTimeSegments(year: number, zoom: TimelineZoom): TimeSegment[] {
+export function getTimeSegments(year: number, zoom: TimelineZoom, month?: number): TimeSegment[] {
   const yearStart = startOfYear(new Date(year, 0, 1));
   const yearEnd = endOfYear(new Date(year, 0, 1));
   const interval = { start: yearStart, end: yearEnd };
@@ -60,10 +61,13 @@ export function getTimeSegments(year: number, zoom: TimelineZoom): TimeSegment[]
     }));
   }
 
-  // zoom === "month": weekly segments
-  const weeks = eachWeekOfInterval(interval, { weekStartsOn: 1 });
+  // zoom === "month": weekly segments for one specific month
+  const m = month ?? new Date().getMonth();
+  const monthStart = startOfMonth(new Date(year, m, 1));
+  const monthEnd = endOfMonth(new Date(year, m, 1));
+  const weeks = eachWeekOfInterval({ start: monthStart, end: monthEnd }, { weekStartsOn: 1 });
   return weeks.map((w, i) => ({
-    label: `W${i + 1}`,
+    label: `W${getISOWeek(w)}`,
     start: startOfWeek(w, { weekStartsOn: 1 }),
     end: endOfWeek(w, { weekStartsOn: 1 }),
     columnStart: i + 1,

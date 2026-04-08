@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 import type { SortingState } from "@tanstack/react-table";
 import type { TimelineZoom } from "@/lib/timeline-utils";
 
-export type ViewType = "cards" | "list" | "board" | "tree" | "timeline";
+export type ViewType = "cards" | "list" | "tree" | "timeline";
 
 export interface ActiveFilters {
   horizon?: "YEARLY" | "QUARTERLY" | "MONTHLY" | "WEEKLY";
@@ -45,6 +45,7 @@ interface UIStore {
   boardGroupBy: BoardGroupBy;
   timelineZoom: TimelineZoom;
   timelineYear: number;
+  timelineMonth: number;
   toggleSidebar: () => void;
   selectGoal: (id: string | null) => void;
   openGoalModal: (mode: "create" | "edit", horizon?: string) => void;
@@ -56,6 +57,7 @@ interface UIStore {
   setBoardGroupBy: (groupBy: BoardGroupBy) => void;
   setTimelineZoom: (zoom: TimelineZoom) => void;
   setTimelineYear: (year: number) => void;
+  setTimelineMonth: (month: number) => void;
   resetFilters: () => void;
 }
 
@@ -74,6 +76,7 @@ export const useUIStore = create<UIStore>()(
       boardGroupBy: "status",
       timelineZoom: "quarter",
       timelineYear: new Date().getFullYear(),
+      timelineMonth: new Date().getMonth(),
       toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
       selectGoal: (id) => set({ selectedGoalId: id }),
       openGoalModal: (mode, horizon) =>
@@ -91,39 +94,32 @@ export const useUIStore = create<UIStore>()(
       setBoardGroupBy: (groupBy) => set({ boardGroupBy: groupBy }),
       setTimelineZoom: (zoom) => set({ timelineZoom: zoom }),
       setTimelineYear: (year) => set({ timelineYear: year }),
+      setTimelineMonth: (month) => set({ timelineMonth: month }),
       resetFilters: () => set({ activeFilters: {}, activeSorting: [] }),
     }),
     {
       name: "ascend-ui",
-      version: 4,
+      version: 5,
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as Record<string, unknown>;
-        if (version === 0) {
+        if (version < 4) {
           return {
             ...state,
-            activeView: "cards",
-            activeFilters: {},
-            activeSorting: [],
-            boardGroupBy: "status",
-          };
-        }
-        if (version === 1) {
-          return {
-            ...state,
+            activeView: state.activeView === "board" ? "cards" : state.activeView,
+            activeFilters: state.activeFilters ?? {},
+            activeSorting: state.activeSorting ?? [],
             boardGroupBy: "status",
             timelineZoom: "quarter",
             timelineYear: new Date().getFullYear(),
+            timelineMonth: new Date().getMonth(),
           };
         }
-        if (version === 2) {
+        if (version === 4) {
           return {
             ...state,
-            timelineZoom: "quarter",
-            timelineYear: new Date().getFullYear(),
+            activeView: state.activeView === "board" ? "cards" : state.activeView,
+            timelineMonth: new Date().getMonth(),
           };
-        }
-        if (version === 3) {
-          return state;
         }
         return state;
       },
@@ -135,6 +131,7 @@ export const useUIStore = create<UIStore>()(
         boardGroupBy: state.boardGroupBy,
         timelineZoom: state.timelineZoom,
         timelineYear: state.timelineYear,
+        timelineMonth: state.timelineMonth,
       }),
     }
   )
