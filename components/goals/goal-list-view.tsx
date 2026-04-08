@@ -73,7 +73,6 @@ export function GoalListView({ goals }: GoalListViewProps) {
     data: goals,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
     state: { sorting: activeSorting },
     onSortingChange: (updater) => {
       const next =
@@ -81,6 +80,7 @@ export function GoalListView({ goals }: GoalListViewProps) {
       setActiveSorting(next);
     },
     enableSortingRemoval: true,
+    manualSorting: true,
   });
 
   return (

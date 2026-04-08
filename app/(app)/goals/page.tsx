@@ -33,6 +33,7 @@ export default function GoalsPage() {
   const activeView = useUIStore((s) => s.activeView);
   const activeFilters = useUIStore((s) => s.activeFilters);
   const setActiveFilters = useUIStore((s) => s.setActiveFilters);
+  const activeSorting = useUIStore((s) => s.activeSorting);
   const selectedGoalId = useUIStore((s) => s.selectedGoalId);
   const selectGoal = useUIStore((s) => s.selectGoal);
   const openGoalModal = useUIStore((s) => s.openGoalModal);
@@ -73,7 +74,8 @@ export default function GoalsPage() {
     children?: Array<{ id: string }>;
   }
 
-  // Build tree-ordered flat list: parents followed by their children, with depth
+  // Build tree-ordered flat list: parents followed by their children, with depth.
+  // Respects active column sort while preserving hierarchy (children stay under parent).
   const goalList = (() => {
     const raw = (goals ?? []) as GoalListItem[];
     const childMap = new Map<string | null, GoalListItem[]>();
@@ -82,16 +84,37 @@ export default function GoalsPage() {
       if (!childMap.has(pid)) childMap.set(pid, []);
       childMap.get(pid)!.push(g);
     }
+
+    const sortCol = activeSorting[0];
+    const sortKey = sortCol?.id as keyof GoalListItem | undefined;
+    const sortDesc = sortCol?.desc ?? false;
+
+    function compareItems(a: GoalListItem, b: GoalListItem): number {
+      const key = sortKey ?? "deadline";
+      const desc = sortKey ? sortDesc : false; // default deadline asc
+      const av = a[key];
+      const bv = b[key];
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      let cmp: number;
+      if (key === "deadline") {
+        cmp = new Date(av as string).getTime() - new Date(bv as string).getTime();
+      } else if (typeof av === "string") {
+        cmp = (av as string).localeCompare(bv as string);
+      } else if (typeof av === "number") {
+        cmp = (av as number) - (bv as number);
+      } else {
+        cmp = 0;
+      }
+      return desc ? -cmp : cmp;
+    }
+
     const result: GoalListItem[] = [];
     function walk(parentId: string | null, depth: number) {
       const items = childMap.get(parentId);
       if (!items) return;
-      const sorted = [...items].sort((a, b) => {
-        if (!a.deadline && !b.deadline) return 0;
-        if (!a.deadline) return 1;
-        if (!b.deadline) return -1;
-        return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
-      });
+      const sorted = [...items].sort(compareItems);
       for (const item of sorted) {
         result.push({ ...item, _depth: depth });
         walk(item.id, depth + 1);
