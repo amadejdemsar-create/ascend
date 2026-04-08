@@ -75,6 +75,7 @@ export function GoalTimelineView() {
     horizon: string;
     priority: "LOW" | "MEDIUM" | "HIGH";
     progress: number;
+    startDate: string | null;
     deadline: string | null;
     category: { id: string; name: string; color: string; icon: string | null } | null;
   }
@@ -105,6 +106,7 @@ export function GoalTimelineView() {
           horizon: g.horizon,
           priority: g.priority,
           progress: g.progress,
+          startDate: g.startDate,
           deadline: g.deadline,
           category: g.category,
           children: [],

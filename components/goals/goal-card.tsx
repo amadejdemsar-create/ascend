@@ -27,6 +27,7 @@ interface GoalCardGoal {
   priority: "LOW" | "MEDIUM" | "HIGH";
   progress: number;
   deadline?: string | null;
+  _depth?: number;
   children?: Array<{ id: string }>;
 }
 
@@ -39,11 +40,13 @@ interface GoalCardProps {
 export function GoalCard({ goal, onSelect, isSelected }: GoalCardProps) {
   const statusInfo = STATUS_CONFIG[goal.status] ?? STATUS_CONFIG.NOT_STARTED;
   const childCount = goal.children?.length ?? 0;
+  const depth = goal._depth ?? 0;
 
   return (
     <button
       type="button"
       onClick={() => onSelect(goal.id)}
+      style={depth > 0 ? { marginLeft: `${depth * 1.25}rem` } : undefined}
       className={cn(
         "w-full rounded-lg border bg-card p-3 text-left transition-all hover:shadow-sm hover-lift",
         isSelected

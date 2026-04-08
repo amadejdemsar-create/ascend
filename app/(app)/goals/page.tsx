@@ -62,6 +62,8 @@ export default function GoalsPage() {
     priority: "LOW" | "MEDIUM" | "HIGH";
     progress: number;
     deadline: string | null;
+    parentId: string | null;
+    _depth?: number;
     category: {
       id: string;
       name: string;
@@ -71,7 +73,27 @@ export default function GoalsPage() {
     children?: Array<{ id: string }>;
   }
 
-  const goalList = (goals ?? []) as GoalListItem[];
+  // Build tree-ordered flat list: parents followed by their children, with depth
+  const goalList = (() => {
+    const raw = (goals ?? []) as GoalListItem[];
+    const childMap = new Map<string | null, GoalListItem[]>();
+    for (const g of raw) {
+      const pid = g.parentId ?? null;
+      if (!childMap.has(pid)) childMap.set(pid, []);
+      childMap.get(pid)!.push(g);
+    }
+    const result: GoalListItem[] = [];
+    function walk(parentId: string | null, depth: number) {
+      const items = childMap.get(parentId);
+      if (!items) return;
+      for (const item of items) {
+        result.push({ ...item, _depth: depth });
+        walk(item.id, depth + 1);
+      }
+    }
+    walk(null, 0);
+    return result;
+  })();
 
   function handleHorizonTabChange(value: string) {
     setActiveFilters({

@@ -15,6 +15,8 @@ export interface GoalListItem {
   priority: "LOW" | "MEDIUM" | "HIGH";
   progress: number;
   deadline: string | null;
+  parentId: string | null;
+  _depth?: number;
   category: {
     id: string;
     name: string;
@@ -41,16 +43,21 @@ const HORIZON_LABELS: Record<string, string> = {
   WEEKLY: "Weekly",
 };
 
-function TitleCell({ id, title }: { id: string; title: string }) {
+function TitleCell({ id, title, depth }: { id: string; title: string; depth: number }) {
   const selectGoal = useUIStore((s) => s.selectGoal);
   return (
-    <button
-      type="button"
-      className="max-w-[200px] truncate text-left font-medium hover:underline"
-      onClick={() => selectGoal(id)}
-    >
-      {title}
-    </button>
+    <div className="flex items-center" style={{ paddingLeft: `${depth * 1.25}rem` }}>
+      {depth > 0 && (
+        <span className="mr-1.5 text-muted-foreground/40 text-xs">└</span>
+      )}
+      <button
+        type="button"
+        className="max-w-[200px] truncate text-left font-medium hover:underline"
+        onClick={() => selectGoal(id)}
+      >
+        {title}
+      </button>
+    </div>
   );
 }
 
@@ -59,7 +66,7 @@ export const columns: ColumnDef<GoalListItem>[] = [
     accessorKey: "title",
     header: ({ column }) => <SortableHeader column={column} title="Title" />,
     cell: ({ row }) => (
-      <TitleCell id={row.original.id} title={row.original.title} />
+      <TitleCell id={row.original.id} title={row.original.title} depth={row.original._depth ?? 0} />
     ),
   },
   {

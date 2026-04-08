@@ -106,12 +106,11 @@ export const goalService = {
 
   /**
    * Get the full goal tree for a user.
-   * Fetches all yearly goals with nested children 3 levels deep
-   * (yearly > quarterly > monthly > weekly).
+   * Fetches all top-level goals (no parent) with nested children 3 levels deep.
    */
   async getTree(userId: string) {
     return prisma.goal.findMany({
-      where: { userId, horizon: "YEARLY", parentId: null },
+      where: { userId, parentId: null },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
       include: {
         category: true,

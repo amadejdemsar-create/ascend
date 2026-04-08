@@ -31,6 +31,7 @@ export interface TreeGoal {
   horizon: string;
   priority: "LOW" | "MEDIUM" | "HIGH";
   progress: number;
+  startDate: string | null;
   deadline: string | null;
   category: { id: string; name: string; color: string; icon: string | null } | null;
   children: TreeGoal[];
