@@ -42,15 +42,10 @@ export function useKeyboardShortcuts(onToggleShortcutRef: () => void) {
           break;
         case "3":
           e.preventDefault();
-          setActiveView("board");
-          router.push("/goals");
-          break;
-        case "4":
-          e.preventDefault();
           setActiveView("tree");
           router.push("/goals");
           break;
-        case "5":
+        case "4":
           e.preventDefault();
           setActiveView("timeline");
           router.push("/goals");

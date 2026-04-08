@@ -13,7 +13,6 @@ import {
   Plus,
   LayoutGrid,
   List,
-  Columns3,
   GitBranch,
   GanttChart,
   Tag,
@@ -84,16 +83,6 @@ export function useCommandActions(): CommandAction[] {
         icon: List,
         onSelect: () => {
           setActiveView("list");
-          router.push("/goals");
-        },
-        group: "Views",
-      },
-      {
-        id: "view-board",
-        label: "Switch to Board View",
-        icon: Columns3,
-        onSelect: () => {
-          setActiveView("board");
           router.push("/goals");
         },
         group: "Views",
