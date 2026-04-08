@@ -86,7 +86,13 @@ export default function GoalsPage() {
     function walk(parentId: string | null, depth: number) {
       const items = childMap.get(parentId);
       if (!items) return;
-      for (const item of items) {
+      const sorted = [...items].sort((a, b) => {
+        if (!a.deadline && !b.deadline) return 0;
+        if (!a.deadline) return 1;
+        if (!b.deadline) return -1;
+        return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+      });
+      for (const item of sorted) {
         result.push({ ...item, _depth: depth });
         walk(item.id, depth + 1);
       }
