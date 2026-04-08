@@ -90,8 +90,23 @@ export function getGoalColumns(
     return getHorizonFallback(goal.horizon, segments);
   }
 
-  // Use available dates, falling back to each other
-  const effectiveStart = goalStart ?? goalEnd!;
+  // When only deadline exists (no startDate), infer a start based on horizon
+  // so the bar has a visible width instead of collapsing to a dot.
+  const inferredStart = (() => {
+    if (goalStart) return goalStart;
+    if (!goalEnd) return goalEnd;
+    const d = new Date(goalEnd);
+    switch (goal.horizon) {
+      case "YEARLY": d.setMonth(d.getMonth() - 12); break;
+      case "QUARTERLY": d.setMonth(d.getMonth() - 3); break;
+      case "MONTHLY": d.setDate(d.getDate() - 28); break;
+      case "WEEKLY": d.setDate(d.getDate() - 7); break;
+      default: d.setDate(d.getDate() - 14); break;
+    }
+    return d;
+  })();
+
+  const effectiveStart = inferredStart ?? goalEnd!;
   const effectiveEnd = goalEnd ?? goalStart!;
 
   let startCol = segments.findIndex(
