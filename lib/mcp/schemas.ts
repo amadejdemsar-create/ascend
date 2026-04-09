@@ -20,6 +20,7 @@ export interface ToolDefinition {
 const HORIZON_ENUM = ["YEARLY", "QUARTERLY", "MONTHLY", "WEEKLY"] as const;
 const STATUS_ENUM = ["NOT_STARTED", "IN_PROGRESS", "COMPLETED", "ABANDONED"] as const;
 const PRIORITY_ENUM = ["LOW", "MEDIUM", "HIGH"] as const;
+const TODO_STATUS_ENUM = ["PENDING", "DONE", "SKIPPED"] as const;
 
 export const TOOL_DEFINITIONS: ToolDefinition[] = [
   // ── Goal CRUD ──────────────────────────────────────────────────────
@@ -504,6 +505,228 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         id: { type: "string", description: "Context entry ID to delete" },
       },
       required: ["id"],
+    },
+  },
+
+  // ── Todos ──────────────────────────────────────────────────────────
+
+  {
+    name: "create_todo",
+    description:
+      "Create a new to-do with a title and optional details. Supports linking to a goal, assigning a category, setting priority, due/scheduled dates, and recurrence.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "To-do title (1 to 200 chars)" },
+        description: { type: "string", description: "Longer description" },
+        priority: {
+          type: "string",
+          enum: PRIORITY_ENUM,
+          description: "Priority level (defaults to MEDIUM)",
+        },
+        goalId: { type: "string", description: "Parent goal ID to link this to-do to" },
+        categoryId: { type: "string", description: "Category ID to assign" },
+        dueDate: {
+          type: "string",
+          format: "date-time",
+          description: "Due date (ISO 8601)",
+        },
+        scheduledDate: {
+          type: "string",
+          format: "date-time",
+          description: "Scheduled date (ISO 8601)",
+        },
+        isRecurring: { type: "boolean", description: "Whether this to-do repeats" },
+        recurrenceRule: {
+          type: "string",
+          description: "iCalendar RRULE string e.g. FREQ=DAILY or FREQ=WEEKLY;BYDAY=TU,TH",
+        },
+      },
+      required: ["title"],
+    },
+  },
+
+  {
+    name: "get_todo",
+    description:
+      "Retrieve a single to-do by ID, including its linked goal details and category.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "To-do ID" },
+      },
+      required: ["id"],
+    },
+  },
+
+  {
+    name: "update_todo",
+    description:
+      "Update any fields on an existing to-do. All fields are optional except the to-do ID.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "To-do ID" },
+        title: { type: "string", description: "New title" },
+        description: { type: "string", description: "New description" },
+        priority: { type: "string", enum: PRIORITY_ENUM, description: "New priority" },
+        status: {
+          type: "string",
+          enum: TODO_STATUS_ENUM,
+          description: "New status (PENDING, DONE, or SKIPPED)",
+        },
+        goalId: { type: "string", description: "New linked goal ID" },
+        categoryId: { type: "string", description: "New category ID" },
+        dueDate: { type: "string", format: "date-time", description: "New due date (ISO 8601)" },
+        scheduledDate: {
+          type: "string",
+          format: "date-time",
+          description: "New scheduled date (ISO 8601)",
+        },
+        sortOrder: { type: "integer", description: "Display sort order" },
+        isBig3: { type: "boolean", description: "Whether this is a Big 3 priority" },
+        big3Date: {
+          type: "string",
+          format: "date-time",
+          description: "Date this to-do is a Big 3 for (ISO 8601)",
+        },
+      },
+      required: ["id"],
+    },
+  },
+
+  {
+    name: "delete_todo",
+    description: "Delete a to-do by ID. Verifies ownership before deleting.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "To-do ID" },
+      },
+      required: ["id"],
+    },
+  },
+
+  {
+    name: "list_todos",
+    description:
+      "List to-dos with optional filters for status, priority, category, goal, date range, and Big 3. Supports pagination.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        status: {
+          type: "string",
+          enum: TODO_STATUS_ENUM,
+          description: "Filter by status",
+        },
+        priority: { type: "string", enum: PRIORITY_ENUM, description: "Filter by priority" },
+        categoryId: { type: "string", description: "Filter by category ID" },
+        goalId: { type: "string", description: "Filter by linked goal ID" },
+        dateFrom: {
+          type: "string",
+          format: "date-time",
+          description: "Filter: due date on or after this date (ISO 8601)",
+        },
+        dateTo: {
+          type: "string",
+          format: "date-time",
+          description: "Filter: due date on or before this date (ISO 8601)",
+        },
+        isBig3: { type: "boolean", description: "Filter for Big 3 to-dos only" },
+        limit: {
+          type: "integer",
+          description: "Max number of to-dos to return (default 50)",
+          default: 50,
+        },
+        offset: {
+          type: "integer",
+          description: "Number of to-dos to skip for pagination (default 0)",
+          default: 0,
+        },
+      },
+    },
+  },
+
+  {
+    name: "complete_todo",
+    description:
+      "Mark a to-do as completed. Triggers side effects: awards XP based on priority, updates recurring streak if applicable, and auto-increments linked goal progress.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "To-do ID to complete" },
+      },
+      required: ["id"],
+    },
+  },
+
+  {
+    name: "search_todos",
+    description: "Search to-dos by title and description text (case insensitive).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "Search text to match against titles and descriptions",
+        },
+      },
+      required: ["query"],
+    },
+  },
+
+  {
+    name: "get_daily_big3",
+    description:
+      "Get today's Big 3 priority to-dos (or for a specific date). Returns up to 3 to-dos marked as priorities.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        date: {
+          type: "string",
+          format: "date-time",
+          description: "Date to get Big 3 for (defaults to today, ISO 8601)",
+        },
+      },
+    },
+  },
+
+  {
+    name: "set_daily_big3",
+    description:
+      "Set up to 3 to-dos as today's Big 3 priorities. Replaces any existing Big 3 for the given date.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        todoIds: {
+          type: "array",
+          items: { type: "string" },
+          description: "Up to 3 to-do IDs to mark as today's priorities",
+        },
+        date: {
+          type: "string",
+          format: "date-time",
+          description: "Date to set Big 3 for (defaults to today, ISO 8601)",
+        },
+      },
+      required: ["todoIds"],
+    },
+  },
+
+  {
+    name: "get_todos_for_date",
+    description:
+      "Get all to-dos for a specific date, including those scheduled or due on that day. Big 3 items are sorted first.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        date: {
+          type: "string",
+          format: "date-time",
+          description: "Date to get to-dos for (ISO 8601)",
+        },
+      },
+      required: ["date"],
     },
   },
 ];
