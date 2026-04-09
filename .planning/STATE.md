@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 ## Current Position
 
 Phase: 12 of 18 (Todo Data Layer)
-Plan: 0 of 2 in current phase
-Status: Ready to plan
-Last activity: 2026-04-09, v2.0 roadmap created (7 phases, 55 requirements mapped)
+Plan: 1 of 2 in current phase
+Status: Executing
+Last activity: 2026-04-09, completed 12-01 (Todo data layer foundation)
 
-Progress: [░░░░░░░░░░] 0% (v2.0)
+Progress: [█░░░░░░░░░] 7% (v2.0)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0 (v2.0)
-- Average duration: n/a
-- Total execution time: 0 hours
+- Total plans completed: 1 (v2.0)
+- Average duration: 3min
+- Total execution time: 3min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 12. Todo Data Layer | 1/2 | 3min | 3min |
 
 **Recent Trend:**
-- Last 5 plans: n/a
-- Trend: n/a
+- Last 5 plans: 12-01 (3min)
+- Trend: n/a (insufficient data)
 
 *Updated after each plan completion*
 
@@ -45,6 +45,9 @@ Recent decisions affecting current work:
 - [v2.0 planning]: Separate Todo model (not a flag on Goal). Goals carry 25+ fields; to-dos are lightweight, flat, binary.
 - [v2.0 planning]: Separate ContextEntry model (not a field on Goal). Context is user-level knowledge, not goal-specific.
 - [v2.0 planning]: Only 2 new deps needed: react-day-picker 9.14.0 and rrule 2.8.1.
+- [12-01]: XP for to-dos uses direct XP_PER_TODO values (5/10/15) without PRIORITY_MULTIPLIER, since values already differ by priority.
+- [12-01]: todoService creates XpEvent directly rather than calling gamificationService.awardXp (which is goal-centric).
+- [12-01]: Each to-do completion increments linked goal progress by 1 unit via goalService.logProgress.
 
 ### Pending Todos
 
@@ -60,5 +63,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-09
-Stopped at: v2.0 roadmap created, ready to plan Phase 12
+Stopped at: Completed 12-01-PLAN.md (Todo data layer foundation)
 Resume file: None

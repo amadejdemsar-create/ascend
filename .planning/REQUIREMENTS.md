@@ -164,12 +164,12 @@
 
 ### To-dos (Inputs)
 
-- [ ] **TODO-01**: User can create a to-do with title, optional description, due date, priority, and category
-- [ ] **TODO-02**: User can complete a to-do (binary done/not done toggle)
-- [ ] **TODO-03**: User can edit and delete to-dos
-- [ ] **TODO-04**: User can create a to-do via inline quick-add (title + Enter, minimal friction)
-- [ ] **TODO-05**: User can link a to-do to a parent goal (input-to-output connection)
-- [ ] **TODO-06**: Completing a linked to-do auto-increments the parent goal's progress
+- [x] **TODO-01**: User can create a to-do with title, optional description, due date, priority, and category
+- [x] **TODO-02**: User can complete a to-do (binary done/not done toggle)
+- [x] **TODO-03**: User can edit and delete to-dos
+- [x] **TODO-04**: User can create a to-do via inline quick-add (title + Enter, minimal friction)
+- [x] **TODO-05**: User can link a to-do to a parent goal (input-to-output connection)
+- [x] **TODO-06**: Completing a linked to-do auto-increments the parent goal's progress
 - [ ] **TODO-07**: User can create recurring to-dos (daily, weekly, custom via rrule patterns like "every Tuesday and Thursday")
 - [ ] **TODO-08**: Recurring to-dos track streaks (consecutive completions) and 30-day consistency score
 - [ ] **TODO-09**: User can mark up to 3 to-dos as "Daily Big 3" priorities for a given day
@@ -391,12 +391,12 @@
 | INFRA-03 | Phase 1 | Complete (01-01) |
 | INFRA-04 | Phase 1 | Complete (01-01) |
 | INFRA-05 | Phase 1 | Complete |
-| TODO-01 | Phase 12 | Pending |
-| TODO-02 | Phase 12 | Pending |
-| TODO-03 | Phase 12 | Pending |
-| TODO-04 | Phase 12 | Pending |
-| TODO-05 | Phase 12 | Pending |
-| TODO-06 | Phase 12 | Pending |
+| TODO-01 | Phase 12 | Complete (12-01) |
+| TODO-02 | Phase 12 | Complete (12-01) |
+| TODO-03 | Phase 12 | Complete (12-01) |
+| TODO-04 | Phase 12 | Complete (12-01) |
+| TODO-05 | Phase 12 | Complete (12-01) |
+| TODO-06 | Phase 12 | Complete (12-01) |
 | TODO-07 | Phase 12 | Pending |
 | TODO-08 | Phase 12 | Pending |
 | TODO-09 | Phase 12 | Pending |

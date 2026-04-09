@@ -47,7 +47,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 12-01-PLAN.md — Prisma Todo model, Zod schemas, core service (CRUD + complete + skip + goal linking), API routes
+- [x] 12-01-PLAN.md — Prisma Todo model, Zod schemas, core service (CRUD + complete + skip + goal linking), API routes
 - [ ] 12-02-PLAN.md — rrule recurrence, streak tracking, Daily Big 3 enforcement, date queries, React hooks
 
 ### Phase 13: Todo UI
@@ -148,7 +148,7 @@ Note: Phase 16 (Context) and Phase 17 (Todo MCP) can be parallelized since they 
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 12. Todo Data Layer | v2.0 | 0/2 | Planning complete | - |
+| 12. Todo Data Layer | v2.0 | 1/2 | In progress | - |
 | 13. Todo UI | v2.0 | 0/1 | Not started | - |
 | 14. Calendar View | v2.0 | 0/2 | Not started | - |
 | 15. Dashboard Transformation | v2.0 | 0/1 | Not started | - |
