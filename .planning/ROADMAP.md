@@ -154,5 +154,5 @@ Note: Phase 16 (Context) and Phase 17 (Todo MCP) can be parallelized since they 
 | 14. Calendar View | 2/2 | Complete    | 2026-04-09 | - |
 | 15. Dashboard Transformation | 1/1 | Complete    | 2026-04-09 | - |
 | 16. Context System | 3/3 | Complete    | 2026-04-09 | - |
-| 17. Todo MCP Tools | 1/1 | Complete   | 2026-04-09 | - |
+| 17. Todo MCP Tools | 1/1 | Complete    | 2026-04-09 | - |
 | 18. Timeline, Navigation, and Polish | v2.0 | 0/2 | Not started | - |
