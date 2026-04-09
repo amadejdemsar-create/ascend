@@ -13,6 +13,7 @@ import { handleDashboardTool } from "./tools/dashboard-tools";
 import { handleCategoryTool } from "./tools/category-tools";
 import { handleDataTool } from "./tools/data-tools";
 import { handleContextTool } from "./tools/context-tools";
+import { handleTodoTool } from "./tools/todo-tools";
 import { contextService } from "@/lib/services/context-service";
 import { categoryService } from "@/lib/services/category-service";
 
@@ -32,6 +33,10 @@ const CATEGORY_TOOLS = new Set(["create_category", "update_category", "delete_ca
 const DATA_TOOLS = new Set(["export_data", "import_data", "get_settings", "update_settings"]);
 const CONTEXT_TOOLS = new Set([
   "set_context", "get_context", "list_context", "search_context", "delete_context",
+]);
+const TODO_TOOLS = new Set([
+  "create_todo", "get_todo", "update_todo", "delete_todo", "list_todos",
+  "complete_todo", "search_todos", "get_daily_big3", "set_daily_big3", "get_todos_for_date",
 ]);
 
 /**
@@ -84,7 +89,11 @@ export function createAscendMcpServer(userId: string): Server {
       return handleContextTool(userId, name, args ?? {});
     }
 
-    // All 27 tool definitions are now routed. This fallback should never be reached.
+    if (TODO_TOOLS.has(name)) {
+      return handleTodoTool(userId, name, args ?? {});
+    }
+
+    // All 37 tool definitions are now routed. This fallback should never be reached.
     return {
       content: [{ type: "text" as const, text: `Unknown tool: ${name}` }],
       isError: true,
