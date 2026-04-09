@@ -191,11 +191,11 @@
 
 ### Context System
 
-- [ ] **CTX-01**: User can create context documents with title, markdown content, and category
-- [ ] **CTX-02**: User can organize context into categories (Personal, Business, Preferences, etc.) with tree navigation
-- [ ] **CTX-03**: User can tag context documents for cross-cutting discovery
-- [ ] **CTX-04**: User can search across all context documents (full-text search via PostgreSQL tsvector)
-- [ ] **CTX-05**: User can create bi-directional links between context documents (Obsidian-style [[backlinks]])
+- [x] **CTX-01**: User can create context documents with title, markdown content, and category
+- [x] **CTX-02**: User can organize context into categories (Personal, Business, Preferences, etc.) with tree navigation
+- [x] **CTX-03**: User can tag context documents for cross-cutting discovery
+- [x] **CTX-04**: User can search across all context documents (full-text search via PostgreSQL tsvector)
+- [x] **CTX-05**: User can create bi-directional links between context documents (Obsidian-style [[backlinks]])
 - [ ] **CTX-06**: Context documents render markdown with proper formatting in the web UI
 - [ ] **CTX-07**: Auto-derived "Current Priorities" context document updates based on active goals and Big 3
 - [ ] **CTX-08**: MCP tool: set_context (create or update a context document)
@@ -414,11 +414,11 @@
 | CAL-08 | Phase 14 | Complete |
 | VS-03 | Phase 15 | Complete |
 | VS-04 | Phase 15 | Complete |
-| CTX-01 | Phase 16 | Pending |
-| CTX-02 | Phase 16 | Pending |
-| CTX-03 | Phase 16 | Pending |
-| CTX-04 | Phase 16 | Pending |
-| CTX-05 | Phase 16 | Pending |
+| CTX-01 | Phase 16 | Complete (16-01) |
+| CTX-02 | Phase 16 | Complete (16-01) |
+| CTX-03 | Phase 16 | Complete (16-01) |
+| CTX-04 | Phase 16 | Complete (16-01) |
+| CTX-05 | Phase 16 | Complete (16-01) |
 | CTX-06 | Phase 16 | Pending |
 | CTX-07 | Phase 16 | Pending |
 | CTX-08 | Phase 16 | Pending |

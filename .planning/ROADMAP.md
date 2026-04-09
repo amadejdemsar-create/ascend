@@ -104,12 +104,12 @@ Plans:
   3. User can create [[backlinks]] between context documents and navigate bidirectional links in the UI
   4. A "Current Priorities" context document auto-updates based on active goals and today's Big 3
   5. AI assistants can create, read, search, and delete context through MCP tools, and can browse context categories as MCP Resources
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 16-01: TBD
-- [ ] 16-02: TBD
-- [ ] 16-03: TBD
+- [x] 16-01-PLAN.md — Prisma ContextEntry model, tsvector migration, context service, API routes, Zod schemas, query keys, React Query hooks
+- [ ] 16-02-PLAN.md — Context page UI with category tree, entry list, markdown rendering, backlinks, editor, and auto-derived Current Priorities
+- [ ] 16-03-PLAN.md — 5 context MCP tools (set, get, list, search, delete) and MCP Resources for passive AI consumption
 
 ### Phase 17: Todo MCP Tools
 **Goal**: AI assistants can fully manage to-dos through MCP, enabling workflows like "Claude, add a to-do for tomorrow" or "what are my Big 3 today?"
@@ -153,6 +153,6 @@ Note: Phase 16 (Context) and Phase 17 (Todo MCP) can be parallelized since they 
 | 13. Todo UI | 2/2 | Complete    | 2026-04-09 | - |
 | 14. Calendar View | 2/2 | Complete    | 2026-04-09 | - |
 | 15. Dashboard Transformation | 1/1 | Complete    | 2026-04-09 | - |
-| 16. Context System | v2.0 | 0/3 | Not started | - |
+| 16. Context System | v2.0 | 1/3 | In progress | - |
 | 17. Todo MCP Tools | v2.0 | 0/1 | Not started | - |
 | 18. Timeline, Navigation, and Polish | v2.0 | 0/2 | Not started | - |

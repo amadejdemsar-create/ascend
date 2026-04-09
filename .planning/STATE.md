@@ -8,7 +8,7 @@ progress:
   total_phases: 15
   completed_phases: 14
   total_plans: 50
-  completed_plans: 49
+  completed_plans: 50
 ---
 
 # Project State
@@ -18,23 +18,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** Focus on inputs and the outputs will come. Instant clarity on today's actions (inputs), how they connect to bigger ambitions (outputs), with structured context that makes every AI interaction smarter.
-**Current focus:** Phase 15: Dashboard Transformation
+**Current focus:** Phase 16: Context System
 
 ## Current Position
 
-Phase: 15 of 18 (Dashboard Transformation)
-Plan: 1 of 1 in current phase (COMPLETE)
-Status: Phase 15 complete, ready for Phase 16
-Last activity: 2026-04-09, completed 15-01 (Dashboard input-centric transformation)
+Phase: 16 of 18 (Context System)
+Plan: 1 of 3 in current phase (COMPLETE)
+Status: Plan 16-01 complete, ready for Plan 16-02
+Last activity: 2026-04-09, completed 16-01 (Context system data layer)
 
 Progress: [██████░░░░] 32% (v2.0)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7 (v2.0)
+- Total plans completed: 8 (v2.0)
 - Average duration: 3min
-- Total execution time: 20min
+- Total execution time: 24min
 
 **By Phase:**
 
@@ -44,9 +44,10 @@ Progress: [██████░░░░] 32% (v2.0)
 | 13. Todo UI | 2/2 | 6min | 3min |
 | 14. Calendar View | 2/2 | 6min | 3min |
 | 15. Dashboard Transformation | 1/1 | 2min | 2min |
+| 16. Context System | 1/3 | 4min | 4min |
 
 **Recent Trend:**
-- Last 5 plans: 13-01 (3min), 13-02 (3min), 14-01 (4min), 14-02 (2min), 15-01 (2min)
+- Last 5 plans: 13-02 (3min), 14-01 (4min), 14-02 (2min), 15-01 (2min), 16-01 (4min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -56,6 +57,7 @@ Progress: [██████░░░░] 32% (v2.0)
 | Phase 14 P01 | 4min | 3 tasks | 9 files |
 | Phase 14 P02 | 2min | 2 tasks | 2 files |
 | Phase 15 P01 | 2min | 2 tasks | 2 files |
+| Phase 16 P01 | 4min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -90,6 +92,10 @@ Recent decisions affecting current work:
 - [14-02]: promptDismissed resets on remount so prompt reappears on next visit if Big 3 still unset
 - [15-01]: base-ui Button uses render prop (not asChild) for link rendering; plain Link with button classes for simpler cases
 - [15-01]: Big 3 widget is self-contained (fetches own data via useTop3Todos) unlike other dashboard widgets that receive props
+- [16-01]: tsvector auto-update via PostgreSQL trigger for guaranteed search index consistency
+- [16-01]: Backlinks stored as resolved entry IDs in linkedEntryIds[], not raw title strings
+- [16-01]: Incoming backlinks computed at query time via `has` filter (no bidirectional array maintenance)
+- [16-01]: Delete cascades backlink cleanup via raw SQL array_remove
 
 ### Pending Todos
 
@@ -105,5 +111,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-09
-Stopped at: Completed 15-01-PLAN.md (Dashboard input-centric transformation)
+Stopped at: Completed 16-01-PLAN.md (Context system data layer)
 Resume file: None
