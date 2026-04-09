@@ -1,7 +1,7 @@
 "use client";
 
 import { format, isSameDay } from "date-fns";
-import { useTodosByDate, useTop3Todos, useCompleteTodo } from "@/lib/hooks/use-todos";
+import { useTodosByDate, useTop3Todos, useCompleteTodo, useUpdateTodo } from "@/lib/hooks/use-todos";
 import { useGoalDeadlinesByRange } from "@/lib/hooks/use-goals";
 import type { GoalDeadlineItem } from "@/lib/hooks/use-goals";
 import type { TodoListItem } from "@/components/todos/todo-list-columns";
@@ -37,6 +37,7 @@ export function CalendarDayDetail({
   const { data: rawDeadlines, isLoading: deadlinesLoading } =
     useGoalDeadlinesByRange(dateStr, dateStr);
   const completeTodo = useCompleteTodo();
+  const updateTodo = useUpdateTodo();
 
   const dayTodos = (rawDayTodos ?? []) as TodoListItem[];
   const big3 = (rawBig3 ?? []) as TodoListItem[];
@@ -70,8 +71,12 @@ export function CalendarDayDetail({
     otherTodos.length === 0 &&
     deadlines.length === 0;
 
-  async function handleComplete(todoId: string) {
-    await completeTodo.mutateAsync(todoId);
+  async function handleToggle(todoId: string, currentStatus: string) {
+    if (currentStatus === "DONE" || currentStatus === "SKIPPED") {
+      await updateTodo.mutateAsync({ id: todoId, data: { status: "PENDING" } });
+    } else {
+      await completeTodo.mutateAsync(todoId);
+    }
   }
 
   if (isLoading) {
@@ -136,7 +141,7 @@ export function CalendarDayDetail({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleComplete(todo.id)}
+                      onClick={() => handleToggle(todo.id, todo.status)}
                       disabled={completeTodo.isPending}
                       className="gap-1"
                     >
@@ -171,8 +176,8 @@ export function CalendarDayDetail({
                         ? "border-primary bg-primary text-primary-foreground"
                         : "border-muted-foreground/40 hover:border-primary"
                     }`}
-                    onClick={() => handleComplete(todo.id)}
-                    disabled={completeTodo.isPending || todo.status === "DONE"}
+                    onClick={() => handleToggle(todo.id, todo.status)}
+                    disabled={completeTodo.isPending || updateTodo.isPending}
                   >
                     {todo.status === "DONE" && (
                       <CheckCircle2 className="size-3" />
@@ -218,8 +223,8 @@ export function CalendarDayDetail({
                         ? "border-primary bg-primary text-primary-foreground"
                         : "border-muted-foreground/40 hover:border-primary"
                     }`}
-                    onClick={() => handleComplete(todo.id)}
-                    disabled={completeTodo.isPending || todo.status === "DONE"}
+                    onClick={() => handleToggle(todo.id, todo.status)}
+                    disabled={completeTodo.isPending || updateTodo.isPending}
                   >
                     {todo.status === "DONE" && (
                       <CheckCircle2 className="size-2.5" />
