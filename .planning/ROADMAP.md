@@ -120,10 +120,10 @@ Plans:
   2. AI assistant can complete a to-do via MCP and the system auto-updates streaks and linked goal progress
   3. AI assistant can query today's Big 3 and set Big 3 priorities for a given day through dedicated MCP tools
   4. AI assistant can list and search to-dos with filters (date range, category, priority, status, linked goal) and full-text search
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 17-01: TBD
+- [ ] 17-01-PLAN.md — 10 todo MCP tool definitions, handler, and server routing
 
 ### Phase 18: Timeline, Navigation, and Polish
 **Goal**: The timeline becomes a proper Gantt view with tree hierarchy, obsolete views are removed, navigation reflects the Inputs/Outputs model, and the command palette covers all entity types
