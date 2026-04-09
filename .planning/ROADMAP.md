@@ -44,11 +44,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. User can create a recurring to-do (daily, weekly, or custom rrule pattern) and see it generate instances for the correct dates
   4. Recurring to-dos track streak count and 30-day consistency score that update on completion
   5. User can designate up to 3 to-dos as Daily Big 3 for a given date, with enforcement that rejects a 4th
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 12-01: TBD
-- [ ] 12-02: TBD
+- [ ] 12-01-PLAN.md — Prisma Todo model, Zod schemas, core service (CRUD + complete + skip + goal linking), API routes
+- [ ] 12-02-PLAN.md — rrule recurrence, streak tracking, Daily Big 3 enforcement, date queries, React hooks
 
 ### Phase 13: Todo UI
 **Goal**: Users can manage their to-dos through a full-featured list interface with sorting, filtering, bulk actions, and visual overdue indicators
@@ -148,7 +148,7 @@ Note: Phase 16 (Context) and Phase 17 (Todo MCP) can be parallelized since they 
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 12. Todo Data Layer | v2.0 | 0/2 | Not started | - |
+| 12. Todo Data Layer | v2.0 | 0/2 | Planning complete | - |
 | 13. Todo UI | v2.0 | 0/1 | Not started | - |
 | 14. Calendar View | v2.0 | 0/2 | Not started | - |
 | 15. Dashboard Transformation | v2.0 | 0/1 | Not started | - |
