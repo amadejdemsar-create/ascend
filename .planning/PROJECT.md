@@ -2,11 +2,22 @@
 
 ## What This Is
 
-Ascend is a personal goals and priorities web app that manages objectives across four time horizons: yearly, quarterly, monthly, and weekly. Goals cascade downward (yearly goals break into quarterly milestones, which break into monthly targets, which break into weekly actions) and progress rolls upward. It replaces a local JSON+HTML todo dashboard with a proper hosted web app, and includes a comprehensive MCP server so any AI assistant (Claude, ChatGPT, Gemini, Perplexity) can read and write goals. Built for personal use first, architected for multi-user SaaS from day one.
+Ascend is a personal operating system built on the inputs/outputs framework: Goals are outputs (results you want to achieve), To-dos are inputs (actions you control daily). Context is structured personal knowledge that any AI service can query via MCP. The daily experience is input-centric: "what are my inputs today?" with outputs providing the why. Includes a comprehensive MCP server so any AI assistant can read/write goals, to-dos, and context. Built for personal use first, architected for multi-tenant SaaS.
 
 ## Core Value
 
-Give the user instant clarity on what to focus on right now by connecting daily actions to yearly ambitions, with measurable progress tracking that makes consistency visible and rewarding.
+Focus on inputs and the outputs will come. Give the user instant clarity on today's actions (inputs) and how they connect to bigger ambitions (outputs), with structured context that makes every AI interaction smarter.
+
+## Current Milestone: v2.0 Inputs & Outputs
+
+**Goal:** Transform Ascend from a goal tracker into a personal operating system with to-dos (inputs), calendar view, context system, and redesigned timeline.
+
+**Target features:**
+- To-dos as inputs linked to goals (outputs), with recurring to-dos as habits (streaks, consistency)
+- Calendar view as the primary daily experience (month grid, day to-dos, top 3 priorities)
+- Context system (structured personal knowledge queryable by AI via MCP)
+- Timeline redesign (gantt with tree hierarchy, fix width issues)
+- View simplification (list, tree, timeline, calendar only)
 
 ## Requirements
 

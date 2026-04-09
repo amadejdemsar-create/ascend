@@ -1,33 +1,31 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: unknown
-last_updated: "2026-03-31T19:47:14.532Z"
+milestone: v2.0
+milestone_name: Inputs & Outputs
+status: defining-requirements
+last_updated: "2026-04-09"
 progress:
-  total_phases: 11
-  completed_phases: 10
-  total_plans: 43
-  completed_plans: 42
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-30)
+See: .planning/PROJECT.md (updated 2026-04-09)
 
-**Core value:** Give the user instant clarity on what to focus on right now by connecting daily actions to yearly ambitions, with measurable progress tracking that makes consistency visible and rewarding.
-**Current focus:** Phase 9 in progress, dashboard gamification widgets complete (XP bar, stats, recurring trigger)
+**Core value:** Focus on inputs and the outputs will come. Give the user instant clarity on today's actions (inputs) and how they connect to bigger ambitions (outputs), with structured context that makes every AI interaction smarter.
+**Current focus:** Defining requirements for v2.0 Inputs & Outputs milestone
 
 ## Current Position
 
-Phase: 11 of 11 (Onboarding, PWA, and Polish)
-Plan: 5 of 5 in current phase complete (01, 02, 03, 04, 05 done)
-Status: Phase 11 complete. All phases complete.
-Last activity: 2026-03-31, completed 11-05 Reduced Motion and Offline Indicator
-
-Progress: [██████████████████████████████] 100%
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-04-09 — Milestone v2.0 started
 
 ## Performance Metrics
 
