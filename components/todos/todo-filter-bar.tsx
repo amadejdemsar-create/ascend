@@ -56,7 +56,10 @@ export function TodoFilterBar({ filters, onFiltersChange }: TodoFilterBarProps) 
     ? flattenCategories(categoryTree as CategoryFlat[])
     : [];
 
-  const goalList = (goals ?? []) as Array<{ id: string; title: string }>;
+  // Group goals by horizon for a structured dropdown instead of a flat list
+  const allGoals = (goals ?? []) as Array<{ id: string; title: string; horizon: string; parentId: string | null }>;
+  const topLevelGoals = allGoals.filter((g) => g.parentId === null);
+  const childGoals = allGoals.filter((g) => g.parentId !== null);
 
   const hasActiveFilters =
     !!filters.status ||
@@ -145,17 +148,27 @@ export function TodoFilterBar({ filters, onFiltersChange }: TodoFilterBarProps) 
         <SelectTrigger className="h-8 w-[160px]">
           <SelectValue placeholder="All goals">
             {filters.goalId
-              ? goalList.find((g) => g.id === filters.goalId)?.title ?? "All goals"
+              ? allGoals.find((g) => g.id === filters.goalId)?.title ?? "All goals"
               : undefined}
           </SelectValue>
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="max-h-[300px]">
           <SelectItem value="">All goals</SelectItem>
-          {goalList.map((goal) => (
-            <SelectItem key={goal.id} value={goal.id}>
-              {goal.title.length > 30 ? `${goal.title.slice(0, 30)}...` : goal.title}
-            </SelectItem>
-          ))}
+          {topLevelGoals.map((goal) => {
+            const children = childGoals.filter((c) => c.parentId === goal.id);
+            return (
+              <div key={goal.id}>
+                <SelectItem value={goal.id}>
+                  <span className="font-medium">{goal.title.length > 35 ? `${goal.title.slice(0, 35)}...` : goal.title}</span>
+                </SelectItem>
+                {children.map((child) => (
+                  <SelectItem key={child.id} value={child.id}>
+                    <span className="pl-3 text-muted-foreground">└ {child.title.length > 30 ? `${child.title.slice(0, 30)}...` : child.title}</span>
+                  </SelectItem>
+                ))}
+              </div>
+            );
+          })}
         </SelectContent>
       </Select>
 

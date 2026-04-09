@@ -197,8 +197,14 @@ export function useBulkCompleteTodos() {
 export function useGenerateRecurring() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () =>
-      fetchJson("/api/todos/recurring/generate", { method: "POST" }),
+    mutationFn: (range?: { start: string; end: string }) => {
+      const params = range
+        ? `?start=${range.start}&end=${range.end}`
+        : "";
+      return fetchJson(`/api/todos/recurring/generate${params}`, {
+        method: "POST",
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.todos.all() });
     },

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { format, startOfMonth, endOfMonth, isSameDay } from "date-fns";
-import { useTodosByRange, useTodosByDate, useTop3Todos } from "@/lib/hooks/use-todos";
+import { useTodosByRange, useTodosByDate, useTop3Todos, useGenerateRecurring } from "@/lib/hooks/use-todos";
 import { useGoalDeadlinesByRange } from "@/lib/hooks/use-goals";
 import type { GoalDeadlineItem } from "@/lib/hooks/use-goals";
 import type { TodoListItem } from "@/components/todos/todo-list-columns";
@@ -37,6 +37,19 @@ export default function CalendarPage() {
   const monthEnd = endOfMonth(month);
   const rangeStart = format(monthStart, "yyyy-MM-dd");
   const rangeEnd = format(monthEnd, "yyyy-MM-dd");
+
+  // Generate recurring to-do instances for the visible month.
+  // This ensures daily/weekly recurring to-dos have actual DB rows
+  // for each occurrence date, so they appear in by-date and by-range queries.
+  const generateRecurring = useGenerateRecurring();
+  const generatedRangeRef = useRef<string>("");
+  useEffect(() => {
+    const rangeKey = `${rangeStart}:${rangeEnd}`;
+    if (generatedRangeRef.current === rangeKey) return;
+    generatedRangeRef.current = rangeKey;
+    generateRecurring.mutate({ start: rangeStart, end: rangeEnd });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rangeStart, rangeEnd]);
 
   const { data: rawMonthTodos } = useTodosByRange(rangeStart, rangeEnd);
   const { data: rawMonthDeadlines } = useGoalDeadlinesByRange(

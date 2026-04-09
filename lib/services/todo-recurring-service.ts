@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { rrulestr } from "rrule";
-import { startOfDay, subDays } from "date-fns";
+import { startOfDay, subDays, addDays } from "date-fns";
 
 /**
  * Recurring to-do service: instance generation via rrule, streak tracking,
@@ -106,6 +106,68 @@ export const todoRecurringService = {
       });
 
       created.push(instance as unknown as Record<string, unknown>);
+    }
+
+    return created;
+  },
+
+  /**
+   * Generate recurring to-do instances for all occurrences within a date range.
+   * Used by the calendar to ensure instances exist for every visible day in the month.
+   *
+   * For each template, finds all rrule occurrences between start and end,
+   * then creates instances for any date that does not already have one
+   * (regardless of status, so completed/skipped instances are not duplicated).
+   */
+  async generateInstancesForRange(userId: string, start: Date, end: Date) {
+    const templates = await prisma.todo.findMany({
+      where: {
+        userId,
+        isRecurring: true,
+        recurringSourceId: null,
+        status: "PENDING",
+      },
+    });
+
+    const created: Array<Record<string, unknown>> = [];
+    const rangeStart = startOfDay(start);
+    const rangeEnd = startOfDay(addDays(end, 1)); // inclusive end
+
+    for (const template of templates) {
+      if (!template.recurrenceRule) continue;
+
+      const rule = rrulestr(template.recurrenceRule);
+      const occurrences = rule.between(rangeStart, rangeEnd, true);
+
+      for (const occurrence of occurrences) {
+        const occDate = startOfDay(occurrence);
+
+        // Check if any instance (pending, done, or skipped) already exists for this date
+        const existingInstance = await prisma.todo.findFirst({
+          where: {
+            recurringSourceId: template.id,
+            dueDate: occDate,
+          },
+        });
+
+        if (existingInstance) continue;
+
+        const instance = await prisma.todo.create({
+          data: {
+            userId,
+            title: template.title,
+            description: template.description,
+            priority: template.priority,
+            goalId: template.goalId,
+            categoryId: template.categoryId,
+            recurringSourceId: template.id,
+            dueDate: occDate,
+            scheduledDate: occDate,
+          },
+        });
+
+        created.push(instance as unknown as Record<string, unknown>);
+      }
     }
 
     return created;
