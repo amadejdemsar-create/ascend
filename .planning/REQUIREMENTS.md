@@ -198,12 +198,12 @@
 - [x] **CTX-05**: User can create bi-directional links between context documents (Obsidian-style [[backlinks]])
 - [ ] **CTX-06**: Context documents render markdown with proper formatting in the web UI
 - [ ] **CTX-07**: Auto-derived "Current Priorities" context document updates based on active goals and Big 3
-- [ ] **CTX-08**: MCP tool: set_context (create or update a context document)
-- [ ] **CTX-09**: MCP tool: get_context (retrieve by ID or namespace/title)
-- [ ] **CTX-10**: MCP tool: list_context (filter by category, tags)
-- [ ] **CTX-11**: MCP tool: search_context (full-text search across all documents)
-- [ ] **CTX-12**: MCP tool: delete_context
-- [ ] **CTX-13**: MCP Resources: expose context categories as MCP Resources for passive AI consumption
+- [x] **CTX-08**: MCP tool: set_context (create or update a context document)
+- [x] **CTX-09**: MCP tool: get_context (retrieve by ID or namespace/title)
+- [x] **CTX-10**: MCP tool: list_context (filter by category, tags)
+- [x] **CTX-11**: MCP tool: search_context (full-text search across all documents)
+- [x] **CTX-12**: MCP tool: delete_context
+- [x] **CTX-13**: MCP Resources: expose context categories as MCP Resources for passive AI consumption
 
 ### Todo MCP Tools
 
@@ -421,12 +421,12 @@
 | CTX-05 | Phase 16 | Complete (16-01) |
 | CTX-06 | Phase 16 | Pending |
 | CTX-07 | Phase 16 | Pending |
-| CTX-08 | Phase 16 | Pending |
-| CTX-09 | Phase 16 | Pending |
-| CTX-10 | Phase 16 | Pending |
-| CTX-11 | Phase 16 | Pending |
-| CTX-12 | Phase 16 | Pending |
-| CTX-13 | Phase 16 | Pending |
+| CTX-08 | Phase 16 | Complete |
+| CTX-09 | Phase 16 | Complete |
+| CTX-10 | Phase 16 | Complete |
+| CTX-11 | Phase 16 | Complete |
+| CTX-12 | Phase 16 | Complete |
+| CTX-13 | Phase 16 | Complete |
 | TMCP-01 | Phase 17 | Pending |
 | TMCP-02 | Phase 17 | Pending |
 | TMCP-03 | Phase 17 | Pending |

@@ -23,16 +23,16 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 ## Current Position
 
 Phase: 16 of 18 (Context System)
-Plan: 1 of 3 in current phase (COMPLETE)
-Status: Plan 16-01 complete, ready for Plan 16-02
-Last activity: 2026-04-09, completed 16-01 (Context system data layer)
+Plan: 2 of 3 in current phase (COMPLETE)
+Status: Plan 16-03 complete, ready for Plan 16-02
+Last activity: 2026-04-09, completed 16-03 (Context MCP tools)
 
-Progress: [██████░░░░] 32% (v2.0)
+Progress: [██████░░░░] 35% (v2.0)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8 (v2.0)
+- Total plans completed: 9 (v2.0)
 - Average duration: 3min
 - Total execution time: 24min
 
@@ -44,10 +44,10 @@ Progress: [██████░░░░] 32% (v2.0)
 | 13. Todo UI | 2/2 | 6min | 3min |
 | 14. Calendar View | 2/2 | 6min | 3min |
 | 15. Dashboard Transformation | 1/1 | 2min | 2min |
-| 16. Context System | 1/3 | 4min | 4min |
+| 16. Context System | 2/3 | 6min | 3min |
 
 **Recent Trend:**
-- Last 5 plans: 13-02 (3min), 14-01 (4min), 14-02 (2min), 15-01 (2min), 16-01 (4min)
+- Last 5 plans: 14-01 (4min), 14-02 (2min), 15-01 (2min), 16-01 (4min), 16-03 (2min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -58,6 +58,7 @@ Progress: [██████░░░░] 32% (v2.0)
 | Phase 14 P02 | 2min | 2 tasks | 2 files |
 | Phase 15 P01 | 2min | 2 tasks | 2 files |
 | Phase 16 P01 | 4min | 2 tasks | 10 files |
+| Phase 16 P03 | 2min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -96,6 +97,9 @@ Recent decisions affecting current work:
 - [16-01]: Backlinks stored as resolved entry IDs in linkedEntryIds[], not raw title strings
 - [16-01]: Incoming backlinks computed at query time via `has` filter (no bidirectional array maintenance)
 - [16-01]: Delete cascades backlink cleanup via raw SQL array_remove
+- [16-03]: MCP schema "query" mapped to internal "q" at handler boundary for natural user-facing API
+- [16-03]: getCurrentPriorities accessed via any cast + typeof guard for Plan 16-02 independence
+- [16-03]: Category resources dynamically generated from categoryService.list at request time
 
 ### Pending Todos
 
@@ -111,5 +115,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-09
-Stopped at: Completed 16-01-PLAN.md (Context system data layer)
+Stopped at: Completed 16-03-PLAN.md (Context MCP tools)
 Resume file: None
