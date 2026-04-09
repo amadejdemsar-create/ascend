@@ -1,4 +1,4 @@
-import { LayoutDashboard, Target, CheckSquare, CalendarDays, Settings, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Target, CheckSquare, CalendarDays, Brain, Settings, type LucideIcon } from "lucide-react";
 
 export type NavItem = {
   label: string;
@@ -11,6 +11,7 @@ export const mainNavItems: NavItem[] = [
   { label: "Goals", href: "/goals", icon: Target },
   { label: "Todos", href: "/todos", icon: CheckSquare },
   { label: "Calendar", href: "/calendar", icon: CalendarDays },
+  { label: "Context", href: "/context", icon: Brain },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 
