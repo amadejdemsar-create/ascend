@@ -159,6 +159,97 @@ export const contextService = {
   },
 
   /**
+   * Auto-derive a "Current Priorities" document from active goals and today's Big 3.
+   * Returns dynamic content (not persisted as a ContextEntry).
+   */
+  async getCurrentPriorities(userId: string): Promise<{ title: string; content: string }> {
+    // 1. Active goals ordered by priority desc, deadline asc
+    const goals = await prisma.goal.findMany({
+      where: { userId, status: "IN_PROGRESS" },
+      orderBy: [{ priority: "desc" }, { deadline: "asc" }],
+      take: 10,
+      select: {
+        id: true,
+        title: true,
+        priority: true,
+        progress: true,
+        deadline: true,
+      },
+    });
+
+    // 2. Today's Big 3 to-dos
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
+    const big3 = await prisma.todo.findMany({
+      where: {
+        userId,
+        isBig3: true,
+        big3Date: { gte: todayStart, lte: todayEnd },
+      },
+      orderBy: { priority: "desc" },
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        goal: { select: { title: true } },
+      },
+    });
+
+    // 3. Compose markdown
+    const lines: string[] = ["# Current Priorities", ""];
+
+    // Big 3 section
+    lines.push("## Today's Big 3");
+    lines.push("");
+    if (big3.length === 0) {
+      lines.push("_No Big 3 set for today._");
+    } else {
+      for (const todo of big3) {
+        const check = todo.status === "DONE" ? "x" : " ";
+        const goalRef = todo.goal ? ` (linked to [[${todo.goal.title}]])` : "";
+        lines.push(`- [${check}] ${todo.title}${goalRef}`);
+      }
+    }
+    lines.push("");
+
+    // Active goals section grouped by priority
+    lines.push("## Active Goals");
+    lines.push("");
+
+    const priorityOrder = ["HIGH", "MEDIUM", "LOW"] as const;
+    const priorityLabels: Record<string, string> = {
+      HIGH: "High Priority",
+      MEDIUM: "Medium Priority",
+      LOW: "Low Priority",
+    };
+
+    for (const priority of priorityOrder) {
+      const group = goals.filter((g) => g.priority === priority);
+      if (group.length === 0) continue;
+
+      lines.push(`### ${priorityLabels[priority]}`);
+      lines.push("");
+      for (const goal of group) {
+        const deadlineStr = goal.deadline
+          ? ` | due ${new Date(goal.deadline).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+          : "";
+        lines.push(`- ${goal.title} (progress: ${goal.progress}%${deadlineStr})`);
+      }
+      lines.push("");
+    }
+
+    if (goals.length === 0) {
+      lines.push("_No active goals._");
+      lines.push("");
+    }
+
+    return { title: "Current Priorities", content: lines.join("\n") };
+  },
+
+  /**
    * Parse [[backlinks]] from markdown content.
    * Extracts titles from [[Title]] syntax and resolves them to entry IDs
    * owned by the same user.
