@@ -1,4 +1,4 @@
-import type { GoalFilters, TodoFilters } from "@/lib/validations";
+import type { GoalFilters, TodoFilters, ContextFilters } from "@/lib/validations";
 
 export const queryKeys = {
   goals: {
@@ -17,6 +17,12 @@ export const queryKeys = {
     byRange: (start: string, end: string) => ["todos", "by-range", start, end] as const,
     big3: (date?: string) => ["todos", "big3", date] as const,
     search: (q: string) => ["todos", "search", q] as const,
+  },
+  context: {
+    all: () => ["context"] as const,
+    list: (filters?: ContextFilters) => ["context", "list", filters] as const,
+    detail: (id: string) => ["context", "detail", id] as const,
+    search: (q: string) => ["context", "search", q] as const,
   },
   categories: {
     all: () => ["categories"] as const,
