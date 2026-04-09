@@ -84,6 +84,8 @@ export const createTodoSchema = z.object({
   categoryId: z.string().optional(),
   dueDate: z.string().datetime().optional(),
   scheduledDate: z.string().datetime().optional(),
+  isRecurring: z.boolean().optional(),
+  recurrenceRule: z.string().optional(),
 });
 
 export const updateTodoSchema = createTodoSchema.partial().extend({

@@ -1,6 +1,16 @@
 import { prisma } from "@/lib/db";
 import { rrulestr } from "rrule";
-import { startOfDay, subDays, addDays } from "date-fns";
+import { startOfDay, subDays, addDays, format } from "date-fns";
+
+/**
+ * Build a full rrule string with DTSTART from the template's creation date.
+ * rrulestr() requires DTSTART to generate occurrences within a date range.
+ */
+function buildRruleString(rule: string, dtstart: Date): string {
+  const dt = format(dtstart, "yyyyMMdd'T'000000'Z'");
+  const cleanRule = rule.replace(/^RRULE:/i, "");
+  return `DTSTART:${dt}\nRRULE:${cleanRule}`;
+}
 
 /**
  * Recurring to-do service: instance generation via rrule, streak tracking,
@@ -18,8 +28,9 @@ export const todoRecurringService = {
    * Parse an rrule string and return all occurrences between start and end dates.
    * Used by the calendar view to show recurring to-do markers.
    */
-  getOccurrences(rruleString: string, start: Date, end: Date): Date[] {
-    const rule = rrulestr(rruleString);
+  getOccurrences(rruleString: string, start: Date, end: Date, dtstart?: Date): Date[] {
+    const fullRule = buildRruleString(rruleString, dtstart ?? new Date("2026-01-01"));
+    const rule = rrulestr(fullRule);
     return rule.between(start, end, true);
   },
 
@@ -50,7 +61,7 @@ export const todoRecurringService = {
     for (const template of templates) {
       if (!template.recurrenceRule) continue;
 
-      const rule = rrulestr(template.recurrenceRule);
+      const rule = rrulestr(buildRruleString(template.recurrenceRule, template.createdAt));
 
       // Find the next occurrence from today (inclusive)
       const nextOccurrence = rule.after(today, true);
@@ -136,7 +147,7 @@ export const todoRecurringService = {
     for (const template of templates) {
       if (!template.recurrenceRule) continue;
 
-      const rule = rrulestr(template.recurrenceRule);
+      const rule = rrulestr(buildRruleString(template.recurrenceRule, template.createdAt));
       const occurrences = rule.between(rangeStart, rangeEnd, true);
 
       for (const occurrence of occurrences) {
@@ -222,7 +233,7 @@ export const todoRecurringService = {
 
     let consistencyScore = 100;
     if (template.recurrenceRule) {
-      const rule = rrulestr(template.recurrenceRule);
+      const rule = rrulestr(buildRruleString(template.recurrenceRule, template.createdAt));
       const expectedOccurrences = rule.between(thirtyDaysAgo, now, true);
       const expectedCount = expectedOccurrences.length;
 
