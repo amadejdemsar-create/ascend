@@ -7,6 +7,7 @@ export const queryKeys = {
     detail: (id: string) => ["goals", "detail", id] as const,
     tree: () => ["goals", "tree"] as const,
     progress: (goalId: string) => ["goals", "progress", goalId] as const,
+    deadlineRange: (start: string, end: string) => ["goals", "deadline-range", start, end] as const,
   },
   todos: {
     all: () => ["todos"] as const,

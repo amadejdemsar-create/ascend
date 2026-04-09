@@ -44,6 +44,27 @@ export function useGoalTree() {
   });
 }
 
+export interface GoalDeadlineItem {
+  id: string;
+  title: string;
+  horizon: string;
+  priority: string;
+  deadline: string;
+  status: string;
+  category: { id: string; name: string; color: string; icon: string | null } | null;
+}
+
+export function useGoalDeadlinesByRange(start: string, end: string) {
+  return useQuery({
+    queryKey: queryKeys.goals.deadlineRange(start, end),
+    queryFn: () =>
+      fetchJson<GoalDeadlineItem[]>(
+        `/api/goals/by-deadline-range?start=${start}&end=${end}`,
+      ),
+    enabled: !!start && !!end,
+  });
+}
+
 export function useGoals(filters?: GoalFilters) {
   return useQuery({
     queryKey: queryKeys.goals.list(filters),

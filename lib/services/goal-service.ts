@@ -202,6 +202,30 @@ export const goalService = {
   },
 
   /**
+   * Get goals with deadlines within a date range.
+   * Excludes completed and abandoned goals. Ordered by deadline ascending.
+   */
+  async getByDeadlineRange(userId: string, start: Date, end: Date) {
+    return prisma.goal.findMany({
+      where: {
+        userId,
+        deadline: { gte: start, lte: end },
+        status: { notIn: ["COMPLETED", "ABANDONED"] },
+      },
+      orderBy: { deadline: "asc" },
+      select: {
+        id: true,
+        title: true,
+        horizon: true,
+        priority: true,
+        deadline: true,
+        status: true,
+        category: true,
+      },
+    });
+  },
+
+  /**
    * Get all progress log entries for a goal, ordered by most recent first.
    */
   async getProgressHistory(userId: string, goalId: string) {
