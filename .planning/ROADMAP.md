@@ -89,10 +89,10 @@ Plans:
   1. Dashboard prominently displays Today's Big 3 widget as the first and largest element the user sees
   2. Each Big 3 to-do shows its linked goal (output), making visible why this input matters
   3. Existing dashboard widgets (streaks, deadlines, progress) remain functional alongside the new input-centric layout
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 15-01: TBD
+- [ ] 15-01-PLAN.md — Today's Big 3 widget with linked goal display, input-centric dashboard layout restructure
 
 ### Phase 16: Context System
 **Goal**: Users can store and organize structured personal knowledge as context documents that any AI assistant can query, with categories, tags, backlinks, and full-text search
