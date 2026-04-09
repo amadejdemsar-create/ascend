@@ -5,7 +5,6 @@ import { useGoals, useGoalTree, useReorderGoals } from "@/lib/hooks/use-goals";
 import { useUIStore } from "@/lib/stores/ui-store";
 import { HORIZON_ORDER } from "@/lib/constants";
 import { DndGoalProvider } from "@/components/goals/dnd-goal-provider";
-import { GoalCard } from "@/components/goals/goal-card";
 import { GoalDetail } from "@/components/goals/goal-detail";
 import { GoalViewSwitcher } from "@/components/goals/goal-view-switcher";
 import { GoalFilterBar } from "@/components/goals/goal-filter-bar";
@@ -236,28 +235,13 @@ export default function GoalsPage() {
       );
     }
 
-    if (activeView === "list") {
-      return (
-        <DndGoalProvider findGoal={findGoal} onDragEndExtra={handleDragEndExtra}>
-          <div className="p-4">
-            <GoalListView goals={goalList} />
-          </div>
-        </DndGoalProvider>
-      );
-    }
-
-    // Default: cards view
+    // Default: list view
     return (
-      <div className="flex-1 p-4 space-y-2">
-        {goalList.map((goal) => (
-          <GoalCard
-            key={goal.id}
-            goal={goal}
-            onSelect={selectGoal}
-            isSelected={selectedGoalId === goal.id}
-          />
-        ))}
-      </div>
+      <DndGoalProvider findGoal={findGoal} onDragEndExtra={handleDragEndExtra}>
+        <div className="p-4">
+          <GoalListView goals={goalList} />
+        </div>
+      </DndGoalProvider>
     );
   }
 

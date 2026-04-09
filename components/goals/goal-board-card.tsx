@@ -3,7 +3,9 @@
 import { format } from "date-fns";
 import { useSortable } from "@dnd-kit/react/sortable";
 import { GoalPriorityBadge } from "@/components/goals/goal-priority-badge";
-import { useUIStore, type BoardGroupBy } from "@/lib/stores/ui-store";
+import { useUIStore } from "@/lib/stores/ui-store";
+
+type BoardGroupBy = "status" | "horizon" | "category";
 import { cn } from "@/lib/utils";
 import type { GoalListItem } from "@/components/goals/goal-list-columns";
 

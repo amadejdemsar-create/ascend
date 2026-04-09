@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  LayoutGrid,
   List,
   GitBranch,
   GanttChart,
@@ -19,10 +18,9 @@ import { cn } from "@/lib/utils";
 const VIEW_OPTIONS: Array<{
   value: ViewType;
   label: string;
-  icon: typeof LayoutGrid;
+  icon: typeof List;
   enabled: boolean;
 }> = [
-  { value: "cards", label: "Cards", icon: LayoutGrid, enabled: true },
   { value: "list", label: "List", icon: List, enabled: true },
   { value: "tree", label: "Tree", icon: GitBranch, enabled: true },
   { value: "timeline", label: "Timeline", icon: GanttChart, enabled: true },

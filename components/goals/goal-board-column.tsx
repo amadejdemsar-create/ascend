@@ -3,7 +3,9 @@
 import { useDroppable } from "@dnd-kit/react";
 import { CollisionPriority } from "@dnd-kit/abstract";
 import { GoalBoardCard } from "@/components/goals/goal-board-card";
-import { useUIStore, type BoardGroupBy } from "@/lib/stores/ui-store";
+import { useUIStore } from "@/lib/stores/ui-store";
+
+type BoardGroupBy = "status" | "horizon" | "category";
 import { cn } from "@/lib/utils";
 import type { GoalListItem } from "@/components/goals/goal-list-columns";
 

@@ -6,7 +6,7 @@ import { PointerActivationConstraints } from "@dnd-kit/dom";
 import { move } from "@dnd-kit/helpers";
 import { GoalBoardColumn } from "@/components/goals/goal-board-column";
 import { GoalDragOverlay } from "@/components/goals/goal-drag-overlay";
-import { useUIStore, type BoardGroupBy } from "@/lib/stores/ui-store";
+type BoardGroupBy = "status" | "horizon" | "category";
 import { useReorderGoals, useUpdateGoal } from "@/lib/hooks/use-goals";
 import { useCategories } from "@/lib/hooks/use-categories";
 import { cn } from "@/lib/utils";
@@ -35,8 +35,7 @@ interface GoalBoardViewProps {
 }
 
 export function GoalBoardView({ goals }: GoalBoardViewProps) {
-  const boardGroupBy = useUIStore((s) => s.boardGroupBy);
-  const setBoardGroupBy = useUIStore((s) => s.setBoardGroupBy);
+  const [boardGroupBy, setBoardGroupBy] = useState<BoardGroupBy>("status");
 
   const { data: categories } = useCategories();
   const reorderMutation = useReorderGoals();

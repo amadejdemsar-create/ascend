@@ -11,7 +11,6 @@ import {
   Moon,
   Monitor,
   Plus,
-  LayoutGrid,
   List,
   GitBranch,
   GanttChart,
@@ -67,16 +66,6 @@ export function useCommandActions(): CommandAction[] {
       },
 
       // Views
-      {
-        id: "view-cards",
-        label: "Switch to Cards View",
-        icon: LayoutGrid,
-        onSelect: () => {
-          setActiveView("cards");
-          router.push("/goals");
-        },
-        group: "Views",
-      },
       {
         id: "view-list",
         label: "Switch to List View",
