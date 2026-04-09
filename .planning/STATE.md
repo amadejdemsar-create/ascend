@@ -8,7 +8,7 @@ progress:
   total_phases: 12
   completed_phases: 11
   total_plans: 45
-  completed_plans: 44
+  completed_plans: 45
 ---
 
 # Project State
@@ -18,36 +18,38 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** Focus on inputs and the outputs will come. Instant clarity on today's actions (inputs), how they connect to bigger ambitions (outputs), with structured context that makes every AI interaction smarter.
-**Current focus:** Phase 12: Todo Data Layer
+**Current focus:** Phase 13: Todo UI
 
 ## Current Position
 
-Phase: 12 of 18 (Todo Data Layer) COMPLETE
-Plan: 2 of 2 in current phase (all complete)
-Status: Phase complete, ready for Phase 13
-Last activity: 2026-04-09, completed 12-02 (Recurring, streaks, Big 3, hooks)
+Phase: 13 of 18 (Todo UI)
+Plan: 1 of 2 in current phase
+Status: Plan 13-01 complete, ready for 13-02
+Last activity: 2026-04-09, completed 13-01 (Todo list page with sortable table, filters, quick-add)
 
-Progress: [█░░░░░░░░░] 13% (v2.0)
+Progress: [██░░░░░░░░] 15% (v2.0)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2 (v2.0)
+- Total plans completed: 3 (v2.0)
 - Average duration: 3min
-- Total execution time: 6min
+- Total execution time: 9min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 12. Todo Data Layer | 2/2 | 6min | 3min |
+| 13. Todo UI | 1/2 | 3min | 3min |
 
 **Recent Trend:**
-- Last 5 plans: 12-01 (3min), 12-02 (3min)
+- Last 5 plans: 12-01 (3min), 12-02 (3min), 13-01 (3min)
 - Trend: stable
 
 *Updated after each plan completion*
 | Phase 12 P02 | 3min | 3 tasks | 13 files |
+| Phase 13 P01 | 3min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -68,6 +70,8 @@ Recent decisions affecting current work:
 - [Phase 12]: Consistency score includes current completion (+1) before persist to prevent off-by-one
 - [Phase 12]: Streak broken detection uses rrule.before() for previous occurrence rather than date arithmetic
 - [Phase 12]: Big 3 enforcement at both Zod schema and service layer for defense in depth
+- [13-01]: Todo filter state uses local useState (not Zustand), simpler than goals since no view switcher or horizon tabs
+- [13-01]: Default sort order is due date ascending, then priority high to low, then pending first
 
 ### Pending Todos
 
@@ -83,5 +87,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-09
-Stopped at: Completed 12-02-PLAN.md (Recurring, streaks, Big 3, hooks). Phase 12 fully complete.
+Stopped at: Completed 13-01-PLAN.md (Todo list page with sortable table, filters, quick-add, navigation)
 Resume file: None
