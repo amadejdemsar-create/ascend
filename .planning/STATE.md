@@ -8,7 +8,7 @@ progress:
   total_phases: 17
   completed_phases: 16
   total_plans: 54
-  completed_plans: 53
+  completed_plans: 54
 ---
 
 # Project State
@@ -18,23 +18,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** Focus on inputs and the outputs will come. Instant clarity on today's actions (inputs), how they connect to bigger ambitions (outputs), with structured context that makes every AI interaction smarter.
-**Current focus:** Phase 17: Todo MCP Tools
+**Current focus:** Phase 18: Timeline Nav Polish
 
 ## Current Position
 
-Phase: 17 of 18 (Todo MCP Tools)
-Plan: 1 of 1 in current phase (COMPLETE)
-Status: Phase 17 complete, all 1 plans done
-Last activity: 2026-04-09, completed 17-01 (Todo MCP tools)
+Phase: 18 of 18 (Timeline Nav Polish)
+Plan: 1 of 2 in current phase (COMPLETE)
+Status: Phase 18 in progress, 1 of 2 plans done
+Last activity: 2026-04-09, completed 18-01 (Timeline Gantt Rewrite)
 
 Progress: [███████░░░] 37% (v2.0)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11 (v2.0)
+- Total plans completed: 12 (v2.0)
 - Average duration: 3min
-- Total execution time: 31min
+- Total execution time: 34min
 
 **By Phase:**
 
@@ -46,9 +46,10 @@ Progress: [███████░░░] 37% (v2.0)
 | 15. Dashboard Transformation | 1/1 | 2min | 2min |
 | 16. Context System | 3/3 | 11min | 4min |
 | 17. Todo MCP Tools | 1/1 | 2min | 2min |
+| 18. Timeline Nav Polish | 1/2 | 3min | 3min |
 
 **Recent Trend:**
-- Last 5 plans: 15-01 (2min), 16-01 (4min), 16-03 (2min), 16-02 (5min), 17-01 (2min)
+- Last 5 plans: 16-01 (4min), 16-03 (2min), 16-02 (5min), 17-01 (2min), 18-01 (3min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -62,6 +63,7 @@ Progress: [███████░░░] 37% (v2.0)
 | Phase 16 P03 | 2min | 2 tasks | 3 files |
 | Phase 16 P02 | 5min | 2 tasks | 12 files |
 | Phase 17 P01 | 2min | 2 tasks | 3 files |
+| Phase 18 P01 | 3min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -109,6 +111,9 @@ Recent decisions affecting current work:
 - [16-02]: Category tree uses flat list with indentation (consistent with todo filter bar pattern)
 - [17-01]: Recurrence fields handled via follow-up update after create (createTodoSchema excludes isRecurring/recurrenceRule)
 - [17-01]: isBig3 boolean converted to string at handler boundary for todoFiltersSchema compatibility
+- [18-01]: Single CSS Grid with sticky positioning for Gantt layout (not split-panel with JS scroll sync)
+- [18-01]: Expand/collapse state in local useState, not Zustand, since it is view-specific and transient
+- [18-01]: Re-initialize expandedIds via useEffect when tree data first loads (useState runs before React Query resolves)
 
 ### Pending Todos
 
@@ -124,5 +129,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-09
-Stopped at: Completed 17-01-PLAN.md (Todo MCP tools)
+Stopped at: Completed 18-01-PLAN.md (Timeline Gantt Rewrite)
 Resume file: None

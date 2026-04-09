@@ -220,12 +220,12 @@
 
 ### Timeline Redesign
 
-- [ ] **TL-01**: Timeline shows goals as horizontal Gantt bars in a tree hierarchy (not horizon swim lanes)
-- [ ] **TL-02**: Goals are nested under parents with indentation, collapsible branches
-- [ ] **TL-03**: Clicking a bar opens the GoalDetail side panel (same as list view, no popups)
-- [ ] **TL-04**: Zoom levels (Year/Quarter/Month) show appropriate time segments with correct column counts
-- [ ] **TL-05**: Today marker is visible on the timeline
-- [ ] **TL-06**: Timeline + detail panel fits within the viewport without horizontal overflow
+- [x] **TL-01**: Timeline shows goals as horizontal Gantt bars in a tree hierarchy (not horizon swim lanes)
+- [x] **TL-02**: Goals are nested under parents with indentation, collapsible branches
+- [x] **TL-03**: Clicking a bar opens the GoalDetail side panel (same as list view, no popups)
+- [x] **TL-04**: Zoom levels (Year/Quarter/Month) show appropriate time segments with correct column counts
+- [x] **TL-05**: Today marker is visible on the timeline
+- [x] **TL-06**: Timeline + detail panel fits within the viewport without horizontal overflow
 
 ### View Simplification and Dashboard
 
@@ -437,12 +437,12 @@
 | TMCP-08 | Phase 17 | Complete |
 | TMCP-09 | Phase 17 | Complete |
 | TMCP-10 | Phase 17 | Complete |
-| TL-01 | Phase 18 | Pending |
-| TL-02 | Phase 18 | Pending |
-| TL-03 | Phase 18 | Pending |
-| TL-04 | Phase 18 | Pending |
-| TL-05 | Phase 18 | Pending |
-| TL-06 | Phase 18 | Pending |
+| TL-01 | Phase 18 | Complete |
+| TL-02 | Phase 18 | Complete |
+| TL-03 | Phase 18 | Complete |
+| TL-04 | Phase 18 | Complete |
+| TL-05 | Phase 18 | Complete |
+| TL-06 | Phase 18 | Complete |
 | VS-01 | Phase 18 | Pending |
 | VS-02 | Phase 18 | Pending |
 | VS-05 | Phase 18 | Pending |
