@@ -170,9 +170,9 @@
 - [x] **TODO-04**: User can create a to-do via inline quick-add (title + Enter, minimal friction)
 - [x] **TODO-05**: User can link a to-do to a parent goal (input-to-output connection)
 - [x] **TODO-06**: Completing a linked to-do auto-increments the parent goal's progress
-- [ ] **TODO-07**: User can create recurring to-dos (daily, weekly, custom via rrule patterns like "every Tuesday and Thursday")
-- [ ] **TODO-08**: Recurring to-dos track streaks (consecutive completions) and 30-day consistency score
-- [ ] **TODO-09**: User can mark up to 3 to-dos as "Daily Big 3" priorities for a given day
+- [x] **TODO-07**: User can create recurring to-dos (daily, weekly, custom via rrule patterns like "every Tuesday and Thursday")
+- [x] **TODO-08**: Recurring to-dos track streaks (consecutive completions) and 30-day consistency score
+- [x] **TODO-09**: User can mark up to 3 to-dos as "Daily Big 3" priorities for a given day
 - [ ] **TODO-10**: User can view to-dos in a list with sorting by due date, priority, and completion status
 - [ ] **TODO-11**: User can filter to-dos by category, priority, status, and linked goal
 - [ ] **TODO-12**: User can bulk-complete or bulk-delete to-dos
@@ -397,9 +397,9 @@
 | TODO-04 | Phase 12 | Complete (12-01) |
 | TODO-05 | Phase 12 | Complete (12-01) |
 | TODO-06 | Phase 12 | Complete (12-01) |
-| TODO-07 | Phase 12 | Pending |
-| TODO-08 | Phase 12 | Pending |
-| TODO-09 | Phase 12 | Pending |
+| TODO-07 | Phase 12 | Complete |
+| TODO-08 | Phase 12 | Complete |
+| TODO-09 | Phase 12 | Complete |
 | TODO-10 | Phase 13 | Pending |
 | TODO-11 | Phase 13 | Pending |
 | TODO-12 | Phase 13 | Pending |
