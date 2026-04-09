@@ -103,6 +103,25 @@ export const todoFiltersSchema = z.object({
   isBig3: z.enum(["true", "false"]).optional(),
 });
 
+// Context schemas
+export const createContextSchema = z.object({
+  title: z.string().min(1).max(200),
+  content: z.string().min(1),
+  categoryId: z.string().optional(),
+  tags: z.array(z.string().min(1).max(50)).max(20).default([]),
+});
+
+export const updateContextSchema = createContextSchema.partial();
+
+export const contextFiltersSchema = z.object({
+  categoryId: z.string().optional(),
+  tag: z.string().optional(),
+});
+
+export const contextSearchSchema = z.object({
+  q: z.string().min(1).max(500),
+});
+
 // Exported types
 // Using z.input so callers can omit fields with defaults (priority, color)
 export type CreateGoalInput = z.input<typeof createGoalSchema>;
@@ -114,3 +133,6 @@ export type AddProgressInput = z.infer<typeof addProgressSchema>;
 export type CreateTodoInput = z.input<typeof createTodoSchema>;
 export type UpdateTodoInput = z.input<typeof updateTodoSchema>;
 export type TodoFilters = z.infer<typeof todoFiltersSchema>;
+export type CreateContextInput = z.input<typeof createContextSchema>;
+export type UpdateContextInput = z.input<typeof updateContextSchema>;
+export type ContextFilters = z.infer<typeof contextFiltersSchema>;

@@ -55,11 +55,12 @@ model User {
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
 
-  goals      Goal[]
-  categories Category[]
-  todos      Todo[]
-  stats      UserStats?
-  xpEvents   XpEvent[]
+  goals          Goal[]
+  categories     Category[]
+  todos          Todo[]
+  contextEntries ContextEntry[]
+  stats          UserStats?
+  xpEvents       XpEvent[]
 }
 
 model Goal {
@@ -150,9 +151,10 @@ model Category {
   sortOrder Int        @default(0)
 
   // Relations
-  goals     Goal[]
-  todos     Todo[]
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goals          Goal[]
+  todos          Todo[]
+  contextEntries ContextEntry[]
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Timestamps
   createdAt DateTime   @default(now())
@@ -266,4 +268,34 @@ model Todo {
   @@index([status, userId])
   @@index([recurringSourceId])
   @@index([isBig3, big3Date, userId])
+}
+
+model ContextEntry {
+  id             String   @id @default(cuid())
+  userId         String
+  title          String
+  content        String                // Markdown content (the document body)
+
+  // Category (reuses existing Category model for tree navigation)
+  categoryId     String?
+  category       Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  // Tags for cross-cutting discovery (stored as string array)
+  tags           String[] @default([])
+
+  // Backlinks: store IDs of documents this entry links TO via [[Title]] syntax
+  // Bidirectional resolution happens at query time (find entries linking to me)
+  linkedEntryIds String[] @default([])
+
+  // Relations
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Indexes
+  @@index([userId])
+  @@index([categoryId])
+  @@index([userId, title])
 }
