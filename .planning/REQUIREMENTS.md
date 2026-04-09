@@ -186,7 +186,7 @@
 - [x] **CAL-04**: Goal deadlines appear on the calendar with visual distinction from to-dos
 - [x] **CAL-05**: Daily Big 3 priorities are prominently displayed above other to-dos in the day detail
 - [x] **CAL-06**: Recurring daily to-dos are clearly distinguished from day-specific to-dos
-- [ ] **CAL-07**: Morning planning prompt appears when user opens app without Big 3 selected for today
+- [x] **CAL-07**: Morning planning prompt appears when user opens app without Big 3 selected for today
 - [x] **CAL-08**: Overdue to-dos from previous days are surfaced at the top of today's view
 
 ### Context System
@@ -410,7 +410,7 @@
 | CAL-04 | Phase 14 | Complete |
 | CAL-05 | Phase 14 | Complete |
 | CAL-06 | Phase 14 | Complete |
-| CAL-07 | Phase 14 | Pending |
+| CAL-07 | Phase 14 | Complete |
 | CAL-08 | Phase 14 | Complete |
 | VS-03 | Phase 15 | Pending |
 | VS-04 | Phase 15 | Pending |
