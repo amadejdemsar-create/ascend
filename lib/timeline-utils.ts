@@ -24,8 +24,11 @@ export interface TimeSegment {
   columnEnd: number;
 }
 
-export interface TimelineGoal extends TreeGoal {
+export interface FlatTimelineRow {
+  goal: TreeGoal;
   depth: number;
+  hasChildren: boolean;
+  isExpanded: boolean;
 }
 
 /**
@@ -182,27 +185,22 @@ function getHorizonFallback(
 }
 
 /**
- * Flatten a tree of goals into a record grouped by horizon, preserving children
- * for inline expansion in Plan 02.
+ * Flatten a hierarchical goal tree into ordered rows for gantt rendering.
+ * Only includes children of expanded nodes.
  */
-export function flattenByHorizon(tree: TreeGoal[]): Record<string, TimelineGoal[]> {
-  const result: Record<string, TimelineGoal[]> = {
-    YEARLY: [],
-    QUARTERLY: [],
-    MONTHLY: [],
-    WEEKLY: [],
-  };
-
-  function walk(goals: TreeGoal[], depth: number) {
-    for (const goal of goals) {
-      const horizon = goal.horizon;
-      if (result[horizon]) {
-        result[horizon].push({ ...goal, depth });
-      }
-      walk(goal.children, depth + 1);
+export function flattenTree(
+  goals: TreeGoal[],
+  expandedIds: Set<string>,
+  depth: number = 0,
+): FlatTimelineRow[] {
+  const rows: FlatTimelineRow[] = [];
+  for (const goal of goals) {
+    const hasChildren = goal.children.length > 0;
+    const isExpanded = expandedIds.has(goal.id);
+    rows.push({ goal, depth, hasChildren, isExpanded });
+    if (hasChildren && isExpanded) {
+      rows.push(...flattenTree(goal.children, expandedIds, depth + 1));
     }
   }
-
-  walk(tree, 0);
-  return result;
+  return rows;
 }
