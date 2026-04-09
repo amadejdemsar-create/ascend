@@ -1,139 +1,136 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import {
-  Collapsible,
-  CollapsibleTrigger,
-  CollapsibleContent,
-} from "@/components/ui/collapsible";
-import { GoalPriorityBadge } from "@/components/goals/goal-priority-badge";
-import { useUIStore } from "@/lib/stores/ui-store";
+  getGoalColumns,
+  type FlatTimelineRow,
+  type TimeSegment,
+} from "@/lib/timeline-utils";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ExternalLink, CheckCircle2 } from "lucide-react";
-import type { TimelineGoal } from "@/lib/timeline-utils";
+import { ChevronRight } from "lucide-react";
 
 interface GoalTimelineNodeProps {
-  goal: TimelineGoal;
-  gridColumn: string;
-  hasDates: boolean;
+  row: FlatTimelineRow;
+  segments: TimeSegment[];
+  year: number;
+  minColWidth: string;
+  onSelect: (id: string | null) => void;
+  onToggleExpand: (id: string) => void;
+  isSelected: boolean;
 }
 
 function GoalTimelineNodeComponent({
-  goal,
-  gridColumn,
-  hasDates,
+  row,
+  segments,
+  year,
+  minColWidth,
+  onSelect,
+  onToggleExpand,
+  isSelected,
 }: GoalTimelineNodeProps) {
-  const [expanded, setExpanded] = useState(false);
-  const selectGoal = useUIStore((s) => s.selectGoal);
-  const selectedGoalId = useUIStore((s) => s.selectedGoalId);
-
-  const isSelected = selectedGoalId === goal.id;
+  const { goal, depth, hasChildren, isExpanded } = row;
+  const categoryColor = goal.category?.color ?? "#6B7280";
   const isCompleted = goal.status === "COMPLETED";
   const isAbandoned = goal.status === "ABANDONED";
-  const categoryColor = goal.category?.color ?? "#6B7280";
-  const borderStyle = hasDates ? "border-solid" : "border-dashed";
-  const opacity = isAbandoned ? "opacity-50" : "";
+  const cols = getGoalColumns(goal, segments, year);
+  const hasDates = !!(goal.startDate || goal.deadline);
 
   return (
-    <div
-      style={{ gridColumn }}
-      className={cn("m-0.5 relative", expanded && "z-10")}
-    >
-      <Collapsible open={expanded} onOpenChange={setExpanded}>
-        <CollapsibleTrigger
-          render={
-            <button
-              type="button"
+    <React.Fragment>
+      {/* Cell 1: Tree label (sticky left) */}
+      <div
+        data-tree-cell=""
+        className={cn(
+          "sticky left-0 z-10 bg-background border-b border-r flex items-center gap-1.5 py-1 text-sm cursor-pointer hover:bg-muted/60 transition-colors",
+          isSelected && "bg-accent",
+          isAbandoned && "opacity-50",
+        )}
+        style={{ paddingLeft: `${depth * 1.25 + 0.75}rem`, paddingRight: "0.5rem" }}
+        onClick={() => onSelect(goal.id)}
+      >
+        {/* Expand/collapse chevron */}
+        {hasChildren ? (
+          <button
+            type="button"
+            className="shrink-0 rounded-sm p-0.5 hover:bg-muted"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleExpand(goal.id);
+            }}
+          >
+            <ChevronRight
               className={cn(
-                "w-full rounded-md px-2 py-1.5 text-left text-xs font-medium transition-colors",
-                borderStyle,
-                "border",
-                isSelected && "ring-2 ring-primary/40",
-                isCompleted && "line-through text-muted-foreground",
-                opacity,
+                "size-3.5 transition-transform duration-150",
+                isExpanded && "rotate-90",
               )}
-              style={{
-                backgroundColor: `${categoryColor}15`,
-                borderColor: `${categoryColor}40`,
-              }}
             />
-          }
+          </button>
+        ) : (
+          <span className="size-3.5 shrink-0" />
+        )}
+        {/* Category color dot */}
+        {goal.category && (
+          <span
+            className="size-2 rounded-full shrink-0"
+            style={{ backgroundColor: categoryColor }}
+          />
+        )}
+        {/* Title */}
+        <span
+          className={cn(
+            "truncate text-sm font-medium",
+            isCompleted && "line-through text-muted-foreground",
+          )}
         >
-          <div className="flex items-center gap-1">
-            {isCompleted && (
-              <CheckCircle2 className="size-3 text-green-500 shrink-0" />
+          {goal.title}
+        </span>
+      </div>
+
+      {/* Cell 2: Bar area (spans all time columns) */}
+      <div
+        className="border-b relative"
+        style={{
+          gridColumn: `2 / ${segments.length + 2}`,
+          display: "grid",
+          gridTemplateColumns: `repeat(${segments.length}, minmax(${minColWidth}, 1fr))`,
+        }}
+      >
+        {cols ? (
+          <button
+            type="button"
+            className={cn(
+              "relative h-6 my-1 rounded px-1.5 text-[11px] font-medium truncate text-left transition-colors hover:brightness-110 overflow-hidden",
+              !hasDates && "border border-dashed",
+              isCompleted && "line-through text-muted-foreground",
+              isAbandoned && "opacity-50",
+              isSelected && "ring-2 ring-primary/40",
             )}
-            {goal.category && (
-              <span
-                className="inline-block size-2 rounded-full shrink-0"
-                style={{ backgroundColor: categoryColor }}
+            style={{
+              gridColumn: `${cols.start} / ${cols.end}`,
+              backgroundColor: `${categoryColor}20`,
+              borderLeft: `3px solid ${categoryColor}`,
+              borderColor: !hasDates ? `${categoryColor}60` : undefined,
+              minWidth: "2rem",
+            }}
+            onClick={() => onSelect(goal.id)}
+          >
+            {/* Progress fill overlay */}
+            {goal.progress > 0 && (
+              <div
+                className="absolute inset-0 rounded-r-none"
+                style={{
+                  width: `${Math.min(goal.progress, 100)}%`,
+                  backgroundColor: `${categoryColor}20`,
+                }}
               />
             )}
-            <span className="truncate flex-1">{goal.title}</span>
-            {goal.progress > 0 && goal.progress < 100 && (
-              <div className="h-1 w-8 overflow-hidden rounded-full bg-muted shrink-0">
-                <div
-                  className="h-full rounded-full bg-primary transition-all duration-500 ease-in-out"
-                  style={{ width: `${Math.min(goal.progress, 100)}%` }}
-                />
-              </div>
-            )}
-            <ChevronDown
-              className={cn(
-                "size-3 shrink-0 text-muted-foreground transition-transform duration-200",
-                expanded && "rotate-180",
-              )}
-            />
-          </div>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <div
-            className="mt-1 rounded-md border bg-popover p-2 text-xs space-y-2 shadow-md"
-            style={{ borderColor: `${categoryColor}30` }}
-          >
-            <div className="flex items-center gap-2">
-              <GoalPriorityBadge priority={goal.priority} />
-              <span className="text-muted-foreground">
-                {goal.status.replace("_", " ").toLowerCase()}
-              </span>
-            </div>
-            {goal.progress > 0 && (
-              <div>
-                <div className="flex items-center justify-between mb-0.5">
-                  <span className="text-muted-foreground">Progress</span>
-                  <span className="font-mono">{Math.round(goal.progress)}%</span>
-                </div>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all duration-500 ease-in-out"
-                    style={{
-                      width: `${Math.min(goal.progress, 100)}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-            {goal.children.length > 0 && (
-              <p className="text-muted-foreground">
-                {goal.children.length} sub-goal
-                {goal.children.length > 1 ? "s" : ""}
-              </p>
-            )}
-            <button
-              type="button"
-              className="flex items-center gap-1 text-primary hover:underline"
-              onClick={(e) => {
-                e.stopPropagation();
-                selectGoal(goal.id);
-              }}
-            >
-              <ExternalLink className="size-3" />
-              View details
-            </button>
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
-    </div>
+            <span className="relative z-[1]">{goal.title}</span>
+          </button>
+        ) : (
+          <div className="h-8" style={{ gridColumn: `1 / ${segments.length + 1}` }} />
+        )}
+      </div>
+    </React.Fragment>
   );
 }
 

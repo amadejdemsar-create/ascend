@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useEffect, useRef, useMemo } from "react";
-import { useGoals } from "@/lib/hooks/use-goals";
+import React, { useState, useMemo, useRef, useEffect } from "react";
+import { useGoalTree } from "@/lib/hooks/use-goals";
 import { useUIStore } from "@/lib/stores/ui-store";
 import {
   getTimeSegments,
-  getGoalColumns,
+  flattenTree,
   type TimelineZoom,
-  type TimelineGoal,
 } from "@/lib/timeline-utils";
+import { filterTree } from "@/lib/tree-filter";
 import { GoalTimelineNode } from "@/components/goals/goal-timeline-node";
 import { differenceInDays } from "date-fns";
 import { ChevronLeft, ChevronRight, GanttChart, SearchX } from "lucide-react";
@@ -21,15 +21,6 @@ const ZOOM_OPTIONS: Array<{ value: TimelineZoom; label: string }> = [
   { value: "quarter", label: "Quarter" },
   { value: "month", label: "Month" },
 ];
-
-const HORIZON_LABELS: Record<string, string> = {
-  YEARLY: "Yearly",
-  QUARTERLY: "Quarterly",
-  MONTHLY: "Monthly",
-  WEEKLY: "Weekly",
-};
-
-const HORIZONS = ["YEARLY", "QUARTERLY", "MONTHLY", "WEEKLY"] as const;
 
 function getMinWidth(zoom: TimelineZoom): string {
   if (zoom === "month") return "3rem";
@@ -55,13 +46,14 @@ function TodayMarker({ timelineYear }: { timelineYear: number }) {
     <div
       className="absolute top-0 bottom-0 w-0.5 bg-primary/60 z-30 pointer-events-none"
       style={{
-        left: `calc(8rem + (100% - 8rem) * ${todayPercent / 100})`,
+        left: `calc(240px + (100% - 240px) * ${todayPercent / 100})`,
       }}
     />
   );
 }
 
 export function GoalTimelineView() {
+  const { data: tree, isLoading } = useGoalTree();
   const timelineZoom = useUIStore((s) => s.timelineZoom);
   const setTimelineZoom = useUIStore((s) => s.setTimelineZoom);
   const timelineYear = useUIStore((s) => s.timelineYear);
@@ -69,58 +61,64 @@ export function GoalTimelineView() {
   const timelineMonth = useUIStore((s) => s.timelineMonth);
   const setTimelineMonth = useUIStore((s) => s.setTimelineMonth);
   const activeFilters = useUIStore((s) => s.activeFilters);
+  const selectGoal = useUIStore((s) => s.selectGoal);
+  const selectedGoalId = useUIStore((s) => s.selectedGoalId);
 
-  interface GoalItem {
-    id: string;
-    title: string;
-    status: string;
-    horizon: string;
-    priority: "LOW" | "MEDIUM" | "HIGH";
-    progress: number;
-    startDate: string | null;
-    deadline: string | null;
-    category: { id: string; name: string; color: string; icon: string | null } | null;
-  }
-
-  const { data: allGoals, isLoading } = useGoals();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const filteredTree = useMemo(
+    () => filterTree(tree ?? [], activeFilters),
+    [tree, activeFilters],
+  );
   const segments = getTimeSegments(timelineYear, timelineZoom, timelineMonth);
 
-  const goalsByHorizon = useMemo(() => {
-    const goals = (allGoals ?? []) as GoalItem[];
-    const result: Record<string, TimelineGoal[]> = {
-      YEARLY: [],
-      QUARTERLY: [],
-      MONTHLY: [],
-      WEEKLY: [],
-    };
-    for (const g of goals) {
-      if (g.status === "ABANDONED") continue;
-      if (activeFilters.horizon && g.horizon !== activeFilters.horizon) continue;
-      if (activeFilters.status && g.status !== activeFilters.status) continue;
-      if (activeFilters.priority && g.priority !== activeFilters.priority) continue;
-      if (activeFilters.categoryId && g.category?.id !== activeFilters.categoryId) continue;
-      if (result[g.horizon]) {
-        result[g.horizon].push({
-          id: g.id,
-          title: g.title,
-          status: g.status,
-          horizon: g.horizon,
-          priority: g.priority,
-          progress: g.progress,
-          startDate: g.startDate,
-          deadline: g.deadline,
-          category: g.category,
-          children: [],
-          depth: 0,
-        });
+  // Expand/collapse: default first two levels open
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => {
+    const ids = new Set<string>();
+    for (const g of tree ?? []) {
+      ids.add(g.id);
+      for (const c of g.children) {
+        ids.add(c.id);
       }
     }
-    return result;
-  }, [allGoals, activeFilters]);
+    return ids;
+  });
+
+  // Re-initialize expanded IDs when tree data loads for the first time
+  const treeLoadedRef = useRef(false);
+  useEffect(() => {
+    if (tree && tree.length > 0 && !treeLoadedRef.current) {
+      treeLoadedRef.current = true;
+      const ids = new Set<string>();
+      for (const g of tree) {
+        ids.add(g.id);
+        for (const c of g.children) {
+          ids.add(c.id);
+        }
+      }
+      setExpandedIds(ids);
+    }
+  }, [tree]);
+
+  const flatRows = useMemo(
+    () => flattenTree(filteredTree, expandedIds),
+    [filteredTree, expandedIds],
+  );
+
+  const toggleExpand = (id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
 
   const minColWidth = getMinWidth(timelineZoom);
-  const gridCols = `8rem repeat(${segments.length}, minmax(${minColWidth}, 1fr))`;
+  const gridCols = `240px repeat(${segments.length}, minmax(${minColWidth}, 1fr))`;
+  const mobileGridCols = `0px repeat(${segments.length}, minmax(${minColWidth}, 1fr))`;
 
   // Auto-scroll to today on mount when viewing current year at month zoom
   useEffect(() => {
@@ -132,8 +130,7 @@ export function GoalTimelineView() {
 
     const scrollWidth = container.scrollWidth;
     const containerWidth = container.clientWidth;
-    // Label column is 128px (8rem). Timeline area is the rest.
-    const labelWidth = 128;
+    const labelWidth = 240;
     const timelineWidth = scrollWidth - labelWidth;
     const todayScrollPos = labelWidth + (todayPercent / 100) * timelineWidth;
     container.scrollTo({
@@ -142,9 +139,8 @@ export function GoalTimelineView() {
     });
   }, [timelineYear, timelineZoom]);
 
-  const totalGoals = Object.values(goalsByHorizon).reduce((sum, arr) => sum + arr.length, 0);
-  const hasGoals = (allGoals ?? []).length > 0;
-  const hasFilteredGoals = totalGoals > 0;
+  const hasGoals = (tree ?? []).length > 0;
+  const hasFilteredGoals = flatRows.length > 0;
 
   return (
     <div className="space-y-3">
@@ -173,7 +169,10 @@ export function GoalTimelineView() {
           </Button>
           <span className="font-mono text-sm font-semibold min-w-[5rem] text-center">
             {timelineZoom === "month"
-              ? new Date(timelineYear, timelineMonth).toLocaleDateString("en", { month: "short", year: "numeric" })
+              ? new Date(timelineYear, timelineMonth).toLocaleDateString("en", {
+                  month: "short",
+                  year: "numeric",
+                })
               : timelineYear}
           </span>
           <Button
@@ -227,82 +226,55 @@ export function GoalTimelineView() {
       ) : hasFilteredGoals ? (
         <div
           ref={scrollRef}
-          className="overflow-x-auto rounded-lg border relative"
-          style={{ scrollSnapType: "x mandatory" }}
+          className="overflow-auto rounded-lg border relative"
+          style={{ maxHeight: "calc(100vh - 220px)" }}
         >
           {/* Today marker overlay */}
           <TodayMarker timelineYear={timelineYear} />
 
           <div
             style={{ display: "grid", gridTemplateColumns: gridCols }}
-            className="min-w-fit"
+            className="min-w-fit md:grid"
           >
-            {/* Header row: empty label cell + segment labels */}
-            <div className="sticky left-0 z-20 bg-muted/80 border-b border-r px-3 py-2 text-xs font-semibold text-muted-foreground backdrop-blur" />
-            {segments.map((seg, i) => (
-              <div
-                key={i}
-                className="border-b px-2 py-2 text-center text-xs font-medium text-muted-foreground"
-                style={{ scrollSnapAlign: "start" }}
-              >
-                {seg.label}
+            {/* Mobile grid override */}
+            <style>{`
+              @media (max-width: 767px) {
+                [data-timeline-grid] {
+                  grid-template-columns: ${mobileGridCols} !important;
+                }
+                [data-tree-cell] {
+                  display: none !important;
+                }
+              }
+            `}</style>
+            <div data-timeline-grid="" style={{ display: "contents" }}>
+              {/* Header row: corner cell + segment labels */}
+              <div className="sticky left-0 top-0 z-30 bg-muted/80 border-b border-r px-3 py-2 text-xs font-semibold text-muted-foreground backdrop-blur" data-tree-cell="">
+                Goals
               </div>
-            ))}
+              {segments.map((seg, i) => (
+                <div
+                  key={i}
+                  className="sticky top-0 z-20 bg-muted/80 border-b px-2 py-2 text-center text-xs font-medium text-muted-foreground backdrop-blur"
+                >
+                  {seg.label}
+                </div>
+              ))}
 
-            {/* Swim lane rows */}
-            {HORIZONS.map((horizon) => {
-              const horizonLabel = HORIZON_LABELS[horizon];
-              const goalsInLane = goalsByHorizon[horizon] ?? [];
-
-              return (
-                <React.Fragment key={horizon}>
-                  {/* Lane label cell (sticky left) */}
-                  <div className="sticky left-0 z-20 bg-muted/40 border-b border-r px-3 py-3 text-xs font-semibold text-muted-foreground backdrop-blur flex items-start">
-                    {horizonLabel}
-                    {goalsInLane.length > 0 && (
-                      <span className="ml-1 text-[10px] text-muted-foreground/60">
-                        ({goalsInLane.length})
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Lane content area spanning all segment columns */}
-                  <div
-                    className="col-span-full border-b bg-background/50 relative"
-                    style={{
-                      gridColumn: `2 / ${segments.length + 2}`,
-                      display: "grid",
-                      gridTemplateColumns: `repeat(${segments.length}, minmax(${minColWidth}, 1fr))`,
-                      gridAutoFlow: "row dense",
-                      gridAutoRows: "auto",
-                    }}
-                  >
-                    {goalsInLane.length === 0 && (
-                      <div className="col-span-full flex items-center justify-center py-4 text-xs text-muted-foreground/40">
-                        No {horizonLabel.toLowerCase()} goals
-                      </div>
-                    )}
-                    {goalsInLane.length > 0 &&
-                      goalsInLane.map((goal) => {
-                        const cols = getGoalColumns(
-                          goal,
-                          segments,
-                          timelineYear,
-                        );
-                        if (!cols) return null;
-                        return (
-                          <GoalTimelineNode
-                            key={goal.id}
-                            goal={goal}
-                            gridColumn={`${cols.start} / ${cols.end}`}
-                            hasDates={!!goal.deadline}
-                          />
-                        );
-                      })}
-                  </div>
-                </React.Fragment>
-              );
-            })}
+              {/* Goal rows */}
+              {flatRows.map((row) => (
+                <GoalTimelineNode
+                  key={row.goal.id}
+                  row={row}
+                  segments={segments}
+                  year={timelineYear}
+                  minColWidth={minColWidth}
+                  onSelect={selectGoal}
+                  onToggleExpand={toggleExpand}
+                  isSelected={selectedGoalId === row.goal.id}
+                />
+              ))}
+            </div>
           </div>
         </div>
       ) : null}
@@ -311,9 +283,12 @@ export function GoalTimelineView() {
       {!isLoading && !hasGoals && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <GanttChart className="size-12 text-muted-foreground/40 mb-4" />
-          <p className="text-sm font-medium text-muted-foreground">No goals in timeline</p>
+          <p className="text-sm font-medium text-muted-foreground">
+            No goals in timeline
+          </p>
           <p className="mt-2 max-w-sm text-xs text-muted-foreground/70">
-            Goals need a deadline to appear on the timeline. Add deadlines to your goals from the goal detail panel or when creating new goals.
+            Goals need a deadline to appear on the timeline. Add deadlines to
+            your goals from the goal detail panel or when creating new goals.
           </p>
         </div>
       )}
