@@ -196,8 +196,8 @@
 - [x] **CTX-03**: User can tag context documents for cross-cutting discovery
 - [x] **CTX-04**: User can search across all context documents (full-text search via PostgreSQL tsvector)
 - [x] **CTX-05**: User can create bi-directional links between context documents (Obsidian-style [[backlinks]])
-- [ ] **CTX-06**: Context documents render markdown with proper formatting in the web UI
-- [ ] **CTX-07**: Auto-derived "Current Priorities" context document updates based on active goals and Big 3
+- [x] **CTX-06**: Context documents render markdown with proper formatting in the web UI
+- [x] **CTX-07**: Auto-derived "Current Priorities" context document updates based on active goals and Big 3
 - [x] **CTX-08**: MCP tool: set_context (create or update a context document)
 - [x] **CTX-09**: MCP tool: get_context (retrieve by ID or namespace/title)
 - [x] **CTX-10**: MCP tool: list_context (filter by category, tags)
@@ -419,8 +419,8 @@
 | CTX-03 | Phase 16 | Complete (16-01) |
 | CTX-04 | Phase 16 | Complete (16-01) |
 | CTX-05 | Phase 16 | Complete (16-01) |
-| CTX-06 | Phase 16 | Pending |
-| CTX-07 | Phase 16 | Pending |
+| CTX-06 | Phase 16 | Complete |
+| CTX-07 | Phase 16 | Complete |
 | CTX-08 | Phase 16 | Complete |
 | CTX-09 | Phase 16 | Complete |
 | CTX-10 | Phase 16 | Complete |
