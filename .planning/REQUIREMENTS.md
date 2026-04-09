@@ -391,12 +391,67 @@
 | INFRA-03 | Phase 1 | Complete (01-01) |
 | INFRA-04 | Phase 1 | Complete (01-01) |
 | INFRA-05 | Phase 1 | Complete |
+| TODO-01 | Phase 12 | Pending |
+| TODO-02 | Phase 12 | Pending |
+| TODO-03 | Phase 12 | Pending |
+| TODO-04 | Phase 12 | Pending |
+| TODO-05 | Phase 12 | Pending |
+| TODO-06 | Phase 12 | Pending |
+| TODO-07 | Phase 12 | Pending |
+| TODO-08 | Phase 12 | Pending |
+| TODO-09 | Phase 12 | Pending |
+| TODO-10 | Phase 13 | Pending |
+| TODO-11 | Phase 13 | Pending |
+| TODO-12 | Phase 13 | Pending |
+| TODO-13 | Phase 13 | Pending |
+| CAL-01 | Phase 14 | Pending |
+| CAL-02 | Phase 14 | Pending |
+| CAL-03 | Phase 14 | Pending |
+| CAL-04 | Phase 14 | Pending |
+| CAL-05 | Phase 14 | Pending |
+| CAL-06 | Phase 14 | Pending |
+| CAL-07 | Phase 14 | Pending |
+| CAL-08 | Phase 14 | Pending |
+| VS-03 | Phase 15 | Pending |
+| VS-04 | Phase 15 | Pending |
+| CTX-01 | Phase 16 | Pending |
+| CTX-02 | Phase 16 | Pending |
+| CTX-03 | Phase 16 | Pending |
+| CTX-04 | Phase 16 | Pending |
+| CTX-05 | Phase 16 | Pending |
+| CTX-06 | Phase 16 | Pending |
+| CTX-07 | Phase 16 | Pending |
+| CTX-08 | Phase 16 | Pending |
+| CTX-09 | Phase 16 | Pending |
+| CTX-10 | Phase 16 | Pending |
+| CTX-11 | Phase 16 | Pending |
+| CTX-12 | Phase 16 | Pending |
+| CTX-13 | Phase 16 | Pending |
+| TMCP-01 | Phase 17 | Pending |
+| TMCP-02 | Phase 17 | Pending |
+| TMCP-03 | Phase 17 | Pending |
+| TMCP-04 | Phase 17 | Pending |
+| TMCP-05 | Phase 17 | Pending |
+| TMCP-06 | Phase 17 | Pending |
+| TMCP-07 | Phase 17 | Pending |
+| TMCP-08 | Phase 17 | Pending |
+| TMCP-09 | Phase 17 | Pending |
+| TMCP-10 | Phase 17 | Pending |
+| TL-01 | Phase 18 | Pending |
+| TL-02 | Phase 18 | Pending |
+| TL-03 | Phase 18 | Pending |
+| TL-04 | Phase 18 | Pending |
+| TL-05 | Phase 18 | Pending |
+| TL-06 | Phase 18 | Pending |
+| VS-01 | Phase 18 | Pending |
+| VS-02 | Phase 18 | Pending |
+| VS-05 | Phase 18 | Pending |
 
 **Coverage:**
 - v1 requirements: 110 total, all complete (except DATA-07)
-- v2.0 requirements: 56 total
-- Mapped to phases: pending roadmap creation
+- v2.0 requirements: 55 total, all mapped to phases 12 through 18
+- No orphaned requirements
 
 ---
 *Requirements defined: 2026-03-30*
-*Last updated: 2026-04-09 after v2.0 milestone requirements definition*
+*Last updated: 2026-04-09 after v2.0 roadmap creation*

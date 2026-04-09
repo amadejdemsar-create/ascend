@@ -1,241 +1,157 @@
 # Roadmap: Ascend
 
+## Milestones
+
+- v1.0 MVP (Phases 1 through 11): shipped 2026-04-09. All 110 v1 requirements complete (except DATA-07 automated backups, deferred).
+- v2.0 Inputs & Outputs (Phases 12 through 18): in progress.
+
+<details>
+<summary>v1.0 MVP (Phases 1 through 11), SHIPPED 2026-04-09</summary>
+
+Phases 1 through 11 delivered the full goal tracking system: database + infrastructure, app shell + goal CRUD, categories + list view, dashboard + progress tracking, MCP server (20 tools), board + tree views, timeline view, drag and drop, gamification + recurring goals, command palette + data management, onboarding + PWA + polish. All 110 v1 requirements complete.
+
+</details>
+
 ## Overview
 
-Ascend delivers a personal goal tracking web app that connects yearly ambitions to weekly actions through a cascading hierarchy, progress rollup, gamification, and a comprehensive MCP server for AI integration. The roadmap moves from database foundation through core UI, then layers on the dashboard, MCP server, advanced views (board, tree, timeline), drag and drop, gamification, power features, and finally PWA polish. Each phase delivers a coherent, testable capability that builds on what came before.
+v2.0 transforms Ascend from a goal tracker (outputs only) into a personal operating system built on the inputs/outputs framework. To-dos are inputs (daily controllable actions), Goals are outputs (results to achieve). A calendar view becomes the primary daily experience. A context system provides structured personal knowledge queryable by AI. The timeline gets a Gantt redesign and the navigation is restructured around the Inputs/Outputs mental model.
 
 ## Phases
 
 **Phase Numbering:**
 - Integer phases (1, 2, 3): Planned milestone work
-- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
+- Decimal phases (12.1, 12.2): Urgent insertions (marked with INSERTED)
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [x] **Phase 1: Foundation** - Database schema, Service Layer, project scaffolding, infrastructure setup (completed 2026-03-30)
-- [x] **Phase 2: App Shell and Goal Management** - Layout, navigation, theming, goal CRUD with hierarchy and forms (completed 2026-03-30)
-- [ ] **Phase 3: Categories, List View, and Filtering** - Category system, list view, filtering/sorting, view persistence
-- [ ] **Phase 4: Dashboard and Progress Tracking** - Landing page widgets, progress increment/history, rollup
-- [ ] **Phase 5: MCP Server** - Streamable HTTP endpoint with all tools, API key auth, transport validation
-- [ ] **Phase 6: Board and Tree Views** - Kanban board view and hierarchical tree view
-- [ ] **Phase 7: Timeline View** - Custom horizontal timeline visualization with expandable goal nodes
-- [ ] **Phase 8: Drag and Drop** - Cross-view reordering, horizon changes, category moves with visual feedback
-- [ ] **Phase 9: Gamification and Recurring Goals** - XP/levels, streaks, weekly score, celebrations, recurring goal instances
-- [x] **Phase 10: Command Palette and Data Management** - Cmd+K palette, keyboard shortcuts, import/export (JSON, CSV, MD, PDF, DOCX), backups (completed 2026-03-31)
-- [x] **Phase 11: Onboarding, PWA, and Polish** - First-run experience, installable PWA, offline support, rich animations (completed 2026-03-31)
+- [ ] **Phase 12: Todo Data Layer** - Prisma model, service layer, API routes, hooks for to-do CRUD, goal linking, recurrence, streaks, and Daily Big 3
+- [ ] **Phase 13: Todo UI** - List view with sorting/filtering, bulk operations, overdue handling
+- [ ] **Phase 14: Calendar View** - Month grid, day detail panel, Big 3 display, goal deadlines, morning planning prompt
+- [ ] **Phase 15: Dashboard Transformation** - Input-centric dashboard with Big 3 widget and linked output context
+- [ ] **Phase 16: Context System** - Context documents with categories, tags, backlinks, full-text search, MCP tools, and MCP Resources
+- [ ] **Phase 17: Todo MCP Tools** - Ten MCP tools for AI-driven to-do management
+- [ ] **Phase 18: Timeline, Navigation, and Polish** - Gantt tree redesign, view cleanup, nav restructure, command palette extension
 
 ## Phase Details
 
-### Phase 1: Foundation
-**Goal**: The database, Service Layer, and deployment pipeline are operational so all subsequent phases build on a stable, tested data layer
-**Depends on**: Nothing (first phase)
-**Requirements**: INFRA-01, INFRA-02, INFRA-03, INFRA-04, INFRA-05
+### Phase 12: Todo Data Layer
+**Goal**: A complete to-do data layer exists so that to-dos can be created, completed, linked to goals, recurred with streaks, and prioritized as Daily Big 3 through API routes and React hooks
+**Depends on**: v1.0 complete (builds on existing Prisma schema, service pattern, and API route structure)
+**Requirements**: TODO-01, TODO-02, TODO-03, TODO-04, TODO-05, TODO-06, TODO-07, TODO-08, TODO-09
 **Success Criteria** (what must be TRUE):
-  1. Next.js 16 app deploys to ascend.nativeai.agency via Dokploy and serves a placeholder page over HTTPS
-  2. PostgreSQL database is running with all Prisma migrations applied, including multi-user schema (user_id on every table) and a seeded test user
-  3. Service Layer functions for goal CRUD, category CRUD, and hierarchy validation return correct results when called programmatically (verified by seed scripts or test calls)
-  4. Adjacency list hierarchy enforces valid parent-child relationships (quarterly can only parent under yearly, monthly under quarterly, weekly under monthly)
-  5. API key authentication middleware rejects unauthenticated requests and accepts valid Bearer tokens
-**Plans:** 4/4 plans complete
-
-Plans:
-- [x] 01-01-PLAN.md — Scaffold Next.js 16 project, Dockerfile, Prisma config, deploy to Dokploy
-- [ ] 01-02-PLAN.md — Complete Prisma schema (6 models), migrations, Prisma Client singleton, seed test user
-- [ ] 01-03-PLAN.md — Service Layer (goal CRUD, category CRUD, hierarchy validation, Zod schemas, tree queries)
-- [ ] 01-04-PLAN.md — API key authentication and REST API route handlers for goals and categories
-
-### Phase 2: App Shell and Goal Management
-**Goal**: Users can see and interact with their goals through a functional app layout with navigation, theming, and full goal CRUD including hierarchy
-**Depends on**: Phase 1
-**Requirements**: NAV-01, NAV-02, NAV-03, NAV-04, NAV-05, THEME-01, THEME-02, THEME-03, THEME-04, GOAL-01, GOAL-02, GOAL-03, GOAL-04, GOAL-05, GOAL-06, GOAL-07, GOAL-08, GOAL-09, GOAL-11, GOAL-12, GOAL-13, GOAL-14
-**Success Criteria** (what must be TRUE):
-  1. User sees a collapsible sidebar on desktop and a bottom tab bar on mobile with working navigation between sections
-  2. User can toggle between dark and light themes manually, and the app follows system preference by default
-  3. User can create a yearly goal with full SMART fields via a modal dialog and create a weekly goal via inline quick-add
-  4. User can link a goal to a parent at the appropriate horizon level and view a goal's children (sub-goals)
-  5. User can edit any goal field, change status/priority, set measurable targets, and delete goals with confirmation when children exist
+  1. User can create a to-do with title, description, due date, priority, and category through the API, and retrieve it
+  2. User can complete a to-do and see the linked parent goal's progress auto-increment
+  3. User can create a recurring to-do (daily, weekly, or custom rrule pattern) and see it generate instances for the correct dates
+  4. Recurring to-dos track streak count and 30-day consistency score that update on completion
+  5. User can designate up to 3 to-dos as Daily Big 3 for a given date, with enforcement that rejects a 4th
 **Plans**: TBD
 
 Plans:
-- [ ] 02-01: App shell layout (sidebar, bottom tab bar, responsive breakpoints)
-- [ ] 02-02: Theme system (dark/light, system preference, manual override, NativeAI palette)
-- [ ] 02-03: Goal creation forms (SMART modal for yearly/quarterly, inline add for monthly/weekly)
-- [ ] 02-04: Goal editing, status/priority management, deletion with children handling
-- [ ] 02-05: Hierarchy UI (parent linking, children display, progress rollup suggestion)
+- [ ] 12-01: TBD
+- [ ] 12-02: TBD
 
-### Phase 3: Categories, List View, and Filtering
-**Goal**: Users can organize goals into color-coded categories and browse them in a sortable, filterable list view that persists preferences across sessions
-**Depends on**: Phase 2
-**Requirements**: CAT-01, CAT-02, CAT-03, CAT-04, CAT-05, CAT-06, VIEW-01, VIEW-02, VIEW-08, VIEW-09, VIEW-10
+### Phase 13: Todo UI
+**Goal**: Users can manage their to-dos through a full-featured list interface with sorting, filtering, bulk actions, and visual overdue indicators
+**Depends on**: Phase 12
+**Requirements**: TODO-10, TODO-11, TODO-12, TODO-13
 **Success Criteria** (what must be TRUE):
-  1. User can create, edit, delete, and reorder categories with custom names, colors, and Lucide icons, including nested subcategories
-  2. App ships with default suggested categories (Business, Personal, Health, Finance, Learning) that the user can modify or remove
-  3. User can view all goals in a flat sortable table with columns for title, status, progress, priority, deadline, category, and horizon
-  4. User can filter goals by category, horizon, status, and priority, and sort by priority, deadline, creation date, or title
-  5. User's selected view and active filters persist across browser sessions
-**Plans**: 5 plans
-
-Plans:
-- [ ] 03-01-PLAN.md — Category mutation hooks, form components (color/icon pickers), default categories seed
-- [ ] 03-02-PLAN.md — Install TanStack Table, extend UI store with view/filter/sort persistence
-- [ ] 03-03-PLAN.md — Sidebar category tree, category manage dialog, activate goal form category select
-- [ ] 03-04-PLAN.md — List view with TanStack Table columns, sortable headers, and filter bar
-- [ ] 03-05-PLAN.md — View switcher, category delete dialog, compose goals page with all Phase 3 components
-
-### Phase 4: Dashboard and Progress Tracking
-**Goal**: Users land on a dashboard that answers "what should I focus on right now?" with progress tracking that connects daily actions to measurable outcomes
-**Depends on**: Phase 3
-**Requirements**: DASH-01, DASH-02, DASH-03, DASH-04, DASH-05, DASH-06, PROG-01, PROG-02, PROG-03, PROG-04, PROG-05
-**Success Criteria** (what must be TRUE):
-  1. Dashboard loads as the default landing page showing this week's top priority goals, completion percentage per category, streaks/stats, and upcoming deadlines
-  2. User can increment progress on a measurable goal with a quick +1 button or custom amount, optionally adding a note
-  3. User can view the full progress history (timestamped entries with notes) for any goal
-  4. Progress percentage calculates automatically from current value vs target value, and parent goal progress aggregates from children
-  5. Dashboard widgets update in real time when goals are modified elsewhere in the app
-**Plans**: 3 plans
-
-Plans:
-- [ ] 04-01-PLAN.md — Dashboard service, API endpoint, query keys, hooks, and Card component
-- [ ] 04-02-PLAN.md — Progress tracking UI (increment button, custom amount popover, history sheet)
-- [ ] 04-03-PLAN.md — Dashboard page with four widget components and cross-invalidation
-
-### Phase 5: MCP Server
-**Goal**: Any AI assistant can read and write goals through a comprehensive MCP endpoint, making Ascend the single source of truth for goal management across all AI tools
-**Depends on**: Phase 1 (Service Layer); can run in parallel with Phases 2-4
-**Requirements**: MCP-01, MCP-02, MCP-03, MCP-04, MCP-05, MCP-06, MCP-07, MCP-08, MCP-09, MCP-10, MCP-11, MCP-12, MCP-13, MCP-14, MCP-15, MCP-16, MCP-17, MCP-18, MCP-19, MCP-20
-**Success Criteria** (what must be TRUE):
-  1. MCP endpoint responds on Streamable HTTP transport and completes the protocol handshake with Claude Code and at least one other MCP client
-  2. API key authentication rejects invalid tokens and accepts valid Bearer tokens for all MCP operations
-  3. An AI assistant can create a yearly goal, break it into quarterly and monthly sub-goals, add progress, and retrieve the full hierarchy through MCP tools
-  4. An AI assistant can search goals by text, filter by any dimension (horizon, category, status, priority), bulk-complete goals, and retrieve dashboard/priority/stats data
-  5. Import and export tools work correctly (JSON import from old todos.json format, JSON/CSV/Markdown export of goal data)
+  1. User can view all to-dos in a sortable list (by due date, priority, completion status)
+  2. User can filter the to-do list by category, priority, status, and linked goal simultaneously
+  3. User can select multiple to-dos and bulk-complete or bulk-delete them in one action
+  4. Overdue to-dos are visually highlighted in red/orange and offer reschedule or complete actions
 **Plans**: TBD
 
 Plans:
-- [x] 05-01: MCP transport setup and protocol handshake validation
-- [x] 05-02: Goal CRUD tools (create, get, update, delete, list, search)
-- [x] 05-03: Progress, hierarchy, and bulk operation tools
-- [x] 05-04: Dashboard, stats, priorities, and timeline tools
-- [x] 05-05: Category, settings, import, and export tools
-- [x] 05-06: End-to-end validation with Claude Code and other MCP clients
+- [ ] 13-01: TBD
 
-### Phase 6: Board and Tree Views
-**Goal**: Users can visualize goals as kanban cards grouped by status or horizon and as an expandable hierarchical tree showing the full yearly-to-weekly cascade
-**Depends on**: Phase 3
-**Requirements**: VIEW-03, VIEW-04
+### Phase 14: Calendar View
+**Goal**: Users have a calendar as their primary daily planning surface, showing to-dos per day, goal deadlines, Big 3 priorities, and a morning planning prompt
+**Depends on**: Phase 13
+**Requirements**: CAL-01, CAL-02, CAL-03, CAL-04, CAL-05, CAL-06, CAL-07, CAL-08
 **Success Criteria** (what must be TRUE):
-  1. User can switch to Board view and see goals as cards organized into columns, with selectable grouping by status or horizon
-  2. User can switch to Tree view and see the full goal hierarchy (yearly > quarterly > monthly > weekly) as an expandable and collapsible tree
-  3. Both views respect active filters (category, horizon, status, priority) and sort settings
-**Plans**: 2 plans
-
-Plans:
-- [ ] 06-01-PLAN.md — Board/Kanban view with grouping toggle (status or horizon), compact board cards, UI store persistence
-- [ ] 06-02-PLAN.md — Tree view with API route, useGoalTree hook, recursive expand/collapse nodes, client-side filter pruning
-
-### Phase 7: Timeline View
-**Goal**: Users can visualize their entire year on a horizontal timeline with goals positioned at their horizon level, providing a planning perspective that no other personal goal app offers
-**Depends on**: Phase 3
-**Requirements**: VIEW-05, VIEW-06, VIEW-07
-**Success Criteria** (what must be TRUE):
-  1. User sees a horizontal year line with quarter markers that can expand to show months and weeks
-  2. Goals appear as interactive nodes on the timeline positioned at their correct horizon level
-  3. Clicking a goal node on the timeline expands its details inline, showing children, progress, and notes
-  4. Timeline performs smoothly with 100+ goal nodes and handles viewport-based rendering to avoid DOM overload
+  1. User sees a navigable month grid with dot indicators on days that have to-dos, and can click any day to see its to-dos in a detail panel
+  2. Goal deadlines appear on the calendar with a distinct visual style (icon or color) that differentiates them from to-dos
+  3. Daily Big 3 priorities appear prominently above other to-dos in the day detail, and recurring daily to-dos are visually distinguished from one-off to-dos
+  4. When the user opens the app without Big 3 selected for today, a morning planning prompt guides them to set priorities
+  5. Overdue to-dos from previous days surface at the top of today's view so nothing slips through the cracks
 **Plans**: TBD
 
 Plans:
-- [ ] 07-01: Timeline layout engine (year line, quarter/month/week expansion)
-- [ ] 07-02: Goal nodes positioning and interaction
-- [ ] 07-03: Inline detail expansion and performance optimization
+- [ ] 14-01: TBD
+- [ ] 14-02: TBD
 
-### Phase 8: Drag and Drop
-**Goal**: Users can reorganize their goals spatially by dragging to reorder, move between horizons, and change categories across List, Board, and Tree views
-**Depends on**: Phase 6 (Board and Tree views must exist for cross-view DnD)
-**Requirements**: DND-01, DND-02, DND-03, DND-04, DND-05
+### Phase 15: Dashboard Transformation
+**Goal**: The dashboard becomes input-centric, centering on "what are my inputs today?" with clear connections to outputs (goals)
+**Depends on**: Phase 14
+**Requirements**: VS-03, VS-04
 **Success Criteria** (what must be TRUE):
-  1. User can drag goals to reorder them within any list or view
-  2. User can drag a goal between horizons (e.g., promote a weekly goal to monthly) and between categories
-  3. Drag and drop works consistently across List, Board, and Tree views
-  4. Visual feedback during drag shows a ghost element and highlights valid drop targets
+  1. Dashboard prominently displays Today's Big 3 widget as the first and largest element the user sees
+  2. Each Big 3 to-do shows its linked goal (output), making visible why this input matters
+  3. Existing dashboard widgets (streaks, deadlines, progress) remain functional alongside the new input-centric layout
 **Plans**: TBD
 
 Plans:
-- [ ] 08-01: Drag and drop foundation with dnd-kit
-- [ ] 08-02: Cross-view drag operations (reorder, horizon change, category change)
-- [ ] 08-03: Visual feedback (ghost elements, drop target highlighting)
+- [ ] 15-01: TBD
 
-### Phase 9: Gamification and Recurring Goals
-**Goal**: Users feel motivated by visible progress through XP, levels, streaks, and celebrations, with recurring goals that build habits through streak tracking
-**Depends on**: Phase 4 (progress tracking and dashboard must exist)
-**Requirements**: GAME-01, GAME-02, GAME-03, GAME-04, GAME-05, GAME-06, GAME-07, GOAL-10
+### Phase 16: Context System
+**Goal**: Users can store and organize structured personal knowledge as context documents that any AI assistant can query, with categories, tags, backlinks, and full-text search
+**Depends on**: v1.0 complete (independent of Phases 12 through 15; can be parallelized if needed)
+**Requirements**: CTX-01, CTX-02, CTX-03, CTX-04, CTX-05, CTX-06, CTX-07, CTX-08, CTX-09, CTX-10, CTX-11, CTX-12, CTX-13
 **Success Criteria** (what must be TRUE):
-  1. Completing a goal awards XP proportional to its horizon level and priority, and accumulated XP drives a level system with a celebration animation on level-up
-  2. User can create recurring goals (daily, weekly, monthly) that auto-generate instances, and consecutive completions build streaks
-  3. Dashboard displays current level, XP progress to next level, active streaks, and weekly score
-  4. A satisfying animation plays when a goal is completed (confetti for milestones, checkmark for tasks), and progress bars animate smoothly
-**Plans**: 4 plans
+  1. User can create, edit, and delete context documents with markdown content, organized into a category tree with tags
+  2. User can search across all context documents using full-text search and see results ranked by relevance
+  3. User can create [[backlinks]] between context documents and navigate bidirectional links in the UI
+  4. A "Current Priorities" context document auto-updates based on active goals and today's Big 3
+  5. AI assistants can create, read, search, and delete context through MCP tools, and can browse context categories as MCP Resources
+**Plans**: TBD
 
 Plans:
-- [x] 09-01-PLAN.md — Gamification service, level formula, schema extension, XP wired into API and MCP
-- [ ] 09-02-PLAN.md — Recurring goals service, instance generation, streak tracking, recurring UI in form and detail
-- [ ] 09-03-PLAN.md — Dashboard gamification widgets (XP bar, level, streaks, weekly score), recurring generation trigger
-- [ ] 09-04-PLAN.md — Celebration animations (confetti, checkmark, level-up fireworks) and progress bar transitions
+- [ ] 16-01: TBD
+- [ ] 16-02: TBD
+- [ ] 16-03: TBD
 
-### Phase 10: Command Palette and Data Management
-**Goal**: Power users can navigate and act on goals instantly through keyboard shortcuts and a search-driven command palette, with full data portability through import and export
-**Depends on**: Phase 4 (dashboard and core features must exist for navigation targets)
-**Requirements**: CMD-01, CMD-02, CMD-03, CMD-04, CMD-05, CMD-06, DATA-01, DATA-02, DATA-03, DATA-04, DATA-05, DATA-06, DATA-07, DATA-08
+### Phase 17: Todo MCP Tools
+**Goal**: AI assistants can fully manage to-dos through MCP, enabling workflows like "Claude, add a to-do for tomorrow" or "what are my Big 3 today?"
+**Depends on**: Phase 12
+**Requirements**: TMCP-01, TMCP-02, TMCP-03, TMCP-04, TMCP-05, TMCP-06, TMCP-07, TMCP-08, TMCP-09, TMCP-10
 **Success Criteria** (what must be TRUE):
-  1. Cmd+K opens a command palette that searches all goals by title/description and offers quick actions (new goal, switch view, toggle theme, navigate to category)
-  2. Keyboard shortcuts work for navigating between views, creating goals, marking complete, toggling sidebar, toggling theme, and pressing ? shows a shortcut reference
-  3. User can import existing todos.json data with categories and tasks mapped to appropriate goal hierarchy levels
-  4. User can export goals as JSON, CSV, Markdown, formatted PDF report with charts, and DOCX from the settings page
-  5. Automated database backups run via cron pg_dump, and a manual export button is accessible from settings
-**Plans**: 5 plans
+  1. AI assistant can create, read, update, and delete to-dos through MCP tools, including setting recurrence and goal links
+  2. AI assistant can complete a to-do via MCP and the system auto-updates streaks and linked goal progress
+  3. AI assistant can query today's Big 3 and set Big 3 priorities for a given day through dedicated MCP tools
+  4. AI assistant can list and search to-dos with filters (date range, category, priority, status, linked goal) and full-text search
+**Plans**: TBD
 
 Plans:
-- [ ] 10-01-PLAN.md — Command palette with cmdk: Cmd+K search, quick actions, category navigation, search API endpoint
-- [ ] 10-02-PLAN.md — Keyboard shortcuts hook and reference overlay (number keys for views, n/b/t/d/s shortcuts, ? reference)
-- [ ] 10-03-PLAN.md — Data import endpoint, shared import helpers, file upload UI on settings page
-- [ ] 10-04-PLAN.md — Export service (JSON, CSV, Markdown, PDF, DOCX), download API endpoint, export UI on settings page
-- [ ] 10-05-PLAN.md — Automated database backups via Dokploy native pg_dump configuration
+- [ ] 17-01: TBD
 
-### Phase 11: Onboarding, PWA, and Polish
-**Goal**: New users get a guided first experience, the app installs as a PWA on any device, and rich animations make every interaction feel premium
-**Depends on**: Phase 5 (MCP needed for AI-guided onboarding), Phase 9 (animations enhance gamification)
-**Requirements**: ONBD-01, ONBD-02, ONBD-03, ONBD-04, PWA-01, PWA-02, PWA-03, PWA-04, THEME-05
+### Phase 18: Timeline, Navigation, and Polish
+**Goal**: The timeline becomes a proper Gantt view with tree hierarchy, obsolete views are removed, navigation reflects the Inputs/Outputs model, and the command palette covers all entity types
+**Depends on**: Phase 15, Phase 16
+**Requirements**: TL-01, TL-02, TL-03, TL-04, TL-05, TL-06, VS-01, VS-02, VS-05
 **Success Criteria** (what must be TRUE):
-  1. First-time user sees a choice between guided wizard, AI-guided setup (via MCP), or skip, and each path leads to a functional starting state
-  2. App is installable from the browser and opens in standalone mode without browser chrome
-  3. Installed PWA provides offline read access to the dashboard and recently viewed goals, and queues writes for sync when connectivity returns
-  4. Rich animations are present throughout: page transitions, hover effects, animated counters, parallax timeline scrolling, and view transitions use React 19 View Transitions API
-  5. Animations respect the user's prefers-reduced-motion system setting
-**Plans**: 5 plans
+  1. Timeline displays goals as horizontal Gantt bars nested in a collapsible tree hierarchy with indentation, replacing the old swim-lane approach
+  2. Timeline supports Year/Quarter/Month zoom levels with a visible today marker, and the layout (timeline + detail panel) fits within the viewport without horizontal overflow
+  3. Cards view and board view are removed; the app offers list, tree, timeline, and calendar as the four goal views
+  4. Sidebar navigation is restructured to show Inputs (to-dos), Outputs (goals), Calendar, and Context as primary sections
+  5. Command palette (Cmd+K) searches across to-dos and context documents in addition to goals
+**Plans**: TBD
 
 Plans:
-- [ ] 11-01-PLAN.md — Onboarding flow: schema migration, three-path choice (wizard, MCP guide, skip), contextual hints
-- [ ] 11-02-PLAN.md — PWA manifest, service worker, icons, install prompt, standalone mode
-- [ ] 11-03-PLAN.md — Offline read cache (network-first API caching) and IndexedDB write queue with auto-sync
-- [ ] 11-04-PLAN.md — Rich animations: ViewTransition page transitions, animated counters, hover effects, progress bar animations
-- [ ] 11-05-PLAN.md — Reduced motion support, offline connectivity indicator, final polish
+- [ ] 18-01: TBD
+- [ ] 18-02: TBD
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 > 2 > 3 > 4 > 5 > 6 > 7 > 8 > 9 > 10 > 11
-Note: Phase 5 (MCP Server) can execute in parallel with Phases 2-4 since both depend only on Phase 1's Service Layer.
+Phases execute in numeric order: 12 > 13 > 14 > 15 > 16 > 17 > 18
+Note: Phase 16 (Context) and Phase 17 (Todo MCP) can be parallelized since they have independent dependency chains.
 
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Foundation | 4/4 | Complete    | 2026-03-30 |
-| 2. App Shell and Goal Management | 4/4 | Complete    | 2026-03-30 |
-| 3. Categories, List View, and Filtering | 5/5 | Complete    | 2026-03-31 |
-| 4. Dashboard and Progress Tracking | 3/3 | Complete    | 2026-03-31 |
-| 5. MCP Server | 6/6 | Complete    | 2026-03-31 |
-| 6. Board and Tree Views | 0/2 | Not started | - |
-| 7. Timeline View | 0/3 | Not started | - |
-| 8. Drag and Drop | 0/3 | Not started | - |
-| 9. Gamification and Recurring Goals | 1/4 | In Progress | - |
-| 10. Command Palette and Data Management | 4/5 | Complete    | 2026-03-31 |
-| 11. Onboarding, PWA, and Polish | 5/5 | Complete    | 2026-03-31 |
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 12. Todo Data Layer | v2.0 | 0/2 | Not started | - |
+| 13. Todo UI | v2.0 | 0/1 | Not started | - |
+| 14. Calendar View | v2.0 | 0/2 | Not started | - |
+| 15. Dashboard Transformation | v2.0 | 0/1 | Not started | - |
+| 16. Context System | v2.0 | 0/3 | Not started | - |
+| 17. Todo MCP Tools | v2.0 | 0/1 | Not started | - |
+| 18. Timeline, Navigation, and Polish | v2.0 | 0/2 | Not started | - |
