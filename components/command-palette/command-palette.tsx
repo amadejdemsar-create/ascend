@@ -24,10 +24,26 @@ interface SearchGoal {
   status: string;
 }
 
+interface SearchTodo {
+  id: string;
+  title: string;
+  priority: string;
+  dueDate: string | null;
+  completed: boolean;
+}
+
+interface SearchContext {
+  id: string;
+  title: string;
+  categoryId: string | null;
+}
+
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchGoal[]>([]);
+  const [todoResults, setTodoResults] = useState<SearchTodo[]>([]);
+  const [contextResults, setContextResults] = useState<SearchContext[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const router = useRouter();
@@ -46,7 +62,7 @@ export function CommandPalette() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Debounced search
+  // Debounced search across goals, todos, and context
   useEffect(() => {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
@@ -54,20 +70,38 @@ export function CommandPalette() {
 
     if (query.length < 2) {
       setSearchResults([]);
+      setTodoResults([]);
+      setContextResults([]);
       return;
     }
 
     debounceRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(
-          `/api/goals/search?q=${encodeURIComponent(query)}`,
-          {
-            headers: { Authorization: `Bearer ${API_KEY}` },
-          }
-        );
-        if (res.ok) {
-          const data = await res.json();
-          setSearchResults(data);
+        const encodedQuery = encodeURIComponent(query);
+        const headers = { Authorization: `Bearer ${API_KEY}` };
+
+        const [goalsRes, todosRes, contextRes] = await Promise.allSettled([
+          fetch(`/api/goals/search?q=${encodedQuery}`, { headers }),
+          fetch(`/api/todos/search?q=${encodedQuery}`, { headers }),
+          fetch(`/api/context/search?q=${encodedQuery}`, { headers }),
+        ]);
+
+        if (goalsRes.status === "fulfilled" && goalsRes.value.ok) {
+          setSearchResults(await goalsRes.value.json());
+        } else {
+          setSearchResults([]);
+        }
+
+        if (todosRes.status === "fulfilled" && todosRes.value.ok) {
+          setTodoResults(await todosRes.value.json());
+        } else {
+          setTodoResults([]);
+        }
+
+        if (contextRes.status === "fulfilled" && contextRes.value.ok) {
+          setContextResults(await contextRes.value.json());
+        } else {
+          setContextResults([]);
         }
       } catch {
         // Silently ignore search errors
@@ -85,6 +119,8 @@ export function CommandPalette() {
     setOpen(false);
     setQuery("");
     setSearchResults([]);
+    setTodoResults([]);
+    setContextResults([]);
   }, []);
 
   const handleGoalSelect = useCallback(
@@ -94,6 +130,22 @@ export function CommandPalette() {
       handleClose();
     },
     [router, selectGoal, handleClose]
+  );
+
+  const handleTodoSelect = useCallback(
+    () => {
+      router.push("/todos");
+      handleClose();
+    },
+    [router, handleClose]
+  );
+
+  const handleContextSelect = useCallback(
+    (contextId: string) => {
+      router.push(`/context?id=${contextId}`);
+      handleClose();
+    },
+    [router, handleClose]
   );
 
   const handleActionSelect = useCallback(
@@ -114,10 +166,12 @@ export function CommandPalette() {
     {}
   );
 
+  const hasSearchResults = searchResults.length > 0 || todoResults.length > 0 || contextResults.length > 0;
+
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
       <CommandInput
-        placeholder="Search goals or type a command..."
+        placeholder="Search goals, todos, context..."
         value={query}
         onValueChange={setQuery}
       />
@@ -125,24 +179,54 @@ export function CommandPalette() {
         <CommandEmpty>No results found.</CommandEmpty>
 
         {searchResults.length > 0 && (
-          <>
-            <CommandGroup heading="Goals">
-              {searchResults.map((goal) => (
-                <CommandItem
-                  key={goal.id}
-                  value={`goal-${goal.id}-${goal.title}`}
-                  onSelect={() => handleGoalSelect(goal.id)}
-                >
-                  <span className="flex-1 truncate">{goal.title}</span>
-                  <Badge variant="outline" className="ml-2 text-xs">
-                    {goal.horizon}
-                  </Badge>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-            <CommandSeparator />
-          </>
+          <CommandGroup heading="Goals">
+            {searchResults.map((goal) => (
+              <CommandItem
+                key={goal.id}
+                value={`goal-${goal.id}-${goal.title}`}
+                onSelect={() => handleGoalSelect(goal.id)}
+              >
+                <span className="flex-1 truncate">{goal.title}</span>
+                <Badge variant="outline" className="ml-2 text-xs">
+                  {goal.horizon}
+                </Badge>
+              </CommandItem>
+            ))}
+          </CommandGroup>
         )}
+
+        {todoResults.length > 0 && (
+          <CommandGroup heading="Todos">
+            {todoResults.map((todo) => (
+              <CommandItem
+                key={todo.id}
+                value={`todo-${todo.id}-${todo.title}`}
+                onSelect={() => handleTodoSelect()}
+              >
+                <span className="flex-1 truncate">{todo.title}</span>
+                <Badge variant="outline" className="ml-2 text-xs">
+                  {todo.priority}
+                </Badge>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+
+        {contextResults.length > 0 && (
+          <CommandGroup heading="Context">
+            {contextResults.map((ctx) => (
+              <CommandItem
+                key={ctx.id}
+                value={`context-${ctx.id}-${ctx.title}`}
+                onSelect={() => handleContextSelect(ctx.id)}
+              >
+                <span className="flex-1 truncate">{ctx.title}</span>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+
+        {hasSearchResults && <CommandSeparator />}
 
         {Object.entries(actionGroups).map(([group, groupActions]) => (
           <CommandGroup key={group} heading={group}>
