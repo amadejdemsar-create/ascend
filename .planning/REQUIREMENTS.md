@@ -207,16 +207,16 @@
 
 ### Todo MCP Tools
 
-- [ ] **TMCP-01**: MCP tool: create_todo (with all fields including goalId link, recurrence)
-- [ ] **TMCP-02**: MCP tool: get_todo (by ID, returns full details including linked goal)
-- [ ] **TMCP-03**: MCP tool: update_todo (partial update of any field)
-- [ ] **TMCP-04**: MCP tool: delete_todo
-- [ ] **TMCP-05**: MCP tool: list_todos (filter by date range, category, priority, status, linked goal)
-- [ ] **TMCP-06**: MCP tool: complete_todo (toggle completion, triggers streak update and goal progress)
-- [ ] **TMCP-07**: MCP tool: search_todos (full-text search across title and description)
-- [ ] **TMCP-08**: MCP tool: get_daily_big3 (returns today's top 3 priorities)
-- [ ] **TMCP-09**: MCP tool: set_daily_big3 (set up to 3 to-dos as today's priorities)
-- [ ] **TMCP-10**: MCP tool: get_todos_for_date (returns all to-dos for a specific date including recurring)
+- [x] **TMCP-01**: MCP tool: create_todo (with all fields including goalId link, recurrence)
+- [x] **TMCP-02**: MCP tool: get_todo (by ID, returns full details including linked goal)
+- [x] **TMCP-03**: MCP tool: update_todo (partial update of any field)
+- [x] **TMCP-04**: MCP tool: delete_todo
+- [x] **TMCP-05**: MCP tool: list_todos (filter by date range, category, priority, status, linked goal)
+- [x] **TMCP-06**: MCP tool: complete_todo (toggle completion, triggers streak update and goal progress)
+- [x] **TMCP-07**: MCP tool: search_todos (full-text search across title and description)
+- [x] **TMCP-08**: MCP tool: get_daily_big3 (returns today's top 3 priorities)
+- [x] **TMCP-09**: MCP tool: set_daily_big3 (set up to 3 to-dos as today's priorities)
+- [x] **TMCP-10**: MCP tool: get_todos_for_date (returns all to-dos for a specific date including recurring)
 
 ### Timeline Redesign
 
@@ -427,16 +427,16 @@
 | CTX-11 | Phase 16 | Complete |
 | CTX-12 | Phase 16 | Complete |
 | CTX-13 | Phase 16 | Complete |
-| TMCP-01 | Phase 17 | Pending |
-| TMCP-02 | Phase 17 | Pending |
-| TMCP-03 | Phase 17 | Pending |
-| TMCP-04 | Phase 17 | Pending |
-| TMCP-05 | Phase 17 | Pending |
-| TMCP-06 | Phase 17 | Pending |
-| TMCP-07 | Phase 17 | Pending |
-| TMCP-08 | Phase 17 | Pending |
-| TMCP-09 | Phase 17 | Pending |
-| TMCP-10 | Phase 17 | Pending |
+| TMCP-01 | Phase 17 | Complete |
+| TMCP-02 | Phase 17 | Complete |
+| TMCP-03 | Phase 17 | Complete |
+| TMCP-04 | Phase 17 | Complete |
+| TMCP-05 | Phase 17 | Complete |
+| TMCP-06 | Phase 17 | Complete |
+| TMCP-07 | Phase 17 | Complete |
+| TMCP-08 | Phase 17 | Complete |
+| TMCP-09 | Phase 17 | Complete |
+| TMCP-10 | Phase 17 | Complete |
 | TL-01 | Phase 18 | Pending |
 | TL-02 | Phase 18 | Pending |
 | TL-03 | Phase 18 | Pending |

@@ -6,9 +6,9 @@ status: unknown
 last_updated: "2026-04-09T11:59:00.824Z"
 progress:
   total_phases: 16
-  completed_phases: 15
+  completed_phases: 16
   total_plans: 53
-  completed_plans: 52
+  completed_plans: 53
 ---
 
 # Project State
@@ -18,23 +18,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** Focus on inputs and the outputs will come. Instant clarity on today's actions (inputs), how they connect to bigger ambitions (outputs), with structured context that makes every AI interaction smarter.
-**Current focus:** Phase 16: Context System
+**Current focus:** Phase 17: Todo MCP Tools
 
 ## Current Position
 
-Phase: 16 of 18 (Context System)
-Plan: 3 of 3 in current phase (COMPLETE)
-Status: Phase 16 complete, all 3 plans done
-Last activity: 2026-04-09, completed 16-02 (Context system web UI)
+Phase: 17 of 18 (Todo MCP Tools)
+Plan: 1 of 1 in current phase (COMPLETE)
+Status: Phase 17 complete, all 1 plans done
+Last activity: 2026-04-09, completed 17-01 (Todo MCP tools)
 
 Progress: [███████░░░] 37% (v2.0)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10 (v2.0)
+- Total plans completed: 11 (v2.0)
 - Average duration: 3min
-- Total execution time: 29min
+- Total execution time: 31min
 
 **By Phase:**
 
@@ -45,9 +45,10 @@ Progress: [███████░░░] 37% (v2.0)
 | 14. Calendar View | 2/2 | 6min | 3min |
 | 15. Dashboard Transformation | 1/1 | 2min | 2min |
 | 16. Context System | 3/3 | 11min | 4min |
+| 17. Todo MCP Tools | 1/1 | 2min | 2min |
 
 **Recent Trend:**
-- Last 5 plans: 14-02 (2min), 15-01 (2min), 16-01 (4min), 16-03 (2min), 16-02 (5min)
+- Last 5 plans: 15-01 (2min), 16-01 (4min), 16-03 (2min), 16-02 (5min), 17-01 (2min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -60,6 +61,7 @@ Progress: [███████░░░] 37% (v2.0)
 | Phase 16 P01 | 4min | 2 tasks | 10 files |
 | Phase 16 P03 | 2min | 2 tasks | 3 files |
 | Phase 16 P02 | 5min | 2 tasks | 12 files |
+| Phase 17 P01 | 2min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -105,6 +107,8 @@ Recent decisions affecting current work:
 - [16-02]: Current Priorities is dynamically generated (not persisted), served via dedicated API route
 - [16-02]: [[Wikilinks]] rendered as dotted-underline anchor elements with data attributes for click handling
 - [16-02]: Category tree uses flat list with indentation (consistent with todo filter bar pattern)
+- [17-01]: Recurrence fields handled via follow-up update after create (createTodoSchema excludes isRecurring/recurrenceRule)
+- [17-01]: isBig3 boolean converted to string at handler boundary for todoFiltersSchema compatibility
 
 ### Pending Todos
 
@@ -120,5 +124,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-09
-Stopped at: Completed 16-02-PLAN.md (Context system web UI)
+Stopped at: Completed 17-01-PLAN.md (Todo MCP tools)
 Resume file: None
