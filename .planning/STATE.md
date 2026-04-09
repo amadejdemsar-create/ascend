@@ -6,9 +6,9 @@ status: unknown
 last_updated: "2026-04-09T11:27:11.738Z"
 progress:
   total_phases: 14
-  completed_phases: 13
+  completed_phases: 14
   total_plans: 49
-  completed_plans: 48
+  completed_plans: 49
 ---
 
 # Project State
@@ -18,23 +18,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** Focus on inputs and the outputs will come. Instant clarity on today's actions (inputs), how they connect to bigger ambitions (outputs), with structured context that makes every AI interaction smarter.
-**Current focus:** Phase 14: Calendar View
+**Current focus:** Phase 15: Dashboard Transformation
 
 ## Current Position
 
-Phase: 14 of 18 (Calendar View)
-Plan: 2 of 2 in current phase (COMPLETE)
-Status: Phase 14 complete, ready for Phase 15
-Last activity: 2026-04-09, completed 14-02 (Morning planning prompt)
+Phase: 15 of 18 (Dashboard Transformation)
+Plan: 1 of 1 in current phase (COMPLETE)
+Status: Phase 15 complete, ready for Phase 16
+Last activity: 2026-04-09, completed 15-01 (Dashboard input-centric transformation)
 
-Progress: [█████░░░░░] 28% (v2.0)
+Progress: [██████░░░░] 32% (v2.0)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6 (v2.0)
+- Total plans completed: 7 (v2.0)
 - Average duration: 3min
-- Total execution time: 18min
+- Total execution time: 20min
 
 **By Phase:**
 
@@ -43,9 +43,10 @@ Progress: [█████░░░░░] 28% (v2.0)
 | 12. Todo Data Layer | 2/2 | 6min | 3min |
 | 13. Todo UI | 2/2 | 6min | 3min |
 | 14. Calendar View | 2/2 | 6min | 3min |
+| 15. Dashboard Transformation | 1/1 | 2min | 2min |
 
 **Recent Trend:**
-- Last 5 plans: 12-02 (3min), 13-01 (3min), 13-02 (3min), 14-01 (4min), 14-02 (2min)
+- Last 5 plans: 13-01 (3min), 13-02 (3min), 14-01 (4min), 14-02 (2min), 15-01 (2min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -54,6 +55,7 @@ Progress: [█████░░░░░] 28% (v2.0)
 | Phase 13 P02 | 3min | 2 tasks | 6 files |
 | Phase 14 P01 | 4min | 3 tasks | 9 files |
 | Phase 14 P02 | 2min | 2 tasks | 2 files |
+| Phase 15 P01 | 2min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -86,6 +88,8 @@ Recent decisions affecting current work:
 - [14-02]: Inline card (not modal) for morning planning prompt to keep it non-blocking
 - [14-02]: Max 3 enforcement via toast notification rather than disabling unselected items
 - [14-02]: promptDismissed resets on remount so prompt reappears on next visit if Big 3 still unset
+- [15-01]: base-ui Button uses render prop (not asChild) for link rendering; plain Link with button classes for simpler cases
+- [15-01]: Big 3 widget is self-contained (fetches own data via useTop3Todos) unlike other dashboard widgets that receive props
 
 ### Pending Todos
 
@@ -101,5 +105,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-09
-Stopped at: Completed 14-02-PLAN.md (Morning planning prompt)
+Stopped at: Completed 15-01-PLAN.md (Dashboard input-centric transformation)
 Resume file: None

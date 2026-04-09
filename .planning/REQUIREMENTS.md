@@ -231,8 +231,8 @@
 
 - [ ] **VS-01**: Remove cards view and board view; keep list, tree, timeline, calendar
 - [ ] **VS-02**: Navigation updates: sidebar shows Inputs (to-dos), Outputs (goals), Calendar, Context
-- [ ] **VS-03**: Dashboard transforms to input-centric: "Today's Big 3" widget prominently displayed
-- [ ] **VS-04**: Dashboard shows linked outputs for each input (why this to-do matters)
+- [x] **VS-03**: Dashboard transforms to input-centric: "Today's Big 3" widget prominently displayed
+- [x] **VS-04**: Dashboard shows linked outputs for each input (why this to-do matters)
 - [ ] **VS-05**: Command palette extended to search to-dos and context documents alongside goals
 
 ## v3 Requirements (Deferred)
@@ -412,8 +412,8 @@
 | CAL-06 | Phase 14 | Complete |
 | CAL-07 | Phase 14 | Complete |
 | CAL-08 | Phase 14 | Complete |
-| VS-03 | Phase 15 | Pending |
-| VS-04 | Phase 15 | Pending |
+| VS-03 | Phase 15 | Complete |
+| VS-04 | Phase 15 | Complete |
 | CTX-01 | Phase 16 | Pending |
 | CTX-02 | Phase 16 | Pending |
 | CTX-03 | Phase 16 | Pending |
