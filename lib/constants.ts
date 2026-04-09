@@ -26,6 +26,13 @@ export const PRIORITY_MULTIPLIER: Record<string, number> = {
   HIGH: 1.5,
 };
 
+// XP values for to-do completion (lower than goals)
+export const XP_PER_TODO: Record<string, number> = {
+  LOW: 5,
+  MEDIUM: 10,
+  HIGH: 15,
+};
+
 // Level formula functions (quadratic: 100 * level^2)
 // Level 1 = 100 XP, Level 2 = 400 XP, Level 5 = 2500 XP
 export function xpForLevel(level: number): number {

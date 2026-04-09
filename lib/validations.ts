@@ -72,6 +72,37 @@ export const reorderGoalsSchema = z.object({
 });
 export type ReorderGoalsInput = z.infer<typeof reorderGoalsSchema>;
 
+// Todo enums
+export const todoStatusEnum = z.enum(["PENDING", "DONE", "SKIPPED"]);
+
+// Todo schemas
+export const createTodoSchema = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().optional(),
+  priority: priorityEnum.default("MEDIUM"),
+  goalId: z.string().optional(),
+  categoryId: z.string().optional(),
+  dueDate: z.string().datetime().optional(),
+  scheduledDate: z.string().datetime().optional(),
+});
+
+export const updateTodoSchema = createTodoSchema.partial().extend({
+  status: todoStatusEnum.optional(),
+  sortOrder: z.number().optional(),
+  isBig3: z.boolean().optional(),
+  big3Date: z.string().datetime().optional(),
+});
+
+export const todoFiltersSchema = z.object({
+  status: todoStatusEnum.optional(),
+  priority: priorityEnum.optional(),
+  categoryId: z.string().optional(),
+  goalId: z.string().optional(),
+  dateFrom: z.string().datetime().optional(),
+  dateTo: z.string().datetime().optional(),
+  isBig3: z.enum(["true", "false"]).optional(),
+});
+
 // Exported types
 // Using z.input so callers can omit fields with defaults (priority, color)
 export type CreateGoalInput = z.input<typeof createGoalSchema>;
@@ -80,3 +111,6 @@ export type GoalFilters = z.infer<typeof goalFiltersSchema>;
 export type CreateCategoryInput = z.input<typeof createCategorySchema>;
 export type UpdateCategoryInput = z.input<typeof updateCategorySchema>;
 export type AddProgressInput = z.infer<typeof addProgressSchema>;
+export type CreateTodoInput = z.input<typeof createTodoSchema>;
+export type UpdateTodoInput = z.input<typeof updateTodoSchema>;
+export type TodoFilters = z.infer<typeof todoFiltersSchema>;

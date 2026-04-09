@@ -38,6 +38,12 @@ enum RecurringFrequency {
   MONTHLY
 }
 
+enum TodoStatus {
+  PENDING
+  DONE
+  SKIPPED
+}
+
 // Models
 
 model User {
@@ -51,6 +57,7 @@ model User {
 
   goals      Goal[]
   categories Category[]
+  todos      Todo[]
   stats      UserStats?
   xpEvents   XpEvent[]
 }
@@ -110,6 +117,7 @@ model Goal {
 
   // Relations
   progressLogs ProgressLog[]
+  todos        Todo[]
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Timestamps
@@ -143,6 +151,7 @@ model Category {
 
   // Relations
   goals     Goal[]
+  todos     Todo[]
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Timestamps
@@ -196,4 +205,65 @@ model XpEvent {
 
   @@index([userId])
   @@index([createdAt])
+}
+
+model Todo {
+  id                String       @id @default(cuid())
+  userId            String
+  title             String
+  description       String?
+  status            TodoStatus   @default(PENDING)
+  priority          Priority     @default(MEDIUM)
+
+  // Goal link (input to output connection)
+  goalId            String?
+  goal              Goal?        @relation(fields: [goalId], references: [id], onDelete: SetNull)
+
+  // Category
+  categoryId        String?
+  category          Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  // Scheduling
+  dueDate           DateTime?
+  scheduledDate     DateTime?
+
+  // Recurrence
+  isRecurring       Boolean      @default(false)
+  recurrenceRule    String?
+  recurringSourceId String?
+  recurringSource   Todo?        @relation("RecurringTodos", fields: [recurringSourceId], references: [id], onDelete: SetNull)
+  recurringInstances Todo[]      @relation("RecurringTodos")
+
+  // Streak tracking
+  currentStreak     Int          @default(0)
+  longestStreak     Int          @default(0)
+  lastCompletedDate DateTime?
+  consistencyScore  Float        @default(0)
+
+  // Daily Big 3
+  isBig3            Boolean      @default(false)
+  big3Date          DateTime?
+
+  // Ordering
+  sortOrder         Int          @default(0)
+
+  // Completion
+  completedAt       DateTime?
+
+  // Timestamps
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  // Relations
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([userId])
+  @@index([goalId])
+  @@index([categoryId])
+  @@index([dueDate])
+  @@index([scheduledDate])
+  @@index([status, userId])
+  @@index([recurringSourceId])
+  @@index([isBig3, big3Date, userId])
 }
