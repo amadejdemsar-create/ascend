@@ -229,11 +229,11 @@
 
 ### View Simplification and Dashboard
 
-- [ ] **VS-01**: Remove cards view and board view; keep list, tree, timeline, calendar
-- [ ] **VS-02**: Navigation updates: sidebar shows Inputs (to-dos), Outputs (goals), Calendar, Context
+- [x] **VS-01**: Remove cards view and board view; keep list, tree, timeline, calendar
+- [x] **VS-02**: Navigation updates: sidebar shows Inputs (to-dos), Outputs (goals), Calendar, Context
 - [x] **VS-03**: Dashboard transforms to input-centric: "Today's Big 3" widget prominently displayed
 - [x] **VS-04**: Dashboard shows linked outputs for each input (why this to-do matters)
-- [ ] **VS-05**: Command palette extended to search to-dos and context documents alongside goals
+- [x] **VS-05**: Command palette extended to search to-dos and context documents alongside goals
 
 ## v3 Requirements (Deferred)
 
@@ -443,9 +443,9 @@
 | TL-04 | Phase 18 | Complete |
 | TL-05 | Phase 18 | Complete |
 | TL-06 | Phase 18 | Complete |
-| VS-01 | Phase 18 | Pending |
-| VS-02 | Phase 18 | Pending |
-| VS-05 | Phase 18 | Pending |
+| VS-01 | Phase 18 | Complete |
+| VS-02 | Phase 18 | Complete |
+| VS-05 | Phase 18 | Complete |
 
 **Coverage:**
 - v1 requirements: 110 total, all complete (except DATA-07)

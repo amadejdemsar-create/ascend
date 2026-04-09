@@ -30,7 +30,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 15: Dashboard Transformation** - Input-centric dashboard with Big 3 widget and linked output context (completed 2026-04-09)
 - [x] **Phase 16: Context System** - Context documents with categories, tags, backlinks, full-text search, MCP tools, and MCP Resources (completed 2026-04-09)
 - [x] **Phase 17: Todo MCP Tools** - Ten MCP tools for AI-driven to-do management (completed 2026-04-09)
-- [ ] **Phase 18: Timeline, Navigation, and Polish** - Gantt tree redesign, view cleanup, nav restructure, command palette extension
+- [x] **Phase 18: Timeline, Navigation, and Polish** - Gantt tree redesign, view cleanup, nav restructure, command palette extension (completed 2026-04-09)
 
 ## Phase Details
 
@@ -155,4 +155,4 @@ Note: Phase 16 (Context) and Phase 17 (Todo MCP) can be parallelized since they 
 | 15. Dashboard Transformation | 1/1 | Complete    | 2026-04-09 | - |
 | 16. Context System | 3/3 | Complete    | 2026-04-09 | - |
 | 17. Todo MCP Tools | 1/1 | Complete    | 2026-04-09 | - |
-| 18. Timeline, Navigation, and Polish | 1/2 | In Progress|  | - |
+| 18. Timeline, Navigation, and Polish | 2/2 | Complete   | 2026-04-09 | - |
