@@ -160,37 +160,110 @@
 - [x] **INFRA-04**: Domain: ascend.nativeai.agency with SSL
 - [x] **INFRA-05**: API key authentication for MCP endpoints
 
-## v2 Requirements
+## v2.0 Requirements (Inputs & Outputs)
+
+### To-dos (Inputs)
+
+- [ ] **TODO-01**: User can create a to-do with title, optional description, due date, priority, and category
+- [ ] **TODO-02**: User can complete a to-do (binary done/not done toggle)
+- [ ] **TODO-03**: User can edit and delete to-dos
+- [ ] **TODO-04**: User can create a to-do via inline quick-add (title + Enter, minimal friction)
+- [ ] **TODO-05**: User can link a to-do to a parent goal (input-to-output connection)
+- [ ] **TODO-06**: Completing a linked to-do auto-increments the parent goal's progress
+- [ ] **TODO-07**: User can create recurring to-dos (daily, weekly, custom via rrule patterns like "every Tuesday and Thursday")
+- [ ] **TODO-08**: Recurring to-dos track streaks (consecutive completions) and 30-day consistency score
+- [ ] **TODO-09**: User can mark up to 3 to-dos as "Daily Big 3" priorities for a given day
+- [ ] **TODO-10**: User can view to-dos in a list with sorting by due date, priority, and completion status
+- [ ] **TODO-11**: User can filter to-dos by category, priority, status, and linked goal
+- [ ] **TODO-12**: User can bulk-complete or bulk-delete to-dos
+- [ ] **TODO-13**: Overdue to-dos are visually highlighted with option to reschedule or complete
+
+### Calendar View
+
+- [ ] **CAL-01**: Calendar page shows a month grid with navigable months (prev/next) and today button
+- [ ] **CAL-02**: Clicking a day shows that day's to-dos in the right detail panel
+- [ ] **CAL-03**: Calendar day cells show dot indicators for days with to-dos (not full item lists)
+- [ ] **CAL-04**: Goal deadlines appear on the calendar with visual distinction from to-dos
+- [ ] **CAL-05**: Daily Big 3 priorities are prominently displayed above other to-dos in the day detail
+- [ ] **CAL-06**: Recurring daily to-dos are clearly distinguished from day-specific to-dos
+- [ ] **CAL-07**: Morning planning prompt appears when user opens app without Big 3 selected for today
+- [ ] **CAL-08**: Overdue to-dos from previous days are surfaced at the top of today's view
+
+### Context System
+
+- [ ] **CTX-01**: User can create context documents with title, markdown content, and category
+- [ ] **CTX-02**: User can organize context into categories (Personal, Business, Preferences, etc.) with tree navigation
+- [ ] **CTX-03**: User can tag context documents for cross-cutting discovery
+- [ ] **CTX-04**: User can search across all context documents (full-text search via PostgreSQL tsvector)
+- [ ] **CTX-05**: User can create bi-directional links between context documents (Obsidian-style [[backlinks]])
+- [ ] **CTX-06**: Context documents render markdown with proper formatting in the web UI
+- [ ] **CTX-07**: Auto-derived "Current Priorities" context document updates based on active goals and Big 3
+- [ ] **CTX-08**: MCP tool: set_context (create or update a context document)
+- [ ] **CTX-09**: MCP tool: get_context (retrieve by ID or namespace/title)
+- [ ] **CTX-10**: MCP tool: list_context (filter by category, tags)
+- [ ] **CTX-11**: MCP tool: search_context (full-text search across all documents)
+- [ ] **CTX-12**: MCP tool: delete_context
+- [ ] **CTX-13**: MCP Resources: expose context categories as MCP Resources for passive AI consumption
+
+### Todo MCP Tools
+
+- [ ] **TMCP-01**: MCP tool: create_todo (with all fields including goalId link, recurrence)
+- [ ] **TMCP-02**: MCP tool: get_todo (by ID, returns full details including linked goal)
+- [ ] **TMCP-03**: MCP tool: update_todo (partial update of any field)
+- [ ] **TMCP-04**: MCP tool: delete_todo
+- [ ] **TMCP-05**: MCP tool: list_todos (filter by date range, category, priority, status, linked goal)
+- [ ] **TMCP-06**: MCP tool: complete_todo (toggle completion, triggers streak update and goal progress)
+- [ ] **TMCP-07**: MCP tool: search_todos (full-text search across title and description)
+- [ ] **TMCP-08**: MCP tool: get_daily_big3 (returns today's top 3 priorities)
+- [ ] **TMCP-09**: MCP tool: set_daily_big3 (set up to 3 to-dos as today's priorities)
+- [ ] **TMCP-10**: MCP tool: get_todos_for_date (returns all to-dos for a specific date including recurring)
+
+### Timeline Redesign
+
+- [ ] **TL-01**: Timeline shows goals as horizontal Gantt bars in a tree hierarchy (not horizon swim lanes)
+- [ ] **TL-02**: Goals are nested under parents with indentation, collapsible branches
+- [ ] **TL-03**: Clicking a bar opens the GoalDetail side panel (same as list view, no popups)
+- [ ] **TL-04**: Zoom levels (Year/Quarter/Month) show appropriate time segments with correct column counts
+- [ ] **TL-05**: Today marker is visible on the timeline
+- [ ] **TL-06**: Timeline + detail panel fits within the viewport without horizontal overflow
+
+### View Simplification and Dashboard
+
+- [ ] **VS-01**: Remove cards view and board view; keep list, tree, timeline, calendar
+- [ ] **VS-02**: Navigation updates: sidebar shows Inputs (to-dos), Outputs (goals), Calendar, Context
+- [ ] **VS-03**: Dashboard transforms to input-centric: "Today's Big 3" widget prominently displayed
+- [ ] **VS-04**: Dashboard shows linked outputs for each input (why this to-do matters)
+- [ ] **VS-05**: Command palette extended to search to-dos and context documents alongside goals
+
+## v3 Requirements (Deferred)
 
 ### Notifications
 - **NOTF-01**: User receives push notifications for approaching deadlines
 - **NOTF-02**: User receives weekly email digest with progress summary
 - **NOTF-03**: User can configure notification preferences
 
-### Multi-user
+### Multi-tenant
 - **MULTI-01**: User can create an account with email/password
 - **MULTI-02**: OAuth authentication (Google, GitHub)
 - **MULTI-03**: Each user has isolated data
+- **MULTI-04**: Organizations with departments and shared context
+- **MULTI-05**: Role-based access within organizations
 
 ### Advanced Integrations
-- **INTG-01**: Google Calendar sync (weekly goals auto-create as calendar events)
-- **INTG-02**: Todoist import (one-time migration)
-- **INTG-03**: Webhook on goal events (completion, progress, creation)
+- **INTG-01**: Google Calendar sync
+- **INTG-02**: Todoist/Obsidian import
+- **INTG-03**: Webhook on events
 - **INTG-04**: OAuth for MCP authentication
+- **INTG-05**: CLI tool for context management
 
 ### Native Apps
 - **NATIVE-01**: iOS app via Capacitor/Expo
 - **NATIVE-02**: Android app via Capacitor/Expo
-- **NATIVE-03**: macOS/Windows desktop app
 
-### AI Features (Paid)
+### AI Features
 - **AI-01**: Built-in AI chat for goal-setting assistance
-- **AI-02**: AI-suggested goal breakdowns (yearly to quarterly to monthly)
-- **AI-03**: Smart scheduling suggestions based on patterns
-
-### Calendar View
-- **CAL-01**: Goals/tasks plotted on a calendar by deadline
-- **CAL-02**: Calendar syncs with external calendars
+- **AI-02**: AI-suggested goal breakdowns
+- **AI-03**: Auto-derive context from goals/to-dos patterns
 
 ## Out of Scope
 
@@ -201,7 +274,7 @@
 | Complex project management (Gantt, dependencies) | Ascend is a goal tracker, not a PM tool. Goal hierarchy is simple parent-child. |
 | Calendar sync in v1 | Calendar is a different domain. Achievable through MCP + /calendar skill. |
 | Offline-first architecture | Full offline with conflict resolution is extreme complexity. Offline-read + queued writes is sufficient. |
-| Note-taking / knowledge management | Notion/Obsidian are better. Goal notes field is sufficient. |
+| Note-taking / knowledge management | Replaced by Context system in v2.0 (structured documents for AI, not freeform notes) |
 | Built-in AI chat in v1 | Expensive, competing with tools users already have. MCP server is the AI integration layer. |
 
 ## Traceability
@@ -320,10 +393,10 @@
 | INFRA-05 | Phase 1 | Complete |
 
 **Coverage:**
-- v1 requirements: 110 total (corrected from initial count of 93)
-- Mapped to phases: 110
-- Unmapped: 0
+- v1 requirements: 110 total, all complete (except DATA-07)
+- v2.0 requirements: 56 total
+- Mapped to phases: pending roadmap creation
 
 ---
 *Requirements defined: 2026-03-30*
-*Last updated: 2026-03-30 after roadmap creation*
+*Last updated: 2026-04-09 after v2.0 milestone requirements definition*
