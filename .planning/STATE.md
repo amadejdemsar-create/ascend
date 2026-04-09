@@ -23,33 +23,34 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 ## Current Position
 
 Phase: 13 of 18 (Todo UI)
-Plan: 1 of 2 in current phase
-Status: Plan 13-01 complete, ready for 13-02
-Last activity: 2026-04-09, completed 13-01 (Todo list page with sortable table, filters, quick-add)
+Plan: 2 of 2 in current phase (PHASE COMPLETE)
+Status: Phase 13 complete, ready for next phase
+Last activity: 2026-04-09, completed 13-02 (Bulk actions, overdue handling, detail panel)
 
-Progress: [██░░░░░░░░] 15% (v2.0)
+Progress: [███░░░░░░░] 20% (v2.0)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3 (v2.0)
+- Total plans completed: 4 (v2.0)
 - Average duration: 3min
-- Total execution time: 9min
+- Total execution time: 12min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 12. Todo Data Layer | 2/2 | 6min | 3min |
-| 13. Todo UI | 1/2 | 3min | 3min |
+| 13. Todo UI | 2/2 | 6min | 3min |
 
 **Recent Trend:**
-- Last 5 plans: 12-01 (3min), 12-02 (3min), 13-01 (3min)
+- Last 5 plans: 12-01 (3min), 12-02 (3min), 13-01 (3min), 13-02 (3min)
 - Trend: stable
 
 *Updated after each plan completion*
 | Phase 12 P02 | 3min | 3 tasks | 13 files |
 | Phase 13 P01 | 3min | 2 tasks | 6 files |
+| Phase 13 P02 | 3min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -72,6 +73,10 @@ Recent decisions affecting current work:
 - [Phase 12]: Big 3 enforcement at both Zod schema and service layer for defense in depth
 - [13-01]: Todo filter state uses local useState (not Zustand), simpler than goals since no view switcher or horizon tabs
 - [13-01]: Default sort order is due date ascending, then priority high to low, then pending first
+- [13-02]: Native HTML checkbox inputs for row selection (no Checkbox UI component needed)
+- [13-02]: Bulk delete uses Promise.all over individual deleteTodo calls (no bulk-delete API endpoint)
+- [13-02]: Overdue detection compares dueDate against midnight today to avoid false positives for to-dos due today
+- [13-02]: TodoTableMeta co-located with column definitions for centralized selection state typing
 
 ### Pending Todos
 
@@ -87,5 +92,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-09
-Stopped at: Completed 13-01-PLAN.md (Todo list page with sortable table, filters, quick-add, navigation)
+Stopped at: Completed 13-02-PLAN.md (Bulk actions, overdue handling, detail panel; Phase 13 complete)
 Resume file: None

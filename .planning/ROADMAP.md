@@ -25,7 +25,7 @@ v2.0 transforms Ascend from a goal tracker (outputs only) into a personal operat
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 12: Todo Data Layer** - Prisma model, service layer, API routes, hooks for to-do CRUD, goal linking, recurrence, streaks, and Daily Big 3 (completed 2026-04-09)
-- [ ] **Phase 13: Todo UI** - List view with sorting/filtering, bulk operations, overdue handling
+- [x] **Phase 13: Todo UI** - List view with sorting/filtering, bulk operations, overdue handling (completed 2026-04-09)
 - [ ] **Phase 14: Calendar View** - Month grid, day detail panel, Big 3 display, goal deadlines, morning planning prompt
 - [ ] **Phase 15: Dashboard Transformation** - Input-centric dashboard with Big 3 widget and linked output context
 - [ ] **Phase 16: Context System** - Context documents with categories, tags, backlinks, full-text search, MCP tools, and MCP Resources
@@ -150,7 +150,7 @@ Note: Phase 16 (Context) and Phase 17 (Todo MCP) can be parallelized since they 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 12. Todo Data Layer | 2/2 | Complete    | 2026-04-09 | - |
-| 13. Todo UI | 1/2 | In Progress|  | - |
+| 13. Todo UI | 2/2 | Complete   | 2026-04-09 | - |
 | 14. Calendar View | v2.0 | 0/2 | Not started | - |
 | 15. Dashboard Transformation | v2.0 | 0/1 | Not started | - |
 | 16. Context System | v2.0 | 0/3 | Not started | - |

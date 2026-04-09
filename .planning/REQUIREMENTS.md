@@ -175,8 +175,8 @@
 - [x] **TODO-09**: User can mark up to 3 to-dos as "Daily Big 3" priorities for a given day
 - [x] **TODO-10**: User can view to-dos in a list with sorting by due date, priority, and completion status
 - [x] **TODO-11**: User can filter to-dos by category, priority, status, and linked goal
-- [ ] **TODO-12**: User can bulk-complete or bulk-delete to-dos
-- [ ] **TODO-13**: Overdue to-dos are visually highlighted with option to reschedule or complete
+- [x] **TODO-12**: User can bulk-complete or bulk-delete to-dos
+- [x] **TODO-13**: Overdue to-dos are visually highlighted with option to reschedule or complete
 
 ### Calendar View
 
@@ -402,8 +402,8 @@
 | TODO-09 | Phase 12 | Complete |
 | TODO-10 | Phase 13 | Complete |
 | TODO-11 | Phase 13 | Complete |
-| TODO-12 | Phase 13 | Pending |
-| TODO-13 | Phase 13 | Pending |
+| TODO-12 | Phase 13 | Complete |
+| TODO-13 | Phase 13 | Complete |
 | CAL-01 | Phase 14 | Pending |
 | CAL-02 | Phase 14 | Pending |
 | CAL-03 | Phase 14 | Pending |
