@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { format, startOfMonth, endOfMonth } from "date-fns";
-import { useTodosByRange } from "@/lib/hooks/use-todos";
+import { format, startOfMonth, endOfMonth, isSameDay } from "date-fns";
+import { useTodosByRange, useTodosByDate, useTop3Todos } from "@/lib/hooks/use-todos";
 import { useGoalDeadlinesByRange } from "@/lib/hooks/use-goals";
 import type { GoalDeadlineItem } from "@/lib/hooks/use-goals";
+import type { TodoListItem } from "@/components/todos/todo-list-columns";
 import { CalendarMonthGrid } from "@/components/calendar/calendar-month-grid";
 import { CalendarDayDetail } from "@/components/calendar/calendar-day-detail";
+import { MorningPlanningPrompt } from "@/components/calendar/morning-planning-prompt";
 
 interface RangeTodoItem {
   dueDate?: string | null;
@@ -18,6 +20,18 @@ export default function CalendarPage() {
   const [month, setMonth] = useState<Date>(new Date());
   // Track whether user has explicitly selected a date (for mobile overlay)
   const [showDetail, setShowDetail] = useState(false);
+  const [promptDismissed, setPromptDismissed] = useState(false);
+
+  // Morning planning prompt data
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const { data: rawTodayBig3 } = useTop3Todos(todayStr);
+  const { data: rawTodayTodos } = useTodosByDate(todayStr);
+  const todayBig3 = (rawTodayBig3 ?? []) as TodoListItem[];
+  const todayTodos = (rawTodayTodos ?? []) as TodoListItem[];
+  const pendingTodayTodos = todayTodos.filter((t) => t.status === "PENDING");
+  const isViewingToday = isSameDay(selectedDate, new Date());
+  const showPrompt =
+    !promptDismissed && isViewingToday && todayBig3.length === 0;
 
   const monthStart = startOfMonth(month);
   const monthEnd = endOfMonth(month);
@@ -78,6 +92,14 @@ export default function CalendarPage() {
         <div className="sticky top-0 z-10 border-b bg-background p-4">
           <h1 className="font-serif text-2xl font-bold">Calendar</h1>
         </div>
+
+        {/* Morning planning prompt */}
+        {showPrompt && (
+          <MorningPlanningPrompt
+            todayTodos={pendingTodayTodos}
+            onDismiss={() => setPromptDismissed(true)}
+          />
+        )}
 
         {/* Calendar grid */}
         <div className="p-4">
