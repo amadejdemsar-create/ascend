@@ -10,6 +10,7 @@ import { handleBulkTool } from "./tools/bulk-tools";
 import { handleDashboardTool } from "./tools/dashboard-tools";
 import { handleCategoryTool } from "./tools/category-tools";
 import { handleDataTool } from "./tools/data-tools";
+import { handleContextTool } from "./tools/context-tools";
 
 const GOAL_TOOL_NAMES = new Set([
   "create_goal",
@@ -25,6 +26,9 @@ const BULK_TOOL_NAMES = new Set(["complete_goals", "move_goal"]);
 const DASHBOARD_TOOLS = new Set(["get_dashboard", "get_current_priorities", "get_stats", "get_timeline"]);
 const CATEGORY_TOOLS = new Set(["create_category", "update_category", "delete_category", "list_categories"]);
 const DATA_TOOLS = new Set(["export_data", "import_data", "get_settings", "update_settings"]);
+const CONTEXT_TOOLS = new Set([
+  "set_context", "get_context", "list_context", "search_context", "delete_context",
+]);
 
 /**
  * Create an MCP Server instance scoped to a specific user.
@@ -72,7 +76,11 @@ export function createAscendMcpServer(userId: string): Server {
       return handleDataTool(userId, name, args ?? {});
     }
 
-    // All 22 tool definitions are now routed. This fallback should never be reached.
+    if (CONTEXT_TOOLS.has(name)) {
+      return handleContextTool(userId, name, args ?? {});
+    }
+
+    // All 27 tool definitions are now routed. This fallback should never be reached.
     return {
       content: [{ type: "text" as const, text: `Unknown tool: ${name}` }],
       isError: true,

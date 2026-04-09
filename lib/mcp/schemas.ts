@@ -427,4 +427,83 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       },
     },
   },
+
+  // ── Context ───────────────────────────────────────────────────────
+
+  {
+    name: "set_context",
+    description:
+      "Create or update a context document. Provide an ID to update an existing entry, or omit it to create a new one. Content supports Markdown and [[Title]] backlinks.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "ID of existing entry to update (omit to create new)" },
+        title: { type: "string", description: "Document title (1 to 200 chars)" },
+        content: {
+          type: "string",
+          description:
+            "Document content in Markdown format. Use [[Title]] to link to other context documents.",
+        },
+        categoryId: { type: "string", description: "Category ID for organization (optional)" },
+        tags: {
+          type: "array",
+          items: { type: "string" },
+          description: "Tags for cross-cutting discovery (up to 20)",
+        },
+      },
+      required: ["title", "content"],
+    },
+  },
+
+  {
+    name: "get_context",
+    description:
+      "Get a context document by ID. Returns the full document including markdown content, tags, category, and incoming backlinks (other documents that reference this one).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "Context entry ID" },
+      },
+      required: ["id"],
+    },
+  },
+
+  {
+    name: "list_context",
+    description:
+      "List context documents, optionally filtered by category or tag. Returns title, tags, category, and updated date for each entry (content truncated to 200 chars for overview).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        categoryId: { type: "string", description: "Filter by category ID" },
+        tag: { type: "string", description: "Filter by tag (exact match)" },
+      },
+    },
+  },
+
+  {
+    name: "search_context",
+    description:
+      "Search across all context documents using full-text search. Returns results ranked by relevance (title matches weighted higher than content).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Search query (supports natural language)" },
+      },
+      required: ["query"],
+    },
+  },
+
+  {
+    name: "delete_context",
+    description:
+      "Delete a context document by ID. Also cleans up backlink references from other documents.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "Context entry ID to delete" },
+      },
+      required: ["id"],
+    },
+  },
 ];
