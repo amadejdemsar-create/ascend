@@ -1,4 +1,12 @@
-import { LayoutDashboard, Target, CheckSquare, CalendarDays, Brain, Settings, type LucideIcon } from "lucide-react";
+import {
+  LayoutDashboard,
+  Target,
+  CheckSquare,
+  CalendarDays,
+  Brain,
+  Settings,
+  type LucideIcon,
+} from "lucide-react";
 
 export type NavItem = {
   label: string;
@@ -6,13 +14,51 @@ export type NavItem = {
   icon: LucideIcon;
 };
 
-export const mainNavItems: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Goals", href: "/goals", icon: Target },
-  { label: "Todos", href: "/todos", icon: CheckSquare },
-  { label: "Calendar", href: "/calendar", icon: CalendarDays },
-  { label: "Context", href: "/context", icon: Brain },
-  { label: "Settings", href: "/settings", icon: Settings },
+export type NavGroup = {
+  label: string;
+  items: NavItem[];
+};
+
+// Grouped navigation for sidebar
+export const navGroups: NavGroup[] = [
+  {
+    label: "Overview",
+    items: [
+      { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { label: "Calendar", href: "/calendar", icon: CalendarDays },
+    ],
+  },
+  {
+    label: "Inputs",
+    items: [
+      { label: "Todos", href: "/todos", icon: CheckSquare },
+    ],
+  },
+  {
+    label: "Outputs",
+    items: [
+      { label: "Goals", href: "/goals", icon: Target },
+    ],
+  },
+  {
+    label: "Knowledge",
+    items: [
+      { label: "Context", href: "/context", icon: Brain },
+    ],
+  },
 ];
 
-export const secondaryNavItems: NavItem[] = [];
+// Flat list for mobile tab bar (most important items only, max 4 plus menu)
+export const mobileNavItems: NavItem[] = [
+  { label: "Todos", href: "/todos", icon: CheckSquare },
+  { label: "Goals", href: "/goals", icon: Target },
+  { label: "Calendar", href: "/calendar", icon: CalendarDays },
+  { label: "Context", href: "/context", icon: Brain },
+];
+
+// Keep mainNavItems as a flat derived list for backward compatibility
+export const mainNavItems: NavItem[] = navGroups.flatMap((g) => g.items);
+
+export const secondaryNavItems: NavItem[] = [
+  { label: "Settings", href: "/settings", icon: Settings },
+];

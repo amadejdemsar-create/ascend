@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
-import { mainNavItems, secondaryNavItems } from "@/components/layout/nav-config";
+import { mobileNavItems } from "@/components/layout/nav-config";
 import { MobileDrawer } from "@/components/layout/mobile-drawer";
 import { cn } from "@/lib/utils";
 
@@ -12,7 +12,7 @@ export function BottomTabBar() {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const allItems = [...mainNavItems, ...secondaryNavItems];
+  const allItems = mobileNavItems;
 
   function isActive(href: string) {
     return pathname.startsWith(href);
