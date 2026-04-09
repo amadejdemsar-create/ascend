@@ -148,7 +148,7 @@ Note: Phase 16 (Context) and Phase 17 (Todo MCP) can be parallelized since they 
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 12. Todo Data Layer | 2/2 | Complete   | 2026-04-09 | - |
+| 12. Todo Data Layer | 2/2 | Complete    | 2026-04-09 | - |
 | 13. Todo UI | v2.0 | 0/1 | Not started | - |
 | 14. Calendar View | v2.0 | 0/2 | Not started | - |
 | 15. Dashboard Transformation | v2.0 | 0/1 | Not started | - |
