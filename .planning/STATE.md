@@ -8,7 +8,7 @@ progress:
   total_phases: 13
   completed_phases: 12
   total_plans: 47
-  completed_plans: 46
+  completed_plans: 47
 ---
 
 # Project State
@@ -18,23 +18,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** Focus on inputs and the outputs will come. Instant clarity on today's actions (inputs), how they connect to bigger ambitions (outputs), with structured context that makes every AI interaction smarter.
-**Current focus:** Phase 13: Todo UI
+**Current focus:** Phase 14: Calendar View
 
 ## Current Position
 
-Phase: 13 of 18 (Todo UI)
-Plan: 2 of 2 in current phase (PHASE COMPLETE)
-Status: Phase 13 complete, ready for next phase
-Last activity: 2026-04-09, completed 13-02 (Bulk actions, overdue handling, detail panel)
+Phase: 14 of 18 (Calendar View)
+Plan: 1 of 2 in current phase
+Status: Plan 14-01 complete, ready for 14-02
+Last activity: 2026-04-09, completed 14-01 (Calendar month grid, day detail, nav entry)
 
-Progress: [███░░░░░░░] 20% (v2.0)
+Progress: [████░░░░░░] 24% (v2.0)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4 (v2.0)
+- Total plans completed: 5 (v2.0)
 - Average duration: 3min
-- Total execution time: 12min
+- Total execution time: 16min
 
 **By Phase:**
 
@@ -42,15 +42,17 @@ Progress: [███░░░░░░░] 20% (v2.0)
 |-------|-------|-------|----------|
 | 12. Todo Data Layer | 2/2 | 6min | 3min |
 | 13. Todo UI | 2/2 | 6min | 3min |
+| 14. Calendar View | 1/2 | 4min | 4min |
 
 **Recent Trend:**
-- Last 5 plans: 12-01 (3min), 12-02 (3min), 13-01 (3min), 13-02 (3min)
+- Last 5 plans: 12-01 (3min), 12-02 (3min), 13-01 (3min), 13-02 (3min), 14-01 (4min)
 - Trend: stable
 
 *Updated after each plan completion*
 | Phase 12 P02 | 3min | 3 tasks | 13 files |
 | Phase 13 P01 | 3min | 2 tasks | 6 files |
 | Phase 13 P02 | 3min | 2 tasks | 6 files |
+| Phase 14 P01 | 4min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -77,6 +79,9 @@ Recent decisions affecting current work:
 - [13-02]: Bulk delete uses Promise.all over individual deleteTodo calls (no bulk-delete API endpoint)
 - [13-02]: Overdue detection compares dueDate against midnight today to avoid false positives for to-dos due today
 - [13-02]: TodoTableMeta co-located with column definitions for centralized selection state typing
+- [14-01]: Custom DayButton for dot indicators and deadline markers (more layout control than modifiers approach)
+- [14-01]: Overdue section only shows when viewing today to avoid stale items on past dates
+- [14-01]: DayPicker built-in nav/caption hidden in favor of custom header with month label and Today button
 
 ### Pending Todos
 
@@ -92,5 +97,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-09
-Stopped at: Completed 13-02-PLAN.md (Bulk actions, overdue handling, detail panel; Phase 13 complete)
+Stopped at: Completed 14-01-PLAN.md (Calendar month grid, day detail panel, nav entry)
 Resume file: None

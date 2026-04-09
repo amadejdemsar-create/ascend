@@ -180,14 +180,14 @@
 
 ### Calendar View
 
-- [ ] **CAL-01**: Calendar page shows a month grid with navigable months (prev/next) and today button
-- [ ] **CAL-02**: Clicking a day shows that day's to-dos in the right detail panel
-- [ ] **CAL-03**: Calendar day cells show dot indicators for days with to-dos (not full item lists)
-- [ ] **CAL-04**: Goal deadlines appear on the calendar with visual distinction from to-dos
-- [ ] **CAL-05**: Daily Big 3 priorities are prominently displayed above other to-dos in the day detail
-- [ ] **CAL-06**: Recurring daily to-dos are clearly distinguished from day-specific to-dos
+- [x] **CAL-01**: Calendar page shows a month grid with navigable months (prev/next) and today button
+- [x] **CAL-02**: Clicking a day shows that day's to-dos in the right detail panel
+- [x] **CAL-03**: Calendar day cells show dot indicators for days with to-dos (not full item lists)
+- [x] **CAL-04**: Goal deadlines appear on the calendar with visual distinction from to-dos
+- [x] **CAL-05**: Daily Big 3 priorities are prominently displayed above other to-dos in the day detail
+- [x] **CAL-06**: Recurring daily to-dos are clearly distinguished from day-specific to-dos
 - [ ] **CAL-07**: Morning planning prompt appears when user opens app without Big 3 selected for today
-- [ ] **CAL-08**: Overdue to-dos from previous days are surfaced at the top of today's view
+- [x] **CAL-08**: Overdue to-dos from previous days are surfaced at the top of today's view
 
 ### Context System
 
@@ -404,14 +404,14 @@
 | TODO-11 | Phase 13 | Complete |
 | TODO-12 | Phase 13 | Complete |
 | TODO-13 | Phase 13 | Complete |
-| CAL-01 | Phase 14 | Pending |
-| CAL-02 | Phase 14 | Pending |
-| CAL-03 | Phase 14 | Pending |
-| CAL-04 | Phase 14 | Pending |
-| CAL-05 | Phase 14 | Pending |
-| CAL-06 | Phase 14 | Pending |
+| CAL-01 | Phase 14 | Complete |
+| CAL-02 | Phase 14 | Complete |
+| CAL-03 | Phase 14 | Complete |
+| CAL-04 | Phase 14 | Complete |
+| CAL-05 | Phase 14 | Complete |
+| CAL-06 | Phase 14 | Complete |
 | CAL-07 | Phase 14 | Pending |
-| CAL-08 | Phase 14 | Pending |
+| CAL-08 | Phase 14 | Complete |
 | VS-03 | Phase 15 | Pending |
 | VS-04 | Phase 15 | Pending |
 | CTX-01 | Phase 16 | Pending |
