@@ -8,7 +8,9 @@ import { queryKeys } from "@/lib/queries/keys";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import Link from "next/link";
 import { PlusIcon } from "lucide-react";
+import { TodaysBig3Widget } from "./todays-big3-widget";
 import { WeeklyFocusWidget } from "./weekly-focus-widget";
 import { ProgressOverviewWidget } from "./progress-overview-widget";
 import { StreaksStatsWidget } from "./streaks-stats-widget";
@@ -43,7 +45,7 @@ export function DashboardPage() {
       <div className="mb-6">
         <h1 className="font-serif text-3xl font-bold">Dashboard</h1>
         <p className="mt-1 text-muted-foreground">
-          What should you focus on right now?
+          What are your inputs today?
         </p>
       </div>
 
@@ -102,6 +104,10 @@ export function DashboardPage() {
         <>
           {/* Quick Actions */}
           <div className="mb-4 flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" render={<Link href="/todos" />}>
+              <PlusIcon className="size-3.5" />
+              New To-do
+            </Button>
             <Button variant="outline" size="sm" onClick={() => openGoalModal("create", "WEEKLY")}>
               <PlusIcon className="size-3.5" />
               New Weekly Goal
@@ -111,6 +117,10 @@ export function DashboardPage() {
               New Yearly Goal
             </Button>
           </div>
+
+          <TodaysBig3Widget />
+
+          <div className="mb-4" />
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <WeeklyFocusWidget goals={data.weeklyFocus} />
