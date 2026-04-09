@@ -1,893 +1,801 @@
-# Architecture Patterns
+# Architecture: v2.0 Inputs & Outputs Integration
 
-**Domain:** Personal goal tracking web app with MCP server
-**Researched:** 2026-03-30
+**Domain:** To-dos (inputs), calendar view, context system integrating into existing goal tracking app
+**Researched:** 2026-04-08
+**Scope:** Integration architecture ONLY. How new features attach to existing code.
 
-## Recommended Architecture
+## Existing Architecture Summary
 
-Ascend is a Next.js 15 App Router application with an embedded MCP server, a PostgreSQL database accessed through Prisma ORM, and a client layer combining server components, React Query for server state, and Zustand for UI state. The system exposes two interfaces to the same data: a web UI (SSR pages with interactive client components) and an MCP endpoint (Streamable HTTP at `/api/mcp`).
+The current Ascend app follows a clean layered pattern:
 
 ```
-┌──────────────────────────────────────────────────────┐
-│                    CLIENTS                           │
-│                                                      │
-│  ┌─────────────┐    ┌──────────────────────────────┐ │
-│  │  Browser     │    │  MCP Clients                 │ │
-│  │  (Web UI)    │    │  (Claude, ChatGPT, Gemini,   │ │
-│  │              │    │   Cursor, etc.)               │ │
-│  └──────┬───────┘    └──────────────┬───────────────┘ │
-└─────────┼───────────────────────────┼────────────────┘
-          │                           │
-          │ HTTP (pages + API)        │ HTTP POST + SSE
-          │                           │ (JSON-RPC 2.0)
-          ▼                           ▼
-┌──────────────────────────────────────────────────────┐
-│              NEXT.JS APP (App Router)                │
-│                                                      │
-│  ┌──────────────────┐  ┌──────────────────────────┐  │
-│  │  Pages / Layouts  │  │  Route Handler            │  │
-│  │  (RSC + Client)   │  │  /api/[transport]/route   │  │
-│  │                    │  │  (MCP Server)             │  │
-│  └────────┬───────────┘  └────────────┬─────────────┘  │
-│           │                           │                │
-│           ▼                           ▼                │
-│  ┌───────────────────────────────────────────────────┐ │
-│  │              SERVICE LAYER                        │ │
-│  │  (Shared business logic: goals, categories,       │ │
-│  │   gamification, progress, export)                 │ │
-│  └────────────────────┬──────────────────────────────┘ │
-│                       │                                │
-│                       ▼                                │
-│  ┌───────────────────────────────────────────────────┐ │
-│  │              DATA ACCESS LAYER                    │ │
-│  │  (Prisma Client, typed queries, transactions)     │ │
-│  └────────────────────┬──────────────────────────────┘ │
-└───────────────────────┼────────────────────────────────┘
-                        │
-                        ▼
-               ┌─────────────────┐
-               │   PostgreSQL    │
-               │  (Dokploy VPS)  │
-               └─────────────────┘
+Browser / MCP Clients
+        |
+  API Route Handlers (/api/*)    <-- Zod validation, auth, thin handlers
+        |
+  Service Layer (lib/services/)  <-- Plain TS objects, business logic
+        |
+  Prisma Client (lib/db.ts)     <-- PrismaPg adapter, singleton
+        |
+  PostgreSQL
 ```
 
-### Component Boundaries
+**Existing models:** User, Goal, Category, ProgressLog, UserStats, XpEvent
+**Existing views:** Cards, List, Tree, Timeline (in ViewType union)
+**Existing nav:** Dashboard, Goals, Settings (in nav-config.ts)
+**Existing MCP tools:** 22 tools across 6 handler files
+**State management:** Zustand (UI state with localStorage persist), React Query (server state)
+**Key pattern:** Service layer shared between API routes and MCP tools. Zero duplication.
 
-| Component | Responsibility | Communicates With |
-|-----------|---------------|-------------------|
-| **Pages / Layouts (RSC)** | Server-side rendering, initial data loading, SEO, layout structure | Service Layer (direct import), Client Components (props) |
-| **Client Components** | Interactive UI (drag-and-drop, command palette, timeline, animations, forms) | API Routes (via React Query), Zustand stores |
-| **API Route Handlers** | REST-like endpoints for mutations and queries from client components | Service Layer (direct import) |
-| **MCP Route Handler** | Streamable HTTP endpoint exposing tools for AI clients via JSON-RPC 2.0 | Service Layer (direct import) |
-| **Service Layer** | Business logic: CRUD, hierarchy traversal, gamification calculations, export generation | Data Access Layer |
-| **Data Access Layer** | Prisma Client wrapper with typed queries, transactions, connection pooling | PostgreSQL |
-| **Zustand Stores** | Client-side UI state: sidebar collapse, active view, drag state, command palette open/close, theme | Client Components (hooks) |
-| **React Query** | Server state cache: goal lists, category trees, dashboard stats, progress data | API Routes (fetch), Client Components (hooks) |
+---
 
-### Data Flow
+## 1. Data Model Changes
 
-**Web UI Read Flow:**
-1. User navigates to a page (e.g., `/goals`)
-2. Server Component fetches data via Service Layer (direct function call, no HTTP roundtrip)
-3. Data passed as props to Client Components
-4. Client Components hydrate; React Query takes over for subsequent fetches and cache management
-5. User interactions (filtering, view switching) trigger React Query refetches to API routes
+### 1a. New Model: Todo
 
-**Web UI Write Flow:**
-1. User creates/updates a goal via form or drag-and-drop
-2. Client Component calls API route via React Query mutation
-3. API Route Handler calls Service Layer
-4. Service Layer validates, computes gamification side effects (XP, streaks), runs Prisma transaction
-5. Response returns; React Query invalidates relevant caches
-6. UI updates optimistically (for drag-and-drop) or on cache invalidation
-
-**MCP Flow:**
-1. AI client POSTs to `/api/mcp` with `initialize` JSON-RPC request
-2. Server responds with capabilities and session ID
-3. AI client calls `tools/list` to discover available tools
-4. AI client calls `tools/call` with tool name and arguments (e.g., `create_goal`, `list_goals`, `update_progress`)
-5. MCP Route Handler calls the same Service Layer functions the web UI uses
-6. Response returned as JSON-RPC result
-
-This architecture ensures **zero code duplication** between web UI and MCP: both interfaces call identical Service Layer functions.
-
-## Database Schema Design
-
-### Goal Hierarchy (Self-Referencing One-to-Many)
-
-The goal hierarchy uses Prisma's one-to-many self-relation pattern. Each goal has an optional `parentId` pointing to another goal, plus a `horizon` enum to enforce the four levels. **Confidence: HIGH** (verified against Prisma official docs on self-relations).
+To-dos are inputs (actions you control). Goals are outputs (results you want). They are separate entities, not a subtype of Goal. A to-do can optionally link to a goal (showing the "why" behind the "what"), but many to-dos will be standalone.
 
 ```prisma
-enum Horizon {
-  YEARLY
-  QUARTERLY
-  MONTHLY
-  WEEKLY
+enum TodoStatus {
+  PENDING
+  DONE
+  SKIPPED
 }
 
-enum GoalStatus {
-  NOT_STARTED
-  IN_PROGRESS
-  COMPLETED
-  ARCHIVED
-  CANCELLED
-}
+model Todo {
+  id           String     @id @default(cuid())
+  userId       String
+  title        String
+  notes        String?
+  status       TodoStatus @default(PENDING)
+  priority     Priority   @default(MEDIUM)
 
-enum Priority {
-  LOW
-  MEDIUM
-  HIGH
-  CRITICAL
-}
+  // Link to goal (optional: connects input to output)
+  goalId       String?
+  goal         Goal?      @relation(fields: [goalId], references: [id], onDelete: SetNull)
 
-model Goal {
-  id          String     @id @default(cuid())
-  userId      String
-  title       String
-  description String?
-  horizon     Horizon
-  status      GoalStatus @default(NOT_STARTED)
-  priority    Priority   @default(MEDIUM)
+  // Category (reuses existing Category model)
+  categoryId   String?
+  category     Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
-  // Hierarchy (self-referencing one-to-many)
-  parentId    String?
-  parent      Goal?      @relation("GoalHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
-  children    Goal[]     @relation("GoalHierarchy")
+  // Scheduling
+  dueDate      DateTime?           // When this todo should be done (date only, no time)
+  scheduledDate DateTime?          // When the user plans to work on it (for calendar placement)
 
-  // Category
-  categoryId  String?
-  category    Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-
-  // SMART fields (used for YEARLY and QUARTERLY)
-  specific    String?
-  measurable  String?
-  attainable  String?
-  relevant    String?
-  timely      String?
-
-  // Tracking
-  progress    Int        @default(0)  // 0-100
-  targetValue Float?                  // For measurable goals
-  currentValue Float?
-
-  // Dates
-  startDate   DateTime?
-  deadline    DateTime?
-  completedAt DateTime?
-
-  // Recurring
-  isRecurring Boolean    @default(false)
-  frequency   String?    // "daily", "weekly", "monthly"
+  // Recurring (habit) support
+  isRecurring          Boolean              @default(false)
+  recurringFrequency   RecurringFrequency?
+  recurringInterval    Int?                 @default(1)
+  recurringSourceId    String?
+  recurringSource      Todo?                @relation("RecurringTodos", fields: [recurringSourceId], references: [id], onDelete: SetNull)
+  recurringInstances   Todo[]               @relation("RecurringTodos")
+  currentStreak        Int                  @default(0)
+  longestStreak        Int                  @default(0)
+  lastCompletedInstance DateTime?
 
   // Ordering
-  sortOrder   Int        @default(0)
-
-  // Notes
-  notes       String?
-
-  // Relations
-  progressLogs ProgressLog[]
+  sortOrder    Int        @default(0)
 
   // Timestamps
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-
-  // Multi-user support
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([parentId])
-  @@index([categoryId])
-  @@index([horizon, userId])
-  @@index([status, userId])
-  @@index([deadline])
-}
-```
-
-**Key design decisions for the hierarchy:**
-
-1. **`parentId` as nullable FK** allows top-level goals (yearly goals have no parent) while enabling arbitrary parent-child linking. This follows the standard adjacency list pattern.
-
-2. **`onDelete: SetNull`** on the parent relation means deleting a parent goal orphans its children rather than cascading deletion. This is safer; the user can reassign orphaned goals.
-
-3. **Indexes on `parentId` and `horizon`** make hierarchy queries fast. Fetching "all quarterly goals under yearly goal X" is `WHERE parentId = X AND horizon = 'QUARTERLY'`.
-
-4. **Hierarchy validation in the Service Layer, not the database.** PostgreSQL cannot enforce "a WEEKLY goal's parent must be MONTHLY" via constraints. The Service Layer validates this: `YEARLY -> QUARTERLY -> MONTHLY -> WEEKLY` is the only allowed parent chain. Skipping levels (e.g., YEARLY -> WEEKLY) should be rejected.
-
-### Querying the Hierarchy Efficiently
-
-Prisma does not natively support recursive CTEs, so full tree queries require one of two approaches:
-
-**Approach A: Nested Prisma includes (recommended for v1).** For the four-level hierarchy, the maximum depth is 4, so a fixed-depth include works perfectly:
-
-```typescript
-const goalTree = await prisma.goal.findMany({
-  where: { userId, horizon: 'YEARLY', parentId: null },
-  include: {
-    children: {
-      include: {
-        children: {
-          include: {
-            children: true  // weekly level
-          }
-        }
-      }
-    }
-  }
-});
-```
-
-This generates a single SQL query with JOINs. For a fixed 4-level hierarchy, this is efficient and type-safe.
-
-**Approach B: Raw SQL recursive CTE (for advanced queries like "all descendants of goal X").** Use `prisma.$queryRaw` with a recursive CTE when you need to traverse an unknown depth or compute aggregate progress up the tree:
-
-```sql
-WITH RECURSIVE goal_tree AS (
-  SELECT id, title, parent_id, progress, horizon, 0 as depth
-  FROM "Goal"
-  WHERE id = $1 AND user_id = $2
-  UNION ALL
-  SELECT g.id, g.title, g.parent_id, g.progress, g.horizon, gt.depth + 1
-  FROM "Goal" g
-  JOIN goal_tree gt ON g.parent_id = gt.id
-)
-SELECT * FROM goal_tree;
-```
-
-**Recommendation:** Use Approach A (nested includes) for all standard reads. Reserve Approach B for the progress rollup computation, where you need to calculate a parent's progress from all descendants.
-
-### Category Tree (Self-Referencing with Unlimited Nesting)
-
-Categories also use a self-referencing relation but with unlimited depth:
-
-```prisma
-model Category {
-  id          String     @id @default(cuid())
-  userId      String
-  name        String
-  color       String     @default("#4F46E5")  // hex color
-  icon        String?                          // Lucide icon name
-
-  // Hierarchy
-  parentId    String?
-  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
-  children    Category[] @relation("CategoryHierarchy")
-
-  // Ordering
-  sortOrder   Int        @default(0)
+  completedAt  DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
   // Relations
-  goals       Goal[]
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Timestamps
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, name, parentId])
   @@index([userId])
-  @@index([parentId])
-}
-```
-
-**Key difference from goals:** Categories use `onDelete: Cascade` because deleting a parent category should remove its children. Goals within deleted categories get their `categoryId` set to null (handled by `onDelete: SetNull` on the Goal's category relation).
-
-For the category tree, fetch all categories for a user (typically fewer than 50) in a single query and build the tree in memory on the server. No recursive queries needed.
-
-### Progress and Gamification
-
-```prisma
-model ProgressLog {
-  id        String   @id @default(cuid())
-  goalId    String
-  goal      Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
-  value     Float    // increment value
-  note      String?
-  createdAt DateTime @default(now())
-
   @@index([goalId])
-  @@index([createdAt])
-}
-
-model UserStats {
-  id              String   @id @default(cuid())
-  userId          String   @unique
-  totalXp         Int      @default(0)
-  level           Int      @default(1)
-  currentStreak   Int      @default(0)
-  longestStreak   Int      @default(0)
-  lastActiveDate  DateTime?
-  weeklyScore     Int      @default(0)
-  weekStartDate   DateTime?
-  goalsCompleted  Int      @default(0)
-
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  updatedAt       DateTime @updatedAt
-}
-
-model XpEvent {
-  id        String   @id @default(cuid())
-  userId    String
-  amount    Int
-  source    String   // "goal_completed", "streak_bonus", "progress_logged", "weekly_bonus"
-  goalId    String?
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@index([createdAt])
+  @@index([categoryId])
+  @@index([dueDate])
+  @@index([scheduledDate])
+  @@index([status, userId])
+  @@index([recurringSourceId])
 }
 ```
 
-**Gamification computation approach:**
-1. XP is calculated in the Service Layer on each action (goal completion, progress log, streak maintenance).
-2. `UserStats` is a denormalized aggregate updated transactionally with each XP-granting action.
-3. Level thresholds are defined as a constant array in code (e.g., `[0, 100, 300, 600, 1000, ...]`), not in the database.
-4. Streak tracking: compare `lastActiveDate` with today. If consecutive, increment `currentStreak`. If gap, reset to 1. Run this check when any progress is logged.
-5. Weekly score resets each Monday (compare `weekStartDate` with current week start).
+**Why separate from Goal, not a flag on Goal:** Goals have SMART fields, hierarchy (parentId, horizon), progress tracking (currentValue/targetValue/progressLogs), and a four-tier cascade. To-dos have none of that. Cramming both concepts into Goal would bloat the model with nullable fields, make queries slower, and confuse the mental model. A `goalId` FK is the clean bridge between inputs and outputs.
 
-### User Model
+**Why `scheduledDate` separate from `dueDate`:** A to-do might be due Friday but the user schedules it for Wednesday on their calendar. The calendar view needs the scheduled date for placement; the deadline widget needs the due date.
 
+### 1b. New Model: ContextEntry
+
+Context is structured personal knowledge that AI can query via MCP. Each entry is a key-value pair within a namespace, making it queryable by topic.
+
+```prisma
+model ContextEntry {
+  id          String   @id @default(cuid())
+  userId      String
+  namespace   String                // e.g., "personal", "work", "health", "preferences"
+  key         String                // e.g., "daily_routine", "tech_stack", "dietary_restrictions"
+  value       String                // The actual content (plain text, can be long)
+  metadata    String?               // Optional JSON string for structured metadata
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, namespace, key])
+  @@index([userId])
+  @@index([userId, namespace])
+}
+```
+
+**Why key-value in a namespace, not freeform documents:** The primary consumer is AI via MCP. AI needs to ask "what does this user prefer for dinner?" or "what is their work schedule?" A namespace/key structure lets MCP tools query precisely (`get_context(namespace: "health", key: "dietary_restrictions")`) or list all entries in a namespace. Freeform documents would require full-text search and semantic matching, which is overkill for a personal knowledge store.
+
+**Why value is a plain String, not JSON:** Context values are primarily consumed by AI as readable text. Forcing JSON structure would create friction when the user just wants to write "I prefer TypeScript with functional patterns" via MCP. The optional `metadata` field handles cases where structured data is useful alongside the text.
+
+### 1c. Modifications to Existing Models
+
+**User model** additions:
 ```prisma
 model User {
-  id        String   @id @default(cuid())
-  email     String?  @unique
-  name      String?
-  apiKey    String   @unique @default(cuid())  // For MCP auth in v1
-
-  goals       Goal[]
-  categories  Category[]
-  stats       UserStats?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  // ... existing fields ...
+  todos          Todo[]
+  contextEntries ContextEntry[]
 }
 ```
 
-For v1 (single user), the user record is seeded during setup. The `apiKey` field enables MCP authentication via bearer token.
-
-## MCP Server Integration with Next.js
-
-### Architecture: `mcp-handler` in a Next.js Route Handler
-
-**Confidence: HIGH** (verified against mcp-handler source and Vercel documentation).
-
-The MCP server is embedded directly in the Next.js app using Vercel's `mcp-handler` package, which wraps the `@modelcontextprotocol/sdk` and handles Streamable HTTP transport within a Next.js App Router route handler.
-
-**File:** `app/api/[transport]/route.ts`
-
-```typescript
-import { createMcpHandler } from "mcp-handler";
-import { z } from "zod";
-import { goalService } from "@/lib/services/goal-service";
-import { categoryService } from "@/lib/services/category-service";
-import { gamificationService } from "@/lib/services/gamification-service";
-import { validateApiKey } from "@/lib/auth";
-
-const handler = createMcpHandler(
-  (server) => {
-    // Goal tools
-    server.tool(
-      "list_goals",
-      "List goals with optional filtering by horizon, status, category.",
-      {
-        horizon: z.enum(["YEARLY","QUARTERLY","MONTHLY","WEEKLY"]).optional(),
-        status: z.enum(["NOT_STARTED","IN_PROGRESS","COMPLETED"]).optional(),
-        categoryId: z.string().optional(),
-        parentId: z.string().optional(),
-      },
-      async (params) => {
-        const goals = await goalService.list(userId, params);
-        return { content: [{ type: "text", text: JSON.stringify(goals, null, 2) }] };
-      }
-    );
-
-    server.tool("create_goal", "Create a new goal.", { /* schema */ }, async (params) => {
-      const goal = await goalService.create(userId, params);
-      return { content: [{ type: "text", text: JSON.stringify(goal, null, 2) }] };
-    });
-
-    // ... more tools mirroring every web UI capability
-  },
-  {},
-  { basePath: "/api", maxDuration: 60 }
-);
-
-export { handler as GET, handler as POST };
-```
-
-**Key architectural points:**
-
-1. **The `[transport]` dynamic segment** allows `mcp-handler` to handle both the `/api/mcp` endpoint and SSE connections through the same route file.
-
-2. **Authentication:** Validate the API key from the `Authorization: Bearer <key>` header before processing any tool call. The `mcp-handler` supports middleware patterns for this.
-
-3. **Session management:** The MCP SDK handles session IDs automatically via `MCP-Session-Id` headers. For a single-user app on one server, in-memory sessions suffice. For multi-instance deployments, session state would need Redis (not needed for v1).
-
-4. **Tool design:** Each MCP tool maps 1:1 to a Service Layer function. The MCP handler is a thin adapter that validates input (via Zod schemas), calls the service, and formats the response.
-
-### MCP Tools to Implement
-
-Every web UI capability must have a corresponding MCP tool:
-
-| Tool | Description | Service Function |
-|------|-------------|------------------|
-| `list_goals` | Filter/sort goals | `goalService.list()` |
-| `get_goal` | Get single goal with children | `goalService.getById()` |
-| `create_goal` | Create goal (simple or SMART) | `goalService.create()` |
-| `update_goal` | Update any goal field | `goalService.update()` |
-| `delete_goal` | Delete goal | `goalService.delete()` |
-| `move_goal` | Change parent/horizon | `goalService.move()` |
-| `log_progress` | Add progress increment | `goalService.logProgress()` |
-| `list_categories` | Get category tree | `categoryService.listTree()` |
-| `create_category` | Create category | `categoryService.create()` |
-| `update_category` | Update category | `categoryService.update()` |
-| `delete_category` | Delete category | `categoryService.delete()` |
-| `get_dashboard` | Get dashboard summary | `dashboardService.getSummary()` |
-| `get_stats` | Get gamification stats | `gamificationService.getStats()` |
-| `export_goals` | Export in format | `exportService.export()` |
-| `search_goals` | Full-text search | `goalService.search()` |
-
-## API Layer Design
-
-### Dual Interface Pattern
-
-The API layer serves two distinct consumers through a shared Service Layer:
-
-**1. Internal API Routes (for web UI)**
-
-Located at `app/api/goals/route.ts`, `app/api/categories/route.ts`, etc. These are standard Next.js Route Handlers using REST conventions:
-
-```
-GET    /api/goals              -> goalService.list()
-POST   /api/goals              -> goalService.create()
-GET    /api/goals/[id]         -> goalService.getById()
-PATCH  /api/goals/[id]         -> goalService.update()
-DELETE /api/goals/[id]         -> goalService.delete()
-POST   /api/goals/[id]/progress -> goalService.logProgress()
-
-GET    /api/categories         -> categoryService.listTree()
-POST   /api/categories         -> categoryService.create()
-...
-
-GET    /api/dashboard          -> dashboardService.getSummary()
-GET    /api/stats              -> gamificationService.getStats()
-POST   /api/export             -> exportService.export()
-```
-
-**2. MCP Endpoint (for AI clients)**
-
-Single endpoint at `/api/mcp` handling all operations through MCP tools (see above).
-
-**3. Server Components (direct access)**
-
-Server Components in the App Router can call Service Layer functions directly without HTTP roundtrips. This is the preferred path for initial page loads:
-
-```typescript
-// app/goals/page.tsx (Server Component)
-import { goalService } from "@/lib/services/goal-service";
-
-export default async function GoalsPage() {
-  const goals = await goalService.list(userId, { horizon: "WEEKLY" });
-  return <GoalListClient initialData={goals} />;
+**Goal model** addition:
+```prisma
+model Goal {
+  // ... existing fields ...
+  todos   Todo[]   // To-dos linked to this goal
 }
 ```
 
-### Service Layer Structure
+**Category model** addition:
+```prisma
+model Category {
+  // ... existing fields ...
+  todos   Todo[]   // To-dos in this category
+}
+```
 
-Each service is a plain TypeScript module exporting functions. No classes needed for a single-instance app.
+These are relation-only changes. No new columns on existing tables, just Prisma relation fields that add no migration cost.
+
+---
+
+## 2. Service Layer Additions
+
+Follow the existing pattern: plain TS object modules in `lib/services/`.
+
+### 2a. todo-service.ts (NEW)
 
 ```typescript
-// lib/services/goal-service.ts
-export const goalService = {
-  list: async (userId: string, filters: GoalFilters) => { /* ... */ },
-  getById: async (userId: string, id: string) => { /* ... */ },
-  create: async (userId: string, data: CreateGoalInput) => { /* ... */ },
-  update: async (userId: string, id: string, data: UpdateGoalInput) => { /* ... */ },
-  delete: async (userId: string, id: string) => { /* ... */ },
-  move: async (userId: string, id: string, newParentId: string | null, newHorizon: Horizon) => { /* ... */ },
-  logProgress: async (userId: string, id: string, value: number, note?: string) => { /* ... */ },
-  search: async (userId: string, query: string) => { /* ... */ },
-  getTree: async (userId: string) => { /* ... */ },
+// lib/services/todo-service.ts
+export const todoService = {
+  async list(userId: string, filters?: TodoFilters, pagination?) { ... },
+  async create(userId: string, data: CreateTodoInput) { ... },
+  async getById(userId: string, id: string) { ... },
+  async update(userId: string, id: string, data: UpdateTodoInput) { ... },
+  async delete(userId: string, id: string) { ... },
+  async complete(userId: string, id: string) { ... },     // Sets status=DONE, completedAt, awards XP, handles streaks
+  async skip(userId: string, id: string) { ... },         // Sets status=SKIPPED (no XP, breaks streak)
+  async bulkComplete(userId: string, ids: string[]) { ... },
+  async getByDate(userId: string, date: Date) { ... },    // For calendar day view
+  async getByDateRange(userId: string, start: Date, end: Date) { ... }, // For calendar month view
+  async reorder(userId: string, items: { id: string; sortOrder: number }[]) { ... },
+  async getTop3(userId: string, date?: Date) { ... },     // Today's top 3 priorities
 };
 ```
 
-Every function takes `userId` as the first parameter. This enforces multi-user data isolation even in v1.
+**Integration with gamification:** `complete()` calls `gamificationService.awardXp()` using the same caller-responsible pattern as goal completion. To-do XP values should be lower than goals (suggested: 10 base, with priority multiplier).
 
-## State Management
+**Integration with recurring service:** Create a `todo-recurring-service.ts` that mirrors the existing `recurring-service.ts` pattern but operates on Todo instances instead of Goal instances. The streak tracking logic (grace periods, instance generation) is identical.
 
-### Split Approach: React Query + Zustand
-
-**React Query (TanStack Query)** handles all server state. This includes goals, categories, dashboard stats, gamification data. React Query provides caching, background refetching, optimistic updates, and cache invalidation, all of which are needed for a responsive goal-tracking UI.
-
-**Zustand** handles client-only UI state that does not persist to the server:
+### 2b. context-service.ts (NEW)
 
 ```typescript
-// lib/stores/ui-store.ts
+// lib/services/context-service.ts
+export const contextService = {
+  async get(userId: string, namespace: string, key: string) { ... },
+  async set(userId: string, namespace: string, key: string, value: string, metadata?: string) { ... }, // Upsert
+  async delete(userId: string, namespace: string, key: string) { ... },
+  async listNamespaces(userId: string) { ... },           // List all namespaces
+  async listKeys(userId: string, namespace: string) { ... }, // List all keys in namespace
+  async search(userId: string, query: string) { ... },    // Search across all values
+  async getAll(userId: string, namespace?: string) { ... }, // Dump all or by namespace
+};
+```
+
+**Upsert pattern for `set()`:** Use Prisma's `upsert` with the `@@unique([userId, namespace, key])` constraint. This means `set_context` in MCP is idempotent: calling it again with the same namespace/key overwrites the value.
+
+### 2c. dashboard-service.ts (MODIFY)
+
+Add to the existing `getDashboardData()` method:
+
+```typescript
+// New parallel query in batch 1:
+const todaysTodos = prisma.todo.findMany({
+  where: {
+    userId,
+    OR: [
+      { scheduledDate: { gte: startOfDay(now), lte: endOfDay(now) } },
+      { dueDate: { gte: startOfDay(now), lte: endOfDay(now) }, scheduledDate: null },
+    ],
+    status: "PENDING",
+  },
+  orderBy: [{ priority: "desc" }, { sortOrder: "asc" }],
+  take: 10,
+  include: { category: true, goal: { select: { id: true, title: true } } },
+});
+```
+
+Add `todaysTodos` and `top3Inputs` to the DashboardData interface. The dashboard becomes the "what are my inputs today?" view.
+
+---
+
+## 3. Validation Schemas (lib/validations.ts additions)
+
+```typescript
+// New enums
+export const todoStatusEnum = z.enum(["PENDING", "DONE", "SKIPPED"]);
+
+// Todo schemas
+export const createTodoSchema = z.object({
+  title: z.string().min(1).max(200),
+  notes: z.string().optional(),
+  priority: priorityEnum.default("MEDIUM"),
+  goalId: z.string().optional(),
+  categoryId: z.string().optional(),
+  dueDate: z.string().datetime().optional(),
+  scheduledDate: z.string().datetime().optional(),
+  isRecurring: z.boolean().optional(),
+  recurringFrequency: recurringFrequencyEnum.optional(),
+  recurringInterval: z.number().int().min(1).optional(),
+});
+
+export const updateTodoSchema = createTodoSchema.partial().extend({
+  status: todoStatusEnum.optional(),
+  sortOrder: z.number().optional(),
+});
+
+export const todoFiltersSchema = z.object({
+  status: todoStatusEnum.optional(),
+  priority: priorityEnum.optional(),
+  categoryId: z.string().optional(),
+  goalId: z.string().optional(),
+  dueDate: z.string().datetime().optional(),
+  scheduledDate: z.string().datetime().optional(),
+  dateFrom: z.string().datetime().optional(),
+  dateTo: z.string().datetime().optional(),
+});
+
+// Context schemas
+export const contextEntrySchema = z.object({
+  namespace: z.string().min(1).max(100),
+  key: z.string().min(1).max(200),
+  value: z.string().min(1),
+  metadata: z.string().optional(),
+});
+
+export const contextQuerySchema = z.object({
+  namespace: z.string().optional(),
+  key: z.string().optional(),
+  query: z.string().optional(),
+});
+```
+
+---
+
+## 4. API Routes
+
+### 4a. New Routes
+
+Following the existing thin handler pattern (auth + parse + service + respond):
+
+| Route | Methods | Purpose |
+|-------|---------|---------|
+| `/api/todos` | GET, POST | List (with filters via query params) and create todos |
+| `/api/todos/[id]` | GET, PATCH, DELETE | Single todo CRUD |
+| `/api/todos/[id]/complete` | POST | Complete a todo (separate endpoint for side effects) |
+| `/api/todos/[id]/skip` | POST | Skip a todo |
+| `/api/todos/reorder` | POST | Batch reorder |
+| `/api/todos/bulk-complete` | POST | Complete multiple todos |
+| `/api/todos/top3` | GET | Today's top 3 priority inputs |
+| `/api/todos/by-date` | GET | Todos for a specific date (calendar day) |
+| `/api/todos/by-range` | GET | Todos for a date range (calendar month) |
+| `/api/todos/recurring/generate` | POST | Generate due recurring todo instances |
+| `/api/context` | GET, POST | List/search and upsert context entries |
+| `/api/context/[namespace]` | GET | List all entries in a namespace |
+| `/api/context/[namespace]/[key]` | GET, PUT, DELETE | Single context entry CRUD |
+
+### 4b. Modified Routes
+
+| Route | Change |
+|-------|--------|
+| `/api/dashboard` | Add `todaysTodos` and `top3Inputs` to response |
+| `/api/goals/[id]` | Include `todos` relation in GET response (count or list of linked todos) |
+
+---
+
+## 5. MCP Tool Additions
+
+### 5a. New Tool Handler Files
+
+**`lib/mcp/tools/todo-tools.ts`** (NEW):
+
+| Tool | Description |
+|------|-------------|
+| `create_todo` | Create a to-do with optional goal link, category, due/scheduled dates |
+| `get_todo` | Get a single to-do by ID |
+| `update_todo` | Update any fields on a to-do |
+| `delete_todo` | Delete a to-do |
+| `list_todos` | List todos with filters (status, priority, category, goal, date range) |
+| `complete_todo` | Mark a to-do as done (triggers XP, streak updates) |
+| `skip_todo` | Mark a to-do as skipped |
+| `complete_todos` | Bulk complete multiple todos |
+| `get_todays_inputs` | Get today's pending todos sorted by priority |
+| `get_top3` | Get the top 3 priority inputs for today |
+
+**`lib/mcp/tools/context-tools.ts`** (NEW):
+
+| Tool | Description |
+|------|-------------|
+| `set_context` | Create or update a context entry (upsert by namespace + key) |
+| `get_context` | Get a specific context entry by namespace and key |
+| `delete_context` | Delete a context entry |
+| `list_context` | List all entries, optionally filtered by namespace |
+| `search_context` | Search context entries by text query |
+| `list_namespaces` | List all namespaces for the user |
+
+### 5b. Modifications to Existing MCP
+
+**`lib/mcp/server.ts`:** Add two new tool name sets and route them:
+
+```typescript
+const TODO_TOOLS = new Set([
+  "create_todo", "get_todo", "update_todo", "delete_todo",
+  "list_todos", "complete_todo", "skip_todo", "complete_todos",
+  "get_todays_inputs", "get_top3",
+]);
+
+const CONTEXT_TOOLS = new Set([
+  "set_context", "get_context", "delete_context",
+  "list_context", "search_context", "list_namespaces",
+]);
+```
+
+**`lib/mcp/schemas.ts`:** Add tool definitions for all 16 new tools following the existing raw JSON Schema pattern.
+
+**`lib/mcp/tools/dashboard-tools.ts`:** Update `get_dashboard` to include today's todos and top 3 inputs in the response.
+
+**Tool count:** 22 existing + 10 todo + 6 context = 38 tools total.
+
+---
+
+## 6. UI Store Changes (lib/stores/ui-store.ts)
+
+### 6a. ViewType Extension
+
+```typescript
+export type ViewType = "cards" | "list" | "tree" | "timeline" | "calendar";
+```
+
+Add `"calendar"` to the union. The view switcher on the goals page gains a calendar icon option.
+
+### 6b. New State for Todos
+
+Add to UIStore:
+
+```typescript
 interface UIStore {
-  sidebarCollapsed: boolean;
-  activeView: "list" | "board" | "tree" | "calendar" | "timeline";
-  commandPaletteOpen: boolean;
-  selectedGoalId: string | null;
-  dragState: DragState | null;
-  theme: "light" | "dark" | "system";
-  // actions
-  toggleSidebar: () => void;
-  setActiveView: (view: string) => void;
-  openCommandPalette: () => void;
-  closeCommandPalette: () => void;
+  // ... existing ...
+
+  // Todo state
+  selectedTodoId: string | null;
+  todoModalOpen: boolean;
+  todoModalMode: "create" | "edit";
+
+  // Calendar state
+  calendarDate: Date;        // Currently viewed month
+  calendarSelectedDate: Date | null; // Selected day
+
+  // Actions
+  selectTodo: (id: string | null) => void;
+  openTodoModal: (mode: "create" | "edit") => void;
+  closeTodoModal: () => void;
+  setCalendarDate: (date: Date) => void;
+  setCalendarSelectedDate: (date: Date | null) => void;
 }
 ```
 
-**Why this split:** React Query eliminates the need for a complex state manager for server data (no Redux, no manual cache). Zustand is minimal (~1KB) and handles the remaining UI state without boilerplate. This combination is the dominant pattern in Next.js App Router projects as of 2025/2026.
+Bump persist version to 6 with migration adding the new defaults.
 
-### Optimistic Updates for Drag and Drop
+---
 
-When a user drags a goal to a new position or category, the UI updates immediately (optimistic update via React Query's `onMutate`), and the mutation runs in the background. If it fails, the UI reverts automatically via `onError` rollback.
+## 7. React Query Keys (lib/queries/keys.ts)
 
-## Component Architecture
-
-### Page Structure
-
-```
-app/
-├── layout.tsx                    # Root layout (fonts, theme, providers)
-├── page.tsx                      # Dashboard (default landing)
-├── goals/
-│   ├── page.tsx                  # Goals view (list/board/tree/calendar/timeline)
-│   └── [id]/
-│       └── page.tsx              # Goal detail/edit page
-├── timeline/
-│   └── page.tsx                  # Full timeline visualization
-├── archive/
-│   └── page.tsx                  # Archived goals
-├── settings/
-│   └── page.tsx                  # User settings, export, API key
-└── api/
-    ├── [transport]/
-    │   └── route.ts              # MCP server endpoint
-    ├── goals/
-    │   ├── route.ts              # GET list, POST create
-    │   └── [id]/
-    │       ├── route.ts          # GET, PATCH, DELETE
-    │       └── progress/
-    │           └── route.ts      # POST progress log
-    ├── categories/
-    │   ├── route.ts
-    │   └── [id]/
-    │       └── route.ts
-    ├── dashboard/
-    │   └── route.ts
-    ├── stats/
-    │   └── route.ts
-    └── export/
-        └── route.ts
+```typescript
+export const queryKeys = {
+  // ... existing ...
+  todos: {
+    all: () => ["todos"] as const,
+    list: (filters?: TodoFilters) => ["todos", "list", filters] as const,
+    detail: (id: string) => ["todos", "detail", id] as const,
+    byDate: (date: string) => ["todos", "by-date", date] as const,
+    byRange: (start: string, end: string) => ["todos", "by-range", start, end] as const,
+    top3: () => ["todos", "top3"] as const,
+    recurring: () => ["todos", "recurring"] as const,
+  },
+  context: {
+    all: () => ["context"] as const,
+    byNamespace: (ns: string) => ["context", ns] as const,
+    entry: (ns: string, key: string) => ["context", ns, key] as const,
+  },
+};
 ```
 
-### Component Breakdown
+---
+
+## 8. Hooks (lib/hooks/)
+
+### 8a. use-todos.ts (NEW)
+
+Mirrors `use-goals.ts` pattern exactly:
+
+```typescript
+export function useTodos(filters?: TodoFilters) { ... }
+export function useTodo(id: string) { ... }
+export function useCreateTodo() { ... }
+export function useUpdateTodo() { ... }
+export function useDeleteTodo() { ... }
+export function useCompleteTodo() { ... }        // POST to /complete, invalidates todos + dashboard
+export function useSkipTodo() { ... }
+export function useTodosByDate(date: string) { ... }
+export function useTodosByRange(start: string, end: string) { ... }
+export function useTop3Todos() { ... }
+export function useReorderTodos() { ... }
+```
+
+All mutations invalidate `queryKeys.todos.all()` and `queryKeys.dashboard()`.
+
+### 8b. use-context.ts (NEW)
+
+```typescript
+export function useContextEntries(namespace?: string) { ... }
+export function useContextEntry(namespace: string, key: string) { ... }
+export function useSetContext() { ... }           // Upsert mutation
+export function useDeleteContext() { ... }
+export function useSearchContext(query: string) { ... }
+export function useContextNamespaces() { ... }
+```
+
+---
+
+## 9. Component Structure
+
+### 9a. New Components
 
 ```
 components/
-├── layout/
-│   ├── sidebar.tsx               # Desktop sidebar navigation
-│   ├── bottom-tabs.tsx           # Mobile bottom tab bar
-│   ├── header.tsx                # Page header with breadcrumbs
-│   └── command-palette.tsx       # Cmd+K dialog (cmdk library)
-├── goals/
-│   ├── goal-card.tsx             # Goal card (used in list, board, tree)
-│   ├── goal-form.tsx             # Create/edit form (modal for SMART, inline for simple)
-│   ├── goal-detail.tsx           # Full goal detail view
-│   ├── goal-progress-bar.tsx     # Animated progress bar
-│   ├── quick-add.tsx             # Inline quick-add input
-│   └── views/
-│       ├── list-view.tsx         # Sortable/filterable list
-│       ├── board-view.tsx        # Kanban board (by status or horizon)
-│       ├── tree-view.tsx         # Hierarchical tree
-│       ├── calendar-view.tsx     # Calendar with goal deadlines
-│       └── timeline-view.tsx     # Horizontal timeline
-├── categories/
-│   ├── category-tree.tsx         # Nested category sidebar
-│   ├── category-form.tsx         # Create/edit with color picker
-│   └── category-badge.tsx        # Colored category pill
-├── dashboard/
-│   ├── weekly-focus.tsx          # This week's goals
-│   ├── progress-overview.tsx     # Per-category progress
-│   ├── streak-widget.tsx         # Current streak display
-│   ├── xp-level-widget.tsx       # XP bar and level
-│   └── upcoming-deadlines.tsx    # Deadline countdown
-├── gamification/
-│   ├── xp-bar.tsx                # Animated XP progress bar
-│   ├── level-badge.tsx           # Level display
-│   ├── streak-flame.tsx          # Streak fire icon with count
-│   ├── completion-confetti.tsx   # Confetti animation on completion
-│   └── weekly-score.tsx          # Weekly score tracker
-├── filters/
-│   ├── filter-bar.tsx            # Horizon/status/priority/category filters
-│   └── view-switcher.tsx         # List/board/tree/calendar/timeline toggle
-└── ui/
-    └── (shadcn components)       # button, dialog, input, select, etc.
+  todos/
+    todo-card.tsx              # Single to-do item (checkbox + title + priority + linked goal)
+    todo-list.tsx              # Scrollable list of to-do cards with DnD reorder
+    todo-detail.tsx            # Detail panel (mirrors goal-detail.tsx pattern)
+    todo-form.tsx              # Create/edit form (modal content)
+    todo-modal.tsx             # Modal wrapper (mirrors goal-modal.tsx)
+    todo-quick-add.tsx         # Inline add (mirrors quick-add.tsx pattern)
+    todo-filter-bar.tsx        # Status, priority, category, goal filters
+    top3-widget.tsx            # "Today's Top 3" compact widget for dashboard
+  calendar/
+    calendar-view.tsx          # Month grid + day detail (the primary component)
+    calendar-grid.tsx          # Month grid with day cells
+    calendar-day-cell.tsx      # Single day cell showing dot indicators and count
+    calendar-day-detail.tsx    # Selected day's to-dos and goals with deadlines
+    calendar-header.tsx        # Month/year navigation + today button
+  context/
+    context-page.tsx           # Full context management page
+    context-namespace-list.tsx # Left panel: list of namespaces
+    context-entry-list.tsx     # Entries in selected namespace
+    context-entry-form.tsx     # Create/edit form for context entries
+    context-search.tsx         # Search across all context
+  dashboard/
+    todays-inputs-widget.tsx   # NEW: Today's to-dos widget for dashboard
 ```
 
-### Client vs Server Component Split
+### 9b. Modified Components
 
-**Server Components (default):** Page layouts, initial data fetching, static content. The `page.tsx` files are Server Components that fetch data and pass it down.
+| Component | Change |
+|-----------|--------|
+| `components/dashboard/dashboard-page.tsx` | Add TodaysInputsWidget and Top3Widget to the grid |
+| `components/goals/goal-detail.tsx` | Add "Linked To-dos" section showing todos with goalId = this goal |
+| `components/goals/goal-form.tsx` | No changes needed (todos link to goals, not the other way) |
+| `components/layout/nav-config.ts` | Add Calendar and Context nav items |
+| `components/layout/app-sidebar.tsx` | Renders new nav items automatically from config |
+| `components/layout/bottom-tab-bar.tsx` | Renders new nav items automatically from config |
+| `components/goals/goal-view-switcher.tsx` | Add calendar icon option |
+| `components/command-palette/command-palette.tsx` | Add todo and context search/actions |
+| `components/command-palette/command-actions.ts` | Add create-todo, search-context quick actions |
 
-**Client Components ("use client"):** Anything interactive. Goal cards (for drag-and-drop), forms, the command palette, view switchers, all dashboard widgets (for animations), the timeline visualization, and all Zustand/React Query consumers.
+### 9c. New Pages
 
-**Pattern:** Server Component fetches data, passes to Client Component as `initialData`, Client Component uses React Query to keep it fresh.
+| Page | Route | Layout |
+|------|-------|--------|
+| `app/(app)/calendar/page.tsx` | `/calendar` | Month grid + day detail (two-panel like goals) |
+| `app/(app)/todos/page.tsx` | `/todos` | Two-panel: list + detail (mirrors goals page layout) |
+| `app/(app)/context/page.tsx` | `/context` | Two-panel: namespace list + entries |
 
-## File Structure
+---
 
-```
-/Users/Shared/Domain/Code/Personal/goals/
-├── app/                          # Next.js App Router
-│   ├── layout.tsx
-│   ├── page.tsx                  # Dashboard
-│   ├── goals/
-│   ├── timeline/
-│   ├── archive/
-│   ├── settings/
-│   └── api/
-│       ├── [transport]/          # MCP endpoint
-│       ├── goals/
-│       ├── categories/
-│       ├── dashboard/
-│       ├── stats/
-│       └── export/
-├── components/                   # React components (see breakdown above)
-│   ├── layout/
-│   ├── goals/
-│   ├── categories/
-│   ├── dashboard/
-│   ├── gamification/
-│   ├── filters/
-│   └── ui/                       # shadcn/ui components
-├── lib/
-│   ├── services/                 # Business logic (shared by web UI and MCP)
-│   │   ├── goal-service.ts
-│   │   ├── category-service.ts
-│   │   ├── gamification-service.ts
-│   │   ├── dashboard-service.ts
-│   │   └── export-service.ts
-│   ├── stores/                   # Zustand stores
-│   │   └── ui-store.ts
-│   ├── hooks/                    # React Query hooks
-│   │   ├── use-goals.ts
-│   │   ├── use-categories.ts
-│   │   ├── use-dashboard.ts
-│   │   └── use-stats.ts
-│   ├── queries/                  # React Query key factories and query functions
-│   │   └── keys.ts
-│   ├── auth.ts                   # API key validation
-│   ├── db.ts                     # Prisma client singleton
-│   ├── constants.ts              # XP thresholds, level config, horizon rules
-│   ├── validations.ts            # Zod schemas (shared between API and MCP)
-│   └── utils.ts                  # Date helpers, formatting
-├── prisma/
-│   ├── schema.prisma             # Database schema
-│   ├── migrations/               # Prisma migrations
-│   └── seed.ts                   # Seed user + migrate from todos.json
-├── public/
-│   ├── manifest.json             # PWA manifest
-│   ├── sw.js                     # Service worker for offline read
-│   └── icons/                    # PWA icons
-├── .planning/                    # GSD planning files
-├── next.config.ts
-├── tailwind.config.ts
-├── tsconfig.json
-├── package.json
-└── .env.local                    # DATABASE_URL, API_KEY
-```
+## 10. Navigation Changes
 
-## Patterns to Follow
-
-### Pattern 1: Shared Validation Schemas
-
-**What:** Define Zod schemas once, use them in API routes, MCP tool definitions, and client-side forms.
-
-**When:** Any data input from users or AI clients.
+**nav-config.ts** update:
 
 ```typescript
-// lib/validations.ts
-import { z } from "zod";
-
-export const createGoalSchema = z.object({
-  title: z.string().min(1).max(200),
-  horizon: z.enum(["YEARLY", "QUARTERLY", "MONTHLY", "WEEKLY"]),
-  parentId: z.string().optional(),
-  categoryId: z.string().optional(),
-  priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]).default("MEDIUM"),
-  deadline: z.string().datetime().optional(),
-  // SMART fields (required for YEARLY/QUARTERLY, optional otherwise)
-  specific: z.string().optional(),
-  measurable: z.string().optional(),
-  attainable: z.string().optional(),
-  relevant: z.string().optional(),
-  timely: z.string().optional(),
-}).refine((data) => {
-  if (data.horizon === "YEARLY" || data.horizon === "QUARTERLY") {
-    return data.specific && data.measurable;
-  }
-  return true;
-}, { message: "SMART fields required for yearly/quarterly goals" });
+export const mainNavItems: NavItem[] = [
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Inputs", href: "/todos", icon: CheckSquare },     // NEW
+  { label: "Outputs", href: "/goals", icon: Target },          // Renamed from "Goals"
+  { label: "Calendar", href: "/calendar", icon: Calendar },    // NEW
+  { label: "Context", href: "/context", icon: Brain },         // NEW
+  { label: "Settings", href: "/settings", icon: Settings },
+];
 ```
 
-This single schema validates input in the API route, provides type inference for the Service Layer, and defines the parameter schema for the MCP tool.
+**Rationale for naming:** "Inputs" and "Outputs" reinforce the core mental model. The goals page becomes "Outputs" and todos become "Inputs". This is a label change only; the URL `/goals` stays the same for backward compatibility with MCP tool references and bookmarks.
 
-### Pattern 2: Prisma Client Singleton
+---
 
-**What:** Create one Prisma Client instance and reuse it across requests.
+## 11. Calendar View Architecture
 
-**When:** Always. Next.js hot reload in development creates multiple Prisma instances otherwise.
+The calendar view is a new page, not another view mode on the goals page. It shows a combined view of both to-dos (inputs) and goals with deadlines (outputs).
 
-```typescript
-// lib/db.ts
-import { PrismaClient } from "@prisma/client";
+### Layout
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
-
-export const prisma = globalForPrisma.prisma || new PrismaClient();
-
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+```
+┌────────────────────────────────────────────────────────┐
+│  < April 2026 >                            [Today]     │
+├────────────────────────────────────────────────────────┤
+│ Mon  │ Tue  │ Wed  │ Thu  │ Fri  │ Sat  │ Sun         │
+│  1   │  2   │  3   │  4   │  5   │  6   │  7          │
+│ ●●   │  ●   │      │ ●●●  │  ●   │      │             │
+│------│------│------│------│------│------│--------------│
+│  8   │  9   │ ...                                      │
+├────────────────────────────────────────────────────────┤
+│ Selected: April 8, 2026                                │
+│                                                        │
+│ TOP 3 INPUTS                                           │
+│ ☐ Write architecture doc (HIGH)  → Q2 Planning [goal]  │
+│ ☐ Review PR #42 (MEDIUM)                               │
+│ ☐ Grocery shopping (LOW)         → Health [category]   │
+│                                                        │
+│ ALL INPUTS (5)                                         │
+│ ☐ ...remaining todos...                                │
+│                                                        │
+│ DEADLINES (2)                                          │
+│ ◎ Q2 Revenue Target  (Quarterly, due today)            │
+│ ◎ Blog post draft    (Weekly, due today)               │
+└────────────────────────────────────────────────────────┘
 ```
 
-### Pattern 3: Transactional Gamification Side Effects
+### Data Flow
 
-**What:** When a goal is completed or progress is logged, update gamification stats (XP, streaks, level) within the same database transaction.
+1. `calendar-view.tsx` fetches todos and goals for the visible month using `useTodosByRange()` and a new `useGoalsByDateRange()` hook
+2. `calendar-grid.tsx` receives the data and renders day cells with dot indicators (colored by category)
+3. Clicking a day sets `calendarSelectedDate` in Zustand, which renders `calendar-day-detail.tsx` below the grid (mobile) or beside it (desktop)
+4. The day detail shows top 3 inputs prominently, then all other inputs, then goal deadlines
+5. To-dos can be completed directly from the calendar day view (checkbox)
 
-**When:** Any mutation that affects progress or completion status.
+### Desktop vs Mobile
 
-```typescript
-// Inside goalService.logProgress()
-await prisma.$transaction(async (tx) => {
-  // 1. Create progress log
-  await tx.progressLog.create({ data: { goalId, value, note } });
+**Desktop:** Side-by-side layout. Calendar grid on the left, selected day detail on the right. Same two-panel pattern as goals page.
 
-  // 2. Update goal progress
-  const goal = await tx.goal.update({
-    where: { id: goalId },
-    data: { progress: newProgress, currentValue: newCurrentValue },
-  });
+**Mobile:** Stacked. Calendar grid on top (compact, single row of dots per day), day detail below. Tap a day to scroll down to its details.
 
-  // 3. If goal just completed, award XP
-  if (newProgress >= 100 && goal.status !== "COMPLETED") {
-    await tx.goal.update({ where: { id: goalId }, data: { status: "COMPLETED", completedAt: new Date() } });
-    await gamificationService.awardXp(tx, userId, "goal_completed", goalId);
-  }
+---
 
-  // 4. Update streak
-  await gamificationService.updateStreak(tx, userId);
-});
+## 12. Dashboard Integration
+
+The dashboard transforms from "what goals should I focus on?" to "what are my inputs today?"
+
+### Updated Dashboard Layout
+
+```
+┌────────────────────────┬────────────────────────┐
+│ TODAY'S TOP 3 INPUTS   │ WEEKLY FOCUS (outputs)  │
+│ (NEW, prominent)       │ (existing, renamed)     │
+├────────────────────────┼────────────────────────┤
+│ PROGRESS OVERVIEW      │ STREAKS & STATS         │
+│ (existing)             │ (existing, add todo     │
+│                        │  streaks)               │
+├────────────────────────┼────────────────────────┤
+│ UPCOMING DEADLINES     │ TODAY'S INPUTS          │
+│ (existing)             │ (NEW, full list)        │
+└────────────────────────┴────────────────────────┘
 ```
 
-### Pattern 4: React Query Key Factory
+The "Today's Top 3 Inputs" widget takes the top-left spot because the daily experience is input-centric. The existing "Weekly Focus" widget (goals) moves to the right, reinforcing that inputs drive outputs.
 
-**What:** Centralize query keys for consistent cache invalidation.
+---
 
-```typescript
-// lib/queries/keys.ts
-export const queryKeys = {
-  goals: {
-    all: (userId: string) => ["goals", userId] as const,
-    list: (userId: string, filters: GoalFilters) => ["goals", userId, "list", filters] as const,
-    detail: (userId: string, id: string) => ["goals", userId, "detail", id] as const,
-    tree: (userId: string) => ["goals", userId, "tree"] as const,
-  },
-  categories: {
-    all: (userId: string) => ["categories", userId] as const,
-    tree: (userId: string) => ["categories", userId, "tree"] as const,
-  },
-  dashboard: {
-    summary: (userId: string) => ["dashboard", userId] as const,
-  },
-  stats: {
-    user: (userId: string) => ["stats", userId] as const,
-  },
-};
+## 13. Context System Architecture
+
+### User Interaction Points
+
+1. **MCP (primary):** AI assistants set and query context through MCP tools. This is the expected primary usage pattern. The user tells their AI "I prefer TypeScript with functional patterns" and the AI calls `set_context(namespace: "preferences", key: "coding_style", value: "TypeScript with functional patterns")`.
+
+2. **Web UI (secondary):** The context page lets users view, edit, and organize their context manually. Useful for auditing what AI has stored and making corrections.
+
+3. **Dashboard (passive):** Context does not appear on the dashboard. It is background infrastructure that makes AI interactions smarter, not something the user actively checks daily.
+
+### Default Namespaces
+
+Seed these on user creation:
+
+| Namespace | Purpose | Example Keys |
+|-----------|---------|-------------|
+| `personal` | About the user | `daily_routine`, `preferences`, `goals_philosophy` |
+| `work` | Professional context | `role`, `company`, `team`, `tech_stack` |
+| `health` | Health and fitness | `dietary_restrictions`, `exercise_routine`, `conditions` |
+| `preferences` | General preferences | `communication_style`, `timezone`, `language` |
+
+---
+
+## 14. Data Flow: Todo Completion Lifecycle
+
+```
+User checks todo checkbox (or AI calls complete_todo)
+        │
+        ▼
+  todoService.complete(userId, todoId)
+        │
+        ├── Set status = DONE, completedAt = now()
+        │
+        ├── If todo.isRecurring && todo.recurringSourceId:
+        │     todoRecurringService.completeInstance(userId, todoId)
+        │     └── Update template streak (currentStreak++, longestStreak)
+        │
+        ├── gamificationService.awardXp(userId, XP_PER_TODO[priority])
+        │     └── Update UserStats (totalXp, level, weeklyScore)
+        │
+        └── Return completed todo + _xp + _streak metadata
+        │
+        ▼
+  React Query invalidates: todos.all, dashboard
+        │
+        ▼
+  UI updates: checkbox animates, XP toast, streak update
 ```
 
-## Anti-Patterns to Avoid
+---
 
-### Anti-Pattern 1: Fetching Full Trees on Every Render
+## 15. Interaction Map: What Touches What
 
-**What:** Recursively including all children of all goals on every page load.
-**Why bad:** N+1 queries or extremely deep JOINs as the dataset grows. Causes slow page loads.
-**Instead:** Fetch only the current view's data. For list view, fetch flat goal lists with filters. For tree view, fetch with a fixed depth include. Lazy-load deeper children on expand.
+### New Feature Impact on Existing Code
 
-### Anti-Pattern 2: Duplicating Business Logic Between API Routes and MCP Tools
+| Existing File | Change Type | What Changes |
+|---------------|-------------|--------------|
+| `prisma/schema.prisma` | ADD models + relations | Todo, ContextEntry models; relations on User, Goal, Category |
+| `lib/validations.ts` | ADD schemas | Todo and Context Zod schemas and types |
+| `lib/queries/keys.ts` | ADD keys | todos.* and context.* key factories |
+| `lib/stores/ui-store.ts` | MODIFY | Add ViewType "calendar", todo/calendar state, bump persist version |
+| `lib/constants.ts` | ADD | XP_PER_TODO values, TODO_STATUS constants |
+| `lib/services/dashboard-service.ts` | MODIFY | Add today's todos query to getDashboardData() |
+| `lib/services/gamification-service.ts` | MODIFY | Add todo completion XP (reuse existing awardXp, just different amounts) |
+| `lib/mcp/server.ts` | MODIFY | Add TODO_TOOLS and CONTEXT_TOOLS routing |
+| `lib/mcp/schemas.ts` | ADD | 16 new tool definitions |
+| `components/layout/nav-config.ts` | MODIFY | Add Inputs, Calendar, Context nav items; rename Goals to Outputs |
+| `components/dashboard/dashboard-page.tsx` | MODIFY | Add TodaysInputsWidget, reorder grid |
+| `components/goals/goal-detail.tsx` | MODIFY | Add "Linked Todos" section |
+| `components/command-palette/command-palette.tsx` | MODIFY | Add todo search, context search |
+| `components/command-palette/command-actions.ts` | MODIFY | Add todo and context actions |
+| `app/(app)/layout.tsx` | MODIFY | Add TodoModal to layout (mirrors GoalModal) |
 
-**What:** Writing validation and computation logic separately in each API route and each MCP tool handler.
-**Why bad:** Logic drifts apart. A bug fix in one path does not apply to the other.
-**Instead:** Use the Service Layer. Both API routes and MCP tools are thin wrappers that call the same service functions.
+### New Files (no existing code changes)
 
-### Anti-Pattern 3: Storing Computed Gamification in the Client
+| Path | Purpose |
+|------|---------|
+| `lib/services/todo-service.ts` | Todo business logic |
+| `lib/services/todo-recurring-service.ts` | Recurring todo instance generation and streaks |
+| `lib/services/context-service.ts` | Context CRUD and search |
+| `lib/hooks/use-todos.ts` | React Query hooks for todos |
+| `lib/hooks/use-context.ts` | React Query hooks for context |
+| `lib/mcp/tools/todo-tools.ts` | MCP tool handlers for todos |
+| `lib/mcp/tools/context-tools.ts` | MCP tool handlers for context |
+| `app/api/todos/*` | 8 API route files |
+| `app/api/context/*` | 4 API route files |
+| `app/(app)/todos/page.tsx` | Todos page |
+| `app/(app)/calendar/page.tsx` | Calendar page |
+| `app/(app)/context/page.tsx` | Context page |
+| `components/todos/*` | 7 component files |
+| `components/calendar/*` | 5 component files |
+| `components/context/*` | 4 component files |
+| `components/dashboard/todays-inputs-widget.tsx` | Dashboard widget |
 
-**What:** Computing XP, level, or streak information in the browser based on raw data.
-**Why bad:** AI clients via MCP would get different results. Computation is authoritative only on the server.
-**Instead:** Compute all gamification values in the Service Layer and store them in `UserStats`. Both web UI and MCP read the same pre-computed values.
+---
 
-### Anti-Pattern 4: Using Server Actions for Everything
+## 16. Suggested Build Order
 
-**What:** Replacing API routes entirely with Server Actions.
-**Why bad:** Server Actions do not have a URL. The MCP server and any future external consumers need addressable endpoints. Server Actions are also harder to test independently.
-**Instead:** Use API Route Handlers for mutations. Server Components can call Service Layer functions directly for reads. Reserve Server Actions for simple form submissions where a full API route is overkill (e.g., theme toggle, sidebar state).
+The build order respects dependencies: data layer before API before UI before integration.
 
-## Scalability Considerations
+### Phase 1: Todo Data Layer and API
+**Creates:** Prisma migration, todo-service.ts, todo-recurring-service.ts, validations, API routes, query keys
+**Depends on:** Nothing new (uses existing Prisma, auth patterns)
+**Why first:** Everything else (UI, MCP, calendar, dashboard) depends on the todo data layer existing.
 
-| Concern | v1 (1 user) | Future SaaS (1K users) | Notes |
-|---------|-------------|------------------------|-------|
-| **Database connections** | Single Prisma Client, default pool | Prisma Accelerate or PgBouncer for connection pooling | Monitor connection count on VPS |
-| **Goal count** | ~200 goals max | ~50K goals across users | Indexes on userId, horizon, status, parentId handle this |
-| **MCP sessions** | In-memory, single instance | Redis-backed session store | Only needed if running multiple app instances |
-| **Tree queries** | Nested includes (4 levels) | Materialized path or ltree extension | Only if unlimited goal nesting is added |
-| **Full-text search** | Prisma `contains` | PostgreSQL tsvector or pg_trgm | Add when search performance degrades |
-| **Export generation** | Synchronous in route handler | Background job queue (BullMQ) | Only if exports take > 10s |
-| **Real-time updates** | React Query polling (30s) | WebSocket or SSE push from server | Only for multi-user collaboration |
+### Phase 2: Todo UI (List + Detail + Forms)
+**Creates:** todo components, todos page, hooks, UIStore changes
+**Depends on:** Phase 1 (API routes must exist)
+**Why second:** Users need to see and interact with todos before calendar or MCP tools matter. Follow the same two-panel pattern as the goals page.
 
-## Suggested Build Order
+### Phase 3: Calendar View
+**Creates:** calendar components, calendar page, date range queries
+**Depends on:** Phase 1 (needs todo-by-range API), existing goals data
+**Why third:** The calendar combines todos and goals by date. Both data sources must exist. This is the "primary daily experience" per the project vision.
 
-Based on the component dependencies, here is the recommended build sequence:
+### Phase 4: Dashboard Integration
+**Creates:** todays-inputs-widget, dashboard modifications
+**Depends on:** Phase 1 (needs todo data), Phase 2 (widget links to todos page)
+**Why fourth:** Dashboard is the landing page. Adding the "Today's Inputs" widget transforms it from goal-centric to input-centric.
 
-**Phase 1: Foundation** (everything else depends on this)
-1. Project setup (Next.js 15, Prisma, PostgreSQL, Tailwind, shadcn/ui)
-2. Database schema and migrations (all models)
-3. Prisma Client singleton and seed script
-4. Service Layer core (goal CRUD, category CRUD)
-5. Basic auth (API key validation)
+### Phase 5: Context System (Data Layer + MCP + UI)
+**Creates:** context-service.ts, API routes, MCP tools, context page, hooks
+**Depends on:** Nothing (independent of todos/calendar)
+**Why fifth:** Context is fully independent of todos and calendar. It could technically run in parallel with Phases 2-4, but sequencing it last keeps focus on the core input/output transformation first. Context is primarily consumed by AI via MCP, so the web UI is secondary.
 
-**Phase 2: Core Web UI** (depends on Phase 1)
-1. Root layout with sidebar and mobile navigation
-2. Dashboard page (server component with initial data)
-3. Goals list view (the simplest view)
-4. Goal create/edit forms
-5. Category CRUD UI
-6. React Query hooks and cache management
+### Phase 6: Todo MCP Tools
+**Creates:** todo-tools.ts, MCP schema additions, server routing
+**Depends on:** Phase 1 (todo-service must exist)
+**Why sixth:** MCP tools for todos follow after the web UI is stable. The AI should be able to create, complete, and query todos through the same service layer.
 
-**Phase 3: MCP Server** (depends on Phase 1, parallel with Phase 2)
-1. MCP route handler setup with `mcp-handler`
-2. Core tools (list, create, update, delete goals and categories)
-3. Dashboard and stats tools
-4. Authentication middleware
-5. Integration testing with a real MCP client
+### Phase 7: Navigation and Polish
+**Creates:** Nav config updates, command palette additions, view switcher calendar option, goal-detail linked todos section
+**Depends on:** Phases 1-6 (all features must exist to navigate to them)
+**Why last:** Polish and cross-cutting integration. Rename "Goals" to "Outputs" in nav, add "Inputs" tab, add calendar to view switcher, extend command palette with todo and context actions.
 
-**Phase 4: Advanced Views** (depends on Phase 2)
-1. Board/Kanban view
-2. Tree view (hierarchical)
-3. Calendar view
-4. Timeline visualization
-5. Drag and drop across views
+---
 
-**Phase 5: Gamification** (depends on Phase 1 service layer)
-1. XP/level system in Service Layer
-2. Streak tracking logic
-3. Weekly score computation
-4. Dashboard widgets (XP bar, streak, level)
-5. Completion animations (confetti)
+## 17. Patterns to Follow
 
-**Phase 6: Power Features** (depends on Phases 2, 3)
-1. Command palette (Cmd+K) with cmdk library
-2. Keyboard shortcuts
-3. Data export (JSON, CSV, Markdown, PDF, DOCX)
-4. Data migration from todos.json
-5. Archive view
-6. Filtering and sorting across views
+### Pattern: Two-Panel Page Layout
+Every content page in Ascend uses the same two-panel layout. The todos page and context page should replicate this exactly:
 
-**Phase 7: PWA and Polish** (depends on Phase 2)
-1. PWA manifest and service worker
-2. Offline read support
-3. Dark/light theme
-4. Mobile responsive refinements
-5. Micro-interactions and animations
+```tsx
+<div className="flex h-full">
+  {/* Left: List with filters */}
+  <div className={`flex-1 flex flex-col border-r overflow-y-auto ${selected ? "hidden md:flex" : "flex"}`}>
+    {/* Sticky header with title + filters */}
+    {/* Scrollable content */}
+  </div>
+  {/* Right: Detail panel */}
+  {selected ? <DetailPanel /> : <EmptyState />}
+</div>
+```
 
-**Dependency chain:** Phase 1 is the critical path. Phases 2 and 3 can run in parallel. Phase 4 depends on Phase 2. Phase 5 can start after Phase 1. Phase 6 depends on Phases 2 and 3. Phase 7 can start after Phase 2.
+### Pattern: Service Layer Consistency
+Every new service method follows: validate input (Zod) > check ownership (userId) > perform operation (Prisma) > return result. Side effects (XP, streaks) happen at the service layer, not in route handlers or MCP tools.
+
+### Pattern: MCP Tool Handlers
+Each tool handler file exports a single `handle*Tool()` function that switches on tool name, validates args with Zod, calls the service layer, and returns `{ content: [{ type: "text", text: JSON.stringify(result) }] }`.
+
+### Pattern: React Query Cache Invalidation
+Mutations invalidate the broadest relevant cache. Todo mutations invalidate `queryKeys.todos.all()` and `queryKeys.dashboard()`. Context mutations invalidate `queryKeys.context.all()`.
+
+---
+
+## 18. Anti-Patterns to Avoid
+
+### Anti-Pattern: Overloading the Goal Model
+Do not add `isTodo` boolean to Goal. Do not create todos as goals with `horizon: "DAILY"`. The mental models are fundamentally different: goals have hierarchy, progress tracking, SMART fields. Todos are flat, simple, completion-oriented. Keep them separate with a goalId FK bridge.
+
+### Anti-Pattern: Calendar as View Mode on Goals Page
+The calendar is its own page, not another view mode on the goals page. It combines data from both todos AND goals, which makes it a cross-cutting view. Adding it as a ViewType on the goals page would mean the goals page needs to fetch and render todo data, violating its single responsibility.
+
+### Anti-Pattern: Complex Context Storage
+Do not build a document database or rich text editor for context. The namespace/key/value pattern is intentionally simple. AI tools work better with discrete, queryable facts than with long documents. If the user needs rich knowledge management, that is Notion/Obsidian territory.
+
+### Anti-Pattern: Shared Recurring Service
+Do not try to make a generic recurring service that handles both Goals and Todos polymorphically. The two models have different fields, different completion side effects, and different streak semantics. Two separate but structurally similar services (recurring-service.ts for goals, todo-recurring-service.ts for todos) are clearer and more maintainable than a generic abstraction.
+
+---
 
 ## Sources
 
-- [Prisma Self-Relations Documentation](https://www.prisma.io/docs/orm/prisma-schema/data-model/relations/self-relations) (HIGH confidence, official docs)
-- [MCP Specification: Streamable HTTP Transport](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#streamable-http) (HIGH confidence, official spec)
-- [Building Custom MCP Servers with Next.js and mcp-handler](https://www.trevorlasn.com/blog/building-custom-mcp-servers-with-nextjs-and-mcp-handler) (HIGH confidence, verified against mcp-handler repo)
-- [Implementing MCP with Streamable HTTP Transport in Production](https://ai.plainenglish.io/implementing-mcp-with-streamable-http-transport-in-prod-23ca9c6731ca) (MEDIUM confidence, community article, verified against spec)
-- [Next.js MCP Server Guide](https://nextjs.org/docs/app/guides/mcp) (HIGH confidence, official Next.js docs, though focused on dev tooling MCP not custom MCP)
-- [Next.js Building APIs Guide](https://nextjs.org/blog/building-apis-with-nextjs) (HIGH confidence, official Vercel blog)
-- Prisma Tree Structures GitHub Issue #4562 (MEDIUM confidence, confirms adjacency list as supported pattern)
+- Existing codebase analysis (HIGH confidence): All architectural decisions are derived directly from reading the current code
+- Prisma 7 self-relations and upsert patterns (HIGH confidence): Already proven in the existing Goal and Category models
+- MCP SDK patterns (HIGH confidence): Already working in `lib/mcp/server.ts` with 22 tools
+- date-fns date range queries (HIGH confidence): Already used in dashboard-service.ts
+- React Query invalidation patterns (HIGH confidence): Already established in use-goals.ts

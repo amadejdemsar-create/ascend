@@ -1,271 +1,241 @@
-# Technology Stack
+# Technology Stack: v2.0 Additions
 
-**Project:** Ascend (Personal Goals & Priorities Web App)
-**Researched:** 2026-03-30
+**Project:** Ascend v2.0 (To-dos, Calendar, Context System, Timeline Redesign)
+**Researched:** 2026-04-08
 **Overall confidence:** HIGH
 
-## Critical Stack Update: Next.js 15 vs 16
-
-The PROJECT.md specifies Next.js 15, but **Next.js 16 (16.2.1)** is the current stable release as of March 2026. Key differences that matter for Ascend:
-
-| Factor | Next.js 15 | Next.js 16 |
-|--------|-----------|-----------|
-| Turbopack | Opt-in flag | Default (stable) |
-| React version | 19.x | 19.2 (View Transitions, Activity, useEffectEvent) |
-| React Compiler | Experimental | Stable (opt-in) |
-| Async Request APIs | Sync still works (deprecated) | Sync fully removed, async only |
-| Middleware | `middleware.ts` | Renamed to `proxy.ts` |
-| Routing | Standard | Overhauled (layout deduplication, incremental prefetching) |
-| PPR | `experimental.ppr` | `cacheComponents` (new system) |
-| ESLint | `next lint` command | Removed, use ESLint/Biome directly |
-| Support window | Security patches until October 2026 | Active development |
-
-**Recommendation: Use Next.js 16.** This is a greenfield project, so there is no migration cost. React 19.2 View Transitions are valuable for Ascend's animated view switching. The React Compiler provides free performance wins. Turbopack as default means faster dev/build cycles. Starting on 15 means an inevitable migration within months.
-
-**Confidence:** HIGH (verified via official Next.js upgrade docs at nextjs.org/docs/app/guides/upgrading/version-16)
-
-## Recommended Stack
-
-### Core Framework
-
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| Next.js | 16.2.x | Full-stack React framework | Current stable. Turbopack default, React 19.2 with View Transitions (perfect for animated view switching), stable React Compiler, overhauled routing with layout deduplication. App Router provides API routes for MCP server endpoint. |
-| React | 19.2.x | UI library | Bundled with Next.js 16. View Transitions enable native animated navigation between goal views. Activity component useful for keeping background views warm. useEffectEvent simplifies effect logic. |
-| TypeScript | 5.x | Type safety | Required by Next.js 16 (minimum 5.1.0). End-to-end type safety from Prisma schema to API to UI. |
-
-### Database & ORM
-
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| PostgreSQL | 16.x | Primary database | Proven relational DB. Handles hierarchical goal data well with recursive CTEs. JSON columns for flexible metadata. Runs as container on Dokploy VPS. |
-| Prisma ORM | 7.6.x | Database toolkit | Current stable (7.6.0). Best TypeScript integration with auto-generated types from schema. Mature migration system. Excellent Next.js integration. "Prisma Next" (full TS rewrite) is in development but not production-ready; stick with Prisma 7 for now. |
-
-**Note on Prisma Next:** Prisma is developing a complete TypeScript rewrite called "Prisma Next" (separate from the current Prisma ORM). It is not yet ready for production. The official Prisma blog states: "We are fully committed to Prisma 7. It remains the recommended version for production applications." Use Prisma 7.6.x.
-
-**Confidence:** HIGH (versions verified via npmjs.com, Prisma blog)
-
-### UI Framework & Design
-
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| shadcn/ui | latest | Component library | Not a dependency but a code-copy pattern. Components are owned by the project. Built on Radix UI primitives. Includes a Command component (wraps cmdk) out of the box. Consistent with NativeAI website stack. |
-| Tailwind CSS | 4.x | Utility CSS | Integrated with Next.js 16 and shadcn/ui. v4 uses a CSS-first config approach. Design token system maps well to Ascend's NativeAI palette. |
-| Lucide React | latest | Icons | Tree-shakable, consistent with shadcn/ui ecosystem. Lightweight SVG icons. |
-| Inter | (Google Fonts) | Body/UI typography | Specified in PROJECT.md. Excellent readability at all sizes. |
-| Playfair Display | (Google Fonts) | Headline typography | Specified in PROJECT.md. Elegant serif for dashboard headers and goal titles. |
-| JetBrains Mono | (Google Fonts) | Code/data typography | Specified in PROJECT.md. Monospace for numeric data, progress percentages, XP values. |
-
-**Confidence:** HIGH
-
-### State Management
-
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| Zustand | 5.0.x | Client state | Minimal, performant, no boilerplate. Perfect for UI state (sidebar collapse, active view, drag state, theme). v5 is current stable (5.0.12). Does not need providers/context wrapping. Works seamlessly with React Server Components. |
-| nuqs | 2.8.x | URL state | Type-safe search params management for filter/view state. Keeps filters bookmarkable and shareable. Works with Next.js App Router. Current version 2.8.9. |
-
-**Not using Redux/Jotai/Recoil:** Zustand covers all client-state needs with far less complexity. Server state lives in the database via Prisma; React Server Components handle data fetching. No need for a heavy state management solution.
-
-**Confidence:** HIGH (versions verified via npmjs.com)
-
-### Drag and Drop
-
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| @dnd-kit/react | 0.x (new API) | Drag and drop interactions | Best balance of customizability, performance, and React integration. Supports sortable lists (goal reordering), cross-container moves (horizon changes), and custom collision detection. Actively maintained with millions of npm downloads. The new `@dnd-kit/react` package provides a more ergonomic API. |
-
-**Alternatives considered:**
-
-| Library | Why Not |
-|---------|---------|
-| @atlaskit/pragmatic-drag-and-drop (1.7.9) | Built on HTML5 DnD API. Lighter weight but limited visual feedback (no live preview placeholder, no snapping animations). For a goal app with polished micro-interactions, this matters. Also has Apache 2.0 license and opaque development process. |
-| @hello-pangea/dnd | Community fork of react-beautiful-dnd. Lists only, no grid support. Heavier bundle. Limited customization. |
-| formkit/drag-and-drop | Still pre-1.0 (experimental). Small community. Limited accessibility. |
-
-**Key consideration:** dnd-kit is the established choice for React drag and drop that needs custom behavior. The experimental `@dnd-kit/react` package is the new recommended API. If it feels too unstable at implementation time, fall back to the classic `@dnd-kit/core` + `@dnd-kit/sortable` combo, which is battle-tested.
-
-**Confidence:** HIGH (verified via Puck's 2026 comparison article, npm registry, GitHub issues)
-
-### Animations & Micro-interactions
-
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| Motion (prev. Framer Motion) | 12.x | UI animations | Renamed from "framer-motion" to "motion" (npm: `motion`). Current version 12.37.0+. The standard for React animation. Declarative API, layout animations, gesture support, AnimatePresence for exit animations. Powers progress bar animations, completion celebrations, view transitions, parallax effects. |
-| canvas-confetti | 1.9.x | Completion celebrations | Lightweight (no React dependency), performant confetti animation on HTML canvas. Perfect for goal completion celebrations. 1.9.4 is current. |
-
-**Not using:** React Spring (less ergonomic API, smaller community), GSAP (overkill for UI animations, licensing concerns), CSS-only animations (insufficient for complex orchestrated sequences and layout animations).
-
-**Confidence:** HIGH (versions verified via motion.dev and npmjs.com)
-
-### Command Palette
-
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| cmdk | 1.1.1 | Command menu | The standard. Used by Vercel, Linear, Raycast. Composable API, accessible, unstyled (fits any design). shadcn/ui wraps it as its Command component, so it integrates seamlessly. Supports pages/nesting for sub-commands, async results, keyboard navigation. |
-
-**Note:** shadcn/ui already ships a Command component built on cmdk. Use that as the foundation and extend it with Ascend-specific actions (search goals, navigate categories, quick-add goal, theme switch).
-
-**Confidence:** HIGH (verified via npmjs.com, shadcn/ui docs)
-
-### Charts & Progress Visualization
-
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| Recharts | 3.8.x | Charts and data viz | React-first library built on D3 submodules. SVG rendering. Composable chart components (BarChart, LineChart, RadialBarChart, PieChart). v3 added TypeScript generics for type-safe data. Perfect for progress dashboards, weekly scores, streak visualizations, category breakdowns. Current version 3.8.1. |
-
-**Alternatives considered:**
-
-| Library | Why Not |
-|---------|---------|
-| Nivo | More chart types but larger bundle. Server-side rendering support is overkill for a PWA dashboard. Less React-idiomatic API. |
-| Victory | Cross-platform focus (React Native). Smaller ecosystem for web-only use. |
-| Tremor | Higher-level (pre-styled dashboard components). Less customizable for Ascend's unique design language. |
-| Chart.js / react-chartjs-2 | Canvas-based (harder to style consistently with Tailwind). Less composable than Recharts. |
-
-**Confidence:** HIGH (verified via npmjs.com, multiple comparison articles from 2026)
-
-### Timeline Visualization
-
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| Custom implementation | N/A | Horizontal year timeline | No existing library matches the specific requirements (horizontal year line with expandable quarters/months/weeks, goals as nodes, inline expand). Build with Recharts for the data layer + Motion for animations + Tailwind for layout. |
-
-**Why custom:** The timeline visualization in Ascend is highly specific: a horizontal year line with quarters, expandable to months/weeks, goals as interactive nodes, inline expand on click. Existing timeline libraries (vis-timeline, react-chrono, react-calendar-timeline) are either Gantt-focused, vertical-only, or too opinionated in design. Building custom gives full control over the interaction model and visual design, which is critical for Ascend's "productivity meets beauty" aesthetic.
-
-**Implementation approach:** Use a horizontal scrollable container with CSS Grid for the time axis. Recharts CustomizedXAxis for optional data overlays. Motion for expand/collapse animations and parallax scrolling. This is achievable with the existing stack without adding another dependency.
-
-**Confidence:** MEDIUM (custom build carries more implementation risk than using a library, but no suitable library exists for this specific UX pattern)
-
-### PDF & Document Export
-
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| @react-pdf/renderer | 4.3.x | PDF generation | Declarative React-based PDF creation. Define PDF layout with React components. Runs server-side in Next.js API routes. Perfect for generating formatted goal reports. Current version 4.3.2. |
-| docx | 9.6.x | DOCX generation | Declarative TypeScript API for creating Word documents. No template files needed, pure code generation. Works in Node.js (API routes). Current version 9.6.1. |
-
-**CSV and JSON export:** No library needed. Implement with built-in Node.js APIs. JSON is `JSON.stringify`, CSV is trivial string concatenation or use `json2csv` if edge cases arise.
-
-**Markdown export:** No library needed. Template literal string construction from goal data.
-
-**Confidence:** HIGH (versions verified via npmjs.com)
-
-### MCP Server
-
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| @modelcontextprotocol/sdk | 1.28.x | MCP TypeScript SDK | Official SDK for building MCP servers. Current version 1.28.0. Supports Streamable HTTP transport (the modern MCP standard). Single endpoint, works with Claude, ChatGPT, Gemini, Perplexity. Integrates into Next.js API route handler. |
-
-**Implementation approach:** The MCP server runs as a Next.js API route (`/api/mcp`). The SDK's `McpServer` class with `StreamableHTTPServerTransport` handles the protocol. Each MCP tool maps to the same service layer the web UI uses, ensuring feature parity. API key authentication via Bearer token in headers.
-
-**Confidence:** HIGH (version verified via npmjs.com)
-
-### PWA Support
-
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| Serwist | 9.5.x | Service worker toolkit | The successor to `next-pwa`. Current version 9.5.7. `@serwist/next` integrates directly with Next.js. Handles service worker registration, caching strategies, offline fallback. Works with Next.js 16 and Turbopack (next-pwa does NOT work with Turbopack). |
-
-**Why not next-pwa:** `next-pwa` is incompatible with Turbopack, which is the default bundler in Next.js 16. Serwist is the official spiritual successor, actively maintained, and recommended by the community.
-
-**Why not manual service worker:** Next.js official docs show a manual approach, but Serwist provides better caching strategies, precaching of build assets, and background sync out of the box. Worth the dependency for a proper PWA.
-
-**Confidence:** HIGH (verified via npmjs.com, Next.js community recommendations, and a 2025 article confirming Serwist works with Next.js 16)
-
-### Supporting Libraries
-
-| Library | Version | Purpose | When to Use |
-|---------|---------|---------|-------------|
-| date-fns | 4.1.x | Date manipulation | All date operations: goal deadlines, horizon calculations, streak tracking, timeline rendering. Tree-shakable (import only what you use). |
-| zod | 3.x | Schema validation | API input validation, form validation, MCP tool parameter validation. Works with Prisma for schema consistency. Already a shadcn/ui dependency. |
-| sonner | latest | Toast notifications | Lightweight toast library. Already integrated with shadcn/ui. Used for success/error feedback on goal actions. |
-| next-themes | latest | Theme switching | Dark/light theme with system preference detection. Standard for Next.js apps. |
-| @tanstack/react-table | 5.x | Table/list views | Headless table library for the sortable/filterable list view of goals. Type-safe, performant with large datasets. |
-
-### Dev Dependencies
-
-| Library | Version | Purpose | Why |
-|---------|---------|---------|-----|
-| ESLint | 9.x | Linting | Flat config (Next.js 16 removes `next lint`, use ESLint directly with `@next/eslint-plugin-next`) |
-| Prettier | 3.x | Formatting | Code style consistency |
-| prettier-plugin-tailwindcss | latest | Tailwind class sorting | Auto-sort Tailwind classes |
-
-## What NOT to Use
-
-| Technology | Why Not |
-|------------|---------|
-| Next.js 15 | Current but superseded. Next.js 16 is stable and offers View Transitions, React Compiler, Turbopack default. No reason to start a greenfield project on 15. |
-| Drizzle ORM | Good alternative to Prisma but less mature migration tooling, smaller ecosystem. Prisma 7 is proven and recommended. |
-| Prisma Next (TS rewrite) | Not production-ready. Still in development. Stick with Prisma 7. |
-| next-pwa | Incompatible with Turbopack (Next.js 16 default bundler). Use Serwist instead. |
-| react-beautiful-dnd | Abandoned by Atlassian. Use dnd-kit or pragmatic-drag-and-drop. |
-| Redux / Redux Toolkit | Massive overkill for a personal app. Zustand handles all client state needs with a fraction of the boilerplate. |
-| Framer Motion (old package name) | The package is now called `motion` (npm: `motion`). The `framer-motion` npm package still works but redirects to the same code. Use `motion` directly for clarity. |
-| tRPC | Adds complexity without proportional benefit for a single-developer project where the API consumer is the same codebase. Server Actions + API routes are sufficient. |
-| Supabase / Firebase | PROJECT.md specifies PostgreSQL on Dokploy VPS. Adding a BaaS layer would introduce unnecessary complexity and vendor lock-in. |
-| vis-timeline / react-chrono | Gantt-chart focused or vertical timelines. Neither matches Ascend's horizontal expandable timeline UX. |
-
-## Installation
-
-```bash
-# Core framework
-npx create-next-app@latest ascend --typescript --tailwind --eslint --app --src-dir
-
-# Database
-npm install prisma @prisma/client
-
-# UI
-npx shadcn@latest init
-npm install motion cmdk recharts lucide-react
-
-# State
-npm install zustand nuqs
-
-# Drag and drop
-npm install @dnd-kit/react
-
-# PWA
-npm install serwist @serwist/next
-
-# MCP
-npm install @modelcontextprotocol/sdk
-
-# Export
-npm install @react-pdf/renderer docx
-
-# Utilities
-npm install date-fns zod sonner next-themes canvas-confetti
-npm install @tanstack/react-table
-
-# Dev
-npm install -D prisma prettier prettier-plugin-tailwindcss @types/canvas-confetti
+## Existing Stack (Not Re-Researched)
+
+Already installed and validated from v1.0. These are the foundations the v2.0 additions build on:
+
+| Technology | Version | Relevance to v2.0 |
+|------------|---------|-------------------|
+| Next.js | 16.2.1 | API routes for new context MCP tools, server components for calendar page |
+| React | 19.2.4 | View Transitions for calendar/timeline view switching |
+| Prisma | ^7.6.0 | New schema models for To-do and Context entities |
+| PostgreSQL | 16.x | Full-text search (tsvector/tsquery) for context system, new tables |
+| date-fns | ^4.1.0 | All date math for calendar, recurring to-dos, streak calculations |
+| @tanstack/react-query | ^5.95.2 | Cache management for to-do lists, calendar data, context entries |
+| @tanstack/react-table | ^8.21.3 | To-do list view with sorting/filtering |
+| @dnd-kit/react | ^0.3.2 | Drag to-dos between days on calendar, reorder in lists |
+| Zustand | ^5.0.12 | UI state for calendar selected date, active view, to-do modal state |
+| @modelcontextprotocol/sdk | ^1.29.0 | New MCP tools for to-do and context CRUD |
+| Motion | (not yet installed, was in v1 plan) | Calendar animations, to-do completion, view transitions |
+| Recharts | (not yet installed, was in v1 plan) | Streak visualization, habit consistency charts on dashboard |
+| shadcn/ui | code-copy pattern | Calendar component foundation, new to-do specific components |
+| Zod | ^4.3.6 | Validation for to-do and context API inputs |
+| cmdk | ^1.1.1 | Command palette extensions for to-do and context actions |
+| Lucide React | ^1.7.0 | Icons for to-do states, calendar, context entries |
+
+## New Dependencies for v2.0
+
+### react-day-picker (Calendar View)
+
+| | |
+|---|---|
+| **Package** | `react-day-picker` |
+| **Version** | 9.14.0 |
+| **Purpose** | Month grid calendar component with day selection |
+| **Why** | shadcn/ui's Calendar component is built on react-day-picker. v9 is required for React 19 compatibility (v8 does not work with React 19). Provides accessible, headless month grid rendering with keyboard navigation, locale support, and customizable day content. The project already uses shadcn/ui, so this aligns with the existing component pattern. |
+| **Integration** | `npx shadcn@latest add calendar` pulls in react-day-picker automatically. Wrap the month grid in a custom CalendarView component that renders to-do counts and priority indicators inside each day cell using DayPicker's `components` prop for custom day rendering. |
+| **Confidence** | HIGH (verified: npm v9.14.0, peer dep React >=16.8.0, shadcn/ui Calendar docs confirm it wraps react-day-picker v9) |
+
+### rrule (Advanced Recurring To-dos)
+
+| | |
+|---|---|
+| **Package** | `rrule` |
+| **Version** | 2.8.1 |
+| **Purpose** | iCalendar RFC 5545 recurrence rule parsing, serialization, and expansion |
+| **Why** | The existing recurring goal system uses a simple frequency enum (DAILY/WEEKLY/MONTHLY) with a numeric interval. This works for basic patterns but cannot express "every Tuesday and Thursday", "first Monday of each month", "every other Wednesday", or "weekdays only." rrule handles all of these via the iCalendar standard that every calendar app understands. It also provides natural language serialization (storing an rrule string in the DB, displaying "Every Tuesday and Thursday" to the user) and efficient date expansion (generate the next N occurrences without iterating). |
+| **Why not keep the simple enum?** | The v1 recurring goals were outputs (habits). v2 to-dos as daily inputs need richer patterns. A user who wants "meditate every weekday" or "review finances on the 1st and 15th" cannot express this with DAILY/WEEKLY/MONTHLY + interval. The rrule string is a single database column that replaces the frequency + interval columns and covers every recurrence pattern. |
+| **Integration** | Store rrule strings in a `recurrenceRule TEXT` column on the Todo model. On the backend, `RRule.fromString(rule).between(start, end)` generates occurrences for a date range (used by the calendar view to show which days have recurring to-dos). On the frontend, build a recurrence picker UI that constructs rrule objects. The rrule library is TypeScript-native (types built in, no @types needed). |
+| **Alternative considered** | `simple-rrule` (1.8.1): lighter but feature-incomplete (no BYDAY, BYMONTHDAY expansion). The full rrule library is 45KB gzipped, which is acceptable. |
+| **Maintenance note** | Last published 2 years ago (v2.8.1). This is not a concern because the library implements a stable RFC standard (RFC 5545). The iCalendar recurrence spec has not changed. The library has 498 dependents and remains the standard. If long-term maintenance becomes a concern, the rrule string format is portable to any implementation. |
+| **Confidence** | HIGH (verified: npm v2.8.1, built-in TS types at dist/esm/index.d.ts, widely used, stable RFC implementation) |
+
+## What NOT to Add
+
+### Libraries That Are Unnecessary
+
+| Library | Why Skip |
+|---------|----------|
+| **nuqs** (URL state) | Was in the v1 research but never installed. Calendar date selection and to-do filters work well as Zustand state. URL state makes sense for shareable links in multi-user apps, but Ascend v1/v2 is single-user. If needed later, add it then. |
+| **@svar-ui/react-gantt** or any Gantt library | The timeline redesign calls for a Gantt with tree hierarchy. The existing custom timeline is already built with CSS Grid + date-fns. A Gantt library would impose its own visual language, conflicting with Ascend's design-first aesthetic. Extend the existing custom timeline with a left-side tree column (reusing the tree view logic) and horizontal bars instead of nodes. This is a layout change, not a new dependency. |
+| **pgvector / vector embeddings** | The context system is a structured knowledge store (key-value pairs, tagged entries, hierarchical categories). This is relational data, not semantic search. PostgreSQL's built-in full-text search (tsvector/tsquery with GIN indexes) is more than sufficient for finding context entries by keyword. Adding vector embeddings would require an embedding API, increase complexity, and solve a problem that does not exist at this scale. |
+| **Pinecone / Weaviate / ChromaDB** | Same reasoning as pgvector. External vector databases are for semantic search over thousands of documents. The context system will have dozens to low hundreds of structured entries. PostgreSQL handles this trivially. |
+| **react-big-calendar** | Designed for event scheduling (multi-day events, time blocks, Calendly-style). Ascend's calendar is a month overview showing to-do counts per day with a day detail panel. react-day-picker with custom day content handles this without the overhead of a full scheduling calendar. |
+| **fullcalendar** | Same reasoning as react-big-calendar. Overkill for a month grid with day selection. Heavyweight (100KB+), opinionated styling, designed for scheduling, not to-do tracking. |
+| **cron / node-cron** | For generating recurring to-do instances, a cron job is unnecessary. Generate instances on demand when the user views the calendar or dashboard (same pattern as the existing recurring goal generation in `recurring-service.ts`). Lazy generation is simpler and more testable than a background scheduler. |
+| **rSchedule** | Alternative to rrule with better timezone and duration support. But rrule is more mature, more widely used, and Ascend does not need timezone-aware recurrence (single user, single timezone). The extra features do not justify switching to a less proven library. |
+| **Separate search library (Lunr, MiniSearch, Fuse.js)** | Client-side search libraries are unnecessary. The context system queries PostgreSQL via API routes. Server-side full-text search is more capable and keeps the bundle small. |
+
+### Libraries Already Installed That Cover v2.0 Needs
+
+| v2.0 Need | Already Covered By |
+|-----------|-------------------|
+| Calendar date arithmetic (add/subtract days, start of week, format) | `date-fns` ^4.1.0 |
+| To-do streak calculations | `date-fns` (same pattern as existing `recurring-service.ts`) |
+| To-do list rendering with sort/filter | `@tanstack/react-table` ^8.21.3 |
+| To-do drag between calendar days | `@dnd-kit/react` ^0.3.2 |
+| Calendar/to-do data fetching and cache | `@tanstack/react-query` ^5.95.2 |
+| To-do form validation | `zod` ^4.3.6 |
+| Context CRUD API validation | `zod` ^4.3.6 |
+| Context MCP tools | `@modelcontextprotocol/sdk` ^1.29.0 |
+| UI state (selected date, modal state) | `zustand` ^5.0.12 |
+| Toast feedback on to-do actions | `sonner` ^2.0.7 |
+| Schema migrations for new models | `prisma` ^7.6.0 |
+
+## Dependencies to Verify Are Installed
+
+These were in the v1 research STACK.md but are NOT in the current `package.json`. They may have been planned but not yet added. Verify at implementation time:
+
+| Library | Needed For | Status in package.json |
+|---------|-----------|----------------------|
+| `motion` (Framer Motion successor) | Calendar view transitions, to-do completion animations, timeline Gantt bar animations | **NOT INSTALLED** (was in v1 plan). Add if animation work is in scope for v2.0. |
+| `recharts` | Streak visualization on dashboard, habit consistency heat maps | **NOT INSTALLED** (was in v1 plan). Add if dashboard streak charts are in scope. |
+| `canvas-confetti` | To-do streak milestone celebrations | **INSTALLED** (^1.9.4) |
+| `@react-pdf/renderer` | Export to-do/context data as PDF | **NOT INSTALLED** (was in v1 plan). Defer unless export is in v2.0 scope. |
+
+## PostgreSQL Features to Leverage (No New Dependencies)
+
+### Full-Text Search for Context System
+
+PostgreSQL's built-in full-text search covers the context system's query needs without any extensions:
+
+```sql
+-- Add a tsvector column to the context table
+ALTER TABLE "Context" ADD COLUMN search_vector tsvector
+  GENERATED ALWAYS AS (
+    to_tsvector('english', coalesce(title, '') || ' ' || coalesce(content, '') || ' ' || coalesce(tags_text, ''))
+  ) STORED;
+
+-- GIN index for fast lookups
+CREATE INDEX idx_context_search ON "Context" USING GIN(search_vector);
+
+-- Query with ranking
+SELECT *, ts_rank(search_vector, plainto_tsquery('english', 'search term')) AS rank
+FROM "Context"
+WHERE search_vector @@ plainto_tsquery('english', 'search term')
+ORDER BY rank DESC;
 ```
 
-## Architecture Notes for Roadmap
+**In Prisma:** Use `$queryRaw` for full-text search queries. Prisma does not have native tsvector support, but raw SQL queries are type-safe with `Prisma.sql` template literals.
 
-1. **MCP and Web UI share a service layer.** Define all business logic in a `services/` directory. API routes (for MCP) and Server Actions (for web UI) both call into services. This guarantees feature parity.
+**Confidence:** HIGH (PostgreSQL full-text search is a stable, mature feature. No extension needed.)
 
-2. **Multi-user schema from day one.** Every Prisma model gets a `userId` field. v1 hardcodes a single user, v2 adds auth.
+### JSONB for Flexible Context Metadata
 
-3. **Timeline is custom, plan accordingly.** This is the highest-risk UI component. Allocate a dedicated phase for it. Start with a simpler horizontal bar chart view and iterate toward the full interactive timeline.
+Context entries may have varying metadata structures (a "skill" entry has different fields than a "preference" entry). Use a `metadata JSONB` column for flexible key-value storage alongside the structured columns. PostgreSQL JSONB supports indexing, querying, and validation.
 
-4. **PWA offline strategy.** Use Serwist's `StaleWhileRevalidate` for API data and `CacheFirst` for static assets. Offline mode is read-only in v1 (show cached goals, queue writes for sync).
+**In Prisma:** `metadata Json?` maps to PostgreSQL JSONB. Prisma 7 supports `Json` type natively.
 
-5. **React 19.2 View Transitions.** Use `<ViewTransition>` for animating between goal views (list, board, tree, calendar, timeline). This is a native React feature in Next.js 16, no library needed.
+## Installation Summary
+
+```bash
+# New dependencies for v2.0
+npm install react-day-picker rrule
+
+# Verify these are installed (should be from v1, but check)
+# If missing, add them:
+npm install motion recharts
+```
+
+Total new dependencies: **2** (react-day-picker, rrule).
+
+## Schema Additions (Prisma)
+
+The new models for v2.0 do not require new npm dependencies. They use Prisma's existing types:
+
+### Todo Model (New)
+```prisma
+model Todo {
+  id             String    @id @default(cuid())
+  userId         String
+  title          String
+  description    String?
+  completed      Boolean   @default(false)
+  completedAt    DateTime?
+  dueDate        DateTime?
+  priority       Priority  @default(MEDIUM)
+  sortOrder      Int       @default(0)
+
+  // Link to goal (output)
+  goalId         String?
+  goal           Goal?     @relation(fields: [goalId], references: [id], onDelete: SetNull)
+
+  // Category
+  categoryId     String?
+  category       Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  // Recurrence (rrule string, e.g., "FREQ=WEEKLY;BYDAY=TU,TH")
+  recurrenceRule String?
+  isRecurring    Boolean   @default(false)
+  recurringSourceId String?
+
+  // Streak tracking
+  currentStreak  Int       @default(0)
+  longestStreak  Int       @default(0)
+
+  // Relations
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([dueDate])
+  @@index([goalId])
+  @@index([categoryId])
+  @@index([recurringSourceId])
+}
+```
+
+### Context Model (New)
+```prisma
+model Context {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  content     String
+  category    String   @default("general")
+  tags        String[] @default([])
+  metadata    Json?
+  sortOrder   Int      @default(0)
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([category])
+  @@index([tags])
+}
+```
+
+**Note:** The `search_vector` tsvector column for full-text search is added via raw SQL migration, not the Prisma schema (Prisma does not support tsvector as a native type).
+
+## Architecture Notes for v2.0
+
+1. **To-do service layer parallels goal service.** Create `todo-service.ts` following the same pattern as `goal-service.ts`. Both the web UI and MCP tools call into this service.
+
+2. **Calendar view is a read-only aggregation.** The calendar page queries to-dos by date range (`WHERE dueDate BETWEEN start AND end`), groups them by day, and renders counts inside react-day-picker's day cells. Day selection opens a side panel with that day's to-dos. No new data fetching library needed; use the existing React Query pattern.
+
+3. **rrule expansion happens server-side.** When rendering a calendar month, the API route uses rrule to expand recurring to-dos into their occurrence dates, then merges with one-off to-dos. This keeps the frontend simple (it receives a flat list of to-dos per day) and prevents rrule from bloating the client bundle.
+
+4. **Context system is CRUD + search.** No fancy architecture needed. It is a database table with full-text search. The MCP server exposes `create_context`, `list_context`, `search_context`, `update_context`, `delete_context` tools. AI assistants write personal context through these tools; the web UI provides a management interface.
+
+5. **Timeline redesign reuses existing code.** The Gantt-with-tree layout extends the current `goal-timeline-view.tsx` and `timeline-utils.ts`. Add a frozen left column with the tree hierarchy (reuse `goal-tree-node.tsx` rendering logic) and change the right side from nodes to horizontal bars. This is a component refactor, not a library addition.
 
 ## Sources
 
-- Next.js 16 upgrade guide: https://nextjs.org/docs/app/guides/upgrading/version-16 (HIGH confidence)
-- Next.js PWA guide: https://nextjs.org/docs/app/guides/progressive-web-apps (HIGH confidence)
-- Prisma blog on Prisma Next vs Prisma 7: https://www.prisma.io/blog/the-next-evolution-of-prisma-orm (HIGH confidence)
-- Puck's DnD comparison (Jan 2026): https://puckeditor.com/blog/top-5-drag-and-drop-libraries-for-react (HIGH confidence)
-- Motion (Framer Motion) docs: https://motion.dev/docs/react (HIGH confidence)
-- MCP TypeScript SDK: https://www.npmjs.com/package/@modelcontextprotocol/sdk (HIGH confidence)
-- Serwist (next-pwa successor): https://www.npmjs.com/package/@serwist/next (HIGH confidence)
-- Recharts: https://recharts.org/ and https://www.npmjs.com/package/recharts (HIGH confidence)
-- cmdk: https://www.npmjs.com/package/cmdk (HIGH confidence)
-- @react-pdf/renderer: https://www.npmjs.com/package/@react-pdf/renderer (HIGH confidence)
-- docx: https://www.npmjs.com/package/docx (HIGH confidence)
-- nuqs: https://nuqs.dev/ (HIGH confidence)
-- Zustand: https://www.npmjs.com/package/zustand (HIGH confidence)
-- All version numbers verified against npmjs.com on 2026-03-30
+- react-day-picker: https://daypicker.dev/ and npm v9.14.0 (HIGH confidence)
+- shadcn/ui Calendar docs: https://ui.shadcn.com/docs/components/radix/calendar (HIGH confidence)
+- rrule: https://github.com/jkbrzt/rrule and npm v2.8.1 (HIGH confidence)
+- rrule TypeScript types: verified built-in at dist/esm/index.d.ts (HIGH confidence)
+- PostgreSQL full-text search: https://www.postgresql.org/docs/current/textsearch.html (HIGH confidence)
+- Prisma Json type: https://www.prisma.io/docs/orm/prisma-schema/data-model/unsupported-database-features (HIGH confidence)
+- SVAR React Gantt: https://svar.dev/react/gantt/ (evaluated, rejected for design control reasons)
+- All npm versions verified via `npm view` on 2026-04-08

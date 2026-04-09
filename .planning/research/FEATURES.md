@@ -1,200 +1,307 @@
-# Feature Landscape
+# Feature Landscape: v2.0 Inputs & Outputs
 
-**Domain:** Personal goal tracking, OKR management, and priorities web app
-**Researched:** 2026-03-30
-**Overall confidence:** HIGH (based on detailed competitor analysis of 9+ products, user reviews, and market surveys)
+**Domain:** To-do systems, calendar/daily planning, structured context/knowledge for AI
+**Researched:** 2026-04-08
+**Overall confidence:** HIGH (competitor analysis of 15+ products, MCP specification review, existing codebase audit)
 
-## Competitor Overview
+**Scope:** This document covers ONLY the new v2.0 capabilities. For existing feature research (goals, hierarchy, gamification, views), see git history of this file.
 
-| Product | Category | Strengths | Weaknesses | Price |
-|---------|----------|-----------|------------|-------|
-| **Todoist** | Task manager | Natural language input, cross-platform, filters, Karma gamification, 80+ integrations | No goal hierarchy, no time blocking, paywalled features (calendar, reminders) | Free / $5/mo |
-| **Things 3** | Task manager (Apple) | Exceptional design, areas/projects/tags, GTD methodology, one-time purchase | Apple only, no collaboration, no web version, no goal hierarchy, stagnant updates | $50 one-time |
-| **Notion** | All-in-one workspace | Infinite customization, databases with relations/rollups, templates, free tier | Setup is a project itself, sluggish mobile, no built-in goal process, no check-in reminders | Free / $10/mo |
-| **Sunsama** | Daily planner | Daily planning ritual, time blocking, 15+ integrations, shutdown ritual, weekly review | $25/mo with no free plan, no AI, weak mobile, no goal hierarchy | $25/mo |
-| **Reclaim.ai** | AI calendar scheduler | AI auto-scheduling, habit scheduling, smart 1:1s, calendar defense | Calendar-centric only, no goal hierarchy, no progress tracking, requires Google/Outlook | Free / $10/mo |
-| **Habitica** | Gamified task manager | RPG mechanics (XP, classes, pets, quests), party boss battles, ADHD-friendly, truly free core | Overwhelming UI for new users, dated pixel art, no goal hierarchy, no analytics depth | Free / $5/mo |
-| **Strides** | Goal and habit tracker | SMART goal support, 4 tracker types (habit/target/average/milestone), progress charts | iOS only, paywalled beyond 3 trackers ($5/mo), no goal hierarchy, limited views | Free / $5/mo |
-| **Goalify** | Habit and goal tracker | Habit tracking, accountability partners, coaching features, cross-platform | Basic goal features, limited hierarchy, coach-focused rather than self-directed | Free / $4/mo |
-| **Linear** | Project management | Best-in-class UX, keyboard shortcuts, command palette, cycles, project views, speed | Engineering-focused, no personal goal tracking, no gamification, team-oriented | Free / $8/seat/mo |
-| **TickTick** | All-in-one productivity | Tasks + habits + calendar + Pomodoro + Eisenhower Matrix, cross-platform including Linux | Calendar paywalled, habit count limited on free, UI less polished than competitors | Free / $4/mo |
-| **Streaks** | Habit tracker (Apple) | Apple Design Award, Health auto-tracking, one-time purchase, Apple Watch excellence | Apple only, 24-habit max, no goals beyond streaks, limited analytics | $6 one-time |
+## Existing System (Already Built)
 
-## What Makes Each Successful (Key Insights)
+For dependency analysis, here is what the codebase already has:
 
-**Todoist:** Natural language input is the gold standard. Users love typing "Buy groceries every Monday at 9am" and having it parsed automatically. The minimalist design that does not get in the way, combined with powerful filters for power users, creates broad appeal. Karma points provide light gamification without overwhelming.
+| Capability | Status | Schema |
+|------------|--------|--------|
+| Goal CRUD with 4-horizon hierarchy | Built | `Goal` model with self-referencing `parentId` |
+| Categories with unlimited nesting | Built | `Category` model with self-referencing `parentId` |
+| SMART goal fields (yearly/quarterly) | Built | `specific`, `measurable`, `attainable`, `relevant`, `timely` on Goal |
+| Progress tracking with logs | Built | `ProgressLog` model, `progress`/`targetValue`/`currentValue` on Goal |
+| Recurring goals with streaks | Built | `isRecurring`, `recurringFrequency`, `currentStreak`, `longestStreak` on Goal |
+| Gamification (XP, levels, streaks) | Built | `UserStats` model, `XpEvent` model |
+| Dashboard with weekly focus | Built | API route + component |
+| List, tree, timeline views | Built | App routes under `(app)/goals/` |
+| Drag and drop | Built | Reordering within views |
+| Command palette (Cmd+K) | Built | `command-palette` component |
+| Keyboard shortcuts | Built | Throughout app |
+| MCP server (22 tools) | Built | Streamable HTTP at `/api/mcp/` |
+| PWA support | Built | Manifest + offline read |
+| Data export/import | Built | JSON, CSV, Markdown, PDF, DOCX |
 
-**Things 3:** Proves that design quality and speed are features in themselves. Users describe the app as "flawless" even though it lacks features competitors have. The lesson: a beautiful, fast, opinionated experience beats a flexible but complex one for most users.
+---
 
-**Notion:** Demonstrates that limitless flexibility can be both a strength and a weakness. Users spend weeks building systems before tracking a single goal. For OKRs specifically, it lacks tree views for alignment visualization, automated check-in reminders, and process support. "You can store OKRs in Notion, but you cannot run the OKR process there."
+## NEW CAPABILITY 1: To-Dos (Inputs)
 
-**Sunsama:** The daily planning ritual and shutdown ritual create behavioral architecture, not just features. Users who embrace the philosophy become fiercely loyal. But the $25/mo price with no free tier, combined with an absent AI layer and weak mobile experience, limits growth.
+The core thesis: Goals are outputs (results). To-dos are inputs (daily controllable actions). The user's daily question shifts from "how are my goals progressing?" to "what are my inputs today?"
 
-**Linear:** Command palette (Cmd+K) is not just a search box; it is the primary interaction model. Every action is keyboard-accessible. Speed is a feature (sub-100ms interactions). Opinionated defaults reduce decision fatigue. The UX patterns Linear established (command palette, keyboard shortcuts, cycles) are now table stakes for power-user tools.
+### Table Stakes
 
-**Habitica:** Gamification that actually works long term because RPG mechanics create genuine motivation loops. Party boss battles create social accountability where missing a daily literally hurts your friends' characters. The completely free core (paid is purely cosmetic) earns massive trust.
+Features every to-do system has. Missing any of these makes the system feel broken.
 
-## Table Stakes
+| Feature | Why Expected | Complexity | Dependencies | Notes |
+|---------|--------------|------------|--------------|-------|
+| To-do CRUD | Fundamental. Every task app has create, read, update, delete. | Low | New `Todo` model in schema | Separate model from Goal, not a Goal subtype. To-dos are lightweight, fast to create. |
+| Title + optional description | Todoist, Things 3, TickTick all have this minimal structure. | Low | `Todo` model | Title is required, description is optional rich text. |
+| Due date | Universal across all task apps. | Low | `Todo.dueDate` field | Single date, not a date range. To-dos happen on a specific day. |
+| Priority (high/medium/low) | Users distinguish urgency. Todoist P1-P4, TickTick Eisenhower. | Low | Reuse existing `Priority` enum | 3 levels matches existing Goal priority system. |
+| Completion toggle | One-click/tap to mark done. This is THE primary interaction. | Low | `Todo.completedAt` timestamp | Toggle, not a status workflow. To-dos are binary: done or not done. |
+| Category assignment | Users organize by life area. Existing category system applies directly. | Low | FK to existing `Category` model | Reuse the category tree already built for goals. |
+| Inline quick-add | Fast capture without leaving current view. Todoist's quick add is the gold standard. | Med | UI component, keyboard shortcut | Press a key, type title, press Enter. No modal for simple to-dos. |
+| Sorting and filtering | By due date, priority, category, completion status. | Med | Query layer on `Todo` model | Reuse existing filter patterns from goals. |
+| Bulk actions | Complete multiple, reschedule multiple, delete multiple. | Med | Multi-select UI pattern | Select mode with checkboxes, action bar appears at bottom. |
+| Overdue handling | Tasks past due date must surface prominently, not silently disappear. | Low | Query for `dueDate < today AND completedAt IS NULL` | Red highlight or "overdue" badge. Auto-rollover option. |
 
-Features users expect. Missing = product feels incomplete.
+### Differentiators
 
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| Task/goal CRUD (create, read, update, delete) | Fundamental functionality; every competitor has this | Low | Foundation everything else depends on |
-| Due dates and deadlines | Universal across all task/goal apps | Low | Both Todoist and Things 3 handle this elegantly |
-| Priority levels | Users need to distinguish urgent from important; Todoist (P1-P4), TickTick (Eisenhower) | Low | 3-4 levels is the sweet spot |
-| Status tracking (not started, in progress, done) | Minimum viable progress indication | Low | Linear uses custom statuses per project type |
-| Categories/labels/tags | Cross-cutting organization; every competitor offers some form | Low | Todoist labels, Things tags, Notion databases |
-| Search | Users need to find goals in growing collections | Med | Full-text search is expected; fuzzy matching is a differentiator |
-| Multiple views (list minimum, board optional) | Todoist offers list/board/calendar; Notion offers many; Linear offers list/board/timeline | Med | List is required day one; board (kanban) expected shortly after |
-| Recurring tasks | Todoist, TickTick, Habitica, Streaks all support recurring actions | Med | Natural language recurrence (e.g., "every weekday") is table stakes |
-| Subtasks / task nesting | Breaking big tasks into steps is universal | Med | Todoist sections + subtasks, Things headings + checklist items |
-| Dark/light theme | Every modern productivity app supports this | Low | System preference following is expected |
-| Mobile responsive / PWA | Users expect multi-device access; mobile is where quick check-ins happen | Med | Sunsama's weak mobile is its biggest complaint |
-| Reminders and notifications | Users need nudges; even Things 3 offers this | Low | Time-based reminders at minimum |
-| Data export | Users fear lock-in; JSON/CSV export expected | Low | Todoist exports JSON, Notion exports Markdown |
-| Cross-device sync | Todoist syncs across 10+ platforms; users expect instant sync | Med | Real-time sync is expected, not a differentiator |
-| Undo / mistake recovery | Users accidentally delete or complete goals | Low | Undo toast pattern (e.g., Gmail undo send) |
-| Keyboard shortcuts | Power users expect keyboard-first interaction; Linear proved this | Med | At minimum: navigation, task creation, status change |
-| Drag and drop for reordering | Todoist, Things 3, Sunsama all support this | Med | Within lists and between categories/horizons |
-| Filtering and sorting | Todoist filters are its superpower; users expect filtering by status, priority, category | Med | Compound filters (priority + category + date range) |
-| Completion/archive | Completed tasks should not clutter active views; Todoist zero, Things logbook | Low | Auto-archive with accessible completed history |
-| Onboarding | Users need to understand the system quickly; Linear's onboarding is renowned | Med | Wizard or guided setup; skip option mandatory |
+Features that make Ascend's to-do system uniquely valuable within the inputs/outputs framework.
 
-## Differentiators
+| Feature | Value Proposition | Complexity | Dependencies | Notes |
+|---------|-------------------|------------|--------------|-------|
+| **Link to-do to parent goal** | THE differentiator. Every to-do (input) connects to a goal (output). Users see WHY they're doing each task. No personal to-do app connects daily actions to long-term ambitions this cleanly. | Med | FK `Todo.goalId` referencing `Goal` model | Optional link. Some to-dos are standalone (groceries). But the power is in linked inputs. |
+| **Top 3 daily priorities** | The "Daily Big 3" method is proven and well-researched. Each day, the user picks their 3 most important inputs. Calendar view highlights these. Sunsama does daily planning but without explicit top-3 enforcement. | Med | `Todo.isDailyPriority` boolean + max 3 constraint per day | Enforce max 3 per day. User picks from their to-do list during morning planning. If they already have 3, they must demote one to promote another. |
+| **Recurring to-dos as habits** | Existing recurring goals handle this partially, but to-dos need their own recurrence. "Meditate daily" is a recurring input, not a recurring goal. Streak tracking on recurring to-dos provides the habit tracking that TickTick and Streaks offer. | Med | `Todo.isRecurring`, `recurringFrequency`, streak fields (mirror Goal's pattern) | Reuse the recurrence logic from goals. Habits are just recurring to-dos with streak tracking. No separate "habits" entity needed. |
+| **Consistency score (beyond streaks)** | Streaks are all-or-nothing and discouraging when broken. A consistency score (completion rate over 30 days) is more forgiving and motivating. Loop and Habitify both use this pattern. | Med | Computed field: completions / expected completions over rolling window | Display as percentage. "85% consistent this month" is more motivating than "streak: 0 (broke yesterday)." |
+| **To-do completion contributes to goal progress** | When linked to-dos complete, the parent goal's progress auto-increments. This is the inputs-drive-outputs loop made tangible. ClickUp does this for team OKRs but no personal tool does it. | Med | Trigger on `Todo` completion that updates `Goal.currentValue` | Only for linked to-dos. The increment amount should be configurable (completing 1 to-do = 1 unit of progress, or percentage-based). |
+| **Unlinked to-do suggestions** | After creating a standalone to-do, suggest linking it to an existing goal. "This looks related to your 'Improve Fitness' goal. Link it?" | Low | Keyword matching against goal titles | Nice-to-have. Can be simple string matching initially, AI-powered later via MCP. |
+| **Morning planning prompt** | When opening the app, if the user has not picked their Daily Big 3, prompt them. Sunsama's daily planning ritual is its most loved feature. | Med | Check `dailyPriority` count for today, show prompt if < 3 | Non-blocking prompt. "Pick your top 3 for today" with drag-to-select from to-do list. |
 
-Features that set product apart. Not expected, but valued.
-
-| Feature | Value Proposition | Complexity | Notes |
-|---------|-------------------|------------|-------|
-| **Goal hierarchy (yearly > quarterly > monthly > weekly)** | No competitor does cascading goal hierarchies with automatic progress rollup well. Notion requires manual setup, OKR tools are team-focused. This is Ascend's core differentiator. | High | Core architectural decision; database schema must support arbitrary depth while UI focuses on 4 horizons |
-| **Progress rollup through hierarchy** | When weekly goals complete, monthly progress auto-updates, which cascades to quarterly and yearly. No personal tool does this natively. | High | Requires computed progress fields and real-time rollup calculations |
-| **Timeline visualization** | Horizontal year timeline with quarters expandable to months/weeks, goals as nodes. Unique interaction model compared to standard Gantt charts. | High | Custom component; no off-the-shelf library perfectly matches this vision |
-| **SMART goal enforcement** | Strides is the only competitor with SMART support, and it is limited. Structured fields (Specific, Measurable, Attainable, Relevant, Timely) for yearly/quarterly goals. | Med | Only for yearly/quarterly; monthly/weekly should be fast/lightweight |
-| **MCP server for AI integration** | No goal tracking app offers an MCP server. AI assistants can read and write goals, check progress, suggest priorities. This bridges the AI-native workflow gap. | High | Streamable HTTP transport; mirrors every web UI capability |
-| **Gamification with depth (XP, levels, streaks, weekly scores)** | Habitica proves gamification works but uses dated pixel-art RPG aesthetic. Ascend combines gamification with a premium, modern design. Clean gamification without the kitsch. | Med | XP formula, level progression curve, streak tracking; animations add polish |
-| **Cmd+K command palette** | Linear proved this is a power-user superpower. In the goal tracking space, no competitor offers a command palette. | Med | Search goals + run commands + navigate categories; cmdk library |
-| **Categories with unlimited nesting** | Most apps offer flat labels or limited hierarchy. Unlimited nesting with visual tree allows modeling complex life areas. | Med | Recursive data structure; UI must guide toward clean structure without enforcing limits |
-| **Multiple rich views (tree, calendar, timeline beyond list/board)** | Tree view showing the full goal hierarchy is unique. Timeline is unique. Calendar and board are table stakes that competitors already have. | High | Tree view is the novel one; each view requires its own component |
-| **Onboarding with AI-guided option** | No competitor offers AI-guided onboarding. Using the MCP server, an AI assistant could help users set up their initial goal structure during onboarding. | Med | Depends on MCP server being functional; wizard and skip are fallbacks |
-| **Weekly score / dashboard focus** | Dashboard answers "what should I work on right now?" with this week's focus, progress per category, streaks. Sunsama's daily planning ritual is closest but requires manual curation. | Med | Aggregated view pulling from weekly goals, deadlines, streaks |
-| **Completion celebrations (confetti, animations)** | Satisfying micro-interactions make progress feel rewarding. Linear's issue completion animation, Todoist's Karma, Habitica's gold/XP drops. | Low | Confetti on milestone completion, progress bar animations, level-up celebration |
-| **Rich data migration from existing system** | Importing from the specific todos.json format is unique to this user; broader migration tools (Todoist import, CSV import) add value for future users. | Med | JSON parser for existing format; extensible import framework |
-| **Multi-format export (PDF report, DOCX, Markdown)** | Most apps only export JSON/CSV. A formatted PDF report of yearly progress with charts and statistics is unique. | Med | PDF generation with charts; useful for reviews and reflection |
-
-## Anti-Features
-
-Features to explicitly NOT build.
+### Anti-Features (To-Dos)
 
 | Anti-Feature | Why Avoid | What to Do Instead |
 |--------------|-----------|-------------------|
-| **Social features / leaderboards** | Personal goal tracking is private by nature. Social pressure creates anxiety, not motivation. Habitica's social features work because of RPG framing, but for a premium personal tool, social leaderboards cheapen the experience. | Gamification is self-referential (beat your own records, maintain your own streaks). No sharing, no public profiles. |
-| **Built-in AI chat (v1)** | Expensive to build and maintain, competing with tools users already have (Claude, ChatGPT). The MCP server approach is superior because users choose their AI. | MCP server enables any AI to read/write goals. The AI layer is external, not embedded. |
-| **Team collaboration / shared goals** | Adds massive complexity (permissions, roles, conflict resolution, notifications). This is a personal tool. Every competitor that tried to be both personal and team (Todoist Workspaces) diluted the personal experience. | Multi-user schema for future SaaS, but v1 is single-user. Team features are a v2+ concern. |
-| **Complex project management (Gantt, dependencies, resource allocation)** | Ascend is a goal tracker, not a project management tool. Adding PM depth would put it in Linear/Asana territory. Users want clarity on what to focus on, not project timelines. | Goal hierarchy with simple parent-child relationships. No task dependencies, no Gantt charts, no resource management. |
-| **Excessive notification channels** | Push notifications, email digests, SMS, Slack integration all add noise. Users already suffer notification fatigue. Sunsama succeeds by helping users do less, not pinging them more. | Simple in-app reminders. Push notifications and email digests are v2. Let MCP-connected AI assistants handle intelligent nudging. |
-| **Calendar sync / time blocking** | Calendar is a different domain. Sunsama and Reclaim.ai are better calendar tools. Trying to be both a goal tracker and calendar leads to mediocrity at both. | Goals have deadlines and time horizons, but actual time blocking happens in the user's calendar. Google Calendar sync is achievable through MCP + existing skills. |
-| **Offline-first architecture** | Full offline PWA with conflict resolution is extremely complex. The user is a developer who is almost always online. | PWA supports offline read. Writes queue and sync when online. Full offline editing is not worth the conflict resolution complexity for v1. |
-| **Note-taking / knowledge management** | Notion, Obsidian, and Apple Notes are better note tools. Bundling notes into a goal tracker creates a bloated "second brain" that does nothing well. | Goal descriptions and notes fields are sufficient. Long-form notes belong in dedicated tools. |
-| **Habit tracking as primary feature** | Habitica, Streaks, and TickTick own the habit space. Recurring goals cover the habit use case without building a separate habit subsystem. | Recurring goals with streak tracking serve the habit use case. No separate "habits" entity needed. |
-| **OAuth for MCP in v1** | OAuth adds complexity without value for a single-user system. API keys are simpler and sufficient. | API key bearer token for v1. Schema supports OAuth migration for v2 multi-user. |
+| **Subtasks on to-dos** | To-dos are inputs, meant to be atomic. If a to-do needs subtasks, it should be a goal with child to-dos. Adding subtask nesting to to-dos creates a second hierarchy system that competes with the goal hierarchy. | Keep to-dos flat. If it is complex enough to need subtasks, model it as a weekly/monthly goal with linked to-dos. |
+| **Time estimates on to-dos** | Time estimation is notoriously inaccurate and adds friction. Sunsama's time estimates are ignored by most users. The daily planning ritual and top-3 constraint naturally limit overcommitment without requiring time math. | Top 3 priorities handle capacity planning implicitly. If you can only have 3 priorities, you will not overcommit. |
+| **Eisenhower matrix view** | TickTick has this but it is rarely used. The inputs/outputs framework already provides the "important" axis (linked to high-priority goal) and the top-3 provides urgency. Adding a 2x2 matrix is redundant. | Priority field + goal linkage + Daily Big 3 covers the same ground more naturally. |
+| **Natural language date parsing** | Todoist's "every Monday at 9am" parsing is beloved but complex to build. For a single power user, explicit date pickers are fine. | Standard date picker. Natural language parsing is a v3 nice-to-have. Can be done via MCP tool ("create a to-do for tomorrow"). |
+| **Reminders / notifications (v2)** | Already scoped as out of scope for v2. To-dos do not change this. | The calendar view is the reminder. Opening the app shows today's inputs. Push notifications are v3. |
 
-## Feature Dependencies
+---
+
+## NEW CAPABILITY 2: Calendar View
+
+The calendar is the primary daily experience. The user opens Ascend and sees: what are my inputs today?
+
+### Table Stakes
+
+| Feature | Why Expected | Complexity | Dependencies | Notes |
+|---------|--------------|------------|--------------|-------|
+| Month grid | Standard calendar layout. Every calendar and planner app has this. Google Calendar, Apple Calendar, TickTick. | Med | New page/view component | Grid of days, current day highlighted, dots/counts for days with to-dos. |
+| Day view with to-do list | Click a day, see that day's to-dos. This is the primary interaction. | Med | Query to-dos by `dueDate` | Todoist's "Today" view is the benchmark. List of to-dos for the selected day. |
+| Today quick access | One-click to jump to today from anywhere in the calendar. | Low | Button/shortcut | "Today" button always visible in calendar header. Keyboard shortcut (T). |
+| Navigate months (prev/next) | Arrow buttons to move between months. | Low | State management | Standard calendar navigation. |
+| Visual indicators for task density | Dots, counts, or heat map showing which days have tasks. | Low | Count query per day | Google Calendar uses dots, Sunsama uses task counts, TickTick uses colored dots by priority. |
+| Overdue tasks surfaced | Past days with incomplete to-dos must be visually distinct. | Low | Query + styling | Red indicator on past days with incomplete to-dos. |
+| Week numbers | European users expect ISO week numbers on the calendar. | Low | Calculation utility | Display week numbers in left margin of month grid. Week starts Monday per user locale. |
+
+### Differentiators
+
+| Feature | Value Proposition | Complexity | Dependencies | Notes |
+|---------|-------------------|------------|--------------|-------|
+| **Daily Big 3 prominently displayed** | The top 3 priorities for the selected day appear above the regular to-do list, visually distinct. This is the "what matters today" answer at a glance. No calendar app does this. | Med | `isDailyPriority` query for selected date | Large cards or highlighted items at the top of the day view. Visually separated from the full to-do list below. |
+| **Goal context on to-dos** | Each to-do in the day view shows its linked goal (output) as a subtle label. "Write blog post" shows "Content Marketing Q2" as parent context. Users always see the WHY. | Low | Join `Todo` with `Goal` on render | Small chip/badge showing parent goal name and category color. |
+| **Week view (7-day strip)** | In addition to month grid, a horizontal 7-day view showing each day's to-dos side by side. Sunsama's weekly view is its strongest feature. | High | New layout component | Optional view toggle: month grid vs. week strip. Week strip is better for planning, month grid for overview. |
+| **Drag to-dos between days** | Drag a to-do from one day to another to reschedule. Sunsama and TickTick both support this. | Med | DnD library integration with date update | Reuse existing drag-and-drop patterns from goal reordering. |
+| **Goal deadlines on calendar** | Show goal deadlines as distinct markers on the calendar (different from to-dos). Users see both their inputs for the day AND approaching output deadlines. | Low | Query goals with `deadline` in visible date range | Different visual treatment from to-dos: outline badge vs. filled badge, or a separate row. |
+| **Completion stats per day** | After a day passes, show "5/8 completed" with a small completion bar. Creates a satisfying visual history. | Low | Computed from to-do completion data | Green fill for high completion, amber for partial, red for poor days. |
+| **Morning planning mode** | When opening today's view with no Daily Big 3 selected, the calendar enters "planning mode" with a guided prompt to pick priorities. Sunsama's morning ritual adapted for Ascend. | Med | Conditional UI based on `dailyPriority` state | Overlay or inline prompt. Shows all to-dos due today, lets user drag to "priority" slots. Dismissible. |
+| **Habit streaks on calendar** | For recurring to-dos (habits), show streak indicators directly on the calendar. Completed days get a check, missed days get an X, building a visual chain. Streaks app does this beautifully. | Med | Render recurring to-do completion history per day | Jerry Seinfeld's "don't break the chain" visualization. Powerful motivator. |
+
+### Anti-Features (Calendar)
+
+| Anti-Feature | Why Avoid | What to Do Instead |
+|--------------|-----------|-------------------|
+| **Time-slot based scheduling** | Ascend is not Google Calendar. Time-blocking (8:00-9:00 Write, 9:00-10:00 Exercise) adds complexity and competes with the user's actual calendar. Sunsama and Motion own this space. | To-dos have dates, not times. The Daily Big 3 handles prioritization without requiring time slots. |
+| **External calendar sync (v2)** | Google Calendar / Outlook sync is achievable through MCP + the user's /calendar skill. Building native sync adds OAuth complexity, polling infrastructure, and conflict resolution. | MCP tools can read/write to-dos. An AI assistant can bridge Ascend to-dos and Google Calendar events. |
+| **Agenda/schedule view** | A minute-by-minute schedule view duplicates the user's real calendar. The day view is a to-do list, not a schedule. | Day view shows to-dos as a prioritized list, not a time-bound schedule. |
+| **Multi-day to-dos (spanning)** | To-dos that span multiple days are goals, not to-dos. Inputs are daily actions. If something takes 3 days, it should be a goal with 3 daily to-dos. | Keep to-dos as single-day items. Goals handle multi-day/multi-week scope. |
+| **Recurring calendar events** | Events (meetings, appointments) belong in a calendar app. Ascend's calendar shows inputs (to-dos) and output deadlines (goals), not events. | No event creation. Only to-dos and goal deadlines appear on the calendar. |
+
+---
+
+## NEW CAPABILITY 3: Context System
+
+Structured personal knowledge that any AI service can query via MCP. This transforms Ascend from a productivity app into a personal operating system.
+
+### Table Stakes
+
+| Feature | Why Expected | Complexity | Dependencies | Notes |
+|---------|--------------|------------|--------------|-------|
+| Context entry CRUD | Create, read, update, delete context items. Basic data management. | Low | New `Context` model in schema | Each entry has a key (identifier), value (content), and category. |
+| Categories / namespaces | Organize context by domain: "personal", "work/nevron", "work/nativeai", "finance", "health". | Low | `Context.category` field, or namespace in key like `personal.preferences` | Flat categories are sufficient. No need for nested category hierarchy here (goals already have that). |
+| Key-value structure | Each context entry is a named piece of knowledge. "timezone" = "Europe/Ljubljana", "dietary_restrictions" = "none", "current_employer" = "Nevron". | Low | `Context.key` + `Context.value` (text) | Key is the identifier, value holds the content. Simple and queryable. |
+| Tags / labels | Cross-cutting organization. A context entry about "fitness goals" might be tagged both "health" and "personal". | Low | `Context.tags` array field | Multi-select tags for filtering. Simpler than categories for cross-cutting concerns. |
+| Search across context | Find context entries by keyword, category, or tag. | Med | Full-text search on key + value + tags | Essential for both UI browsing and MCP tool queries. |
+| MCP tools for context | AI assistants must be able to read, write, search, and list context entries. This is the entire point of the context system. | Med | New MCP tools: `get_context`, `set_context`, `search_context`, `list_context`, `delete_context` | Extends the existing 22-tool MCP server. These tools are arguably more important than the web UI. |
+| Markdown support in values | Context values should support rich text (Markdown). "About me" entries, project descriptions, and preferences benefit from formatting. | Low | Render Markdown in UI, store as plain text | Store as Markdown string, render in UI. MCP returns raw Markdown for AI consumption. |
+
+### Differentiators
+
+| Feature | Value Proposition | Complexity | Dependencies | Notes |
+|---------|-------------------|------------|--------------|-------|
+| **MCP Resources (not just tools)** | Beyond CRUD tools, expose context as MCP Resources. Resources are the MCP primitive for "data the AI should know about" vs. tools which are "actions the AI can take." An AI connecting to Ascend automatically receives the user's context as resources. | Med | MCP Resources implementation in server | Resource URIs like `context://personal/preferences`, `context://work/nevron/role`. The AI client can list and read resources without explicit tool calls. |
+| **MCP Prompts for context** | Pre-built prompt templates that incorporate context. Example: "daily_planning" prompt that includes today's to-dos, top 3 priorities, and relevant context about current projects. The AI gets a fully contextualized prompt. | Med | MCP Prompts implementation in server | Prompts are the third MCP primitive. "Plan my day" prompt auto-includes to-dos + goals + context. |
+| **Automatic context from goals/to-dos** | The context system can auto-generate context entries from the user's goals and to-dos. "Current quarterly goals" becomes a context entry that stays in sync. AI always knows what the user is working toward. | Med | Derived context computed from Goal/Todo queries | Read-only derived entries. Updated on goal/to-do changes. Marked as "auto-generated" vs. user-created. |
+| **Context versioning** | Track changes to context entries over time. "Current role" was "Junior Developer" in January, "Senior Developer" in March. Useful for AI to understand trajectory. | Low | `Context.updatedAt` + optional `ContextHistory` model | Simple: store updatedAt and let history accumulate. Advanced: full version history table. Start simple. |
+| **Bulk context import** | Import existing context from a structured file (JSON, YAML, or Markdown with frontmatter). The user already has context scattered across CLAUDE.md files and personal docs. | Med | Parser for JSON/YAML/MD import | One-time migration tool. Parse structured files into context entries. |
+| **Context templates** | Pre-built templates for common context categories: "Personal Profile", "Work Context", "Health & Fitness", "Financial Overview". Reduces blank-page syndrome. | Low | Template definitions with placeholder values | Onboarding can suggest templates. User fills in values. |
+
+### Anti-Features (Context)
+
+| Anti-Feature | Why Avoid | What to Do Instead |
+|--------------|-----------|-------------------|
+| **Full knowledge graph** | Knowledge graphs with entity relationships, semantic links, and graph queries are complex to build and maintain. Notion, Obsidian, and Capacities handle this better. Ascend's context is structured data, not a knowledge graph. | Flat key-value entries with categories and tags. If relationships between entries are needed, use tags or reference keys in values. |
+| **AI-powered auto-tagging** | Automatic categorization sounds appealing but requires ML infrastructure and produces errors that erode trust. Manual tagging is fine for a personal system with dozens to low hundreds of entries. | User assigns categories and tags manually. Templates pre-fill common tags. |
+| **Document storage / file attachments** | Storing files turns Ascend into a document management system. Google Drive, Notion, and Obsidian handle files. Ascend's context is text-based structured knowledge. | Text values only (Markdown supported). Reference external files by URL or path if needed. |
+| **Real-time collaboration on context** | Context is personal. There is no collaboration use case for v2. | Single-user context. Multi-user context sharing is a v3+ SaaS feature. |
+| **RAG / vector embeddings** | Retrieval-augmented generation requires embedding infrastructure, vector databases, and chunking strategies. Overkill for structured key-value context that is directly queryable. | Direct key-value lookup and full-text search. The MCP tools return exact context entries. AI does not need RAG when it can query structured data directly. |
+| **Bi-directional sync with external PKM** | Syncing with Obsidian, Notion, or other knowledge bases creates conflict resolution nightmares and maintenance burden. | One-way import (bring data into Ascend). MCP allows AI to bridge systems without native sync. |
+
+---
+
+## NEW CAPABILITY 4: Timeline Redesign
+
+Not a new feature but a significant redesign of the existing timeline view.
+
+### Table Stakes
+
+| Feature | Why Expected | Complexity | Dependencies | Notes |
+|---------|--------------|------------|--------------|-------|
+| Gantt-style bars | Goals displayed as horizontal bars spanning their start-to-deadline date range. Standard in any timeline view. | Med | Existing timeline component, needs redesign | Replace the current node-based timeline with proper Gantt bars. |
+| Tree hierarchy in left panel | Goals shown in their parent-child hierarchy on the left, with bars extending to the right. Linear's project timeline does this well. | Med | Existing goal hierarchy data | Left panel shows the tree, right panel shows the timeline bars. Split panel layout. |
+| Horizontal scrolling | Timeline extends beyond viewport. Scroll to see past and future. | Med | Scroll container with date axis | Smooth horizontal scroll with date headers (months, weeks). |
+| Zoom levels | Switch between year, quarter, month views. | Med | Date axis recalculation | At minimum: quarter view (default), month view (detailed), year view (overview). |
+| Today marker | Vertical line showing "today" on the timeline. | Low | Positioned element at today's date | Red or accent-colored vertical line. |
+
+### Differentiators
+
+| Feature | Value Proposition | Complexity | Dependencies | Notes |
+|---------|-------------------|------------|--------------|-------|
+| **To-dos as dots on goal bars** | When to-dos are linked to goals, show them as small dots/ticks on the goal's timeline bar. Visualizes the inputs (to-dos) contributing to outputs (goals) over time. | Med | Requires to-do data with dates | Completed to-dos as filled dots, upcoming as outline dots. |
+| **Progress fill on bars** | Goal bars fill with color from left based on progress percentage. A 50% complete goal shows the left half filled. | Low | Goal progress data (already exists) | Simple CSS width percentage on an inner div. |
+| **Collapsible hierarchy** | Expand/collapse goal branches in the tree panel. Large hierarchies need this to stay navigable. | Med | Tree state management | Default: collapsed to top 2 levels. Click to expand branches. |
+
+### Anti-Features (Timeline)
+
+| Anti-Feature | Why Avoid | What to Do Instead |
+|--------------|-----------|-------------------|
+| **Task dependencies (arrows between bars)** | Dependencies turn a goal tracker into a project management tool. Ascend's hierarchy already shows relationships. | Parent-child hierarchy provides structure. No dependency arrows. |
+| **Resource allocation / workload view** | Enterprise PM feature. Single personal user does not need resource leveling. | The Daily Big 3 is the capacity constraint mechanism. |
+| **Drag to resize bars (change dates)** | Tempting but complex (collision detection, validation, undo). Date editing is better done in the goal detail panel. | Click a bar to open goal details, edit dates there. |
+
+---
+
+## NEW CAPABILITY 5: View Simplification
+
+Reducing the number of views from the current set to a focused four.
+
+### The Four Views
+
+| View | Purpose | Status | Notes |
+|------|---------|--------|-------|
+| **List** | Default browsable view. Sortable, filterable, quick scanning. | Already built | Stays as-is. May need to add to-do listing alongside goals. |
+| **Tree** | Hierarchical visualization. See the full goal structure with to-dos as leaves. | Already built | Extend to show to-dos linked to goals as child nodes. |
+| **Timeline** | Gantt-style temporal view. Planning and progress over time. | Needs redesign | See Timeline Redesign section above. |
+| **Calendar** | Daily planning view. Primary daily experience. | New (v2) | See Calendar View section above. |
+
+### What Gets Removed
+
+| Removed View | Why | Migration Path |
+|--------------|-----|----------------|
+| Board/Kanban | Duplicates list view's filtering. Kanban columns (Not Started / In Progress / Completed) are just status filters on list view. | Filter list by status to get the same effect. |
+
+---
+
+## Feature Dependencies (v2.0)
 
 ```
-Core Data Model → Everything (goals, categories, horizons, status, priority)
-  ├── Goal CRUD → Goal hierarchy (parent-child linking)
-  │     ├── Progress tracking → Progress rollup through hierarchy
-  │     │     └── Dashboard → Weekly score, focus view, stats
-  │     ├── SMART goal fields → Goal creation modal
-  │     ├── Recurring goals → Streak tracking → Gamification (XP, levels)
-  │     └── Categories → Filtering → Multiple views
-  ├── Views foundation (list view) → Board view → Tree view → Calendar view → Timeline view
-  ├── Search → Cmd+K command palette (search + commands)
-  ├── Keyboard shortcuts (independent, can ship early)
-  ├── Drag and drop (depends on views being rendered)
-  ├── Data migration (depends on core data model matching import format)
-  ├── Data export (depends on core data model)
-  ├── Authentication (API keys) → MCP server → AI-guided onboarding
-  ├── Theme system (dark/light) → independent, can ship early
-  └── PWA manifest → independent, can ship early
+New Todo model → To-do CRUD
+  ├── Todo.goalId FK → Link to-dos to goals → Completion drives goal progress
+  ├── Todo.dueDate → Calendar day view (query by date)
+  ├── Todo.isDailyPriority → Daily Big 3 feature → Morning planning prompt
+  ├── Todo.isRecurring → Recurring to-dos (habits) → Streak tracking → Consistency score
+  ├── Todo + Category FK → Reuse existing category system
+  └── Bulk actions → Multi-select UI
+
+Calendar View (depends on Todo model)
+  ├── Month grid → Day view → To-do list per day
+  ├── Daily Big 3 display (depends on isDailyPriority)
+  ├── Goal deadlines on calendar (depends on existing Goal.deadline)
+  ├── Drag between days (depends on DnD, already built)
+  ├── Week view (optional, higher complexity)
+  └── Habit streak visualization (depends on recurring to-dos)
+
+Context System (independent of Todo/Calendar)
+  ├── Context model → Context CRUD (web UI)
+  ├── MCP context tools → extends existing MCP server
+  ├── MCP Resources → exposes context as passive data
+  ├── MCP Prompts → templated prompts with context injection
+  ├── Auto-derived context from goals/to-dos
+  └── Bulk context import
+
+Timeline Redesign (depends on existing Goal data, enhanced by Todo data)
+  ├── Gantt bars with tree panel
+  ├── To-do dots on bars (depends on Todo.goalId)
+  └── Progress fill (depends on existing Goal.progress)
+
+View Simplification (independent, can happen anytime)
+  └── Remove board view, update navigation
 ```
 
-## MVP Recommendation
+### Build Order (dependency-driven)
 
-### Phase 1: Core (ship first, validate fast)
+1. **Todo model + CRUD** (everything else depends on this)
+2. **Link to-dos to goals** (enables the inputs/outputs loop)
+3. **Calendar view (month grid + day view)** (primary daily experience)
+4. **Daily Big 3** (requires to-dos + calendar)
+5. **Recurring to-dos + streaks** (habit tracking)
+6. **Context model + CRUD + MCP tools** (independent track, can parallel with 3-5)
+7. **Timeline redesign** (enhanced by to-do data but not blocked by it)
+8. **MCP Resources + Prompts** (after context tools work)
+9. **Morning planning, consistency score, auto-derived context** (polish features)
 
-Prioritize:
-1. **Core data model** with goal hierarchy (yearly/quarterly/monthly/weekly)
-2. **Goal CRUD** with SMART fields for yearly/quarterly, simple format for monthly/weekly
-3. **Categories** with nesting
-4. **Dashboard** as default landing (this week's focus, progress overview)
-5. **List view** with filtering/sorting
-6. **Dark/light theme** following system preference
-7. **Keyboard shortcuts** for navigation and creation
-8. **Basic progress tracking** with status updates
+## MVP Recommendation (v2.0)
 
-### Phase 2: Views and Interaction
+### Must Ship (the milestone is incomplete without these)
 
-9. **Board/kanban view**
-10. **Tree view** (hierarchical visualization, key differentiator)
-11. **Drag and drop** within and between views
-12. **Cmd+K command palette**
-13. **Progress rollup** through hierarchy
-14. **Recurring goals** with streak tracking
+1. **To-do model and CRUD** with goal linking, due dates, priorities, completion
+2. **Calendar view** with month grid, day view, to-do list per day
+3. **Daily Big 3** priorities with morning planning prompt
+4. **Recurring to-dos** with streak tracking (habits)
+5. **Context model and CRUD** with basic web UI
+6. **MCP tools for to-dos and context** (5-6 new tools minimum)
+7. **Timeline redesign** with Gantt bars and tree hierarchy
+8. **View simplification** to list, tree, timeline, calendar
 
-### Phase 3: Gamification and Polish
+### Should Ship (high value, moderate effort)
 
-15. **Gamification** (XP, levels, weekly scores, streaks)
-16. **Completion animations** (confetti, progress celebrations)
-17. **Timeline visualization**
-18. **Calendar view**
+9. **To-do completion drives goal progress** (the inputs/outputs loop made tangible)
+10. **Goal deadlines on calendar** (see approaching outputs alongside daily inputs)
+11. **MCP Resources** for context (passive data exposure to AI)
+12. **Drag to-dos between days** on calendar
+13. **Habit streak visualization** on calendar
+14. **Consistency score** for recurring to-dos
 
-### Phase 4: Integration and Data
+### Defer to v2.1+
 
-19. **MCP server** (Streamable HTTP transport)
-20. **Data migration** from existing todos.json
-21. **Data export** (JSON, CSV, Markdown, PDF)
-22. **Onboarding** (wizard, AI-guided via MCP, skip)
-23. **PWA support** (installable, offline read)
-
-### Defer
-
-- **Push notifications / email digests:** v2 feature, plan schema but do not build
-- **OAuth for MCP:** v2, API keys for v1
-- **Native mobile/desktop apps:** v2, PWA covers v1
-- **Team features / multi-user UI:** v2, schema supports it from day one
-- **Built-in AI chat:** v2 paid feature; MCP handles AI integration for v1
-
-## User Pain Points (What People Love and Hate)
-
-### Universal Loves (across all competitors)
-- **Fast task capture** (Todoist's natural language is the gold standard)
-- **Clean, minimal design** (Things 3 and Linear set the bar)
-- **Reliable cross-device sync** (users are furious when sync fails)
-- **Satisfying completion feedback** (Todoist Karma, Habitica XP, streak counters)
-- **Keyboard-first interaction** (power users live by this)
-
-### Universal Frustrations (opportunities for Ascend)
-- **No cascading goal hierarchy** in any personal tool (OKR tools exist but are team/enterprise-focused)
-- **Setup fatigue** with Notion (users spend weeks building systems before tracking a single goal)
-- **Weak mobile experiences** (Sunsama, Notion mobile are major complaints)
-- **Paywalled basic features** (Todoist reminders, TickTick calendar, Strides 3-tracker limit)
-- **No AI integration** (Sunsama is intentionally manual; most others ignore AI entirely)
-- **Gamification that feels childish** (Habitica's pixel art alienates professionals)
-- **All-or-nothing approach** (apps are either pure task managers OR pure habit trackers OR pure OKR tools; none connect daily actions to yearly ambitions)
+- **MCP Prompts** for templated interactions (valuable but not launch-critical)
+- **Week view** on calendar (month grid + day view is sufficient for launch)
+- **Auto-derived context** from goals/to-dos (nice automation, not essential)
+- **Context versioning** (useful later, not needed at launch)
+- **Bulk context import** (user can add entries manually first)
+- **Unlinked to-do suggestions** (AI-powered suggestions, polish feature)
 
 ## Sources
 
-- Sunsama Reviews 2026 (saner.ai/blogs/sunsama-reviews) [MEDIUM confidence, competitor review site]
-- 5 Best Goal Tracker Apps in 2026 (habi.app/insights/goal-tracker-apps) [MEDIUM confidence, competitor review site]
-- Todoist Features (todoist.com/features) [HIGH confidence, official source]
-- Organizing My Life With Things 3 in 2025 (block81.com) [HIGH confidence, detailed user case study]
-- OKRs in Notion: A Complete Guide 2026 (mooncamp.com) [MEDIUM confidence, competitor review]
-- Strides App Review (habitnoon.app) [MEDIUM confidence, competitor review site]
-- Todoist Medium article: user sentiment on design vs features (medium.com) [MEDIUM confidence, user perspective]
-- Reclaim AI Review 2026 (efficient.app) [MEDIUM confidence, review site]
-- Linear UX patterns, Command Palette UX research (multiple sources) [HIGH confidence, documented UX patterns]
-- Habitica App Store/Play Store listings and user reviews [HIGH confidence, official stores]
-- Goalify App Store/Play Store listings [HIGH confidence, official stores]
-- Capterra/G2 review aggregations for Todoist, Sunsama, Reclaim [MEDIUM confidence, verified review platforms]
+- Todoist Features and Comparisons (todoist.com, zapier.com/blog) [HIGH confidence, official + verified review]
+- Sunsama Daily Planning and Timeboxing (help.sunsama.com) [HIGH confidence, official docs]
+- Structured App Daily Planner (structured.app) [MEDIUM confidence, official site]
+- TickTick Calendar and Habit Features (ticktick.com) [MEDIUM confidence, official site]
+- Things 3 vs Todoist Comparison (medium.com, nerdynav.com, blog.rivva.app) [MEDIUM confidence, detailed user comparisons]
+- Daily Big 3 Productivity Method (allthewayleadership.com, smartsolvetips.com, megansumrell.com) [MEDIUM confidence, multiple independent sources agree]
+- Habit Tracking Streak Algorithms (mytimecalculator.com, habitify help center) [MEDIUM confidence, app documentation]
+- MCP Architecture and Primitives (modelcontextprotocol.io, getknit.dev) [HIGH confidence, official specification]
+- Calendar UI Design Patterns (eleken.co/blog-posts/calendar-ui) [MEDIUM confidence, design research]
+- Recurring Events Database Design (medium.com/@aureliadotlim, red-gate.com) [MEDIUM confidence, technical deep dives]
+- Personal Knowledge Management with AI 2026 (remlabs.ai, glean.com, desktopcommander.app) [MEDIUM confidence, industry analysis]
+- Linear UX Patterns (linear.app/docs, eleken.co case study) [HIGH confidence, official docs + verified analysis]
+- Goal Hierarchy and Task Breakdown (focusbox.io, spearity.com) [MEDIUM confidence, methodology references]
+- Notion Database Properties and AI (developers.notion.com, notion.com/help) [HIGH confidence, official docs]

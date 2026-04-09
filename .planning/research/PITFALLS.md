@@ -1,314 +1,368 @@
-# Domain Pitfalls
+# Domain Pitfalls: Adding To-Dos, Calendar View, and Context System
 
-**Domain:** Goal tracking / OKR / priorities web app with MCP server
-**Researched:** 2026-03-30
-**Overall confidence:** HIGH (verified across multiple sources, official docs, and production case studies)
+**Domain:** Extending an existing goal tracking app (Ascend) with to-dos, calendar, and context features
+**Researched:** 2026-04-08
+**Overall confidence:** HIGH (verified against existing codebase, competitor analysis, and community patterns)
+**Scope:** Subsequent milestone adding to-dos (inputs), calendar view, context system to an app that already has goals, categories, gamification, recurring goals, drag-and-drop, MCP server, PWA, and onboarding.
 
 ## Critical Pitfalls
 
-Mistakes that cause rewrites or major issues.
+Mistakes that cause rewrites, fundamental confusion, or systemic breakage.
 
-### Pitfall 1: Choosing the Wrong Hierarchical Data Model in PostgreSQL
+### Pitfall 1: Blurring the Boundary Between To-Dos and Goals
 
-**What goes wrong:** Developers choose materialized paths or closure tables for hierarchical goal data because "reads are faster," then discover that move operations, reparenting, and concurrent edits require complex multi-row transactions that lock large portions of the tree, fill connection pools, and create inconsistency windows.
+**What goes wrong:** Developer adds a `Todo` entity that overlaps with the existing `Goal` model. Users cannot tell when to create a to-do versus a weekly goal. Both have titles, deadlines, statuses, and categories. The app ends up with two parallel systems for tracking "things to do," each with its own completion logic, filtering, views, and MCP tools. Feature parity between the two diverges over time, creating confusion about which entity to use.
 
-**Why it happens:** Materialized paths look attractive because you can query descendants without recursion (`WHERE path LIKE 'yearly.q1.%'`). Closure tables seem elegant for ancestor/descendant queries. But both require updating every descendant row when a parent moves, all within a transaction. For a goal app where users reorganize frequently (drag and drop, reprioritize), this becomes the dominant source of performance problems.
+**Why it happens:** The existing `Goal` model already covers tasks at the weekly horizon. Weekly goals have statuses, priorities, deadlines, categories, and streak tracking. A "to-do" in the productivity domain is functionally identical to a weekly goal with a deadline. The impulse to add a separate entity comes from perceiving to-dos as "smaller" or "quicker" than goals, but this distinction is subjective and impossible to enforce in a schema. Todoist and TickTick both treat everything as tasks; the hierarchy provides the semantic distinction between "goal" and "task."
 
-**Consequences:** Long-running transactions during drag-and-drop reordering. Connection pool exhaustion under concurrent use. Inconsistent paths if transactions fail mid-update. Complex migration logic when the tree structure changes. The developer from leonardqmarcq.com who operates millions of tree nodes in PostgreSQL explicitly warns: "materialized paths are not great for write performance" because "every move operation requires being done in a transaction and involves updating every node in the subtree."
+**Consequences:** Two query paths for the dashboard ("upcoming goals" and "upcoming to-dos" that return nearly identical data). Two sets of MCP tools (existing 22 tools plus new to-do tools, pushing past the LLM confusion threshold documented in Pitfall 10 of the original research). The gamification system must decide whether to-do completions award XP (if yes, they duplicate goal XP; if no, users feel penalized for using to-dos). Calendar view must display both entities, doubling the rendering logic. Filtering becomes a combinatorial explosion of entity type plus status plus priority plus category.
 
 **Warning signs:**
-- Move operations taking >100ms on trees with 50+ nodes
-- Deadlocks appearing when two goals are moved simultaneously
-- Need for a "rebuild path" maintenance script
-- Prisma `$transaction` calls wrapping every drag-and-drop action
+- A `Todo` Prisma model that duplicates more than 3 fields from `Goal`
+- API routes for `/api/todos` that mirror `/api/goals` with minor differences
+- MCP tool definitions that say "like goals, but for quick tasks"
+- Dashboard widget showing "To-Dos" separately from "Weekly Focus" with identical data shape
 
-**Prevention:** Use `parent_id` adjacency list as the primary model. This is the recommendation from production experience at scale. Moving a subtree requires updating exactly one row (the moved node's `parent_id`). For ancestor/descendant queries (progress rollup, breadcrumbs), use PostgreSQL recursive CTEs (`WITH RECURSIVE`). Cache computed paths in application memory or Redis if needed for display, but never as the source of truth for hierarchy. For Ascend specifically, the four-level hierarchy (yearly, quarterly, monthly, weekly) has a maximum depth of 4, which means recursive CTEs will always be fast (at most 4 levels of recursion). Categories with unlimited nesting are the only unbounded depth, and even there, practical depth rarely exceeds 5-6 levels.
+**Prevention:** Do NOT create a separate `Todo` model. Instead, extend the existing `Goal` model with a lightweight "quick task" mode. Concretely:
 
-**Phase:** Foundation/Database Schema (Phase 1). Getting this right before any other code prevents a schema rewrite later.
+1. **Add an `isQuickTask` boolean** (default false) to the `Goal` model. Quick tasks are goals with `horizon: WEEKLY`, no SMART fields, no hierarchy expectations, and simplified creation (title + optional deadline + optional category).
+2. **The "To-Do" view is a filtered goal view** with `isQuickTask: true` or `horizon: WEEKLY`, showing a streamlined card without SMART fields or hierarchy breadcrumbs.
+3. **Quick-add already exists** (`QuickAdd` component). Extend it to default `isQuickTask: true` for rapid entry while "New Goal" opens the full form.
+4. **Gamification treats them identically** because weekly goals already award base XP (50 * priority multiplier). No separate XP track needed.
+5. **MCP tools stay the same:** `create_goal` with `isQuickTask: true` covers to-do creation without new tools.
 
-**Confidence:** HIGH (verified via leonardqmarcq.com production experience, Reddit SQL discussions, ackee.agency PostgreSQL comparison)
+The semantic distinction between "to-do" and "goal" is a UI concern (presentation, form complexity, default filters), not a data model concern.
+
+**Phase:** Data model design. This must be resolved before any UI work begins.
+
+**Confidence:** HIGH (based on competitor analysis: Todoist, TickTick, Things 3 all use a single task entity with hierarchy for semantic distinction; validated against the existing Ascend Goal schema which already covers the to-do use case)
 
 ---
 
-### Pitfall 2: Prisma Cannot Do Recursive Queries Natively
+### Pitfall 2: Recurring To-Dos Creating a Parallel Habit System
 
-**What goes wrong:** Developer models the self-referencing `parent_id` relationship in Prisma, then discovers Prisma has no `includeRecursive` or recursive CTE support. Fetching an entire goal tree requires either (a) hardcoding nested `include` depth (`include: { children: { include: { children: { include: { children: true } } } } }`) or (b) falling back to raw SQL with `prisma.$queryRaw`. Neither option is clean.
+**What goes wrong:** After adding to-dos, the developer realizes users want recurring to-dos ("Take vitamins daily," "Weekly review"). This duplicates the existing recurring goal infrastructure (templates with `recurringSourceId`, streak tracking on the template, lazy instance generation in `recurring-service.ts`). Now there are two recurrence systems, two streak trackers, and two generation pipelines.
 
-**Why it happens:** Prisma issue #4562 (opened December 2020, still open with 143+ upvotes as of 2026) requests tree structure support. Prisma supports self-relations for schema definition but provides no recursive query API. The workaround of nested includes only works when you know the maximum depth at compile time and produces deeply nested TypeScript types.
+**Why it happens:** The existing `recurringService` is tightly coupled to the `Goal` entity. Its `generateDueInstances()` method queries goals with `isRecurring: true` and `recurringSourceId: null`. If to-dos are a separate entity, recurring to-dos need a parallel system. Even if to-dos ARE goals (per Pitfall 1's prevention), the temptation is to build a "simpler" recurrence for quick tasks that skips SMART fields and hierarchy validation.
 
-**Consequences:** Ugly, brittle code for tree traversal. Loss of Prisma's type safety when using raw SQL. Progress rollup calculations (aggregating child completion percentages up to parents) require raw queries that bypass Prisma's query builder entirely. Every new tree-related feature needs a raw SQL escape hatch.
+**Consequences:** Two streak counters (one on the goal template via `currentStreak`/`longestStreak`, one on the to-do). Dashboard streaks widget shows goal streaks but not to-do streaks, or vice versa. The Smashing Magazine 2026 article on streak psychology warns that inconsistent streak visibility "teaches users that their effort doesn't count equally across the app." The gamification service awards XP for recurring goal completion but misses recurring to-do completion.
 
 **Warning signs:**
-- Finding yourself writing `include: { children: { include: { children: ...` chains
-- Using `$queryRaw` for more than 20% of your database queries
-- Type assertions (`as unknown as GoalTree`) to work around Prisma's typed results
-- Category tree operations feeling awkward compared to goal CRUD
+- A `RecurringTodo` model or a `todoRecurringService.ts` file
+- Streak tracking fields duplicated on a new entity
+- Dashboard `activeStreaks` count ignoring one entity type
+- Different grace periods for goal streaks versus to-do streaks
 
-**Prevention:** Accept this limitation upfront and plan for it. Create a dedicated `tree-queries.ts` module that wraps all recursive CTEs behind typed functions. Use `prisma.$queryRaw` with explicit TypeScript interfaces for the results. For the fixed four-level goal hierarchy, hardcoded nested includes actually work fine (the depth is always 4, so `include` chains are predictable). Reserve raw CTEs for the unlimited-depth category tree and for progress rollup aggregations. Consider writing a reusable `getDescendants(nodeId)` and `getAncestors(nodeId)` utility using raw SQL once, tested thoroughly, and used everywhere.
+**Prevention:** If to-dos are implemented as `Goal` records (Pitfall 1's recommendation), recurring to-dos are just recurring goals. The existing `recurringService` handles them identically. No new recurrence logic is needed. The `isQuickTask` flag only affects UI presentation (simpler form, no SMART fields), not the recurrence or streak mechanics.
 
-**Phase:** Foundation/Database Layer (Phase 1). Create the raw query utilities alongside the Prisma schema.
+If the team decides on a separate `Todo` entity despite the recommendation, the recurring infrastructure MUST use a shared abstraction (a `RecurrableItem` interface with `frequencyField`, `intervalField`, `lastCompleted`, `currentStreak`, `longestStreak`) that both entities implement, with a single generation pipeline.
 
-**Confidence:** HIGH (verified via Prisma GitHub issue #4562, prisma.io official docs on relation queries)
+**Phase:** Data model design, immediately after resolving Pitfall 1.
+
+**Confidence:** HIGH (verified against existing `recurring-service.ts` code which already handles all the mechanics needed)
 
 ---
 
-### Pitfall 3: Next.js API Routes Buffer SSE/Streaming Responses
+### Pitfall 3: Calendar View Rendering Every Goal and To-Do for Every Day
 
-**What goes wrong:** Developer builds the MCP server as Next.js API routes (the obvious choice since the web app is already Next.js), then discovers that Next.js API routes buffer `res.write()` calls and do not flush them until `res.end()`. This breaks Server-Sent Events and the Streamable HTTP transport that MCP requires.
+**What goes wrong:** The calendar view renders a month grid where every cell queries or filters all goals/to-dos for that date. With 200+ goals across the hierarchy and recurring instances generating new items weekly, the calendar becomes a performance nightmare. Each day cell renders multiple overlapping items, requiring height calculations, overflow handling, and "+N more" truncation. Month navigation triggers a full re-render and re-fetch, causing visible flicker.
 
-**Why it happens:** Next.js's internal architecture (especially in serverless/edge deployments) buffers response bodies. The GitHub discussion vercel/next.js#48427 documents this extensively. When MCP clients connect via Streamable HTTP, they expect to receive streamed responses (progress updates, partial results). If the entire response is buffered, the MCP client times out waiting for the first chunk, or receives everything at once after the tool finishes, defeating the purpose of streaming.
+**Why it happens:** The naive approach treats the calendar as a visual container for the entire goal dataset, filtered by date range. But unlike a dedicated calendar app where events have precise start/end times, goal deadlines cluster on specific days (Mondays for weekly goals, month-ends for monthly goals, quarter-ends for quarterly). This clustering means some cells have 15+ items while most have zero, making uniform cell height impossible without severe truncation.
 
-**Consequences:** MCP tools that take more than a few seconds appear to hang. Clients (Claude, ChatGPT, etc.) may time out and retry, causing duplicate operations. Long-running operations (bulk goal updates, export generation) fail silently. The MCP server appears broken even though the underlying logic works correctly.
+**Consequences:** Month navigation feels sluggish (re-fetching 200+ goals, re-computing which belong to which day). Day cells with many deadlines overflow visually or hide important items behind "+5 more." Recurring goal instances clutter every matching day (daily recurring goals show on all 30 cells). Mobile calendar is unusable because cells are too small for any meaningful content.
 
 **Warning signs:**
-- MCP inspector shows tool calls hanging with no progress
-- All MCP responses arrive as a single burst after a delay
-- Works fine with STDIO transport during development, breaks when deployed as HTTP
-- Reverse proxy (Traefik on Dokploy) adding additional buffering
+- Calendar fetch endpoint returning the entire goals list instead of a date-bounded subset
+- Day cells with variable heights causing the grid to shift during scroll
+- "Loading..." flash on every month navigation
+- Recurring daily goals appearing as 30 items in the month view
 
-**Prevention:** Do NOT host the MCP server inside Next.js API routes. Run it as a separate process or a standalone Node.js HTTP server. Options: (1) A separate Express/Fastify server on its own port, proxied through Traefik alongside the Next.js app. (2) Use the official TypeScript MCP SDK (`@modelcontextprotocol/sdk`) with its built-in Streamable HTTP transport server, running as a standalone process. (3) If colocation is important, use a custom Node.js server that serves both Next.js and the MCP endpoint, but ensure the MCP route bypasses Next.js's response handling. Also configure Traefik/reverse proxy to disable response buffering for the MCP endpoint (`X-Accel-Buffering: no` header, or Traefik's `flushInterval` setting).
+**Prevention:**
 
-**Phase:** Architecture/Infrastructure (Phase 1). Decide on MCP server deployment topology before writing any MCP code.
+1. **Fetch only the visible range.** Create a dedicated endpoint or service method: `goalService.listByDateRange(userId, startDate, endDate)` that queries goals with `deadline BETWEEN start AND end`. Include recurring goal instances in the range, but NOT recurring templates (templates have no deadline; only instances do).
 
-**Confidence:** HIGH (verified via vercel/next.js#48427, nearform.com MCP pitfalls guide, auth0.com MCP transport analysis)
+2. **Aggregate recurring goals in month view.** Instead of showing 30 individual daily recurring instances, show one "streak indicator" per recurring template on the calendar. The visual is a small dot or colored bar on days where an instance exists, not a full goal card per day.
+
+3. **Two-tier calendar design.** Month view shows only deadline indicators (dots, counts, priority-colored markers). Clicking a day opens a day detail panel (or navigates to a day view) showing the full goal list for that date. This avoids rendering full goal cards in tiny cells.
+
+4. **Prefetch adjacent months.** When the user is on April, prefetch March and May in the background. This makes month navigation feel instant. Use React Query's `prefetchQuery` with the date range keys.
+
+5. **Memoize day cell rendering.** Each day cell should be a `React.memo` component keyed by the date string and a hash of the goals for that date. Month navigation should NOT cause cells with identical content to re-render.
+
+6. **Existing `useGoals` hook already supports filters.** Extend it with a `dateRange: { start: Date, end: Date }` filter rather than creating a separate calendar data hook.
+
+**Phase:** Calendar view implementation. The fetch optimization must come before the UI.
+
+**Confidence:** HIGH (verified against React calendar performance patterns from Builder.io and React Native Calendars optimization guides; Todoist's weak calendar implementation provides a cautionary example)
 
 ---
 
-### Pitfall 4: Progress Rollup Calculations That Don't Scale
+### Pitfall 4: Context System Scope Creep Into a Second Brain
 
-**What goes wrong:** Developer implements progress rollup (weekly goals aggregate into monthly progress, monthly into quarterly, quarterly into yearly) as synchronous, recursive calculations triggered on every status change. With 50+ active goals, a single checkbox toggle triggers a cascade of recalculations that causes noticeable UI lag and database load.
+**What goes wrong:** The "context system" starts as a simple way to attach notes and reference material to goals (meeting agendas, links, decision logs) but gradually expands into a full knowledge management system with folders, tags, full-text search, rich text editing, and bidirectional linking. Development slows because the context system becomes its own product within the product. The original research's anti-features list explicitly flags this: "Note-taking / knowledge management" is an anti-feature because "Notion, Obsidian, and Apple Notes are better note tools. Bundling notes into a goal tracker creates a bloated 'second brain' that does nothing well."
 
-**Why it happens:** The naive approach is intuitive: when a weekly goal is completed, recalculate its monthly parent's progress, then its quarterly grandparent, then its yearly great-grandparent. Each recalculation queries all siblings at that level. For a yearly goal with 4 quarterly children, each with 3 monthly children, each with 4 weekly goals, that is 1 + 4 + 12 = 17 database queries on every status update, executed sequentially.
+**Why it happens:** "Context" is vague. Without a strict definition, every piece of supporting information feels like it belongs in the context system: meeting notes, web bookmarks, file attachments, decision logs, reference documents, journal entries, daily reflections. The developer keeps adding entity types and relationships because each one "makes sense" individually. The result is a sprawling knowledge graph that no one uses because the goal tracking app is not where people manage knowledge.
 
-**Consequences:** UI feels sluggish when checking off goals. Multiple rapid updates (checking off several weekly goals in a row) cause race conditions where rollup calculations overlap and produce incorrect percentages. MCP bulk operations (updating many goals at once) become extremely slow.
+**Consequences:** Schema bloat (new models for `Note`, `Document`, `Link`, `Attachment`, `Tag`, potentially `Folder`). The Prisma schema grows from 6 models to 12+. Every new context entity needs CRUD routes, MCP tools, UI components, and search integration. The MCP server, which already has 22 tools, gains another 10+ for context management, pushing well past the LLM confusion threshold. The calendar view must now show "context events" alongside goal deadlines, further complicating rendering.
 
 **Warning signs:**
-- Dashboard progress bars flickering or showing stale percentages
-- "Completed 3/4" showing after marking the 4th item complete (stale cache)
-- API response times increasing linearly with goal tree depth
-- Database query count per page load exceeding 30-40
+- More than 2 new Prisma models for the context system
+- A rich text editor dependency (Tiptap, Plate, etc.) being added
+- MCP tools for "create_note," "search_notes," "link_note_to_goal"
+- A "Context" section in the sidebar that rivals the "Goals" section in complexity
+- Users opening the app to take notes instead of track goals
 
-**Prevention:** Use a single recursive CTE query for rollup calculation instead of sequential per-level queries. Compute all ancestor progress in one database round-trip. Debounce rollup recalculation (batch multiple changes within a 500ms window before recalculating). Consider storing computed progress as a denormalized column on each goal, updated asynchronously via a background job or database trigger. For the dashboard, calculate rollup on read (query time) rather than maintaining it eagerly on write. With PostgreSQL, a well-indexed recursive CTE across a 4-level hierarchy with hundreds of goals will execute in single-digit milliseconds.
+**Prevention:** Define context as a **single field extension on the Goal model**, not a separate entity system. Concretely:
 
-**Phase:** Core Features (Phase 2, when implementing progress tracking). Design the rollup strategy before building the progress UI.
+1. **Extend Goal with a `context` JSONB field** (or a simple `context: String?` for markdown text). This holds any supporting information: links, notes, decisions, references. No separate model needed.
+2. **The UI shows context as a collapsible section in the goal detail panel,** not as a separate page or view. It is subordinate to the goal, not a peer entity.
+3. **No separate search for context.** Context is searchable through goal search (include the context field in the full-text search query).
+4. **No MCP tools for context management.** The existing `update_goal` tool handles setting/updating the context field. "Add context to goal X" is just `update_goal({ id: X, context: "..." })`.
+5. **Maximum scope for v1:** A markdown text field on goals, rendered with basic markdown formatting in the detail panel. If richer structure is needed later, evolve the JSONB field to store structured data (array of `{ type: 'link' | 'note' | 'decision', content: string, createdAt: Date }`).
 
-**Confidence:** MEDIUM-HIGH (synthesized from PowerBI community forums on parent-child aggregation, Microsoft Dynamics goal rollup patterns, general database performance principles)
+The key discipline is: context serves goals. It does not exist independently.
+
+**Phase:** Data model design. Must be scoped tightly before any implementation.
+
+**Confidence:** HIGH (the original FEATURES.md explicitly lists knowledge management as an anti-feature; competitor analysis shows Notion's "everything tool" approach is the #1 user complaint about setup complexity)
 
 ---
 
-### Pitfall 5: Building Multi-User SaaS Infrastructure Before Validating Single-User Value
+### Pitfall 5: Removing Cards/Board Views Breaking Persisted User State
 
-**What goes wrong:** Developer spends weeks building auth flows, team management, role-based access control, subscription billing schema, tenant isolation, and invitation systems before the core goal tracking experience works. The product never launches because the infrastructure keeps growing.
+**What goes wrong:** The milestone calls for "view simplification (removing cards/board views)." The existing `ui-store.ts` persists `activeView` to localStorage with value `"cards"` or `"board"` (though "board" was already migrated to "cards" in a prior version). If these view types are removed from the `ViewType` union but existing users have `"cards"` persisted in their localStorage, the app crashes on load or defaults to an undefined view state. The view switcher renders with stale icons/labels. Keyboard shortcuts for removed views still trigger.
 
-**Why it happens:** The PROJECT.md explicitly calls for "multi-user database schema from day one" and lists future SaaS features. This creates a mindset where every feature gets evaluated through the lens of "but what about when we have multiple users?" The `user_id` foreign key on every table is cheap and correct. But extending that to full multi-tenant behavior (auth middleware on every route, row-level security, API key management per user, rate limiting) before having a working product is premature optimization of the business model.
+**Why it happens:** The Zustand store uses `persist` middleware with `name: "ascend-ui"` and `version: 5`. The migration logic handles version < 4 and version 4 transitions but does not anticipate removing view types in future versions. The `VIEW_OPTIONS` array in `goal-view-switcher.tsx` drives the UI, but the persisted state drives the initial render. If the persisted `activeView` value no longer exists in the options, the app shows no content.
 
-**Consequences:** Months of development before the first usable version. Decision paralysis on auth providers. Complex data access patterns where simple queries would suffice. The goal tracking UX (the actual value proposition) gets less attention than infrastructure. When the app finally launches, the goal tracking itself is mediocre because most energy went into scaffolding.
+**Consequences:** Blank goals page on first load after the update. Users must manually clear localStorage to recover. The bug is silent (no error toast, no fallback) because the rendering logic in `goals/page.tsx` has an `if (activeView === "cards")` branch that returns content, and if `activeView` is an invalid value, no branch matches and nothing renders.
 
 **Warning signs:**
-- More code in `middleware.ts` than in any feature component
-- Auth and permissions logic in every API route
-- Choosing between Clerk/Auth0/NextAuth before the dashboard exists
-- Database queries wrapped in tenant-isolation helpers when only one user exists
+- The `ViewType` type union being narrowed without updating `persist` version
+- Missing `migrate` function for the new persist version
+- Tests passing because they start with fresh state (no persisted localStorage)
+- "It works in dev but not in production" bug reports
 
-**Prevention:** The PROJECT.md already has the right instinct: `user_id` on all tables. Do exactly that and nothing more for v1. Use a hardcoded user record (seeded in the database) with a simple API key for MCP access. No auth UI, no login page, no session management. The schema is multi-user ready (every query includes `WHERE user_id = ?`), but the application code treats the single user as a given. When converting to SaaS later, add auth middleware that resolves the user from the session and passes `user_id` to queries. The database schema does not change.
+**Prevention:**
 
-**Phase:** Foundation (Phase 1). Set up the single hardcoded user and API key. Defer all auth infrastructure to the SaaS conversion phase.
+1. **Increment the Zustand persist version** (from 5 to 6) and add a migration function that maps removed view types to valid ones. Example: `"cards" -> "list"`, `"board" -> "list"`.
+2. **Update the `ViewType` union, `VIEW_OPTIONS` array, keyboard shortcuts, and `renderContent()` branches simultaneously** in a single commit. Do not remove the type before removing all references.
+3. **Add a fallback in `renderContent()`** that handles unknown view types by defaulting to list view. This is defensive programming against future state corruption:
+   ```typescript
+   // Default fallback for any unknown or removed view type
+   return <GoalListView goals={goalList} />;
+   ```
+4. **Update MCP tools** if any tool accepts a `view` parameter (check `data-tools.ts` for settings management).
+5. **Test with pre-existing localStorage.** Before shipping, manually set `localStorage.setItem("ascend-ui", JSON.stringify({ state: { activeView: "cards" }, version: 5 }))` and verify the app loads correctly.
 
-**Confidence:** HIGH (this is a well-documented pattern in the indie hacker / solo developer community, supported by training data and general software engineering wisdom)
+**Phase:** View simplification. This must be the first task, before adding calendar view, because changing the ViewType union affects everything.
+
+**Confidence:** HIGH (verified by reading the actual `ui-store.ts` code, which has the exact persist/migrate pattern described)
 
 ## Moderate Pitfalls
 
-### Pitfall 6: Gamification That Feels Gimmicky Instead of Meaningful
+### Pitfall 6: Timeline Width Pushing Detail Panel Off Viewport
 
-**What goes wrong:** Developer adds XP, levels, badges, confetti explosions, streak counters, and leaderboards, then discovers that the gamification feels childish and actually demotivates the user when streaks break or arbitrary badges are awarded for trivial actions.
+**What goes wrong:** The timeline view renders a horizontally scrollable content area. When a goal is selected, the 400px/440px detail panel (hardcoded in `goals/page.tsx` as `w-[400px] lg:w-[440px]`) opens on the right. The timeline content area does not shrink to accommodate the panel because it uses horizontal scrolling internally. The detail panel is pushed off the right edge of the viewport, or the timeline and panel overlap, or horizontal scrolling no longer works because the available width calculation is wrong.
 
-**Why it happens:** Gamification is easy to implement (a counter, a modal with confetti) but hard to design well. Research from the Journal of Consumer Psychology (2025) documents that digital tracking and gamification can backfire: streak pressure creates anxiety, missed days feel like failure, and extrinsic rewards (points, badges) can undermine intrinsic motivation for the goals themselves. The Reddit ADHD community documents this phenomenon clearly: "gamified apps either get me fixated on keeping my streak to the exclusion of doing the thing properly or send me into a rage from prodding."
+**Why it happens:** The current layout in `goals/page.tsx` uses a flex container with `flex-1` for the content area and a fixed width for the detail panel. This works for list, tree, and card views because they use vertical scrolling within the `flex-1` container. The timeline view is unique: it uses horizontal scrolling, which means its width is determined by its content, not by the container. When the detail panel appears, the `flex-1` container shrinks, but the timeline's internal scroll width does not recalculate, causing layout breakage.
+
+**Consequences:** Timeline view becomes unusable when a goal is selected. Users see the detail panel overlapping timeline content or a horizontal scrollbar that scrolls the entire page. On smaller screens (1280px laptops), the timeline may have almost no visible width after the panel takes 440px.
 
 **Warning signs:**
-- Spending more time on confetti particle systems than on goal creation UX
-- Awarding badges for actions that are not achievements (e.g., "Created your first goal!")
-- Streak counter becoming a source of stress rather than motivation
-- User avoiding marking goals as failed/abandoned because it hurts their "score"
+- Horizontal scrollbar appearing on the main page (not within the timeline container)
+- Detail panel's close button being clipped off screen
+- Timeline content jumping when the detail panel opens/closes
+- `window.innerWidth` calculations in timeline code not accounting for the panel
 
-**Prevention:** Design gamification around intrinsic value, not dopamine tricks. (1) Progress bars and completion percentages are inherently motivating because they show real progress toward real goals; implement these first. (2) Streak tracking should show positive patterns without punishing breaks; use a "heat map" visualization (like GitHub contributions) rather than a streak counter that resets to zero. (3) XP/levels should correlate with meaningful milestones: completing a quarterly goal is worth more than 13 weekly tasks, because it represents sustained effort. (4) Keep celebrations proportional: a subtle checkmark animation for a weekly task, a more visible animation for a monthly goal, confetti only for quarterly/yearly completions. (5) Never gate functionality behind gamification (no "unlock views by earning XP"). (6) Make all gamification optional/toggleable.
+**Prevention:**
 
-**Phase:** Polish/Gamification (Phase 3 or later). Build the core goal tracking UX first. Add gamification only after the basic experience feels solid.
+1. **Use `overflow-x: auto` on the timeline container, NOT on the page.** The timeline's parent div must be the scroll container, sized by flex to fill available space. When the detail panel opens, the flex container shrinks and the timeline reflows within the smaller space.
+2. **Listen for panel open/close in the timeline component.** Subscribe to `useUIStore.selectedGoalId` and recalculate the visible date range when the available width changes. Use `ResizeObserver` on the timeline container rather than `window.innerWidth`.
+3. **Consider bottom/overlay panel for timeline view.** When `activeView === "timeline"`, show goal details in a bottom sheet or overlay instead of a side panel, preserving the full viewport width for horizontal content. This is how map applications handle detail panels over horizontally scrolled content.
+4. **Set `min-width: 0` on the flex child** containing the timeline. Without this, flex children default to `min-width: auto` and will not shrink below their content width, causing overflow.
 
-**Confidence:** MEDIUM-HIGH (synthesized from academic research on gamification backfire effects, fitness app comparison studies from getfitcraft.com, Reddit community discussions)
+**Phase:** Calendar/view implementation phase. Address when modifying the view layout.
+
+**Confidence:** HIGH (verified by reading the existing `goals/page.tsx` layout code, which uses the exact flex pattern described)
 
 ---
 
-### Pitfall 7: PWA Offline Mode That Silently Loses Data on iOS
+### Pitfall 7: Calendar Month Navigation State Conflicting with URL and Filter State
 
-**What goes wrong:** Developer implements PWA offline support expecting it to work like a native app, then discovers that iOS Safari deletes all cached data after 7 days of inactivity, has no Background Sync API support, and offers only ~50MB of storage. User opens the PWA after a week away and all offline data is gone.
+**What goes wrong:** The calendar view needs its own navigation state (current month, selected day). This state lives in three possible places: URL search params (via `nuqs`), Zustand UI store (like `timelineYear`/`timelineMonth`), and component local state. If month/day state is only in component state, navigating away and back resets to the current month. If it is in Zustand, it persists across sessions but conflicts with URL state that other views use for filtering. If it is in URL params, every month navigation changes the URL, creating unwanted browser history entries.
 
-**Why it happens:** PWA capabilities differ dramatically between platforms. Android Chrome is generous with storage, supports background sync, and retains cached data. iOS Safari imposes strict limits: 7-day cache expiry for inactive PWAs, no background sync at all, 50MB storage cap, and aggressive cleanup when the device is low on space. The EU situation is even worse: iOS 17.4+ in EU countries removed standalone PWA mode entirely (PWAs open as Safari tabs).
+**Why it happens:** The existing app uses a hybrid approach: Zustand persists `activeView`, `activeFilters`, `timelineZoom`, `timelineYear`, `timelineMonth`. URL state (via nuqs) is not currently used for view-specific navigation. Adding calendar state to Zustand is consistent with the timeline approach, but the calendar needs both month-level navigation AND day-level selection, which is more granular than what the timeline tracks.
 
-**Consequences:** User makes offline changes to goals (marks tasks complete, adds new goals), puts down the phone, and those changes never sync because the service worker cannot run in the background. Worse: if they do not open the app for 7 days, the entire service worker cache is purged, and the app must re-download everything. Any pending offline changes stored in IndexedDB may also be lost during iOS's aggressive storage cleanup.
+**Consequences:** Browser back button navigates between calendar months instead of between pages. Or the calendar always resets to the current month because state is not persisted. Or the URL shows `?calendarMonth=4&calendarYear=2026&selectedDay=8` which looks noisy and interacts unexpectedly with existing filter params. Deep linking breaks if calendar state is only in Zustand (sharing a URL does not include the viewed month).
 
 **Warning signs:**
-- Offline changes "disappearing" after the app is reopened
-- PWA requiring full re-download after a week of inactivity
-- Conflict resolution logic never being triggered (because offline changes are lost before sync)
-- iOS testers reporting a fundamentally different experience than Android testers
+- Browser back button cycling through months instead of navigating to the previous page
+- Calendar resetting to "today" every time the user switches views and comes back
+- URL growing with calendar-specific query parameters
+- Calendar month state conflicting with horizon filter tabs (which also imply time ranges)
 
-**Prevention:** (1) Do not promise offline-first for v1. Instead, implement offline-read (cached dashboard data for viewing) and queue offline-writes in IndexedDB, but display a clear "pending sync" indicator. (2) Re-cache critical assets on every app launch, not just on service worker install. (3) Sync pending changes immediately when the app becomes visible (`visibilitychange` event) and when the device comes online (`online` event), because Background Sync is unavailable on iOS. (4) Keep cached data well under 50MB (goal data is text, so this should be easy). (5) Display a "last synced: X minutes ago" indicator so the user knows their data state. (6) Accept that PWA offline on iOS is "read cached data + queue writes" rather than "full offline mode."
+**Prevention:**
 
-**Phase:** PWA Implementation (Phase 3 or later). Build the web app as a regular web app first. Add PWA features after the online experience is solid.
+1. **Store calendar month/year in Zustand** (add `calendarYear` and `calendarMonth` to `UIStore`, following the pattern already established for `timelineYear` and `timelineMonth`). Persist them via the existing `partialize` function. This ensures the calendar remembers where the user was across view switches.
+2. **Store selected day in component local state** (NOT in Zustand or URL). Day selection is ephemeral: it shows a day detail, but navigating away should deselect. This prevents Zustand from persisting a stale selected day across sessions.
+3. **Do NOT use URL params for calendar navigation.** Month navigation is frequent (12+ times per year view) and should not pollute browser history. The timeline already uses Zustand for this, and calendar should be consistent.
+4. **Initialize calendar to current month on first load,** but restore from Zustand on subsequent visits within the same session. The `persist` middleware handles this automatically.
+5. **Add to the Zustand migration** (version bump from Pitfall 5) to set sensible defaults for `calendarYear` and `calendarMonth`.
 
-**Confidence:** HIGH (verified via magicbell.com 2026 iOS PWA guide, brainhub.eu PWA iOS analysis, webkit.org feature status)
+**Phase:** Calendar view implementation.
+
+**Confidence:** HIGH (verified against existing Zustand store patterns for timeline state)
 
 ---
 
-### Pitfall 8: Timeline Visualization Rendering All Nodes at Once
+### Pitfall 8: Database Schema Bloat From New Entities Breaking Existing Queries
 
-**What goes wrong:** Developer builds a timeline view showing all goals as nodes on a horizontal year line, with expandable quarters/months/weeks. With 100+ goals, the browser grinds to a halt because every goal node is rendered as a React component in the DOM simultaneously.
+**What goes wrong:** Adding to-dos, context, and calendar-specific data introduces new models or significantly extends existing ones. The `Goal` model already has 25+ fields. Adding `isQuickTask`, `context` (JSONB), and potentially `calendarColor`, `allDay`, `startTime`, `endTime` pushes it past 30 fields. Prisma's `include` chains and `select` clauses become unwieldy. Existing queries that do `findMany` without `select` now return significantly more data than before, increasing API response sizes and memory usage.
 
-**Why it happens:** The natural approach is to map over all goals and render them. For a list view, React handles hundreds of items fine. But a timeline view is different: each goal is a positioned element with connectors, hover states, expand/collapse animations, and potentially drag handles. The layout calculation itself becomes expensive, and the DOM node count grows multiplicatively (goal node + label + connector line + status indicator + expand button = 5+ elements per goal).
+**Why it happens:** The "extend the existing model" approach (recommended in Pitfall 1 and Pitfall 4) avoids entity proliferation but concentrates complexity in the `Goal` model. Every service method, API route, and MCP tool that touches goals now implicitly handles to-do fields, context fields, and calendar fields even when they are irrelevant to the operation. The Prisma Client returns all fields by default unless `select` is explicitly specified.
 
-**Consequences:** Timeline view loads slowly and scrolls with visible jank. Animations stutter. Memory usage grows linearly with goal count. On mobile (the PWA), the timeline becomes unusable.
+**Consequences:** API responses grow 30-40% larger due to new nullable fields being included in every goal list response. Mobile PWA performance degrades because the cached goal data is heavier. The MCP server returns context data in every `list_goals` response, wasting LLM context window. Prisma migrations for adding new columns to a populated `Goal` table require `ALTER TABLE ADD COLUMN` with defaults, which is fast for nullable columns but can lock the table briefly if default values are computed.
 
 **Warning signs:**
-- Timeline taking >500ms to render on initial load
-- Scroll jank visible on a MacBook Pro (let alone mobile)
-- React DevTools showing hundreds of simultaneous re-renders when expanding a quarter
-- Memory usage increasing as the user scrolls through the timeline
+- API response size doubling without doubling the number of goals
+- TypeScript types for `Goal` exceeding 30 properties
+- Multiple `select` clauses being added retroactively to existing queries
+- MCP tool responses exceeding 4000 tokens for simple list operations
 
-**Prevention:** (1) Implement virtualization for the timeline: only render goal nodes that are currently visible in the viewport, plus a small buffer. Libraries like `@tanstack/react-virtual` or a custom IntersectionObserver approach work well. (2) Use CSS transforms for positioning instead of top/left (enables GPU compositing). (3) Collapse distant time periods by default (only the current quarter is expanded, others show summary counts). (4) Consider canvas rendering for the connector lines while keeping goal nodes as DOM elements (hybrid approach). (5) Debounce expand/collapse animations so expanding a quarter does not trigger a full re-render. (6) For mobile, consider a simplified vertical timeline instead of the horizontal one.
+**Prevention:**
 
-**Phase:** Views Implementation (Phase 2-3). Timeline is the most complex view; build list and board views first, then tackle timeline with performance in mind from the start.
+1. **Use `select` in all new list queries.** When fetching goals for the calendar view, select only the fields needed: `{ id, title, status, priority, deadline, categoryId, isQuickTask }`. Do not use `include: { category: true }` when only `categoryId` is needed for filtering.
+2. **Keep new fields nullable with no default computation.** `isQuickTask Boolean @default(false)`, `context String?` (nullable) are safe additions that Prisma migrates instantly without table locks.
+3. **Do NOT add calendar-specific time fields to Goal.** Goals have deadlines, not start/end times. The calendar view displays goals on their deadline date. If time-of-day scheduling is needed later, that is a separate concern (and an anti-feature per the original research: "Calendar sync / time blocking" is explicitly deferred).
+4. **Create a goal list summary type** for API responses: `GoalSummary` with only the 10 fields views need (id, title, status, horizon, priority, deadline, progress, categoryId, isQuickTask, sortOrder). Full goal data (including context, SMART fields, notes) is returned only by `getById`.
+5. **Audit existing MCP tool responses.** The `list_goals` tool should return summaries, not full goal objects. The `get_goal` tool returns the complete object including context.
 
-**Confidence:** MEDIUM-HIGH (verified via React performance articles from syncfusion.com and growin.com, TanStack Virtual documentation patterns)
+**Phase:** Data model migration. Run this audit before adding new fields.
+
+**Confidence:** HIGH (verified by reading existing service methods which use `findMany` without `select`, and the MCP tool handlers which return full goal objects)
 
 ---
 
-### Pitfall 9: Drag and Drop Across Different View Types Breaking State
+### Pitfall 9: Calendar View Not Handling Timezone Correctly for Deadline Display
 
-**What goes wrong:** Developer implements drag-and-drop in the list view, then in the board/kanban view, then in the tree view, each with its own state management. Moving a goal in one view does not update the others, or worse, causes the state to become inconsistent because each view maintains its own representation of the goal hierarchy.
+**What goes wrong:** Goals store deadlines as `DateTime` (UTC in PostgreSQL). The calendar renders days based on the user's local timezone. A goal with deadline `2026-04-08T22:00:00Z` shows on April 8 for a UTC user but should show on April 9 for a user in CET (UTC+2 in summer). Since the user is in Europe/Ljubljana (CET/CEST), deadlines set in the evening local time may appear on the wrong calendar day.
 
-**Why it happens:** `dnd-kit`'s `SortableContext` is designed for items within a single list. Moving items between containers (different kanban columns, different tree branches, or between horizons) requires manual state management in `onDragOver` and `onDragEnd`. The official examples show this for a simple kanban, but do not cover the case where multiple view types share the same underlying data with different visual representations.
+**Why it happens:** JavaScript `Date` objects automatically convert to the local timezone when accessed with `.getDate()`, `.getMonth()`, etc. But Prisma returns `DateTime` values as JavaScript `Date` objects in UTC. If the calendar grid maps goals to days using `goal.deadline.toISOString().slice(0, 10)` (which extracts the UTC date), goals assigned late in the day CET will appear one day early on the calendar.
 
-**Consequences:** A goal moved from "In Progress" to "Done" in the kanban view does not reflect in the tree view until a page refresh. Dragging a weekly goal under a different monthly parent in the tree view updates `parent_id` but does not move the kanban card. Optimistic updates in one view conflict with server state fetched by another view.
-
-**Warning signs:**
-- Views showing different data after a drag-and-drop operation
-- Need for "Refresh" buttons on each view
-- Race conditions between optimistic updates and server responses
-- Separate `useState` or `useReducer` calls managing goal order per view
-
-**Prevention:** (1) Use a single source of truth for goal state (server state via React Query / TanStack Query with optimistic mutations). All views read from the same cached query. (2) Drag-and-drop operations mutate the server (API call), and the optimistic update modifies the shared cache, so all views update simultaneously. (3) Use `dnd-kit` only for the visual drag interaction; the actual state change flows through the normal mutation pipeline. (4) For cross-container drag (moving between horizons or categories), update both `parent_id` and any sort-order field in a single API call. (5) Test drag-and-drop with two views open side by side to catch synchronization issues early.
-
-**Phase:** Views Implementation (Phase 2). Design the shared state management pattern before implementing drag-and-drop in any view.
-
-**Confidence:** MEDIUM (synthesized from dnd-kit GitHub discussions, Reddit reactjs community, StackOverflow dnd-kit cross-container issues)
-
----
-
-### Pitfall 10: MCP Tool Explosion and Confused LLM Tool Selection
-
-**What goes wrong:** Developer creates one MCP tool per UI action (create_goal, update_goal, delete_goal, get_goal, list_goals, move_goal, complete_goal, archive_goal, set_priority, add_progress, create_category, update_category, delete_category, get_categories, reorder_goals...) resulting in 20+ tools. LLMs start calling the wrong tools because descriptions overlap. "Should I use `update_goal` or `move_goal` to change a goal's parent?"
-
-**Why it happens:** The instinct is to mirror the REST API 1:1 as MCP tools. But MCP tools are consumed by language models, not by frontend code. Models work better with fewer, well-differentiated tools with clear descriptions than with a large surface area of similar-sounding operations. The Nearform MCP guide explicitly warns: "defining two tools that are very similar or too many tools will cause the model to call the wrong one or with wrong inputs."
-
-**Consequences:** LLMs call `update_goal` when they should call `complete_goal`. The model generates incorrect parameters because it confuses which tool expects which schema. Users chatting with AI assistants experience inconsistent behavior. Debugging is difficult because the problem is in tool selection, not in tool implementation.
+**Consequences:** A goal with deadline "April 9 at midnight CET" (stored as `2026-04-08T22:00:00Z`) appears on April 8 in the calendar. User creates a goal "due today" but it appears on yesterday's cell. Recurring daily goals show on the wrong days, causing streak confusion.
 
 **Warning signs:**
-- LLM calling the wrong tool more than 10% of the time
-- Tool descriptions containing phrases like "use this instead of X"
-- Multiple tools accepting the same parameters but doing different things
-- Need for elaborate system prompt instructions just to explain which tool to use when
+- Goals appearing one day early or late on the calendar
+- "Due today" goals not showing in today's calendar cell
+- Different behavior between server-rendered and client-rendered calendar dates
+- Tests passing because the test environment timezone matches UTC
 
-**Prevention:** (1) Design tools around user intents, not CRUD operations. Example: `manage_goals` (create, update, delete, move via an `action` parameter) + `query_goals` (list, filter, search, get tree) + `track_progress` (add progress entry, complete, archive) + `manage_categories` (CRUD for categories). Four tools instead of twenty. (2) Use enums for the `action` parameter so the model sees all options. (3) Write tool descriptions from the LLM's perspective: "Use this tool when the user wants to create, edit, move, or delete a goal" rather than "Creates a goal in the system." (4) Test with actual LLMs (Claude, ChatGPT) during development, not just with the MCP inspector. (5) Set a maximum tool call limit to prevent infinite loops.
+**Prevention:**
 
-**Phase:** MCP Server Implementation (Phase 2). Design the tool surface area before implementing individual tools.
+1. **Use `date-fns` consistently with timezone awareness.** The project already uses `date-fns` for date manipulation. When mapping a goal to a calendar day, convert the deadline to the user's local date: `format(goal.deadline, 'yyyy-MM-dd')` (which uses local timezone) rather than `goal.deadline.toISOString().slice(0, 10)` (which uses UTC).
+2. **Store and compare dates as local dates for calendar display.** The `startOfDay` function from `date-fns` normalizes to local midnight. Use `startOfDay(goal.deadline)` to get the local calendar day.
+3. **The date-range query for calendar data must account for timezone offset.** When fetching goals for April 2026 CET, the UTC range is approximately `2026-03-31T22:00:00Z` to `2026-04-30T21:59:59Z`, not `2026-04-01T00:00:00Z` to `2026-04-30T23:59:59Z`. Use `startOfMonth` and `endOfMonth` from `date-fns` which operate in local time, then pass those `Date` objects to Prisma (which will serialize them to UTC for the query).
+4. **Add timezone to the user preferences** or use the system timezone. Since the app is single-user and the user's timezone is known (Europe/Ljubljana), this is a minor concern for v1 but should be handled generically for future multi-user support.
 
-**Confidence:** HIGH (verified via nearform.com MCP pitfalls guide, MCP specification best practices)
+**Phase:** Calendar view implementation. Must be addressed in the date-range query logic.
+
+**Confidence:** HIGH (this is a well-documented timezone pitfall in web applications; the existing codebase uses `date-fns` functions like `startOfWeek` with `weekStartsOn: 1` which confirms awareness of locale-specific date handling)
 
 ## Minor Pitfalls
 
-### Pitfall 11: CORS and Reverse Proxy Misconfiguration for MCP Endpoint
+### Pitfall 10: Quick-Add Ambiguity Between To-Do and Goal Creation
 
-**What goes wrong:** MCP server works locally but breaks when deployed behind Traefik on Dokploy. Streamable HTTP connections are dropped, CORS preflight fails, or SSE streams are prematurely closed.
+**What goes wrong:** The existing `QuickAdd` component creates goals with a title and optional horizon. After adding the to-do concept (`isQuickTask`), quick-add must decide whether to create a goal or a to-do. If it always creates to-dos, users cannot quickly create goals. If it always creates goals, the to-do feature feels disconnected. If it asks every time, it adds friction to the fastest creation path.
 
-**Prevention:** (1) Configure Traefik to disable response buffering for the MCP endpoint path (set `flushInterval` to `-1`). (2) Add explicit CORS headers on the MCP server (`Access-Control-Allow-Origin`, `Access-Control-Allow-Headers` including `Authorization`). (3) Ensure Traefik does not time out long-lived connections (increase `IdleConnTimeout`). (4) Test the MCP endpoint through the full proxy chain during development, not just directly.
+**Prevention:** Quick-add defaults to `isQuickTask: true` (since quick creation implies a lightweight task). The full "New Goal" button opens the form with `isQuickTask: false`. If the user is in a specific view (e.g., viewing goals filtered by a specific horizon), quick-add respects the context. Add a small toggle or keyboard shortcut (e.g., Tab to switch between "task" and "goal" mode) in the quick-add bar.
 
-**Phase:** Deployment (Phase 1, infrastructure setup).
-
----
-
-### Pitfall 12: Data Migration from JSON Treating Categories as an Afterthought
-
-**What goes wrong:** Developer imports tasks from `todos.json` into the new database but does not map the existing categories (NativeAI, Nevron, Personal, Finance, Things to Buy) to the new category tree, or creates flat categories when the user expects nested subcategories, or loses the project groupings within categories.
-
-**Prevention:** (1) Write a migration script that reads `todos.json`, creates categories from the existing groupings, and maps each task to its correct category and time horizon. (2) Review the existing JSON structure with the user before migrating. (3) Run the migration against a staging database first. (4) Preserve the original JSON as a backup in the database (a `migration_source` JSONB column or a separate table).
-
-**Phase:** Data Migration (Phase 2, after the schema and basic CRUD are working).
+**Phase:** UI implementation, after data model is settled.
 
 ---
 
-### Pitfall 13: Animated Counters and Confetti on Every Interaction
+### Pitfall 11: Calendar View Day Selection Conflicting with Goal Selection
 
-**What goes wrong:** Rich animations (animated progress counters, parallax timeline scrolling, completion celebrations) cause performance issues on lower-end devices and create motion sickness for users sensitive to animation. Confetti on every task completion becomes annoying within the first day.
+**What goes wrong:** The app already has a concept of "selected goal" (`selectedGoalId` in Zustand) which opens the detail panel. The calendar needs "selected day" to show that day's goals. If clicking a day also selects a goal (the first one on that day), the detail panel opens and narrows the calendar. If clicking a day only shows the day's goals list, there is no way to see goal details from the calendar.
 
-**Prevention:** (1) Respect `prefers-reduced-motion` media query for all animations. (2) Throttle animation frame rate on low-end devices (check `navigator.hardwareConcurrency`). (3) Scale celebration intensity to goal importance: no animation for weekly tasks, subtle for monthly, confetti only for quarterly/yearly. (4) Use CSS animations/transitions instead of JavaScript animation libraries where possible (better performance, composited on GPU). (5) Make all celebratory animations optional in settings.
+**Prevention:** Implement a two-step interaction: (1) clicking a day highlights it and shows a day summary (list of goals for that day) in a popover or below the calendar grid, (2) clicking a specific goal within the day summary opens the detail panel. This separates day selection from goal selection. Consider using the bottom sheet pattern for day summaries on mobile.
 
-**Phase:** Polish/Gamification (final phase). Animations come last, after functionality is complete.
-
----
-
-### Pitfall 14: Cmd+K Command Palette Conflicting with Browser and OS Shortcuts
-
-**What goes wrong:** `Cmd+K` is already used by many browsers (Safari: address bar, Chrome: search bar) and by macOS itself. The PWA's command palette intercepts the shortcut in standalone mode but not in browser tabs, creating inconsistent behavior.
-
-**Prevention:** (1) In standalone PWA mode, `Cmd+K` works as expected. In browser tabs, detect the context and either use an alternative shortcut or let the browser handle it with a fallback button. (2) Provide a visible trigger button (search icon in the nav bar) as the primary access point, with `Cmd+K` as the power-user shortcut. (3) Test keyboard shortcuts in both standalone PWA mode and regular browser mode.
-
-**Phase:** Navigation/UX (Phase 2-3).
+**Phase:** Calendar view UI implementation.
 
 ---
 
-### Pitfall 15: Recurring Goals Creating Orphan Instances
+### Pitfall 12: MCP Tool Count Exceeding LLM Comprehension After Feature Additions
 
-**What goes wrong:** A daily recurring goal creates a new instance every day. After a month, there are 30 completed instances cluttering the archive. If the recurrence schedule changes, old instances may reference a parent template that no longer matches their frequency.
+**What goes wrong:** The MCP server already has 22 tools. Adding to-do specific tools (`create_todo`, `list_todos`), calendar tools (`get_calendar_data`, `get_day_summary`), and context tools (`set_context`, `get_context`) pushes the count to 28+. The original research (Pitfall 10) warned that "defining two tools that are very similar or too many tools will cause the model to call the wrong one or with wrong inputs."
 
-**Prevention:** (1) Store recurring goals as a template with a `recurrence_rule` (cron-like or iCal RRULE). (2) Generate instances lazily (only create the current period's instance, not all future ones). (3) Link instances to the template via `template_id`, separate from the goal hierarchy's `parent_id`. (4) When archiving, aggregate recurring instances into a summary (e.g., "Completed 22/30 days in March") rather than showing 30 individual entries.
+**Prevention:** Do NOT add new tools for these features. Map them to existing tools:
+- To-dos: `create_goal` with `isQuickTask: true` (no new tool)
+- Calendar data: `list_goals` with a `dateRange` filter parameter (extend existing tool)
+- Context: `update_goal` with a `context` field (extend existing tool)
+- Day summary: `list_goals` with `deadline` filter for a specific date (no new tool)
 
-**Phase:** Core Features (Phase 2, recurring goals implementation).
+The only potentially new tool is `get_calendar_overview` that returns a month-level summary (date -> goal count mapping) which is different enough from `list_goals` to warrant its own tool. That keeps the count at 23, well within the safe range.
+
+**Phase:** MCP tool design, done alongside data model work.
+
+---
+
+### Pitfall 13: View Simplification Breaking Keyboard Shortcuts
+
+**What goes wrong:** The existing keyboard shortcuts system (in `keyboard-shortcuts.tsx` and `command-palette.tsx`) includes shortcuts for switching between views. If "cards" and "board" views are removed, shortcuts like `Ctrl+1` through `Ctrl+4` shift their mappings. Users who learned `Ctrl+3` for "tree view" now get "timeline" because the numbering changed. Command palette actions referencing removed views cause errors.
+
+**Prevention:**
+1. **Audit all keyboard shortcut mappings** in `keyboard-shortcuts.tsx` and `command-actions.ts` before removing views.
+2. **Reassign shortcuts deliberately** rather than letting array index shifts cause implicit remapping.
+3. **Update command palette actions** to remove entries for deleted views and add entries for new views (calendar).
+4. **Keep shortcut assignments stable:** If tree was `Ctrl+3`, keep it as `Ctrl+3` even after removing earlier views. Do not auto-number.
+
+**Phase:** View simplification, same commit as view removal.
+
+---
+
+### Pitfall 14: Calendar View Competing with Timeline View for Temporal Display
+
+**What goes wrong:** The app already has a timeline view showing goals across time. Adding a calendar view creates two temporal visualizations that partially overlap. Users are confused about when to use the timeline versus the calendar. The timeline shows goals as nodes on a horizontal axis; the calendar shows goals in a month grid. Both answer "what is happening when?" but in different ways.
+
+**Prevention:** Define clear use cases:
+- **Calendar:** "What is due on a specific day/week?" Tactical, short-term, action-oriented. Shows deadlines in a standard month grid. The primary view for daily/weekly planning.
+- **Timeline:** "How do my goals progress over time?" Strategic, long-term, progress-oriented. Shows goal spans across quarters/years with hierarchy. The primary view for quarterly/yearly review.
+
+Reinforce this distinction in the view switcher tooltips, onboarding hints, and command palette descriptions. Consider renaming "Timeline" to "Roadmap" to differentiate further.
+
+**Phase:** Calendar view design, before UI implementation.
 
 ## Phase-Specific Warnings
 
 | Phase Topic | Likely Pitfall | Mitigation |
 |-------------|---------------|------------|
-| Database Schema | Wrong tree model (materialized path) | Use `parent_id` adjacency list, recursive CTEs for traversal |
-| Database Schema | Prisma recursive query gap | Create raw SQL utility module from day one |
-| Infrastructure | MCP inside Next.js API routes | Separate process, standalone HTTP server |
-| Infrastructure | Traefik buffering MCP streams | Configure `flushInterval`, disable buffering |
-| Core Features | Progress rollup cascade | Single recursive CTE, debounce recalculation |
-| Core Features | Recurring goal proliferation | Template-based with lazy instance generation |
-| Views/Timeline | DOM overload on timeline | Virtualization, collapse distant periods, hybrid canvas |
-| Drag and Drop | Cross-view state inconsistency | Single query cache (TanStack Query), optimistic mutations |
-| MCP Server | Too many overlapping tools | Intent-based tool design, 4-6 tools max |
-| Gamification | Gimmicky rewards, streak anxiety | Proportional celebrations, heat map over streak counter |
-| PWA | iOS data loss after 7 days | Re-cache on launch, sync on visibility, no offline promises |
-| Migration | Category mapping from JSON | Pre-migration review, staging database test |
-| Auth/Multi-user | Premature SaaS infrastructure | Hardcoded user + API key for v1, schema-only multi-tenancy |
-| Animations | Performance and motion sickness | `prefers-reduced-motion`, scale to goal importance |
+| Data Model | Creating a separate Todo entity | Use `isQuickTask` flag on existing Goal model (Pitfall 1) |
+| Data Model | Context system becoming a knowledge base | Single `context` field on Goal, not a separate entity (Pitfall 4) |
+| Data Model | Schema bloat on Goal model | Use `select` in queries, create GoalSummary type (Pitfall 8) |
+| View Removal | Persisted view state referencing deleted views | Zustand version bump with migration (Pitfall 5) |
+| View Removal | Keyboard shortcuts shifting after view removal | Audit and deliberately reassign shortcuts (Pitfall 13) |
+| Calendar View | Rendering all goals on every day cell | Date-bounded queries, aggregated recurring display (Pitfall 3) |
+| Calendar View | Month state management conflicts | Zustand for month/year, local state for selected day (Pitfall 7) |
+| Calendar View | Timezone-incorrect deadline display | Use date-fns local date functions, offset-aware range queries (Pitfall 9) |
+| Calendar View | Day selection vs goal selection confusion | Two-step interaction: day summary, then goal detail (Pitfall 11) |
+| Calendar + Timeline | Temporal view overlap confusion | Clear use case definitions, consider renaming Timeline (Pitfall 14) |
+| Timeline Layout | Detail panel pushing timeline off viewport | ResizeObserver, min-width: 0, consider bottom sheet (Pitfall 6) |
+| Recurring | Parallel habit/recurrence system | Reuse existing recurringService for quick tasks (Pitfall 2) |
+| Quick Add | Ambiguous creation target | Default to quick task, toggle for full goal (Pitfall 10) |
+| MCP Server | Tool count exceeding LLM comprehension | Extend existing tools, do not create parallel to-do tools (Pitfall 12) |
 
 ## Sources
 
-- [leonardqmarcq.com: Do's and Don'ts of Storing Large Trees in PostgreSQL](https://leonardqmarcq.com/posts/dos-and-donts-of-modeling-hierarchical-trees-in-postgres) (2024, production experience with millions of tree nodes)
-- [Reddit r/SQL: Materialized Path or Closure Table discussion](https://www.reddit.com/r/SQL/comments/1puo2x6/materialized_path_or_closure_table_for/) (2024)
-- [Ackee Blog: Hierarchical models in PostgreSQL](https://www.ackee.agency/blog/hierarchical-models-in-postgresql) (comparison of all approaches)
-- [Prisma GitHub Issue #4562: Tree structures support](https://github.com/prisma/prisma/issues/4562) (open since 2020, 143+ upvotes)
-- [Nearform: Implementing MCP Tips, Tricks and Pitfalls](https://nearform.com/digital-community/implementing-model-context-protocol-mcp-tips-tricks-and-pitfalls/) (Dec 2025)
-- [MagicBell: PWA iOS Limitations and Safari Support 2026](https://www.magicbell.com/blog/pwa-ios-limitations-safari-support-complete-guide) (2026)
-- [Next.js GitHub Discussion #48427: SSE don't work in API routes](https://github.com/vercel/next.js/discussions/48427) (buffering issue)
-- [auth0.com: Why MCP's Move Away from SSE Simplifies Security](https://auth0.com/blog/mcp-streamable-http/) (Streamable HTTP analysis)
-- [TheNewStack: MCP roadmap 2026 growing pains](https://thenewstack.io/model-context-protocol-roadmap-2026/) (MCP production challenges)
-- [getfitcraft.com: Gamified vs Non-Gamified Apps research](https://getfitcraft.com/compare/gamified-vs-non-gamified-apps) (gamification backfire data)
-- [Journal of Consumer Psychology: Digital Tracking, Gamification, and AI](https://myscp.onlinelibrary.wiley.com/doi/10.1002/arcp.70004) (academic research on gamification effects)
-- [Reddit r/adhdwomen: Gamifying does nothing for me](https://www.reddit.com/r/adhdwomen/comments/1qwxhq2/gamifying_does_nothing_for_me/) (user perspective on gamification fatigue)
-- [dnd-kit GitHub: Cross-container drag issues](https://stackoverflow.com/questions/74764468/dnd-kit-incorrect-behavior-while-trying-to-move-item-to-another-container-in-rea)
-- [Traefik Community: CORS and SSE configuration issues](https://community.traefik.io/t/server-sent-event-cors-issue-with-simple-traefik-configuration/11195)
+- [Todoist vs TickTick: Focused Clarity or Feature Everything?](https://www.todoist.com/inspiration/todoist-vs-ticktick) (Todoist official, calendar comparison)
+- [Designing A Streak System: The UX And Psychology Of Streaks](https://www.smashingmagazine.com/2026/02/designing-streak-system-ux-psychology/) (Smashing Magazine, 2026, streak design patterns)
+- [What is Feature Creep and How to Avoid It?](https://designli.co/blog/what-is-feature-creep-and-how-to-avoid-it) (feature creep prevention)
+- [Feature Creep in Software Development](https://qat.com/feature-creep-in-software-development/) (scope management)
+- [Performance optimization for React calendars](https://www.mintlify.com/Emendate/react-native-calendars/guides/performance) (calendar rendering optimization)
+- [React calendar components: 6 best libraries 2025](https://www.builder.io/blog/best-react-calendar-component-ai) (library comparison)
+- [How to Redesign a Legacy UI Without Losing Users](https://xbsoftware.com/blog/legacy-app-ui-redesign-mistakes/) (view removal UX patterns)
+- [Nearform: Implementing MCP Tips, Tricks and Pitfalls](https://nearform.com/digital-community/implementing-model-context-protocol-mcp-tips-tricks-and-pitfalls/) (MCP tool design)
+- [TickTick vs Todoist](https://medium.com/@nickhuk/ticktick-vs-todoist-7ec863074edd) (calendar feature comparison)
+- Existing codebase analysis: `ui-store.ts`, `goal-service.ts`, `recurring-service.ts`, `gamification-service.ts`, `dashboard-service.ts`, `goals/page.tsx`, `goal-view-switcher.tsx`, `schema.prisma`
 
 ---
-*Confidence levels: HIGH = verified with official docs/production case studies. MEDIUM-HIGH = verified with multiple community sources. MEDIUM = synthesized from community patterns and training data.*
+*Confidence levels: HIGH = verified against existing codebase + official docs/production case studies. MEDIUM = verified with multiple community sources. LOW = synthesized from training data only.*
