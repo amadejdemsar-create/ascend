@@ -59,10 +59,11 @@ Plans:
   2. User can filter the to-do list by category, priority, status, and linked goal simultaneously
   3. User can select multiple to-dos and bulk-complete or bulk-delete them in one action
   4. Overdue to-dos are visually highlighted in red/orange and offer reschedule or complete actions
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 13-01: TBD
+- [ ] 13-01-PLAN.md — Todo list page with sortable columns, filter bar, quick-add, and navigation
+- [ ] 13-02-PLAN.md — Bulk actions, overdue visual indicators, and detail side panel
 
 ### Phase 14: Calendar View
 **Goal**: Users have a calendar as their primary daily planning surface, showing to-dos per day, goal deadlines, Big 3 priorities, and a morning planning prompt
@@ -149,7 +150,7 @@ Note: Phase 16 (Context) and Phase 17 (Todo MCP) can be parallelized since they 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 12. Todo Data Layer | 2/2 | Complete    | 2026-04-09 | - |
-| 13. Todo UI | v2.0 | 0/1 | Not started | - |
+| 13. Todo UI | v2.0 | 0/2 | Not started | - |
 | 14. Calendar View | v2.0 | 0/2 | Not started | - |
 | 15. Dashboard Transformation | v2.0 | 0/1 | Not started | - |
 | 16. Context System | v2.0 | 0/3 | Not started | - |
