@@ -4,6 +4,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { GoalPriorityBadge } from "@/components/goals/goal-priority-badge";
 import { SortableHeader } from "@/components/goals/sortable-header";
+import { TodoOverdueActions } from "@/components/todos/todo-overdue-actions";
 import { Star, Repeat } from "lucide-react";
 
 export interface TodoListItem {
@@ -28,6 +29,13 @@ export interface TodoListItem {
   } | null;
 }
 
+export interface TodoTableMeta {
+  isSelected: (id: string) => boolean;
+  toggleRow: (id: string) => void;
+  toggleAll: () => void;
+  allSelected: boolean;
+}
+
 const STATUS_CONFIG: Record<
   string,
   { label: string; variant: "default" | "secondary" | "destructive" | "outline" }
@@ -37,7 +45,44 @@ const STATUS_CONFIG: Record<
   SKIPPED: { label: "Skipped", variant: "secondary" },
 };
 
+function isOverdue(dueDate: string | null, status: string): boolean {
+  if (!dueDate || status !== "PENDING") return false;
+  const due = new Date(dueDate);
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return due < now;
+}
+
 export const columns: ColumnDef<TodoListItem>[] = [
+  {
+    id: "select",
+    header: ({ table }) => {
+      const meta = table.options.meta as TodoTableMeta | undefined;
+      return (
+        <input
+          type="checkbox"
+          className="size-4 rounded border-border accent-primary cursor-pointer"
+          checked={meta?.allSelected ?? false}
+          onChange={() => meta?.toggleAll()}
+          onClick={(e) => e.stopPropagation()}
+        />
+      );
+    },
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as TodoTableMeta | undefined;
+      return (
+        <input
+          type="checkbox"
+          className="size-4 rounded border-border accent-primary cursor-pointer"
+          checked={meta?.isSelected(row.original.id) ?? false}
+          onChange={() => meta?.toggleRow(row.original.id)}
+          onClick={(e) => e.stopPropagation()}
+        />
+      );
+    },
+    enableSorting: false,
+    size: 40,
+  },
   {
     accessorKey: "title",
     header: ({ column }) => <SortableHeader column={column} title="Title" />,
@@ -80,17 +125,23 @@ export const columns: ColumnDef<TodoListItem>[] = [
     header: ({ column }) => <SortableHeader column={column} title="Due Date" />,
     enableSorting: true,
     cell: ({ row }) => {
-      const dueDate = row.original.dueDate;
+      const { dueDate, status, id } = row.original;
       if (!dueDate) {
         return <span className="text-xs text-muted-foreground">&mdash;</span>;
       }
+      const overdue = isOverdue(dueDate, status);
       return (
-        <span className="text-sm">
-          {new Date(dueDate).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-          })}
-        </span>
+        <div className="flex items-center gap-1">
+          <span className={`text-sm ${overdue ? "text-destructive font-medium" : ""}`}>
+            {new Date(dueDate).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+            })}
+          </span>
+          {overdue && (
+            <TodoOverdueActions todoId={id} dueDate={dueDate} />
+          )}
+        </div>
       );
     },
   },
