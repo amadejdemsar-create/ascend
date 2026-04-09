@@ -75,11 +75,11 @@ Plans:
   3. Daily Big 3 priorities appear prominently above other to-dos in the day detail, and recurring daily to-dos are visually distinguished from one-off to-dos
   4. When the user opens the app without Big 3 selected for today, a morning planning prompt guides them to set priorities
   5. Overdue to-dos from previous days surface at the top of today's view so nothing slips through the cracks
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 14-01: TBD
-- [ ] 14-02: TBD
+- [ ] 14-01-PLAN.md — Calendar month grid, day detail panel, goal deadline markers, Big 3 prominence, and navigation entry
+- [ ] 14-02-PLAN.md — Morning planning prompt for Daily Big 3 selection
 
 ### Phase 15: Dashboard Transformation
 **Goal**: The dashboard becomes input-centric, centering on "what are my inputs today?" with clear connections to outputs (goals)
