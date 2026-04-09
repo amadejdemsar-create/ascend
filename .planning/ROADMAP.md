@@ -135,11 +135,11 @@ Plans:
   3. Cards view and board view are removed; the app offers list, tree, timeline, and calendar as the four goal views
   4. Sidebar navigation is restructured to show Inputs (to-dos), Outputs (goals), Calendar, and Context as primary sections
   5. Command palette (Cmd+K) searches across to-dos and context documents in addition to goals
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 18-01: TBD
-- [ ] 18-02: TBD
+- [ ] 18-01-PLAN.md — Gantt tree redesign: rewrite timeline view with tree hierarchy rows, horizontal bars, collapsible branches, today marker
+- [ ] 18-02-PLAN.md — View cleanup (remove cards), navigation restructure (Inputs/Outputs model), command palette extension (todos + context search)
 
 ## Progress
 
