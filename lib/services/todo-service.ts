@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/db";
 import type { CreateTodoInput, UpdateTodoInput, TodoFilters } from "@/lib/validations";
 import { goalService } from "@/lib/services/goal-service";
+import { todoRecurringService } from "@/lib/services/todo-recurring-service";
 import { XP_PER_TODO, levelFromXp } from "@/lib/constants";
-import { startOfWeek } from "date-fns";
+import { startOfDay, startOfWeek } from "date-fns";
 
 export const todoService = {
   /**
@@ -198,9 +199,16 @@ export const todoService = {
       });
     }
 
+    // 4. Update recurring streak if this is a recurring instance
+    let streakResult = null;
+    if (todo.recurringSourceId) {
+      streakResult = await todoRecurringService.completeRecurringInstance(userId, id);
+    }
+
     return {
       ...completed,
       _xp: { amount: xpAmount, source },
+      ...(streakResult && { _streak: streakResult }),
     };
   },
 
@@ -239,5 +247,161 @@ export const todoService = {
         goal: { select: { id: true, title: true } },
       },
     });
+  },
+
+  /**
+   * Get Daily Big 3 to-dos for a given date (defaults to today).
+   * Returns up to 3 to-dos marked as Big 3, ordered by sortOrder.
+   */
+  async getBig3(userId: string, date?: Date) {
+    const targetDate = startOfDay(date ?? new Date());
+    return prisma.todo.findMany({
+      where: {
+        userId,
+        isBig3: true,
+        big3Date: targetDate,
+      },
+      orderBy: { sortOrder: "asc" },
+      include: {
+        category: true,
+        goal: { select: { id: true, title: true } },
+      },
+    });
+  },
+
+  /**
+   * Set the Daily Big 3 for a given date. Enforces a maximum of 3 to-dos.
+   *
+   * Steps:
+   *   1. Validate max 3 todoIds
+   *   2. Verify all todoIds belong to the user
+   *   3. Unset existing Big 3 for that date
+   *   4. Set the new Big 3
+   *   5. Return updated Big 3 to-dos
+   */
+  async setBig3(userId: string, todoIds: string[], date?: Date) {
+    if (todoIds.length > 3) {
+      throw new Error("Maximum 3 Daily Big 3 allowed");
+    }
+
+    // Verify all todoIds belong to the user
+    const found = await prisma.todo.findMany({
+      where: { id: { in: todoIds }, userId },
+      select: { id: true },
+    });
+
+    if (found.length !== todoIds.length) {
+      throw new Error("One or more to-dos not found");
+    }
+
+    const targetDate = startOfDay(date ?? new Date());
+
+    // Unset existing Big 3 for this date
+    await prisma.todo.updateMany({
+      where: {
+        userId,
+        isBig3: true,
+        big3Date: targetDate,
+      },
+      data: {
+        isBig3: false,
+        big3Date: null,
+      },
+    });
+
+    // Set new Big 3
+    await prisma.todo.updateMany({
+      where: {
+        id: { in: todoIds },
+      },
+      data: {
+        isBig3: true,
+        big3Date: targetDate,
+      },
+    });
+
+    // Return the updated Big 3 to-dos
+    return this.getBig3(userId, targetDate);
+  },
+
+  /**
+   * Get all to-dos for a specific date (calendar day view).
+   * Matches on scheduledDate first, or dueDate if no scheduledDate.
+   * Big 3 are sorted first, then by sortOrder.
+   */
+  async getByDate(userId: string, date: Date) {
+    const targetDate = startOfDay(date);
+    return prisma.todo.findMany({
+      where: {
+        userId,
+        OR: [
+          { scheduledDate: targetDate },
+          { dueDate: targetDate, scheduledDate: null },
+        ],
+      },
+      orderBy: [{ isBig3: "desc" }, { sortOrder: "asc" }],
+      include: {
+        category: true,
+        goal: { select: { id: true, title: true } },
+      },
+    });
+  },
+
+  /**
+   * Get all to-dos in a date range (calendar month view).
+   * Returns a flat list; the caller groups by date.
+   */
+  async getByDateRange(userId: string, start: Date, end: Date) {
+    return prisma.todo.findMany({
+      where: {
+        userId,
+        OR: [
+          { scheduledDate: { gte: start, lte: end } },
+          { dueDate: { gte: start, lte: end }, scheduledDate: null },
+        ],
+      },
+      orderBy: [{ isBig3: "desc" }, { sortOrder: "asc" }],
+      include: {
+        category: true,
+        goal: { select: { id: true, title: true } },
+      },
+    });
+  },
+
+  /**
+   * Complete multiple to-dos in bulk. Wraps each in try/catch
+   * so one failure does not block others.
+   */
+  async bulkComplete(userId: string, ids: string[]) {
+    const results: Array<{ id: string; success: boolean; data?: unknown; error?: string }> = [];
+
+    for (const id of ids) {
+      try {
+        const result = await this.complete(userId, id);
+        results.push({ id, success: true, data: result });
+      } catch (error) {
+        results.push({
+          id,
+          success: false,
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+    }
+
+    return results;
+  },
+
+  /**
+   * Reorder to-dos by updating their sortOrder in a single transaction.
+   */
+  async reorder(userId: string, items: { id: string; sortOrder: number }[]) {
+    await prisma.$transaction(
+      items.map(({ id, sortOrder }) =>
+        prisma.todo.update({
+          where: { id, userId },
+          data: { sortOrder },
+        })
+      )
+    );
   },
 };
