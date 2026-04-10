@@ -118,11 +118,13 @@ export const contextService = {
     });
     if (!existing) throw new Error("Context entry not found");
 
-    // Remove this ID from any entries that link to it
+    // Remove this ID from any of THIS user's entries that link to it.
+    // Scoped by userId so the raw UPDATE respects the multi-tenant boundary
+    // even in the unlikely case of an id collision across users.
     await prisma.$executeRaw`
       UPDATE "ContextEntry"
       SET "linkedEntryIds" = array_remove("linkedEntryIds", ${id})
-      WHERE ${id} = ANY("linkedEntryIds")
+      WHERE "userId" = ${userId} AND ${id} = ANY("linkedEntryIds")
     `;
 
     return prisma.contextEntry.delete({ where: { id } });
