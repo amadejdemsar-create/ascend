@@ -1,0 +1,44 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev)",
+      "Bash(npm run build)",
+      "Bash(npm run lint)",
+      "Bash(npx prisma generate)",
+      "Bash(npx prisma migrate dev*)",
+      "Bash(npx prisma studio)",
+      "Bash(npx prisma format)",
+      "Bash(npx tsc --noEmit*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(git push*)",
+      "Bash(git checkout*)",
+      "Bash(git branch*)",
+      "Bash(git pull*)",
+      "Bash(gh *)"
+    ],
+    "deny": [
+      "Bash(npx prisma migrate reset*)",
+      "Bash(npx prisma db push*)",
+      "Bash(prisma migrate reset*)",
+      "Bash(prisma db push*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=\"$CLAUDE_FILE_PATH\"; if echo \"$file\" | grep -qE '\\.(ts|tsx)$'; then cd /Users/Shared/Domain/Code/Personal/goals && npx tsc --noEmit --pretty 2>&1 | head -30; fi",
+            "timeout": 30000
+          }
+        ]
+      }
+    ]
+  }
+}
