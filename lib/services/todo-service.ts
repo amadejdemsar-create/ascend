@@ -309,10 +309,12 @@ export const todoService = {
       },
     });
 
-    // Set new Big 3
+    // Set new Big 3. Scope by userId as defense-in-depth even though the
+    // ids were already verified against the user via the findMany above.
     await prisma.todo.updateMany({
       where: {
         id: { in: todoIds },
+        userId,
       },
       data: {
         isBig3: true,

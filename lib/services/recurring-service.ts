@@ -106,6 +106,7 @@ export const recurringService = {
       // Check if an incomplete instance already exists
       const pendingInstance = await prisma.goal.findFirst({
         where: {
+          userId,
           recurringSourceId: template.id,
           status: { in: ["NOT_STARTED", "IN_PROGRESS"] },
         },
@@ -116,7 +117,8 @@ export const recurringService = {
       const frequency = template.recurringFrequency ?? "WEEKLY";
       const interval = template.recurringInterval ?? 1;
 
-      // Check if streak is broken
+      // Check if streak is broken. Use updateMany so the mutation is
+      // scoped by userId as defense-in-depth.
       if (template.lastCompletedInstance) {
         const broken = this.isStreakBroken(
           template.lastCompletedInstance,
@@ -124,8 +126,8 @@ export const recurringService = {
           interval,
         );
         if (broken && template.currentStreak > 0) {
-          await prisma.goal.update({
-            where: { id: template.id },
+          await prisma.goal.updateMany({
+            where: { id: template.id, userId },
             data: { currentStreak: 0 },
           });
         }

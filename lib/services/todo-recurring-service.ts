@@ -72,6 +72,7 @@ export const todoRecurringService = {
       // Check if a pending instance already exists for this date
       const existingInstance = await prisma.todo.findFirst({
         where: {
+          userId,
           recurringSourceId: template.id,
           status: "PENDING",
           dueDate: nextDate,
@@ -81,6 +82,8 @@ export const todoRecurringService = {
       if (existingInstance) continue;
 
       // Check if streak is broken: was the previous occurrence missed?
+      // Use updateMany so we can scope by userId as defense-in-depth, even
+      // though the template was already fetched via a user-scoped findMany.
       const previousOccurrence = rule.before(today, false);
       if (previousOccurrence && template.lastCompletedDate) {
         const prevDate = startOfDay(previousOccurrence);
@@ -88,15 +91,15 @@ export const todoRecurringService = {
 
         // If the previous occurrence is after the last completed date, streak is broken
         if (prevDate > lastCompleted && template.currentStreak > 0) {
-          await prisma.todo.update({
-            where: { id: template.id },
+          await prisma.todo.updateMany({
+            where: { id: template.id, userId },
             data: { currentStreak: 0 },
           });
         }
       } else if (previousOccurrence && !template.lastCompletedDate && template.currentStreak > 0) {
         // Has a previous occurrence but was never completed at all
-        await prisma.todo.update({
-          where: { id: template.id },
+        await prisma.todo.updateMany({
+          where: { id: template.id, userId },
           data: { currentStreak: 0 },
         });
       }
@@ -156,6 +159,7 @@ export const todoRecurringService = {
         // Check if any instance (pending, done, or skipped) already exists for this date
         const existingInstance = await prisma.todo.findFirst({
           where: {
+            userId,
             recurringSourceId: template.id,
             dueDate: occDate,
           },
@@ -225,6 +229,7 @@ export const todoRecurringService = {
 
     const completedCount = await prisma.todo.count({
       where: {
+        userId,
         recurringSourceId: template.id,
         status: "DONE",
         completedAt: { gte: thirtyDaysAgo },
@@ -244,6 +249,7 @@ export const todoRecurringService = {
       }
     }
 
+    // Template ownership was already verified via the findFirst above.
     const updated = await prisma.todo.update({
       where: { id: template.id },
       data: {
