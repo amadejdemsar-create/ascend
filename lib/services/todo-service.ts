@@ -74,6 +74,13 @@ export const todoService = {
         categoryId: data.categoryId,
         dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
         scheduledDate: data.scheduledDate ? new Date(data.scheduledDate) : undefined,
+        // Recurring fields were added to createTodoSchema by commit
+        // 70e03e8 but never forwarded to Prisma, so isRecurring and
+        // recurrenceRule were silently dropped on every create. The
+        // UI thought it was creating a recurring template but the
+        // database got a normal one-off todo.
+        isRecurring: data.isRecurring,
+        recurrenceRule: data.recurrenceRule,
       },
     });
   },
@@ -165,14 +172,18 @@ export const todoService = {
         },
       });
 
-      // Upsert UserStats: increment totalXp
+      // Upsert UserStats: increment totalXp. The explicit update below
+      // handles weeklyScore and level, so we initialize weeklyScore at
+      // 0 in the create branch to avoid double-counting on the first
+      // completion (old code set it to xpAmount, then added xpAmount
+      // again below, ending up at 2*xpAmount for new users).
       const stats = await tx.userStats.upsert({
         where: { userId },
         create: {
           userId,
           totalXp: xpAmount,
           level: levelFromXp(xpAmount) || 1,
-          weeklyScore: xpAmount,
+          weeklyScore: 0,
           weekStartDate: startOfWeek(new Date(), { weekStartsOn: 1 }),
         },
         update: {
