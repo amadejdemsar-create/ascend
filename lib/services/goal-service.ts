@@ -64,13 +64,14 @@ export const goalService = {
   },
 
   /**
-   * Update a goal. Re-validates hierarchy if parentId or horizon is changing.
+   * Update a goal. Always verifies ownership before mutating.
+   * Re-validates hierarchy if parentId or horizon is changing.
    */
   async update(userId: string, id: string, data: UpdateGoalInput) {
-    if (data.parentId !== undefined || data.horizon) {
-      const existing = await prisma.goal.findFirst({ where: { id, userId } });
-      if (!existing) throw new Error("Goal not found");
+    const existing = await prisma.goal.findFirst({ where: { id, userId } });
+    if (!existing) throw new Error("Goal not found");
 
+    if (data.parentId !== undefined || data.horizon) {
       const newParentId = data.parentId === undefined ? existing.parentId : data.parentId;
       const newHorizon = data.horizon ?? existing.horizon;
 
