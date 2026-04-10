@@ -1,7 +1,11 @@
 import { categoryService } from "@/lib/services/category-service";
 import { createCategorySchema, updateCategorySchema } from "@/lib/validations";
+import { ZodError } from "zod";
 
-type McpContent = { content: Array<{ type: "text"; text: string }> };
+type McpContent = {
+  content: Array<{ type: "text"; text: string }>;
+  isError?: boolean;
+};
 
 interface CategoryTreeNode {
   id: string;
@@ -47,9 +51,10 @@ export async function handleCategoryTool(
 
       case "update_category": {
         const { id, ...rest } = args as { id: string } & Record<string, unknown>;
-        if (!id || typeof id !== "string") {
+        if (typeof id !== "string" || id.length === 0) {
           return {
             content: [{ type: "text", text: JSON.stringify({ error: "id is required and must be a non-empty string" }) }],
+            isError: true,
           };
         }
         const data = updateCategorySchema.parse(rest);
@@ -61,9 +66,10 @@ export async function handleCategoryTool(
 
       case "delete_category": {
         const { id } = args as { id: string };
-        if (!id || typeof id !== "string") {
+        if (typeof id !== "string" || id.length === 0) {
           return {
             content: [{ type: "text", text: JSON.stringify({ error: "id is required and must be a non-empty string" }) }],
+            isError: true,
           };
         }
         await categoryService.delete(userId, id);
@@ -85,12 +91,27 @@ export async function handleCategoryTool(
       }
 
       default:
-        throw new Error(`Unknown category tool: ${name}`);
+        return {
+          content: [{ type: "text", text: `Unknown category tool: ${name}` }],
+          isError: true,
+        };
     }
   } catch (error) {
+    if (error instanceof ZodError) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({ error: "Validation error", details: error.issues }),
+          },
+        ],
+        isError: true,
+      };
+    }
     const message = error instanceof Error ? error.message : String(error);
     return {
       content: [{ type: "text", text: JSON.stringify({ error: message }) }],
+      isError: true,
     };
   }
 }

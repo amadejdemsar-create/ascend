@@ -1,15 +1,29 @@
 import { dashboardService } from "@/lib/services/dashboard-service";
 import { goalService } from "@/lib/services/goal-service";
 
-type McpContent = { content: Array<{ type: "text"; text: string }> };
+type McpContent = {
+  content: Array<{ type: "text"; text: string }>;
+  isError?: boolean;
+};
 
 const PRIORITY_ORDER: Record<string, number> = { HIGH: 2, MEDIUM: 1, LOW: 0 };
+
+// Minimal shape the tree formatter needs. The real goalService.getTree
+// returns richer objects but formatTree only reads these fields.
+interface FormatTreeNode {
+  title: string;
+  horizon: string;
+  priority: string;
+  progress: number;
+  status: string;
+  children?: FormatTreeNode[];
+}
 
 /**
  * Format a goal hierarchy tree as an indented text structure.
  * Each level increases the indentation by two spaces.
  */
-function formatTree(goals: any[], indent: number = 0): string {
+function formatTree(goals: FormatTreeNode[], indent: number = 0): string {
   return goals
     .map((g) => {
       const prefix = "  ".repeat(indent);
@@ -145,7 +159,7 @@ export async function handleDashboardTool(
         const tree = await goalService.getTree(userId);
         const formatted =
           "## Goal Timeline (Yearly > Quarterly > Monthly > Weekly)\n\n" +
-          (tree.length > 0 ? formatTree(tree) : "No goals found.") +
+          (tree.length > 0 ? formatTree(tree as unknown as FormatTreeNode[]) : "No goals found.") +
           "\n\n---\nRaw data:\n" +
           JSON.stringify(tree, null, 2);
 
@@ -153,7 +167,10 @@ export async function handleDashboardTool(
       }
 
       default:
-        throw new Error(`Unknown dashboard tool: ${name}`);
+        return {
+          content: [{ type: "text", text: `Unknown dashboard tool: ${name}` }],
+          isError: true,
+        };
     }
   } catch (error) {
     const message =
@@ -162,6 +179,7 @@ export async function handleDashboardTool(
       content: [
         { type: "text", text: JSON.stringify({ error: message }) },
       ],
+      isError: true,
     };
   }
 }
