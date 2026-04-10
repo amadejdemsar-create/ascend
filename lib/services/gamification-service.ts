@@ -96,35 +96,6 @@ export const gamificationService = {
   },
 
   /**
-   * Get user stats with computed xpToNextLevel data.
-   * Returns safe defaults if no UserStats record exists.
-   */
-  async getStats(userId: string) {
-    const stats = await prisma.userStats.findUnique({ where: { userId } });
-    if (!stats) {
-      return {
-        totalXp: 0,
-        level: 1,
-        currentStreak: 0,
-        longestStreak: 0,
-        weeklyScore: 0,
-        goalsCompleted: 0,
-        xpProgress: xpToNextLevel(0),
-      };
-    }
-
-    return {
-      totalXp: stats.totalXp,
-      level: stats.level,
-      currentStreak: stats.currentStreak,
-      longestStreak: stats.longestStreak,
-      weeklyScore: stats.weeklyScore,
-      goalsCompleted: stats.goalsCompleted,
-      xpProgress: xpToNextLevel(stats.totalXp),
-    };
-  },
-
-  /**
    * Internal helper: checks if the stored weekStartDate is before the current
    * week's Monday. Returns true if a reset is needed.
    */

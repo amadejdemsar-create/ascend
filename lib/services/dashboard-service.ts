@@ -236,20 +236,4 @@ export const dashboardService = {
     };
   },
 
-  /**
-   * Compute the progress percentage of a parent goal based on its children's completion.
-   * Returns { total, completed, percentage }.
-   */
-  async getChildrenProgress(userId: string, goalId: string) {
-    const children = await prisma.goal.findMany({
-      where: { userId, parentId: goalId },
-      select: { id: true, status: true },
-    });
-
-    const total = children.length;
-    const completed = children.filter((c) => c.status === "COMPLETED").length;
-    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-
-    return { total, completed, percentage };
-  },
 };
