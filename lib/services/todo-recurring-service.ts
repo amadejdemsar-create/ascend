@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import type { Prisma } from "../../generated/prisma/client";
 import { rrulestr } from "rrule";
 import { startOfDay, subDays, addDays, format } from "date-fns";
 
@@ -127,11 +128,18 @@ export const todoRecurringService = {
 
   /**
    * Generate recurring to-do instances for all occurrences within a date range.
-   * Used by the calendar to ensure instances exist for every visible day in the month.
+   * Used by the calendar to ensure instances exist for every visible day in
+   * the month.
    *
-   * For each template, finds all rrule occurrences between start and end,
-   * then creates instances for any date that does not already have one
-   * (regardless of status, so completed/skipped instances are not duplicated).
+   * Implementation notes:
+   * - Batches via a single findMany + createMany instead of N per-occurrence
+   *   findFirst/create pairs. This removes the N+1 that previously fired on
+   *   every calendar month navigation.
+   * - Dedup keys compare by start-of-day rather than exact DateTime equality,
+   *   so pre-existing instances with any time-of-day still prevent duplicates.
+   * - Every query is userId-scoped.
+   *
+   * Returns the array of newly created instances.
    */
   async generateInstancesForRange(userId: string, start: Date, end: Date) {
     const templates = await prisma.todo.findMany({
@@ -143,49 +151,94 @@ export const todoRecurringService = {
       },
     });
 
-    const created: Array<Record<string, unknown>> = [];
+    if (templates.length === 0) return [];
+
     const rangeStart = startOfDay(start);
     const rangeEnd = startOfDay(addDays(end, 1)); // inclusive end
 
+    // Compute the list of occurrence days we'd want to materialize,
+    // grouped by template. Each occurrence is normalized to startOfDay.
+    const templateOccurrences = new Map<string, Date[]>();
     for (const template of templates) {
       if (!template.recurrenceRule) continue;
-
       const rule = rrulestr(buildRruleString(template.recurrenceRule, template.createdAt));
-      const occurrences = rule.between(rangeStart, rangeEnd, true);
-
-      for (const occurrence of occurrences) {
-        const occDate = startOfDay(occurrence);
-
-        // Check if any instance (pending, done, or skipped) already exists for this date
-        const existingInstance = await prisma.todo.findFirst({
-          where: {
-            userId,
-            recurringSourceId: template.id,
-            dueDate: occDate,
-          },
-        });
-
-        if (existingInstance) continue;
-
-        const instance = await prisma.todo.create({
-          data: {
-            userId,
-            title: template.title,
-            description: template.description,
-            priority: template.priority,
-            goalId: template.goalId,
-            categoryId: template.categoryId,
-            recurringSourceId: template.id,
-            dueDate: occDate,
-            scheduledDate: occDate,
-          },
-        });
-
-        created.push(instance as unknown as Record<string, unknown>);
+      const occurrences = rule
+        .between(rangeStart, rangeEnd, true)
+        .map((d) => startOfDay(d));
+      if (occurrences.length > 0) {
+        templateOccurrences.set(template.id, occurrences);
       }
     }
 
-    return created;
+    if (templateOccurrences.size === 0) return [];
+
+    // Fetch every existing instance for ALL templates in the range with a
+    // single query, then index by "templateId|dayTimestamp" for O(1) lookup.
+    // Day-based comparison so legacy instances with non-midnight dueDate
+    // are still deduped correctly.
+    const templateIds = Array.from(templateOccurrences.keys());
+    const existingInstances = await prisma.todo.findMany({
+      where: {
+        userId,
+        recurringSourceId: { in: templateIds },
+        dueDate: { gte: rangeStart, lt: rangeEnd },
+      },
+      select: { recurringSourceId: true, dueDate: true },
+    });
+
+    const existingKeys = new Set<string>();
+    for (const inst of existingInstances) {
+      if (inst.recurringSourceId && inst.dueDate) {
+        existingKeys.add(`${inst.recurringSourceId}|${startOfDay(inst.dueDate).getTime()}`);
+      }
+    }
+
+    // Build the full createMany payload in-memory, skipping any key that
+    // already exists. Update existingKeys as we go so duplicate rrule
+    // occurrences within the same template batch are also deduped.
+    const templatesById = new Map(templates.map((t) => [t.id, t]));
+    const instancesToCreate: Prisma.TodoCreateManyInput[] = [];
+
+    for (const [templateId, occurrences] of templateOccurrences) {
+      const template = templatesById.get(templateId);
+      if (!template) continue;
+      for (const occDate of occurrences) {
+        const key = `${templateId}|${occDate.getTime()}`;
+        if (existingKeys.has(key)) continue;
+        existingKeys.add(key);
+        instancesToCreate.push({
+          userId,
+          title: template.title,
+          description: template.description,
+          priority: template.priority,
+          goalId: template.goalId,
+          categoryId: template.categoryId,
+          recurringSourceId: template.id,
+          dueDate: occDate,
+          scheduledDate: occDate,
+        });
+      }
+    }
+
+    if (instancesToCreate.length === 0) return [];
+
+    // Single batch insert. skipDuplicates guards against races with
+    // concurrent calendar navigations.
+    await prisma.todo.createMany({
+      data: instancesToCreate,
+      skipDuplicates: true,
+    });
+
+    // Refetch the actual rows so the caller has a consistent shape.
+    // createMany does not return records on Postgres.
+    return prisma.todo.findMany({
+      where: {
+        userId,
+        recurringSourceId: { in: templateIds },
+        dueDate: { gte: rangeStart, lt: rangeEnd },
+      },
+      orderBy: { dueDate: "asc" },
+    });
   },
 
   /**
