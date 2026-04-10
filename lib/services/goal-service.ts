@@ -106,6 +106,24 @@ export const goalService = {
   },
 
   /**
+   * Recursively delete a goal and all of its descendants (depth-first).
+   * Used by the MCP `delete_goal` tool when `cascade: true` is passed.
+   * Each recursive call re-verifies ownership via findFirst({id, userId}).
+   */
+  async deleteCascade(userId: string, id: string): Promise<void> {
+    const goal = await prisma.goal.findFirst({
+      where: { id, userId },
+      include: { children: { select: { id: true } } },
+    });
+    if (!goal) throw new Error("Goal not found");
+
+    for (const child of goal.children) {
+      await goalService.deleteCascade(userId, child.id);
+    }
+    await prisma.goal.delete({ where: { id } });
+  },
+
+  /**
    * Get the full goal tree for a user.
    * Fetches all top-level goals (no parent) with nested children 3 levels deep.
    */

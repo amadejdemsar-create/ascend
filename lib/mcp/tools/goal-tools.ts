@@ -1,5 +1,4 @@
 import { goalService } from "@/lib/services/goal-service";
-import { prisma } from "@/lib/db";
 import {
   createGoalSchema,
   updateGoalSchema,
@@ -72,7 +71,7 @@ export async function handleGoalTool(
         }
         const cascade = args.cascade === true;
         if (cascade) {
-          await deleteCascade(userId, id);
+          await goalService.deleteCascade(userId, id);
           return {
             content: [
               {
@@ -151,19 +150,3 @@ export async function handleGoalTool(
   }
 }
 
-/**
- * Recursively delete a goal and all its descendants.
- */
-async function deleteCascade(userId: string, goalId: string): Promise<void> {
-  const goal = await prisma.goal.findFirst({
-    where: { id: goalId, userId },
-    include: { children: { select: { id: true } } },
-  });
-  if (!goal) throw new Error("Goal not found");
-
-  // Delete children first (depth-first)
-  for (const child of goal.children) {
-    await deleteCascade(userId, child.id);
-  }
-  await prisma.goal.delete({ where: { id: goalId } });
-}

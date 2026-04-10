@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { userService } from "@/lib/services/user-service";
 import { ZodError } from "zod";
 
 type AuthResult =
@@ -13,9 +13,7 @@ export async function validateApiKey(request: NextRequest): Promise<AuthResult> 
   }
 
   const apiKey = authHeader.slice(7); // Remove "Bearer " prefix
-  const user = await prisma.user.findUnique({
-    where: { apiKey },
-  });
+  const user = await userService.findByApiKey(apiKey);
 
   if (!user) {
     return { success: false };

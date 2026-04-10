@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { userService } from "@/lib/services/user-service";
 
 export async function GET() {
   try {
-    const userCount = await prisma.user.count();
-    const statsCount = await prisma.userStats.count();
+    const [userCount, statsCount] = await Promise.all([
+      userService.countUsers(),
+      userService.countUserStats(),
+    ]);
 
     return NextResponse.json({
       status: "ok",
@@ -14,7 +16,7 @@ export async function GET() {
         stats: statsCount,
       },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({
       status: "ok",
       timestamp: new Date().toISOString(),

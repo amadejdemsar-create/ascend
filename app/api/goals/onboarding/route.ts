@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateApiKey, unauthorizedResponse, handleApiError } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { userService } from "@/lib/services/user-service";
 
 export async function PATCH(request: NextRequest) {
   const auth = await validateApiKey(request);
   if (!auth.success) return unauthorizedResponse();
 
   try {
-    await prisma.user.update({
-      where: { id: auth.userId },
-      data: { onboardingComplete: true },
-    });
-
+    await userService.markOnboardingComplete(auth.userId);
     return NextResponse.json({ success: true });
   } catch (error) {
     return handleApiError(error);
