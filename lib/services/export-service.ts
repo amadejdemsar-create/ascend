@@ -34,7 +34,7 @@ export async function exportJSON(userId: string): Promise<string> {
  */
 export async function exportCSV(userId: string): Promise<string> {
   const goals = await goalService.list(userId);
-  return formatCSV(goals as unknown as Array<Record<string, unknown>>);
+  return formatCSV(goals);
 }
 
 /**
@@ -42,7 +42,7 @@ export async function exportCSV(userId: string): Promise<string> {
  */
 export async function exportMarkdown(userId: string): Promise<string> {
   const goals = await goalService.list(userId);
-  return formatMarkdown(goals as unknown as Array<Record<string, unknown>>);
+  return formatMarkdown(goals);
 }
 
 /**
@@ -73,10 +73,8 @@ export async function exportPDF(userId: string): Promise<Buffer> {
       .text(`Exported: ${new Date().toLocaleDateString()}`);
     doc.moveDown(2);
 
-    const goalsData = goals as unknown as Array<Record<string, unknown>>;
-
     for (const horizon of HORIZON_ORDER) {
-      const filtered = goalsData.filter((g) => g.horizon === horizon);
+      const filtered = goals.filter((g) => g.horizon === horizon);
       if (filtered.length === 0) continue;
 
       const label = horizon.charAt(0) + horizon.slice(1).toLowerCase();
@@ -129,10 +127,8 @@ export async function exportPDF(userId: string): Promise<Buffer> {
     }
 
     // Summary section
-    const total = goalsData.length;
-    const completed = goalsData.filter(
-      (g) => g.status === "COMPLETED",
-    ).length;
+    const total = goals.length;
+    const completed = goals.filter((g) => g.status === "COMPLETED").length;
     const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
     doc.moveDown(1);
@@ -159,7 +155,6 @@ export async function exportDOCX(userId: string): Promise<Buffer> {
   ]);
 
   const categoryMap = new Map(categories.map((c) => [c.id, c.name]));
-  const goalsData = goals as unknown as Array<Record<string, unknown>>;
 
   const children: Paragraph[] = [];
 
@@ -187,7 +182,7 @@ export async function exportDOCX(userId: string): Promise<Buffer> {
   children.push(new Paragraph({ text: "" }));
 
   for (const horizon of HORIZON_ORDER) {
-    const filtered = goalsData.filter((g) => g.horizon === horizon);
+    const filtered = goals.filter((g) => g.horizon === horizon);
     if (filtered.length === 0) continue;
 
     const label = horizon.charAt(0) + horizon.slice(1).toLowerCase();
@@ -225,8 +220,8 @@ export async function exportDOCX(userId: string): Promise<Buffer> {
   }
 
   // Summary
-  const total = goalsData.length;
-  const completed = goalsData.filter((g) => g.status === "COMPLETED").length;
+  const total = goals.length;
+  const completed = goals.filter((g) => g.status === "COMPLETED").length;
   const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   children.push(

@@ -6,11 +6,32 @@
 import { HORIZON_ORDER } from "@/lib/services/import-helpers";
 
 /**
+ * Minimal goal shape consumed by the export helpers. A structural
+ * subset of the Prisma Goal model so callers can pass goalService.list
+ * results directly without casting through Record<string, unknown>.
+ */
+export interface GoalForExport {
+  id: string;
+  title: string;
+  horizon: string;
+  status: string;
+  priority: string;
+  progress: number;
+  targetValue?: number | null;
+  currentValue?: number | null;
+  unit?: string | null;
+  deadline?: Date | string | null;
+  categoryId?: string | null;
+  parentId?: string | null;
+  createdAt: Date | string;
+}
+
+/**
  * Escape a value for CSV output. Wraps in double quotes if the value
  * contains commas, double quotes, or newlines. Internal double quotes
  * are escaped by doubling them.
  */
-export function csvEscape(value: unknown): string {
+function csvEscape(value: unknown): string {
   if (value == null) return "";
   const str = String(value);
   if (str.includes(",") || str.includes('"') || str.includes("\n")) {
@@ -22,8 +43,8 @@ export function csvEscape(value: unknown): string {
 /**
  * Format goals as CSV with headers.
  */
-export function formatCSV(goals: Array<Record<string, unknown>>): string {
-  const headers = [
+export function formatCSV(goals: GoalForExport[]): string {
+  const headers: Array<keyof GoalForExport> = [
     "id",
     "title",
     "horizon",
@@ -45,7 +66,7 @@ export function formatCSV(goals: Array<Record<string, unknown>>): string {
 /**
  * Format goals as a Markdown document grouped by horizon.
  */
-export function formatMarkdown(goals: Array<Record<string, unknown>>): string {
+export function formatMarkdown(goals: GoalForExport[]): string {
   const date = new Date().toISOString();
   let md = `# Ascend Goal Export\n\n*Exported: ${date}*\n\n`;
 

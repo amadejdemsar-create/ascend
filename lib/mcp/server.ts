@@ -144,28 +144,12 @@ export function createAscendMcpServer(userId: string): Server {
     }
 
     if (uri === "ascend://context/current-priorities") {
-      // getCurrentPriorities is added by Plan 16-02; gracefully handle if not yet available
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const svc = contextService as any;
-      try {
-        if (typeof svc.getCurrentPriorities === "function") {
-          const priorities = await svc.getCurrentPriorities(userId);
-          return {
-            contents: [{
-              uri,
-              mimeType: "text/markdown",
-              text: priorities.content,
-            }],
-          };
-        }
-      } catch {
-        // Method not yet implemented or errored
-      }
+      const priorities = await contextService.getCurrentPriorities(userId);
       return {
         contents: [{
           uri,
           mimeType: "text/markdown",
-          text: "Current Priorities feature not yet available. Complete Plan 16-02 to enable.",
+          text: priorities.content,
         }],
       };
     }

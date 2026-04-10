@@ -29,9 +29,9 @@ export async function handleDataTool(
 
         let output: string;
         if (format === "CSV") {
-          output = formatCSV(goals as unknown as Array<Record<string, unknown>>);
+          output = formatCSV(goals);
         } else if (format === "MARKDOWN") {
-          output = formatMarkdown(goals as unknown as Array<Record<string, unknown>>);
+          output = formatMarkdown(goals);
         } else {
           output = JSON.stringify(
             { exportedAt: new Date().toISOString(), goals, categories },
