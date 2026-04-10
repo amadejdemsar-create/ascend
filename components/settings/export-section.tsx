@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Download } from "lucide-react";
+import { apiHeaders } from "@/lib/api-client";
 import {
   Card,
   CardHeader,
@@ -10,8 +11,6 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY!;
 
 const FORMATS = [
   { value: "json", label: "JSON (Full Backup)" },
@@ -39,10 +38,10 @@ export function ExportSection() {
     setError(null);
 
     try {
+      // Bare fetch (not apiFetch) because the response is a binary blob
+      // for download, not JSON. Reuse the shared headers for auth.
       const res = await fetch(`/api/export?format=${selectedFormat}`, {
-        headers: {
-          Authorization: `Bearer ${API_KEY}`,
-        },
+        headers: apiHeaders,
       });
 
       if (!res.ok) {

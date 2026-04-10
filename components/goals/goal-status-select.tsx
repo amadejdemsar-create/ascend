@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useUpdateGoal } from "@/lib/hooks/use-goals";
 import { useCelebrations } from "@/lib/hooks/use-celebrations";
+import { apiFetch } from "@/lib/api-client";
 import {
   Select,
   SelectContent,
@@ -86,17 +87,10 @@ export function GoalStatusSelect({
 
   async function checkParentRollup(pid: string) {
     try {
-      const API_KEY = process.env.NEXT_PUBLIC_API_KEY!;
-      const res = await fetch(`/api/goals/${pid}`, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${API_KEY}`,
-        },
-      });
-      if (!res.ok) return;
-
-      const parent = await res.json();
-      const children = parent.children as Array<{ status: string }>;
+      const parent = await apiFetch<{ children?: Array<{ status: string }> }>(
+        `/api/goals/${pid}`,
+      );
+      const children = parent.children;
       if (!children || children.length === 0) return;
 
       const allComplete = children.every((c) => c.status === "COMPLETED");

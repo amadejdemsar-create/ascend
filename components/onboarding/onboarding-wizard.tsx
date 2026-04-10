@@ -3,28 +3,13 @@
 import { useState } from "react";
 import confetti from "canvas-confetti";
 import { ArrowLeft, ArrowRight, Check, Sparkles } from "lucide-react";
+import { apiFetch as fetchJson } from "@/lib/api-client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { CategoryColorPicker } from "@/components/categories/category-color-picker";
-
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY!;
-
-const headers: HeadersInit = {
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${API_KEY}`,
-};
-
-async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, { headers, ...init });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error ?? `Request failed (${res.status})`);
-  }
-  return res.json();
-}
 
 interface OnboardingWizardProps {
   onComplete: () => void;

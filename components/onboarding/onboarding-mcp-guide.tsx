@@ -2,16 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Bot, Check, Loader2, Copy } from "lucide-react";
+import { apiHeaders as headers } from "@/lib/api-client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { DashboardData } from "@/lib/services/dashboard-service";
-
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY!;
-
-const headers: HeadersInit = {
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${API_KEY}`,
-};
 
 interface OnboardingMcpGuideProps {
   onComplete: () => void;

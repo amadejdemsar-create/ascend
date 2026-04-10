@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useDashboard } from "@/lib/hooks/use-dashboard";
 import { useUIStore } from "@/lib/stores/ui-store";
 import { queryKeys } from "@/lib/queries/keys";
+import { apiFetch } from "@/lib/api-client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,8 +19,6 @@ import { UpcomingDeadlinesWidget } from "./upcoming-deadlines-widget";
 import { OnboardingGate } from "@/components/onboarding/onboarding-gate";
 import { ContextualHints } from "@/components/onboarding/contextual-hints";
 
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY!;
-
 export function DashboardPage() {
   const { data, isLoading, isError, error, refetch } = useDashboard();
   const openGoalModal = useUIStore((s) => s.openGoalModal);
@@ -27,13 +26,7 @@ export function DashboardPage() {
 
   const handleOnboardingComplete = useCallback(async () => {
     try {
-      await fetch("/api/goals/onboarding", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${API_KEY}`,
-        },
-      });
+      await apiFetch("/api/goals/onboarding", { method: "PATCH" });
     } catch {
       // Silently continue; the onboarding will be marked next time
     }

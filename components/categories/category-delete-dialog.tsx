@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { useCategories, useDeleteCategory } from "@/lib/hooks/use-categories";
 import { useUpdateGoal } from "@/lib/hooks/use-goals";
+import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
 
 interface CategoryForDelete {
@@ -115,24 +116,19 @@ export function CategoryDeleteDialog({
     try {
       if (hasGoals && reassignMode === "reassign" && targetCategoryId) {
         // Fetch goals in this category and reassign them
-        const API_KEY = process.env.NEXT_PUBLIC_API_KEY!;
-        const res = await fetch(
-          `/api/goals?categoryId=${category.id}`,
-          {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${API_KEY}`,
-            },
-          }
-        );
-        if (res.ok) {
-          const goals = (await res.json()) as Array<{ id: string }>;
+        try {
+          const goals = await apiFetch<Array<{ id: string }>>(
+            `/api/goals?categoryId=${category.id}`,
+          );
           for (const goal of goals) {
             await updateGoal.mutateAsync({
               id: goal.id,
               data: { categoryId: targetCategoryId },
             });
           }
+        } catch {
+          // If the fetch fails, fall through to delete; the user will see
+          // any reassignment errors via the deleteCategory mutation.
         }
       }
 

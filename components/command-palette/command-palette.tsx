@@ -14,8 +14,7 @@ import {
 } from "@/components/ui/command";
 import { useCommandActions } from "./command-actions";
 import { useUIStore } from "@/lib/stores/ui-store";
-
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY!;
+import { apiFetch } from "@/lib/api-client";
 
 interface SearchGoal {
   id: string;
@@ -76,36 +75,16 @@ export function CommandPalette() {
     }
 
     debounceRef.current = setTimeout(async () => {
-      try {
-        const encodedQuery = encodeURIComponent(query);
-        const headers = { Authorization: `Bearer ${API_KEY}` };
+      const encodedQuery = encodeURIComponent(query);
+      const [goalsRes, todosRes, contextRes] = await Promise.allSettled([
+        apiFetch<SearchGoal[]>(`/api/goals/search?q=${encodedQuery}`),
+        apiFetch<SearchTodo[]>(`/api/todos/search?q=${encodedQuery}`),
+        apiFetch<SearchContext[]>(`/api/context/search?q=${encodedQuery}`),
+      ]);
 
-        const [goalsRes, todosRes, contextRes] = await Promise.allSettled([
-          fetch(`/api/goals/search?q=${encodedQuery}`, { headers }),
-          fetch(`/api/todos/search?q=${encodedQuery}`, { headers }),
-          fetch(`/api/context/search?q=${encodedQuery}`, { headers }),
-        ]);
-
-        if (goalsRes.status === "fulfilled" && goalsRes.value.ok) {
-          setSearchResults(await goalsRes.value.json());
-        } else {
-          setSearchResults([]);
-        }
-
-        if (todosRes.status === "fulfilled" && todosRes.value.ok) {
-          setTodoResults(await todosRes.value.json());
-        } else {
-          setTodoResults([]);
-        }
-
-        if (contextRes.status === "fulfilled" && contextRes.value.ok) {
-          setContextResults(await contextRes.value.json());
-        } else {
-          setContextResults([]);
-        }
-      } catch {
-        // Silently ignore search errors
-      }
+      setSearchResults(goalsRes.status === "fulfilled" ? goalsRes.value : []);
+      setTodoResults(todosRes.status === "fulfilled" ? todosRes.value : []);
+      setContextResults(contextRes.status === "fulfilled" ? contextRes.value : []);
     }, 200);
 
     return () => {

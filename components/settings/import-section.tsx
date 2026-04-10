@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Upload, CheckCircle, AlertTriangle, ChevronDown } from "lucide-react";
 import { queryKeys } from "@/lib/queries/keys";
+import { apiFetch } from "@/lib/api-client";
 import {
   Card,
   CardHeader,
@@ -17,8 +18,6 @@ import {
   CollapsibleTrigger,
   CollapsibleContent,
 } from "@/components/ui/collapsible";
-
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY!;
 
 interface ImportResult {
   categoriesCreated: number;
@@ -45,21 +44,10 @@ export function ImportSection() {
       const text = await file.text();
       const json = JSON.parse(text);
 
-      const res = await fetch("/api/import", {
+      const data = await apiFetch<ImportResult>("/api/import", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${API_KEY}`,
-        },
         body: JSON.stringify(json),
       });
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({ error: res.statusText }));
-        throw new Error(body.error ?? `Import failed (${res.status})`);
-      }
-
-      const data: ImportResult = await res.json();
       setResult(data);
 
       // Invalidate caches so new data appears immediately

@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/queries/keys";
 import { toast } from "sonner";
+import { useLogProgress } from "@/lib/hooks/use-dashboard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,37 +12,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { PlusIcon, ChevronDownIcon, Loader2Icon } from "lucide-react";
-import type { AddProgressInput } from "@/lib/validations";
-
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY!;
-
-const headers: HeadersInit = {
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${API_KEY}`,
-};
-
-async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, { headers, ...init });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error ?? `Request failed (${res.status})`);
-  }
-  return res.json();
-}
-
-function useLogProgress() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ goalId, data }: { goalId: string; data: AddProgressInput }) =>
-      fetchJson(`/api/goals/${goalId}/progress`, {
-        method: "POST",
-        body: JSON.stringify(data),
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.goals.all() });
-    },
-  });
-}
 
 interface ProgressIncrementProps {
   goalId: string;

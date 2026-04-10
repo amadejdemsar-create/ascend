@@ -1,8 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/queries/keys";
 import { formatDistanceToNow } from "date-fns";
+import { useProgressHistory } from "@/lib/hooks/use-dashboard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -14,35 +13,11 @@ import {
 } from "@/components/ui/sheet";
 import { HistoryIcon } from "lucide-react";
 
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY!;
-
-const headers: HeadersInit = {
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${API_KEY}`,
-};
-
-async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, { headers, ...init });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error ?? `Request failed (${res.status})`);
-  }
-  return res.json();
-}
-
 interface ProgressEntry {
   id: string;
   value: number;
   note: string | null;
   createdAt: string;
-}
-
-function useProgressHistory(goalId: string) {
-  return useQuery({
-    queryKey: [...queryKeys.goals.detail(goalId), "progress"],
-    queryFn: () => fetchJson<ProgressEntry[]>(`/api/goals/${goalId}/progress`),
-    enabled: !!goalId,
-  });
 }
 
 interface ProgressHistorySheetProps {
@@ -54,7 +29,8 @@ export function ProgressHistorySheet({
   goalId,
   goalTitle,
 }: ProgressHistorySheetProps) {
-  const { data: entries, isLoading } = useProgressHistory(goalId);
+  const { data: rawEntries, isLoading } = useProgressHistory(goalId);
+  const entries = rawEntries as ProgressEntry[] | undefined;
 
   return (
     <Sheet>

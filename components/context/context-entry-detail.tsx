@@ -12,6 +12,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useContextEntry, useDeleteContext } from "@/lib/hooks/use-context";
+import { apiFetch } from "@/lib/api-client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -51,14 +52,8 @@ function useCurrentPriorities(enabled: boolean) {
     if (!enabled) return;
 
     setIsLoading(true);
-    const apiKey = process.env.NEXT_PUBLIC_API_KEY!;
-    fetch("/api/context/current-priorities", {
-      headers: { Authorization: `Bearer ${apiKey}` },
-    })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json) => {
-        if (json) setData(json);
-      })
+    apiFetch<CurrentPrioritiesData>("/api/context/current-priorities")
+      .then((json) => setData(json))
       .catch(() => {})
       .finally(() => setIsLoading(false));
   }, [enabled]);
