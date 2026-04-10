@@ -31,17 +31,24 @@ export function useDashboard() {
     queryFn: () => fetchJson<DashboardData>("/api/dashboard"),
   });
 
-  // Trigger recurring instance generation once per session on first successful load
+  // Trigger both goal and todo recurring instance generation once per
+  // session on the first successful dashboard load. Calendar-only
+  // triggering meant recurring todos never materialized for users who
+  // skipped the calendar view (including every MCP client).
   useEffect(() => {
     if (query.data && !recurringGenerated) {
       recurringGenerated = true;
-      // Fire and forget: generate recurring instances in the background
+      // Fire and forget: generate recurring instances in the background.
+      // Errors are swallowed so a missing endpoint does not disrupt
+      // the dashboard render.
       fetch("/api/goals/recurring/generate", {
         method: "POST",
         headers,
-      }).catch(() => {
-        // Silently ignore errors (endpoint may not exist yet)
-      });
+      }).catch(() => {});
+      fetch("/api/todos/recurring/generate", {
+        method: "POST",
+        headers,
+      }).catch(() => {});
     }
   }, [query.data]);
 
