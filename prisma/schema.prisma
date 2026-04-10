@@ -270,6 +270,25 @@ model Todo {
   @@index([isBig3, big3Date, userId])
 }
 
+// =====================================================================
+//  WARNING: ContextEntry has a `search_vector` tsvector column PLUS a
+//  GIN index and a BEFORE INSERT/UPDATE trigger added by a raw SQL
+//  migration (prisma/migrations/20260409114539_add_context_fts).
+//
+//  Prisma does NOT know about the column, the index, or the trigger.
+//
+//  DO NOT run `npx prisma db push` or `npx prisma migrate reset` — both
+//  will silently drop everything and break full-text search. When you
+//  modify this model, ALWAYS inspect the generated migration SQL and
+//  confirm it does NOT contain `DROP COLUMN "search_vector"`,
+//  `DROP INDEX "ContextEntry_search_vector_idx"`, or any drop of the
+//  `context_entry_search_vector_update` trigger/function before
+//  running `prisma migrate dev`. See CLAUDE.md safety rule 6.
+//
+//  The column is queried via $queryRaw in lib/services/context-service.ts
+//  (the `search` method). The trigger maintains it automatically on
+//  every INSERT/UPDATE of title/content/tags.
+// =====================================================================
 model ContextEntry {
   id             String   @id @default(cuid())
   userId         String
