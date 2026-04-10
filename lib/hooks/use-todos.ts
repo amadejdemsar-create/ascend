@@ -2,23 +2,8 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queries/keys";
+import { apiFetch as fetchJson } from "@/lib/api-client";
 import type { TodoFilters, CreateTodoInput, UpdateTodoInput } from "@/lib/validations";
-
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY!;
-
-const headers: HeadersInit = {
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${API_KEY}`,
-};
-
-async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, { headers, ...init });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error ?? `Request failed (${res.status})`);
-  }
-  return res.json();
-}
 
 // --- Query Hooks ---
 
