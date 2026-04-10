@@ -1,29 +1,11 @@
-import {
-  LayoutGrid,
-  List,
-  Columns3,
-  GitBranch,
-  GanttChart,
-} from "lucide-react";
+import { List, GitBranch, GanttChart } from "lucide-react";
 
 const views = [
-  {
-    name: "Cards",
-    description:
-      "Visual cards grouped by time horizon. Drag, expand, and scan at a glance.",
-    icon: LayoutGrid,
-  },
   {
     name: "List",
     description:
       "A clean, sortable table with inline editing for fast bulk updates.",
     icon: List,
-  },
-  {
-    name: "Board",
-    description:
-      "Kanban columns by status. Move goals through stages with drag and drop.",
-    icon: Columns3,
   },
   {
     name: "Tree",
@@ -46,7 +28,7 @@ export function ViewsSection() {
         {/* Section header */}
         <div className="mb-16 text-center">
           <h2 className="font-serif text-4xl font-bold text-white sm:text-5xl">
-            Five Ways to{" "}
+            Three Ways to{" "}
             <span className="landing-gradient-text">See Your Goals</span>
           </h2>
           <p className="mt-4 text-lg text-zinc-400">
@@ -55,7 +37,7 @@ export function ViewsSection() {
         </div>
 
         {/* View cards */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {views.map((view) => (
             <div
               key={view.name}

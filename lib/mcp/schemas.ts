@@ -422,7 +422,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         },
         defaultView: {
           type: "string",
-          enum: ["list", "board", "tree", "timeline"],
+          enum: ["list", "tree", "timeline"],
           description: "Default goals view",
         },
       },

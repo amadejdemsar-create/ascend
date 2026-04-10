@@ -21,11 +21,9 @@ const shortcutGroups: ShortcutGroup[] = [
   {
     title: "Navigation",
     shortcuts: [
-      { key: "1", description: "Cards view" },
-      { key: "2", description: "List view" },
-      { key: "3", description: "Board view" },
-      { key: "4", description: "Tree view" },
-      { key: "5", description: "Timeline view" },
+      { key: "1", description: "List view" },
+      { key: "2", description: "Tree view" },
+      { key: "3", description: "Timeline view" },
       { key: "d", description: "Dashboard" },
       { key: "s", description: "Settings" },
     ],

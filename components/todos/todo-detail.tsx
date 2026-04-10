@@ -46,6 +46,7 @@ import {
   RotateCcw,
   PencilIcon,
 } from "lucide-react";
+import { isOverdue } from "@/lib/todo-utils";
 
 const STATUS_CONFIG: Record<
   string,
@@ -63,14 +64,6 @@ interface TodoDetailProps {
   todoId: string;
   onClose: () => void;
   isMobileOverlay?: boolean;
-}
-
-function isOverdue(dueDate: string | null, status: string): boolean {
-  if (!dueDate || status !== "PENDING") return false;
-  const due = new Date(dueDate);
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  return due < now;
 }
 
 export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps) {

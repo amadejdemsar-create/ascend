@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { GoalPriorityBadge } from "@/components/goals/goal-priority-badge";
 import { SortableHeader } from "@/components/goals/sortable-header";
 import { TodoOverdueActions } from "@/components/todos/todo-overdue-actions";
+import { isOverdue } from "@/lib/todo-utils";
 import { Star, Repeat } from "lucide-react";
 
 export interface TodoListItem {
@@ -44,14 +45,6 @@ const STATUS_CONFIG: Record<
   DONE: { label: "Done", variant: "default" },
   SKIPPED: { label: "Skipped", variant: "secondary" },
 };
-
-function isOverdue(dueDate: string | null, status: string): boolean {
-  if (!dueDate || status !== "PENDING") return false;
-  const due = new Date(dueDate);
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  return due < now;
-}
 
 export const columns: ColumnDef<TodoListItem>[] = [
   {

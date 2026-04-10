@@ -48,31 +48,9 @@ export function DndGoalProvider({ children, findGoal, onDragEndExtra }: DndGoalP
       const sourceData = source.data as Record<string, unknown> | undefined;
       const targetData = target.data as Record<string, unknown> | undefined;
 
-      if (
-        sourceData?.horizon &&
-        targetData?.columnKey &&
-        sourceData.horizon !== targetData.columnKey
-      ) {
-        // Horizon change via board view
-        const newHorizon = String(targetData.columnKey) as
-          | "YEARLY"
-          | "QUARTERLY"
-          | "MONTHLY"
-          | "WEEKLY";
-        updateMutation.mutate(
-          {
-            id: String(source.id),
-            data: { horizon: newHorizon, parentId: null },
-          },
-          {
-            onError: () =>
-              toast.error(
-                "Failed to change horizon. Hierarchy rules may prevent this move.",
-              ),
-          },
-        );
-        return;
-      }
+      // The horizon-change-via-board-view branch was removed when the
+      // Board view itself was deleted. columnKey was only ever set by
+      // goal-board-column.tsx, so the branch is unreachable now.
 
       if (
         sourceData?.categoryId !== undefined &&

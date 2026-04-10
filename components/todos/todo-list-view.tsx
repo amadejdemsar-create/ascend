@@ -17,6 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { columns, type TodoListItem, type TodoTableMeta } from "@/components/todos/todo-list-columns";
+import { isOverdue } from "@/lib/todo-utils";
 import { cn } from "@/lib/utils";
 
 interface TodoListViewProps {
@@ -27,14 +28,6 @@ interface TodoListViewProps {
   onToggleSelect: (id: string) => void;
   onToggleAll: () => void;
   allSelected: boolean;
-}
-
-function isOverdue(dueDate: string | null, status: string): boolean {
-  if (!dueDate || status !== "PENDING") return false;
-  const due = new Date(dueDate);
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  return due < now;
 }
 
 export function TodoListView({
