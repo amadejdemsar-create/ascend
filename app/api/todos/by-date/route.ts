@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateApiKey, unauthorizedResponse, handleApiError } from "@/lib/auth";
 import { todoService } from "@/lib/services/todo-service";
+import { dateQuerySchema } from "@/lib/validations";
 
 export async function GET(request: NextRequest) {
   const auth = await validateApiKey(request);
@@ -8,16 +9,8 @@ export async function GET(request: NextRequest) {
 
   try {
     const { searchParams } = new URL(request.url);
-    const dateParam = searchParams.get("date");
-
-    if (!dateParam) {
-      return NextResponse.json(
-        { error: "Missing required query parameter: date" },
-        { status: 400 },
-      );
-    }
-
-    const todos = await todoService.getByDate(auth.userId, new Date(dateParam));
+    const { date } = dateQuerySchema.parse({ date: searchParams.get("date") });
+    const todos = await todoService.getByDate(auth.userId, date);
     return NextResponse.json(todos);
   } catch (error) {
     return handleApiError(error);

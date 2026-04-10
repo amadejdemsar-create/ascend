@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateApiKey, unauthorizedResponse, handleApiError } from "@/lib/auth";
 import { todoRecurringService } from "@/lib/services/todo-recurring-service";
+import { dateRangeQuerySchema } from "@/lib/validations";
 
 /**
  * Generate recurring to-do instances.
@@ -15,15 +16,20 @@ export async function POST(request: NextRequest) {
 
   try {
     const { searchParams } = new URL(request.url);
-    const start = searchParams.get("start");
-    const end = searchParams.get("end");
+    const startParam = searchParams.get("start");
+    const endParam = searchParams.get("end");
 
     let instances;
-    if (start && end) {
+    if (startParam || endParam) {
+      // If either is provided, both must be valid dates.
+      const { start, end } = dateRangeQuerySchema.parse({
+        start: startParam,
+        end: endParam,
+      });
       instances = await todoRecurringService.generateInstancesForRange(
         auth.userId,
-        new Date(start),
-        new Date(end),
+        start,
+        end,
       );
     } else {
       instances = await todoRecurringService.generateDueInstances(auth.userId);

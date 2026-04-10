@@ -129,6 +129,18 @@ export const reorderTodosSchema = z.object({
     .max(200),
 });
 
+// Shared GET query param schemas. z.coerce.date() runs `new Date(input)`
+// and rejects with a clean validation error if the result is Invalid Date,
+// covering both yyyy-MM-dd and full ISO 8601 inputs.
+export const dateQuerySchema = z.object({
+  date: z.coerce.date(),
+});
+
+export const dateRangeQuerySchema = z.object({
+  start: z.coerce.date(),
+  end: z.coerce.date(),
+});
+
 // Context schemas
 export const createContextSchema = z.object({
   title: z.string().min(1).max(200),
