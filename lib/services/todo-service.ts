@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import type { Prisma } from "../../generated/prisma/client";
 import type { CreateTodoInput, UpdateTodoInput, TodoFilters } from "@/lib/validations";
 import { goalService } from "@/lib/services/goal-service";
 import { todoRecurringService } from "@/lib/services/todo-recurring-service";
@@ -16,7 +17,7 @@ export const todoService = {
     filters?: TodoFilters,
     pagination?: { skip?: number; take?: number },
   ) {
-    const where: Record<string, unknown> = { userId };
+    const where: Prisma.TodoWhereInput = { userId };
 
     if (filters?.status) where.status = filters.status;
     if (filters?.priority) where.priority = filters.priority;
@@ -24,7 +25,7 @@ export const todoService = {
     if (filters?.goalId) where.goalId = filters.goalId;
 
     if (filters?.dateFrom || filters?.dateTo) {
-      const dueDate: Record<string, Date> = {};
+      const dueDate: Prisma.DateTimeFilter = {};
       if (filters.dateFrom) dueDate.gte = new Date(filters.dateFrom);
       if (filters.dateTo) dueDate.lte = new Date(filters.dateTo);
       where.dueDate = dueDate;

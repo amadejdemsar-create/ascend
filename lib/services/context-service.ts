@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import type { Prisma } from "../../generated/prisma/client";
 import type { CreateContextInput, UpdateContextInput, ContextFilters } from "@/lib/validations";
 
 export const contextService = {
@@ -7,7 +8,7 @@ export const contextService = {
    * Ordered by updatedAt descending (most recently edited first).
    */
   async list(userId: string, filters?: ContextFilters) {
-    const where: Record<string, unknown> = { userId };
+    const where: Prisma.ContextEntryWhereInput = { userId };
 
     if (filters?.categoryId) where.categoryId = filters.categoryId;
     if (filters?.tag) where.tags = { has: filters.tag };
