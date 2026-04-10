@@ -191,7 +191,7 @@ export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps
     try {
       await updateTodo.mutateAsync({
         id: todoId,
-        data: { categoryId: val === "__none__" ? undefined : val },
+        data: { categoryId: val === "__none__" ? null : val },
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to update category";
@@ -203,7 +203,7 @@ export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps
     try {
       await updateTodo.mutateAsync({
         id: todoId,
-        data: { goalId: val === "__none__" ? undefined : val },
+        data: { goalId: val === "__none__" ? null : val },
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to update linked goal";

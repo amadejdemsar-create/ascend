@@ -93,6 +93,9 @@ export const updateTodoSchema = createTodoSchema.partial().extend({
   sortOrder: z.number().optional(),
   isBig3: z.boolean().optional(),
   big3Date: z.string().datetime().optional(),
+  // Allow clearing these relations by sending null explicitly.
+  categoryId: z.string().nullable().optional(),
+  goalId: z.string().nullable().optional(),
 });
 
 export const todoFiltersSchema = z.object({
