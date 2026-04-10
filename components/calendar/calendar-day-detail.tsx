@@ -1,7 +1,13 @@
 "use client";
 
 import { format, isSameDay } from "date-fns";
-import { useTodosByDate, useTop3Todos, useCompleteTodo, useUpdateTodo } from "@/lib/hooks/use-todos";
+import { toast } from "sonner";
+import {
+  useTodosByDate,
+  useTop3Todos,
+  useCompleteTodo,
+  useUncompleteTodo,
+} from "@/lib/hooks/use-todos";
 import { useGoalDeadlinesByRange } from "@/lib/hooks/use-goals";
 import type { GoalDeadlineItem } from "@/lib/hooks/use-goals";
 import type { TodoListItem } from "@/components/todos/todo-list-columns";
@@ -37,7 +43,7 @@ export function CalendarDayDetail({
   const { data: rawDeadlines, isLoading: deadlinesLoading } =
     useGoalDeadlinesByRange(dateStr, dateStr);
   const completeTodo = useCompleteTodo();
-  const updateTodo = useUpdateTodo();
+  const uncompleteTodo = useUncompleteTodo();
 
   const dayTodos = (rawDayTodos ?? []) as TodoListItem[];
   const big3 = (rawBig3 ?? []) as TodoListItem[];
@@ -72,10 +78,22 @@ export function CalendarDayDetail({
     deadlines.length === 0;
 
   async function handleToggle(todoId: string, currentStatus: string) {
-    if (currentStatus === "DONE" || currentStatus === "SKIPPED") {
-      await updateTodo.mutateAsync({ id: todoId, data: { status: "PENDING" } });
-    } else {
-      await completeTodo.mutateAsync(todoId);
+    try {
+      if (currentStatus === "DONE") {
+        // Use the proper inverse: uncomplete reverses XP, goal progress,
+        // and the recurring streak inside a transaction. The previous
+        // implementation used updateTodo to flip status, which left XP,
+        // progress, and streak permanently inflated.
+        await uncompleteTodo.mutateAsync(todoId);
+      } else if (currentStatus === "SKIPPED") {
+        // SKIPPED never awarded XP or touched goal progress, so a
+        // straight re-complete is correct here.
+        await completeTodo.mutateAsync(todoId);
+      } else {
+        await completeTodo.mutateAsync(todoId);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update to-do");
     }
   }
 
@@ -177,7 +195,7 @@ export function CalendarDayDetail({
                         : "border-muted-foreground/40 hover:border-primary"
                     }`}
                     onClick={() => handleToggle(todo.id, todo.status)}
-                    disabled={completeTodo.isPending || updateTodo.isPending}
+                    disabled={completeTodo.isPending || uncompleteTodo.isPending}
                   >
                     {todo.status === "DONE" && (
                       <CheckCircle2 className="size-3" />
@@ -224,7 +242,7 @@ export function CalendarDayDetail({
                         : "border-muted-foreground/40 hover:border-primary"
                     }`}
                     onClick={() => handleToggle(todo.id, todo.status)}
-                    disabled={completeTodo.isPending || updateTodo.isPending}
+                    disabled={completeTodo.isPending || uncompleteTodo.isPending}
                   >
                     {todo.status === "DONE" && (
                       <CheckCircle2 className="size-2.5" />

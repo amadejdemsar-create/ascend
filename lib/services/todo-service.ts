@@ -121,95 +121,187 @@ export const todoService = {
   },
 
   /**
-   * Complete a to-do with side effects:
-   * 1. Sets status to DONE and completedAt timestamp
-   * 2. Awards XP based on priority (creates XpEvent, updates UserStats)
-   * 3. Auto-increments linked goal progress if goalId is set
+   * Complete a to-do with side effects, all wrapped in a single
+   * interactive Prisma transaction so a mid-flow failure rolls back
+   * every state change atomically:
+   *   1. Set status to DONE and completedAt timestamp
+   *   2. Create the XpEvent (with todoId so it can be reversed)
+   *   3. Upsert + update UserStats (totalXp, level, weeklyScore)
+   *   4. logProgress on the linked goal if goalId is set
+   *   5. Bump the recurring template streak if this is an instance
    *
    * Returns the completed to-do with _xp metadata.
    */
   async complete(userId: string, id: string) {
-    const todo = await prisma.todo.findFirst({
-      where: { id, userId },
-      include: { goal: true },
-    });
-    if (!todo) throw new Error("Todo not found");
-    if (todo.status === "DONE") throw new Error("Todo already completed");
-
-    // 1. Update the to-do status
-    const completed = await prisma.todo.update({
-      where: { id },
-      data: {
-        status: "DONE",
-        completedAt: new Date(),
-      },
-    });
-
-    // 2. Award XP
-    const xpAmount = XP_PER_TODO[todo.priority] ?? 10;
-    const source = `todo_complete:${todo.priority}`;
-
-    await prisma.xpEvent.create({
-      data: {
-        userId,
-        amount: xpAmount,
-        source,
-        goalId: todo.goalId,
-      },
-    });
-
-    // Upsert UserStats: increment totalXp
-    const stats = await prisma.userStats.upsert({
-      where: { userId },
-      create: {
-        userId,
-        totalXp: xpAmount,
-        level: levelFromXp(xpAmount) || 1,
-        weeklyScore: xpAmount,
-        weekStartDate: startOfWeek(new Date(), { weekStartsOn: 1 }),
-      },
-      update: {
-        totalXp: { increment: xpAmount },
-      },
-    });
-
-    // Check weekly score reset
-    const now = new Date();
-    const currentWeekStart = startOfWeek(now, { weekStartsOn: 1 });
-    const needsWeeklyReset = !stats.weekStartDate ||
-      stats.weekStartDate.getTime() < currentWeekStart.getTime();
-
-    const newWeeklyScore = needsWeeklyReset ? xpAmount : stats.weeklyScore + xpAmount;
-    const newLevel = levelFromXp(stats.totalXp) || 1;
-
-    await prisma.userStats.update({
-      where: { userId },
-      data: {
-        level: newLevel,
-        weeklyScore: newWeeklyScore,
-        weekStartDate: needsWeeklyReset ? currentWeekStart : stats.weekStartDate ?? currentWeekStart,
-      },
-    });
-
-    // 3. Auto-increment linked goal progress
-    if (todo.goalId) {
-      await goalService.logProgress(userId, todo.goalId, {
-        value: 1,
-        note: `Completed to-do: ${todo.title}`,
+    return prisma.$transaction(async (tx) => {
+      const todo = await tx.todo.findFirst({
+        where: { id, userId },
+        include: { goal: true },
       });
-    }
+      if (!todo) throw new Error("Todo not found");
+      if (todo.status === "DONE") throw new Error("Todo already completed");
 
-    // 4. Update recurring streak if this is a recurring instance
-    let streakResult = null;
-    if (todo.recurringSourceId) {
-      streakResult = await todoRecurringService.completeRecurringInstance(userId, id);
-    }
+      // 1. Update the to-do status
+      const completed = await tx.todo.update({
+        where: { id },
+        data: {
+          status: "DONE",
+          completedAt: new Date(),
+        },
+      });
 
-    return {
-      ...completed,
-      _xp: { amount: xpAmount, source },
-      ...(streakResult && { _streak: streakResult }),
-    };
+      // 2. Award XP. Carry todoId on the event so uncomplete can find
+      // and delete the originating row by foreign key.
+      const xpAmount = XP_PER_TODO[todo.priority] ?? 10;
+      const source = `todo_complete:${todo.priority}`;
+
+      await tx.xpEvent.create({
+        data: {
+          userId,
+          amount: xpAmount,
+          source,
+          goalId: todo.goalId,
+          todoId: id,
+        },
+      });
+
+      // Upsert UserStats: increment totalXp
+      const stats = await tx.userStats.upsert({
+        where: { userId },
+        create: {
+          userId,
+          totalXp: xpAmount,
+          level: levelFromXp(xpAmount) || 1,
+          weeklyScore: xpAmount,
+          weekStartDate: startOfWeek(new Date(), { weekStartsOn: 1 }),
+        },
+        update: {
+          totalXp: { increment: xpAmount },
+        },
+      });
+
+      // Check weekly score reset
+      const now = new Date();
+      const currentWeekStart = startOfWeek(now, { weekStartsOn: 1 });
+      const needsWeeklyReset = !stats.weekStartDate ||
+        stats.weekStartDate.getTime() < currentWeekStart.getTime();
+
+      const newWeeklyScore = needsWeeklyReset ? xpAmount : stats.weeklyScore + xpAmount;
+      const newLevel = levelFromXp(stats.totalXp) || 1;
+
+      await tx.userStats.update({
+        where: { userId },
+        data: {
+          level: newLevel,
+          weeklyScore: newWeeklyScore,
+          weekStartDate: needsWeeklyReset ? currentWeekStart : stats.weekStartDate ?? currentWeekStart,
+        },
+      });
+
+      // 3. Auto-increment linked goal progress (inside the same tx)
+      if (todo.goalId) {
+        await goalService.logProgress(
+          userId,
+          todo.goalId,
+          { value: 1, note: `Completed to-do: ${todo.title}` },
+          tx,
+        );
+      }
+
+      // 4. Update recurring streak if this is a recurring instance
+      let streakResult = null;
+      if (todo.recurringSourceId) {
+        streakResult = await todoRecurringService.completeRecurringInstance(userId, id, tx);
+      }
+
+      return {
+        ...completed,
+        _xp: { amount: xpAmount, source },
+        ...(streakResult && { _streak: streakResult }),
+      };
+    });
+  },
+
+  /**
+   * Reverse a previous completion. The proper inverse of `complete`:
+   *   1. Find the originating XpEvent (matched by todoId+userId) and
+   *      delete it. If multiple matched (e.g., legacy event without
+   *      todoId), pick the most recent.
+   *   2. Decrement UserStats.totalXp by the event's amount, recompute
+   *      level, and decrement weeklyScore (clamped to 0).
+   *   3. Reverse the linked goal progress (deletes the matching log,
+   *      decrements currentValue, recomputes progress).
+   *   4. Decrement the recurring template streak (clamped to 0) and
+   *      recompute consistency from the post-uncomplete state.
+   *   5. Set the todo back to PENDING and clear completedAt.
+   *
+   * All five steps run inside a single $transaction.
+   */
+  async uncomplete(userId: string, id: string) {
+    return prisma.$transaction(async (tx) => {
+      const todo = await tx.todo.findFirst({
+        where: { id, userId },
+      });
+      if (!todo) throw new Error("Todo not found");
+      if (todo.status !== "DONE") {
+        throw new Error("Todo is not in DONE state");
+      }
+
+      // 1. Find and delete the XpEvent that this completion produced.
+      const xpEvent = await tx.xpEvent.findFirst({
+        where: { userId, todoId: id },
+        orderBy: { createdAt: "desc" },
+      });
+
+      const xpAmount = xpEvent?.amount ?? 0;
+      if (xpEvent) {
+        await tx.xpEvent.delete({ where: { id: xpEvent.id } });
+      }
+
+      // 2. Decrement UserStats. Clamp to zero to avoid negatives.
+      const stats = await tx.userStats.findUnique({ where: { userId } });
+      if (stats && xpAmount > 0) {
+        const newTotalXp = Math.max(0, stats.totalXp - xpAmount);
+        const newWeeklyScore = Math.max(0, stats.weeklyScore - xpAmount);
+        const newLevel = levelFromXp(newTotalXp) || 1;
+        await tx.userStats.update({
+          where: { userId },
+          data: {
+            totalXp: newTotalXp,
+            weeklyScore: newWeeklyScore,
+            level: newLevel,
+          },
+        });
+      }
+
+      // 3. Reverse linked goal progress
+      if (todo.goalId) {
+        await goalService.reverseProgress(
+          userId,
+          todo.goalId,
+          1,
+          `Completed to-do: ${todo.title}`,
+          tx,
+        );
+      }
+
+      // 4. Move the todo BACK to PENDING BEFORE recomputing consistency,
+      //    so the count query inside reverseRecurringInstance excludes it.
+      const reverted = await tx.todo.update({
+        where: { id },
+        data: {
+          status: "PENDING",
+          completedAt: null,
+        },
+      });
+
+      // 5. Decrement recurring streak if this is a recurring instance.
+      if (todo.recurringSourceId) {
+        await todoRecurringService.reverseRecurringInstance(userId, id, tx);
+      }
+
+      return reverted;
+    });
   },
 
   /**

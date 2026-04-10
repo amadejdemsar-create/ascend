@@ -137,6 +137,21 @@ export function useCompleteTodo() {
   });
 }
 
+export function useUncompleteTodo() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      fetchJson(`/api/todos/${id}/uncomplete`, { method: "POST" }),
+    onSuccess: () => {
+      // Same cross-domain invalidation as completeTodo: stats, goals,
+      // and progress can all change as a result of the reversal.
+      queryClient.invalidateQueries({ queryKey: queryKeys.todos.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.goals.all() });
+    },
+  });
+}
+
 export function useSkipTodo() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -1,6 +1,13 @@
 import { prisma } from "@/lib/db";
+import type { Prisma } from "../../generated/prisma/client";
 import type { CreateGoalInput, UpdateGoalInput, GoalFilters, AddProgressInput, ReorderGoalsInput } from "@/lib/validations";
 import { validateHierarchy } from "@/lib/services/hierarchy-helpers";
+
+// A Prisma client suitable for either standalone use or inside an
+// interactive transaction. Service methods that perform multiple
+// dependent writes accept this so callers can wrap the whole flow in
+// a single $transaction without forcing a refactor of every service.
+type PrismaClientLike = typeof prisma | Prisma.TransactionClient;
 
 export const goalService = {
   /**
@@ -173,13 +180,20 @@ export const goalService = {
 
   /**
    * Log progress for a goal. Creates a ProgressLog entry and updates
-   * the goal's currentValue. Recalculates progress percentage if targetValue exists.
+   * the goal's currentValue. Recalculates progress percentage if
+   * targetValue exists. Accepts an optional Prisma client so callers
+   * can run the read + two writes inside an interactive $transaction.
    */
-  async logProgress(userId: string, goalId: string, data: AddProgressInput) {
-    const goal = await prisma.goal.findFirst({ where: { id: goalId, userId } });
+  async logProgress(
+    userId: string,
+    goalId: string,
+    data: AddProgressInput,
+    client: PrismaClientLike = prisma,
+  ) {
+    const goal = await client.goal.findFirst({ where: { id: goalId, userId } });
     if (!goal) throw new Error("Goal not found");
 
-    const log = await prisma.progressLog.create({
+    const log = await client.progressLog.create({
       data: {
         goalId,
         value: data.value,
@@ -197,12 +211,62 @@ export const goalService = {
       );
     }
 
-    await prisma.goal.update({
+    await client.goal.update({
       where: { id: goalId },
       data: updateData,
     });
 
     return log;
+  },
+
+  /**
+   * Reverse a previously logged progress entry. Best-effort match: finds
+   * the most recent ProgressLog with the same value (and note, if given)
+   * for this goal and deletes it, then decrements the goal's currentValue
+   * and recomputes progress. Used by todoService.uncomplete to undo the
+   * goal-progress side effect of a completed todo.
+   *
+   * Accepts an optional Prisma client to participate in a transaction.
+   */
+  async reverseProgress(
+    userId: string,
+    goalId: string,
+    value: number,
+    note: string | null = null,
+    client: PrismaClientLike = prisma,
+  ) {
+    const goal = await client.goal.findFirst({ where: { id: goalId, userId } });
+    if (!goal) throw new Error("Goal not found");
+
+    // Find the most recent matching log. If no match, still decrement the
+    // counter (the log may have been pruned but the value should reverse).
+    const matchingLogs = await client.progressLog.findMany({
+      where: {
+        goalId,
+        value,
+        ...(note !== null ? { note } : {}),
+      },
+      orderBy: { createdAt: "desc" },
+      take: 1,
+    });
+    if (matchingLogs.length > 0) {
+      await client.progressLog.delete({ where: { id: matchingLogs[0].id } });
+    }
+
+    const newCurrentValue = Math.max(0, (goal.currentValue ?? 0) - value);
+    const updateData: Record<string, unknown> = { currentValue: newCurrentValue };
+
+    if (goal.targetValue && goal.targetValue > 0) {
+      updateData.progress = Math.min(
+        100,
+        Math.round((newCurrentValue / goal.targetValue) * 100),
+      );
+    }
+
+    await client.goal.update({
+      where: { id: goalId },
+      data: updateData,
+    });
   },
 
   /**

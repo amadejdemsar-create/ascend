@@ -3,6 +3,10 @@ import type { Prisma } from "../../generated/prisma/client";
 import { rrulestr } from "rrule";
 import { startOfDay, subDays, addDays, format } from "date-fns";
 
+// Reusable client type so methods can run inside an interactive
+// $transaction or standalone. See goal-service.ts for the same pattern.
+type PrismaClientLike = typeof prisma | Prisma.TransactionClient;
+
 /**
  * Build a full rrule string with DTSTART from the template's creation date.
  * rrulestr() requires DTSTART to generate occurrences within a date range.
@@ -256,8 +260,12 @@ export const todoRecurringService = {
    *   - Score = round((completed / expected) * 100), clamped 0 to 100
    *   - If expected = 0, score = 100 (no occurrences expected means perfect)
    */
-  async completeRecurringInstance(userId: string, instanceId: string) {
-    const instance = await prisma.todo.findFirst({
+  async completeRecurringInstance(
+    userId: string,
+    instanceId: string,
+    client: PrismaClientLike = prisma,
+  ) {
+    const instance = await client.todo.findFirst({
       where: { id: instanceId, userId },
     });
 
@@ -265,7 +273,7 @@ export const todoRecurringService = {
       throw new Error("Not a recurring instance");
     }
 
-    const template = await prisma.todo.findFirst({
+    const template = await client.todo.findFirst({
       where: { id: instance.recurringSourceId, userId },
     });
 
@@ -280,7 +288,7 @@ export const todoRecurringService = {
     const now = new Date();
     const thirtyDaysAgo = subDays(now, 30);
 
-    const completedCount = await prisma.todo.count({
+    const completedCount = await client.todo.count({
       where: {
         userId,
         recurringSourceId: template.id,
@@ -303,7 +311,7 @@ export const todoRecurringService = {
     }
 
     // Template ownership was already verified via the findFirst above.
-    const updated = await prisma.todo.update({
+    const updated = await client.todo.update({
       where: { id: template.id },
       data: {
         currentStreak: newStreak,
@@ -320,6 +328,75 @@ export const todoRecurringService = {
       lastCompletedDate: updated.lastCompletedDate,
       consistencyScore: updated.consistencyScore,
     };
+  },
+
+  /**
+   * Reverse a recurring instance completion: decrement the template's
+   * currentStreak (clamped to 0) and recompute the 30-day consistency
+   * score from the post-uncomplete database state. Does NOT touch
+   * lastCompletedDate (that points to the most recent completion which
+   * may belong to a different instance) or longestStreak (a high-water
+   * mark that should never decrease).
+   *
+   * Accepts an optional Prisma client to participate in a transaction.
+   */
+  async reverseRecurringInstance(
+    userId: string,
+    instanceId: string,
+    client: PrismaClientLike = prisma,
+  ) {
+    const instance = await client.todo.findFirst({
+      where: { id: instanceId, userId },
+    });
+
+    if (!instance || !instance.recurringSourceId) {
+      throw new Error("Not a recurring instance");
+    }
+
+    const template = await client.todo.findFirst({
+      where: { id: instance.recurringSourceId, userId },
+    });
+
+    if (!template) {
+      throw new Error("Recurring template not found");
+    }
+
+    const newStreak = Math.max(0, template.currentStreak - 1);
+
+    // Recompute consistency from CURRENT db state. This call runs after
+    // the instance has been moved back to PENDING by the caller, so the
+    // count below already excludes it.
+    const now = new Date();
+    const thirtyDaysAgo = subDays(now, 30);
+
+    const completedCount = await client.todo.count({
+      where: {
+        userId,
+        recurringSourceId: template.id,
+        status: "DONE",
+        completedAt: { gte: thirtyDaysAgo },
+      },
+    });
+
+    let consistencyScore = 100;
+    if (template.recurrenceRule) {
+      const rule = rrulestr(buildRruleString(template.recurrenceRule, template.createdAt));
+      const expectedOccurrences = rule.between(thirtyDaysAgo, now, true);
+      const expectedCount = expectedOccurrences.length;
+
+      if (expectedCount > 0) {
+        consistencyScore = Math.round((completedCount / expectedCount) * 100);
+        consistencyScore = Math.min(100, Math.max(0, consistencyScore));
+      }
+    }
+
+    await client.todo.update({
+      where: { id: template.id },
+      data: {
+        currentStreak: newStreak,
+        consistencyScore,
+      },
+    });
   },
 
   /**
