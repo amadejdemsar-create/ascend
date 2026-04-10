@@ -1,7 +1,14 @@
 import { goalService } from "@/lib/services/goal-service";
 import { gamificationService } from "@/lib/services/gamification-service";
+import { updateGoalSchema } from "@/lib/validations";
+import { ZodError } from "zod";
 
 type McpContent = { content: Array<{ type: "text"; text: string }>; isError?: boolean };
+
+// Subset of updateGoalSchema for the move_goal MCP tool: only horizon
+// and parentId are movable. Both must still conform to the underlying
+// types so the service layer call is type-safe.
+const moveGoalSchema = updateGoalSchema.pick({ horizon: true, parentId: true });
 
 /**
  * Handle bulk operation MCP tool calls: complete_goals, move_goal.
@@ -62,31 +69,48 @@ export async function handleBulkTool(
       }
 
       case "move_goal": {
-        const id = args.id as string;
-        if (!id || typeof id !== "string") {
+        const id = args.id;
+        if (typeof id !== "string" || id.length === 0) {
           return {
             content: [{ type: "text", text: JSON.stringify({ error: "id is required and must be a non-empty string" }) }],
             isError: true,
           };
         }
 
-        const updatePayload: Record<string, unknown> = {};
+        // Extract only horizon and parentId from args so extra keys
+        // (e.g., ids from complete_goals) cannot slip through.
+        const rawPayload: Record<string, unknown> = {};
         if ("horizon" in args && args.horizon !== undefined) {
-          updatePayload.horizon = args.horizon;
+          rawPayload.horizon = args.horizon;
         }
         if ("parentId" in args) {
-          updatePayload.parentId = args.parentId ?? null;
+          rawPayload.parentId = args.parentId ?? null;
         }
 
-        const result = await goalService.update(userId, id, updatePayload);
+        const payload = moveGoalSchema.parse(rawPayload);
+        const result = await goalService.update(userId, id, payload);
         const text = `Goal moved successfully.\n\n${JSON.stringify(result, null, 2)}`;
         return { content: [{ type: "text", text }] };
       }
 
       default:
-        throw new Error(`Unknown bulk tool: ${name}`);
+        return {
+          content: [{ type: "text", text: `Unknown bulk tool: ${name}` }],
+          isError: true,
+        };
     }
   } catch (error) {
+    if (error instanceof ZodError) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({ error: "Validation error", details: error.issues }),
+          },
+        ],
+        isError: true,
+      };
+    }
     const message = error instanceof Error ? error.message : String(error);
     return {
       content: [{ type: "text", text: JSON.stringify({ error: message }) }],
