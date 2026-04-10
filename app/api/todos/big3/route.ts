@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { validateApiKey, unauthorizedResponse, handleApiError } from "@/lib/auth";
 import { todoService } from "@/lib/services/todo-service";
-
-const setBig3Schema = z.object({
-  todoIds: z.array(z.string()).min(1).max(3),
-  date: z.string().datetime().optional(),
-});
+import { setBig3Schema } from "@/lib/validations";
 
 export async function GET(request: NextRequest) {
   const auth = await validateApiKey(request);

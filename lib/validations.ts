@@ -108,6 +108,27 @@ export const todoFiltersSchema = z.object({
   isBig3: z.enum(["true", "false"]).optional(),
 });
 
+export const bulkCompleteTodosSchema = z.object({
+  ids: z.array(z.string()).min(1).max(50),
+});
+
+export const setBig3Schema = z.object({
+  todoIds: z.array(z.string()).min(1).max(3),
+  date: z.string().datetime().optional(),
+});
+
+export const reorderTodosSchema = z.object({
+  items: z
+    .array(
+      z.object({
+        id: z.string(),
+        sortOrder: z.number().int().min(0),
+      }),
+    )
+    .min(1)
+    .max(200),
+});
+
 // Context schemas
 export const createContextSchema = z.object({
   title: z.string().min(1).max(200),
@@ -189,6 +210,9 @@ export type AddProgressInput = z.infer<typeof addProgressSchema>;
 export type CreateTodoInput = z.input<typeof createTodoSchema>;
 export type UpdateTodoInput = z.input<typeof updateTodoSchema>;
 export type TodoFilters = z.infer<typeof todoFiltersSchema>;
+export type BulkCompleteTodosInput = z.infer<typeof bulkCompleteTodosSchema>;
+export type SetBig3Input = z.infer<typeof setBig3Schema>;
+export type ReorderTodosInput = z.infer<typeof reorderTodosSchema>;
 export type CreateContextInput = z.input<typeof createContextSchema>;
 export type UpdateContextInput = z.input<typeof updateContextSchema>;
 export type ContextFilters = z.infer<typeof contextFiltersSchema>;

@@ -1,19 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { validateApiKey, unauthorizedResponse, handleApiError } from "@/lib/auth";
 import { todoService } from "@/lib/services/todo-service";
-
-const reorderTodosSchema = z.object({
-  items: z
-    .array(
-      z.object({
-        id: z.string(),
-        sortOrder: z.number().int().min(0),
-      }),
-    )
-    .min(1)
-    .max(200),
-});
+import { reorderTodosSchema } from "@/lib/validations";
 
 export async function POST(request: NextRequest) {
   const auth = await validateApiKey(request);
