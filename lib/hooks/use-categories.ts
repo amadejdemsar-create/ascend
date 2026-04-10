@@ -51,7 +51,13 @@ export function useUpdateCategory() {
         body: JSON.stringify(data),
       }),
     onSuccess: () => {
+      // Category rename or color change must propagate to every query
+      // that includes category info in its payload: goals, todos, and
+      // context all render { category: true } relations.
       queryClient.invalidateQueries({ queryKey: queryKeys.categories.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.goals.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.todos.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.context.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard() });
     },
   });
@@ -63,8 +69,13 @@ export function useDeleteCategory() {
     mutationFn: (id: string) =>
       fetchJson(`/api/categories/${id}`, { method: "DELETE" }),
     onSuccess: () => {
+      // Deleting a category sets categoryId to null on every goal,
+      // todo, and context entry that referenced it (onDelete: SetNull),
+      // so all three domains need invalidation.
       queryClient.invalidateQueries({ queryKey: queryKeys.categories.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.todos.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.context.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard() });
     },
   });
