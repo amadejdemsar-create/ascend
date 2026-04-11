@@ -1,6 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -11,26 +12,7 @@ import {
 } from "@/components/ui/select";
 import { useUIStore } from "@/lib/stores/ui-store";
 import { useCategories } from "@/lib/hooks/use-categories";
-
-const HORIZON_OPTIONS = [
-  { value: "YEARLY", label: "Yearly" },
-  { value: "QUARTERLY", label: "Quarterly" },
-  { value: "MONTHLY", label: "Monthly" },
-  { value: "WEEKLY", label: "Weekly" },
-] as const;
-
-const STATUS_OPTIONS = [
-  { value: "NOT_STARTED", label: "Not Started" },
-  { value: "IN_PROGRESS", label: "In Progress" },
-  { value: "COMPLETED", label: "Completed" },
-  { value: "ABANDONED", label: "Abandoned" },
-] as const;
-
-const PRIORITY_OPTIONS = [
-  { value: "LOW", label: "Low" },
-  { value: "MEDIUM", label: "Medium" },
-  { value: "HIGH", label: "High" },
-] as const;
+import { goalStatusItems, priorityItems } from "@/lib/enum-display";
 
 interface CategoryFlat {
   id: string;
@@ -50,6 +32,14 @@ function flattenCategories(nodes: CategoryFlat[], depth = 0): CategoryFlat[] {
   return result;
 }
 
+/**
+ * Filter bar for the goals page.
+ *
+ * Horizon is intentionally NOT in this bar; it is the tab row above
+ * the list view (see goal-view-switcher / goal-horizon-tabs) to avoid
+ * the dual-control UI that duplicated the filter across two different
+ * affordances (H1 from 2026-04-11 UX review).
+ */
 export function GoalFilterBar() {
   const activeFilters = useUIStore((s) => s.activeFilters);
   const setActiveFilters = useUIStore((s) => s.setActiveFilters);
@@ -60,14 +50,16 @@ export function GoalFilterBar() {
     ? flattenCategories(categoryTree as CategoryFlat[])
     : [];
 
-  const hasActiveFilters =
-    !!activeFilters.horizon ||
-    !!activeFilters.status ||
-    !!activeFilters.priority ||
-    !!activeFilters.categoryId;
+  // Count active filters excluding horizon (horizon lives in the tab row).
+  const activeFilterCount =
+    (activeFilters.status ? 1 : 0) +
+    (activeFilters.priority ? 1 : 0) +
+    (activeFilters.categoryId ? 1 : 0);
+
+  const hasActiveFilters = activeFilterCount > 0;
 
   const handleChange = (
-    field: "horizon" | "status" | "priority" | "categoryId",
+    field: "status" | "priority" | "categoryId",
     value: string | null,
   ) => {
     setActiveFilters({
@@ -79,23 +71,6 @@ export function GoalFilterBar() {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Select
-        value={activeFilters.horizon ?? ""}
-        onValueChange={(v) => handleChange("horizon", v)}
-      >
-        <SelectTrigger className="h-8 w-[140px]">
-          <SelectValue placeholder="All horizons" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="">All horizons</SelectItem>
-          {HORIZON_OPTIONS.map((opt) => (
-            <SelectItem key={opt.value} value={opt.value}>
-              {opt.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Select
         value={activeFilters.status ?? ""}
         onValueChange={(v) => handleChange("status", v)}
       >
@@ -104,7 +79,7 @@ export function GoalFilterBar() {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="">All statuses</SelectItem>
-          {STATUS_OPTIONS.map((opt) => (
+          {goalStatusItems.map((opt) => (
             <SelectItem key={opt.value} value={opt.value}>
               {opt.label}
             </SelectItem>
@@ -121,7 +96,7 @@ export function GoalFilterBar() {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="">All priorities</SelectItem>
-          {PRIORITY_OPTIONS.map((opt) => (
+          {priorityItems.map((opt) => (
             <SelectItem key={opt.value} value={opt.value}>
               {opt.label}
             </SelectItem>
@@ -153,17 +128,25 @@ export function GoalFilterBar() {
         </SelectContent>
       </Select>
 
-      {hasActiveFilters && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 px-2"
-          onClick={resetFilters}
-        >
-          <X className="mr-1 size-3.5" />
-          Clear all
-        </Button>
-      )}
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8 px-2"
+        onClick={resetFilters}
+        disabled={!hasActiveFilters}
+        aria-label={hasActiveFilters ? `Clear ${activeFilterCount} active filters` : "No active filters"}
+      >
+        <X className="mr-1 size-3.5" />
+        Clear all
+        {hasActiveFilters && (
+          <Badge
+            variant="secondary"
+            className="ml-2 h-5 min-w-5 px-1.5 text-[10px]"
+          >
+            {activeFilterCount}
+          </Badge>
+        )}
+      </Button>
     </div>
   );
 }
