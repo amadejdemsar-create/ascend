@@ -3,8 +3,9 @@ import type { Prisma } from "../../generated/prisma/client";
 import type { CreateTodoInput, UpdateTodoInput, TodoFilters } from "@/lib/validations";
 import { goalService } from "@/lib/services/goal-service";
 import { todoRecurringService } from "@/lib/services/todo-recurring-service";
+import { gamificationService } from "@/lib/services/gamification-service";
 import { XP_PER_TODO, levelFromXp } from "@/lib/constants";
-import { startOfDay, startOfWeek } from "date-fns";
+import { startOfDay } from "date-fns";
 
 export const todoService = {
   /**
@@ -158,57 +159,18 @@ export const todoService = {
         },
       });
 
-      // 2. Award XP. Carry todoId on the event so uncomplete can find
-      // and delete the originating row by foreign key.
+      // 2. Award XP via the shared gamification helper so todo and goal
+      // paths use one code path for XpEvent + UserStats upkeep. The
+      // originating todoId is carried on the XpEvent row so uncomplete
+      // can find and reverse it.
       const xpAmount = XP_PER_TODO[todo.priority] ?? 10;
-      const source = `todo_complete:${todo.priority}`;
-
-      await tx.xpEvent.create({
-        data: {
-          userId,
-          amount: xpAmount,
-          source,
-          goalId: todo.goalId,
-          todoId: id,
-        },
-      });
-
-      // Upsert UserStats: increment totalXp. The explicit update below
-      // handles weeklyScore and level, so we initialize weeklyScore at
-      // 0 in the create branch to avoid double-counting on the first
-      // completion (old code set it to xpAmount, then added xpAmount
-      // again below, ending up at 2*xpAmount for new users).
-      const stats = await tx.userStats.upsert({
-        where: { userId },
-        create: {
-          userId,
-          totalXp: xpAmount,
-          level: levelFromXp(xpAmount) || 1,
-          weeklyScore: 0,
-          weekStartDate: startOfWeek(new Date(), { weekStartsOn: 1 }),
-        },
-        update: {
-          totalXp: { increment: xpAmount },
-        },
-      });
-
-      // Check weekly score reset
-      const now = new Date();
-      const currentWeekStart = startOfWeek(now, { weekStartsOn: 1 });
-      const needsWeeklyReset = !stats.weekStartDate ||
-        stats.weekStartDate.getTime() < currentWeekStart.getTime();
-
-      const newWeeklyScore = needsWeeklyReset ? xpAmount : stats.weeklyScore + xpAmount;
-      const newLevel = levelFromXp(stats.totalXp) || 1;
-
-      await tx.userStats.update({
-        where: { userId },
-        data: {
-          level: newLevel,
-          weeklyScore: newWeeklyScore,
-          weekStartDate: needsWeeklyReset ? currentWeekStart : stats.weekStartDate ?? currentWeekStart,
-        },
-      });
+      const xpResult = await gamificationService.awardXpForTodo(
+        userId,
+        id,
+        todo.priority,
+        xpAmount,
+        tx,
+      );
 
       // 3. Auto-increment linked goal progress (inside the same tx)
       if (todo.goalId) {
@@ -228,7 +190,7 @@ export const todoService = {
 
       return {
         ...completed,
-        _xp: { amount: xpAmount, source },
+        _xp: xpResult,
         ...(streakResult && { _streak: streakResult }),
       };
     });
