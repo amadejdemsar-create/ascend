@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import type { Prisma } from "../../generated/prisma/client";
+import { bumpStreak, clampStreakDown } from "@/lib/services/recurring-helpers";
 import { rrulestr } from "rrule";
 import { startOfDay, subDays, addDays, format } from "date-fns";
 
@@ -281,8 +282,10 @@ export const todoRecurringService = {
       throw new Error("Recurring template not found");
     }
 
-    const newStreak = template.currentStreak + 1;
-    const newLongest = Math.max(template.longestStreak, newStreak);
+    const { currentStreak: newStreak, longestStreak: newLongest } = bumpStreak({
+      currentStreak: template.currentStreak,
+      longestStreak: template.longestStreak,
+    });
 
     // Calculate 30-day consistency score
     const now = new Date();
@@ -361,7 +364,7 @@ export const todoRecurringService = {
       throw new Error("Recurring template not found");
     }
 
-    const newStreak = Math.max(0, template.currentStreak - 1);
+    const newStreak = clampStreakDown(template.currentStreak);
 
     // Recompute consistency from CURRENT db state. This call runs after
     // the instance has been moved back to PENDING by the caller, so the

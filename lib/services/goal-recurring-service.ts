@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { bumpStreak } from "@/lib/services/recurring-helpers";
 import {
   addDays,
   addWeeks,
@@ -10,16 +11,24 @@ import {
 } from "date-fns";
 
 /**
- * Recurring goals service: instance generation, streak tracking, template listing.
+ * Recurring goals service: instance generation, streak tracking,
+ * template listing. Uses enum frequency (DAILY/WEEKLY/MONTHLY) +
+ * interval to compute the next due date, not RFC 5545 rrule strings.
  *
- * A recurring "template" is a goal with isRecurring=true and no recurringSourceId.
- * An "instance" is a goal created from a template, with recurringSourceId pointing
- * back to the template. Instances inherit category, priority, and parent from the template.
+ * Intentionally separate from todoRecurringService (which uses rrule)
+ * because the underlying date-math paths differ. The shared streak
+ * bookkeeping lives in lib/services/recurring-helpers.ts.
  *
- * Streaks are tracked on the template: currentStreak increments when an instance is
- * completed, and resets to zero when a deadline is missed (checked during generation).
+ * A recurring "template" is a goal with isRecurring=true and no
+ * recurringSourceId. An "instance" is a goal created from a template
+ * with recurringSourceId pointing back. Instances inherit category,
+ * priority, and parent from the template.
+ *
+ * Streaks are tracked on the template: currentStreak increments on
+ * every completion via bumpStreak, and resets to zero when a deadline
+ * is missed (checked during generation).
  */
-export const recurringService = {
+export const goalRecurringService = {
   /**
    * Compute the next due date from a given date, frequency, and interval.
    */
@@ -182,14 +191,16 @@ export const recurringService = {
       throw new Error("Recurring template not found");
     }
 
-    const newStreak = template.currentStreak + 1;
-    const newLongest = Math.max(template.longestStreak, newStreak);
+    const { currentStreak, longestStreak } = bumpStreak({
+      currentStreak: template.currentStreak,
+      longestStreak: template.longestStreak,
+    });
 
     const updated = await prisma.goal.update({
       where: { id: template.id },
       data: {
-        currentStreak: newStreak,
-        longestStreak: newLongest,
+        currentStreak,
+        longestStreak,
         lastCompletedInstance: new Date(),
       },
     });

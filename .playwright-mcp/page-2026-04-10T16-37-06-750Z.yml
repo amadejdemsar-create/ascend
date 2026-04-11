@@ -1,0 +1,90 @@
+- generic [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e3]:
+      - link "Union Hotels" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - img "Union Hotels" [ref=e5]
+      - generic [ref=e6]:
+        - link "Hotels" [ref=e8] [cursor=pointer]:
+          - /url: /hotels
+          - text: Hotels
+          - img [ref=e9]
+        - link "Dining" [ref=e11] [cursor=pointer]:
+          - /url: /dining
+        - link "Wellness" [ref=e12] [cursor=pointer]:
+          - /url: /wellness
+        - link "Meetings" [ref=e13] [cursor=pointer]:
+          - /url: /meetings
+        - link "Experiences" [ref=e14] [cursor=pointer]:
+          - /url: /experiences
+        - link "Contact" [ref=e15] [cursor=pointer]:
+          - /url: /contact
+        - link "Book Now" [ref=e16] [cursor=pointer]:
+          - /url: /reservation
+  - main [ref=e17]:
+    - generic [ref=e19]:
+      - heading "404" [level=1] [ref=e20]
+      - heading "This page could not be found." [level=2] [ref=e22]
+  - contentinfo [ref=e23]:
+    - generic [ref=e24]:
+      - generic [ref=e25]:
+        - generic [ref=e26]:
+          - img "Union Hotels" [ref=e27]
+          - paragraph [ref=e28]: Four distinctive hotels in central Ljubljana offering 574 rooms, fine dining, wellness, and conference facilities.
+          - generic [ref=e29]:
+            - generic [ref=e30]: 4 hotels
+            - generic [ref=e31]: ·
+            - generic [ref=e32]: 574 rooms
+            - generic [ref=e33]: ·
+            - generic [ref=e34]: 21 conference halls
+        - generic [ref=e35]:
+          - heading "Our Hotels" [level=3] [ref=e36]
+          - list [ref=e37]:
+            - listitem [ref=e38]:
+              - link "Grand Hotel Union" [ref=e39] [cursor=pointer]:
+                - /url: /hotels/grand-hotel-union
+            - listitem [ref=e40]:
+              - link "GH Union Business" [ref=e41] [cursor=pointer]:
+                - /url: /hotels/grand-hotel-union-business
+            - listitem [ref=e42]:
+              - link "Hotel Lev" [ref=e43] [cursor=pointer]:
+                - /url: /hotels/hotel-lev
+            - listitem [ref=e44]:
+              - link "Central Hotel" [ref=e45] [cursor=pointer]:
+                - /url: /hotels/central-hotel
+        - generic [ref=e46]:
+          - heading "Explore" [level=3] [ref=e47]
+          - list [ref=e48]:
+            - listitem [ref=e49]:
+              - link "Dining" [ref=e50] [cursor=pointer]:
+                - /url: /dining
+            - listitem [ref=e51]:
+              - link "Wellness" [ref=e52] [cursor=pointer]:
+                - /url: /wellness
+            - listitem [ref=e53]:
+              - link "Meetings & Events" [ref=e54] [cursor=pointer]:
+                - /url: /meetings
+            - listitem [ref=e55]:
+              - link "Experiences" [ref=e56] [cursor=pointer]:
+                - /url: /experiences
+            - listitem [ref=e57]:
+              - link "Reservations" [ref=e58] [cursor=pointer]:
+                - /url: /reservation
+        - generic [ref=e59]:
+          - heading "Contact" [level=3] [ref=e60]
+          - generic [ref=e61]:
+            - paragraph [ref=e62]: Miklošičeva cesta 1, 1000 Ljubljana, Slovenia
+            - paragraph [ref=e63]:
+              - link "+386 1 308 12 70" [ref=e64] [cursor=pointer]:
+                - /url: tel:+38613081270
+            - paragraph [ref=e65]:
+              - link "info@union-hotels.eu" [ref=e66] [cursor=pointer]:
+                - /url: mailto:info@union-hotels.eu
+          - heading "Stay Informed" [level=4] [ref=e67]
+          - generic [ref=e68]:
+            - textbox "Your email address" [ref=e69]
+            - button "Subscribe" [ref=e70]
+      - paragraph [ref=e72]: © 2026 Union Hotels. All rights reserved. This is a demonstration website.
+  - button "Open Next.js Dev Tools" [ref=e78] [cursor=pointer]:
+    - img [ref=e79]
+  - alert [ref=e82]

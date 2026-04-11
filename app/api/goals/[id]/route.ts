@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { validateApiKey, unauthorizedResponse, handleApiError } from "@/lib/auth";
 import { goalService } from "@/lib/services/goal-service";
 import { gamificationService } from "@/lib/services/gamification-service";
-import { recurringService } from "@/lib/services/recurring-service";
+import { goalRecurringService } from "@/lib/services/goal-recurring-service";
 import { updateGoalSchema } from "@/lib/validations";
 
 export async function GET(
@@ -59,7 +59,7 @@ export async function PATCH(
       // Update recurring template streak if this is a recurring instance
       let streakResult = null;
       if (existing.recurringSourceId) {
-        streakResult = await recurringService.completeRecurringInstance(
+        streakResult = await goalRecurringService.completeRecurringInstance(
           auth.userId,
           id,
         );

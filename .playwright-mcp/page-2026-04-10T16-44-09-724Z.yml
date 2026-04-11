@@ -1,0 +1,254 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e5]:
+      - list [ref=e7]:
+        - listitem [ref=e8]:
+          - link "Ascend" [ref=e9] [cursor=pointer]:
+            - /url: /dashboard
+            - img [ref=e11]
+            - generic [ref=e15]: Ascend
+      - generic [ref=e16]:
+        - generic [ref=e17]:
+          - generic [ref=e18]: Overview
+          - list [ref=e20]:
+            - listitem [ref=e21]:
+              - link "Dashboard" [ref=e22] [cursor=pointer]:
+                - /url: /dashboard
+                - img [ref=e23]
+                - generic [ref=e28]: Dashboard
+            - listitem [ref=e29]:
+              - link "Calendar" [ref=e30] [cursor=pointer]:
+                - /url: /calendar
+                - img [ref=e31]
+                - generic [ref=e33]: Calendar
+        - generic [ref=e34]:
+          - generic [ref=e35]: Inputs
+          - list [ref=e37]:
+            - listitem [ref=e38]:
+              - link "Todos" [ref=e39] [cursor=pointer]:
+                - /url: /todos
+                - img [ref=e40]
+                - generic [ref=e43]: Todos
+        - generic [ref=e44]:
+          - generic [ref=e45]: Outputs
+          - list [ref=e47]:
+            - listitem [ref=e48]:
+              - link "Goals" [ref=e49] [cursor=pointer]:
+                - /url: /goals
+                - img [ref=e50]
+                - generic [ref=e54]: Goals
+        - generic [ref=e55]:
+          - generic [ref=e56]: Knowledge
+          - list [ref=e58]:
+            - listitem [ref=e59]:
+              - link "Context" [ref=e60] [cursor=pointer]:
+                - /url: /context
+                - img [ref=e61]
+                - generic [ref=e69]: Context
+        - generic [ref=e70]:
+          - generic [ref=e71]: Categories
+          - list [ref=e73]:
+            - listitem [ref=e359]:
+              - button "Smoke Test" [ref=e361]:
+                - img [ref=e362]
+                - img [ref=e365]
+                - generic [ref=e367]: Smoke Test
+            - listitem [ref=e368]:
+              - button "Add category" [ref=e369]:
+                - img [ref=e370]
+                - generic [ref=e371]: Add category
+        - list [ref=e77]:
+          - listitem [ref=e78]:
+            - link "Settings" [ref=e79] [cursor=pointer]:
+              - /url: /settings
+              - img [ref=e80]
+              - generic [ref=e83]: Settings
+      - button "Switch to light mode" [ref=e273]:
+        - img
+      - button "Toggle Sidebar" [ref=e86]
+    - main [ref=e87]:
+      - main [ref=e88]:
+        - generic [ref=e89]:
+          - generic [ref=e90]:
+            - heading "Calendar" [level=1] [ref=e92]
+            - generic [ref=e93]:
+              - generic [ref=e94]:
+                - generic [ref=e372]:
+                  - img [ref=e373]
+                  - heading "Plan Your Day" [level=2] [ref=e376]
+                - button [ref=e377]:
+                  - img
+              - paragraph [ref=e99]: Pick up to 3 priorities for today
+              - button "Daily smoke v2 Low" [ref=e379]:
+                - img [ref=e380]
+                - generic [ref=e382]: Daily smoke v2
+                - generic [ref=e384]: Low
+              - generic [ref=e385]:
+                - button "Set Big 3" [disabled]
+                - button "Skip for now" [ref=e386]
+            - generic [ref=e102]:
+              - generic [ref=e103]:
+                - heading "April 2026" [level=2] [ref=e104]
+                - button "Today" [ref=e105]
+              - grid "April 2026" [ref=e109]:
+                - rowgroup [ref=e110]:
+                  - row [ref=e111]:
+                    - columnheader [ref=e112]
+                    - columnheader [ref=e113]: Mo
+                    - columnheader [ref=e114]: Tu
+                    - columnheader [ref=e115]: We
+                    - columnheader [ref=e116]: Th
+                    - columnheader [ref=e117]: Fr
+                    - columnheader [ref=e118]: Sa
+                    - columnheader [ref=e119]: Su
+                - rowgroup [ref=e120]:
+                  - row "Week 14 Monday, March 30th, 2026 Tuesday, March 31st, 2026 Wednesday, April 1st, 2026 Thursday, April 2nd, 2026 Friday, April 3rd, 2026 Saturday, April 4th, 2026 Sunday, April 5th, 2026" [ref=e121]:
+                    - rowheader "Week 14" [ref=e122]: "14"
+                    - gridcell "Monday, March 30th, 2026" [ref=e123]:
+                      - button "Monday, March 30th, 2026" [ref=e387] [cursor=pointer]:
+                        - generic [ref=e388]: "30"
+                    - gridcell "Tuesday, March 31st, 2026" [ref=e126]:
+                      - button "Tuesday, March 31st, 2026" [ref=e389] [cursor=pointer]:
+                        - generic [ref=e390]: "31"
+                    - gridcell "Wednesday, April 1st, 2026" [ref=e129]:
+                      - button "Wednesday, April 1st, 2026" [ref=e391] [cursor=pointer]:
+                        - generic [ref=e392]: "1"
+                    - gridcell "Thursday, April 2nd, 2026" [ref=e132]:
+                      - button "Thursday, April 2nd, 2026" [ref=e393] [cursor=pointer]:
+                        - generic [ref=e394]: "2"
+                    - gridcell "Friday, April 3rd, 2026" [ref=e135]:
+                      - button "Friday, April 3rd, 2026" [ref=e395] [cursor=pointer]:
+                        - generic [ref=e396]: "3"
+                    - gridcell "Saturday, April 4th, 2026" [ref=e138]:
+                      - button "Saturday, April 4th, 2026" [ref=e397] [cursor=pointer]:
+                        - generic [ref=e398]: "4"
+                    - gridcell "Sunday, April 5th, 2026" [ref=e141]:
+                      - button "Sunday, April 5th, 2026" [ref=e399] [cursor=pointer]:
+                        - generic [ref=e400]: "5"
+                  - row "Week 15 Monday, April 6th, 2026 Tuesday, April 7th, 2026 Wednesday, April 8th, 2026 Thursday, April 9th, 2026 Today, Friday, April 10th, 2026, selected Saturday, April 11th, 2026 Sunday, April 12th, 2026" [ref=e144]:
+                    - rowheader "Week 15" [ref=e145]: "15"
+                    - gridcell "Monday, April 6th, 2026" [ref=e146]:
+                      - button "Monday, April 6th, 2026" [ref=e401] [cursor=pointer]:
+                        - generic [ref=e402]: "6"
+                    - gridcell "Tuesday, April 7th, 2026" [ref=e149]:
+                      - button "Tuesday, April 7th, 2026" [ref=e403] [cursor=pointer]:
+                        - generic [ref=e404]: "7"
+                    - gridcell "Wednesday, April 8th, 2026" [ref=e152]:
+                      - button "Wednesday, April 8th, 2026" [ref=e405] [cursor=pointer]:
+                        - generic [ref=e406]: "8"
+                    - gridcell "Thursday, April 9th, 2026" [ref=e155]:
+                      - button "Thursday, April 9th, 2026" [ref=e407] [cursor=pointer]:
+                        - generic [ref=e408]: "9"
+                    - gridcell "Today, Friday, April 10th, 2026, selected" [selected] [ref=e158]:
+                      - button "Today, Friday, April 10th, 2026, selected" [ref=e409] [cursor=pointer]:
+                        - generic [ref=e410]: "10"
+                    - gridcell "Saturday, April 11th, 2026" [ref=e161]:
+                      - button "Saturday, April 11th, 2026" [ref=e413] [cursor=pointer]:
+                        - generic [ref=e414]: "11"
+                    - gridcell "Sunday, April 12th, 2026" [ref=e164]:
+                      - button "Sunday, April 12th, 2026" [ref=e417] [cursor=pointer]:
+                        - generic [ref=e418]: "12"
+                  - row "Week 16 Monday, April 13th, 2026 Tuesday, April 14th, 2026 Wednesday, April 15th, 2026 Thursday, April 16th, 2026 Friday, April 17th, 2026 Saturday, April 18th, 2026 Sunday, April 19th, 2026" [ref=e167]:
+                    - rowheader "Week 16" [ref=e168]: "16"
+                    - gridcell "Monday, April 13th, 2026" [ref=e169]:
+                      - button "Monday, April 13th, 2026" [ref=e421] [cursor=pointer]:
+                        - generic [ref=e422]: "13"
+                    - gridcell "Tuesday, April 14th, 2026" [ref=e172]:
+                      - button "Tuesday, April 14th, 2026" [ref=e425] [cursor=pointer]:
+                        - generic [ref=e426]: "14"
+                    - gridcell "Wednesday, April 15th, 2026" [ref=e175]:
+                      - button "Wednesday, April 15th, 2026" [ref=e429] [cursor=pointer]:
+                        - generic [ref=e430]: "15"
+                    - gridcell "Thursday, April 16th, 2026" [ref=e178]:
+                      - button "Thursday, April 16th, 2026" [ref=e433] [cursor=pointer]:
+                        - generic [ref=e434]: "16"
+                    - gridcell "Friday, April 17th, 2026" [ref=e181]:
+                      - button "Friday, April 17th, 2026" [ref=e437] [cursor=pointer]:
+                        - generic [ref=e438]: "17"
+                    - gridcell "Saturday, April 18th, 2026" [ref=e184]:
+                      - button "Saturday, April 18th, 2026" [ref=e441] [cursor=pointer]:
+                        - generic [ref=e442]: "18"
+                    - gridcell "Sunday, April 19th, 2026" [ref=e187]:
+                      - button "Sunday, April 19th, 2026" [ref=e445] [cursor=pointer]:
+                        - generic [ref=e446]: "19"
+                  - row "Week 17 Monday, April 20th, 2026 Tuesday, April 21st, 2026 Wednesday, April 22nd, 2026 Thursday, April 23rd, 2026 Friday, April 24th, 2026 Saturday, April 25th, 2026 Sunday, April 26th, 2026" [ref=e190]:
+                    - rowheader "Week 17" [ref=e191]: "17"
+                    - gridcell "Monday, April 20th, 2026" [ref=e192]:
+                      - button "Monday, April 20th, 2026" [ref=e449] [cursor=pointer]:
+                        - generic [ref=e450]: "20"
+                    - gridcell "Tuesday, April 21st, 2026" [ref=e195]:
+                      - button "Tuesday, April 21st, 2026" [ref=e453] [cursor=pointer]:
+                        - generic [ref=e454]: "21"
+                    - gridcell "Wednesday, April 22nd, 2026" [ref=e198]:
+                      - button "Wednesday, April 22nd, 2026" [ref=e457] [cursor=pointer]:
+                        - generic [ref=e458]: "22"
+                    - gridcell "Thursday, April 23rd, 2026" [ref=e201]:
+                      - button "Thursday, April 23rd, 2026" [ref=e461] [cursor=pointer]:
+                        - generic [ref=e462]: "23"
+                    - gridcell "Friday, April 24th, 2026" [ref=e204]:
+                      - button "Friday, April 24th, 2026" [ref=e465] [cursor=pointer]:
+                        - generic [ref=e466]: "24"
+                    - gridcell "Saturday, April 25th, 2026" [ref=e207]:
+                      - button "Saturday, April 25th, 2026" [ref=e469] [cursor=pointer]:
+                        - generic [ref=e470]: "25"
+                    - gridcell "Sunday, April 26th, 2026" [ref=e210]:
+                      - button "Sunday, April 26th, 2026" [ref=e473] [cursor=pointer]:
+                        - generic [ref=e474]: "26"
+                  - row "Week 18 Monday, April 27th, 2026 Tuesday, April 28th, 2026 Wednesday, April 29th, 2026 Thursday, April 30th, 2026 Friday, May 1st, 2026 Saturday, May 2nd, 2026 Sunday, May 3rd, 2026" [ref=e213]:
+                    - rowheader "Week 18" [ref=e214]: "18"
+                    - gridcell "Monday, April 27th, 2026" [ref=e215]:
+                      - button "Monday, April 27th, 2026" [ref=e477] [cursor=pointer]:
+                        - generic [ref=e478]: "27"
+                    - gridcell "Tuesday, April 28th, 2026" [ref=e218]:
+                      - button "Tuesday, April 28th, 2026" [ref=e481] [cursor=pointer]:
+                        - generic [ref=e482]: "28"
+                    - gridcell "Wednesday, April 29th, 2026" [ref=e221]:
+                      - button "Wednesday, April 29th, 2026" [ref=e485] [cursor=pointer]:
+                        - generic [ref=e486]: "29"
+                    - gridcell "Thursday, April 30th, 2026" [ref=e224]:
+                      - button "Thursday, April 30th, 2026" [ref=e489] [cursor=pointer]:
+                        - generic [ref=e490]: "30"
+                    - gridcell "Friday, May 1st, 2026" [ref=e227]:
+                      - button "Friday, May 1st, 2026" [ref=e493] [cursor=pointer]:
+                        - generic [ref=e494]: "1"
+                    - gridcell "Saturday, May 2nd, 2026" [ref=e230]:
+                      - button "Saturday, May 2nd, 2026" [ref=e495] [cursor=pointer]:
+                        - generic [ref=e496]: "2"
+                    - gridcell "Sunday, May 3rd, 2026" [ref=e233]:
+                      - button "Sunday, May 3rd, 2026" [ref=e497] [cursor=pointer]:
+                        - generic [ref=e498]: "3"
+                  - row "Week 19 Monday, May 4th, 2026 Tuesday, May 5th, 2026 Wednesday, May 6th, 2026 Thursday, May 7th, 2026 Friday, May 8th, 2026 Saturday, May 9th, 2026 Sunday, May 10th, 2026" [ref=e236]:
+                    - rowheader "Week 19" [ref=e237]: "19"
+                    - gridcell "Monday, May 4th, 2026" [ref=e238]:
+                      - button "Monday, May 4th, 2026" [ref=e499] [cursor=pointer]:
+                        - generic [ref=e500]: "4"
+                    - gridcell "Tuesday, May 5th, 2026" [ref=e241]:
+                      - button "Tuesday, May 5th, 2026" [ref=e501] [cursor=pointer]:
+                        - generic [ref=e502]: "5"
+                    - gridcell "Wednesday, May 6th, 2026" [ref=e244]:
+                      - button "Wednesday, May 6th, 2026" [ref=e503] [cursor=pointer]:
+                        - generic [ref=e504]: "6"
+                    - gridcell "Thursday, May 7th, 2026" [ref=e247]:
+                      - button "Thursday, May 7th, 2026" [ref=e505] [cursor=pointer]:
+                        - generic [ref=e506]: "7"
+                    - gridcell "Friday, May 8th, 2026" [ref=e250]:
+                      - button "Friday, May 8th, 2026" [ref=e507] [cursor=pointer]:
+                        - generic [ref=e508]: "8"
+                    - gridcell "Saturday, May 9th, 2026" [ref=e253]:
+                      - button "Saturday, May 9th, 2026" [ref=e509] [cursor=pointer]:
+                        - generic [ref=e510]: "9"
+                    - gridcell "Sunday, May 10th, 2026" [ref=e256]:
+                      - button "Sunday, May 10th, 2026" [ref=e511] [cursor=pointer]:
+                        - generic [ref=e512]: "10"
+          - paragraph [ref=e260]: Select a day to see details
+    - generic [ref=e261]:
+      - heading "Command Palette" [level=2] [ref=e262]
+      - paragraph [ref=e263]: Search for a command to run...
+  - region "Notifications alt+T"
+  - generic [ref=e513]:
+    - img [ref=e515]
+    - button "Open Tanstack query devtools" [ref=e563] [cursor=pointer]:
+      - img [ref=e564]
+  - button "Open Next.js Dev Tools" [ref=e269] [cursor=pointer]:
+    - img [ref=e270]
+  - alert [ref=e358]

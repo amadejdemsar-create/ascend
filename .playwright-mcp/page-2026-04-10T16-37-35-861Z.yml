@@ -1,0 +1,87 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e5]:
+      - list [ref=e7]:
+        - listitem [ref=e8]:
+          - link "Ascend" [ref=e9] [cursor=pointer]:
+            - /url: /dashboard
+            - img [ref=e11]
+            - generic [ref=e15]: Ascend
+      - generic [ref=e16]:
+        - generic [ref=e17]:
+          - generic [ref=e18]: Overview
+          - list [ref=e20]:
+            - listitem [ref=e21]:
+              - link "Dashboard" [ref=e22] [cursor=pointer]:
+                - /url: /dashboard
+                - img [ref=e23]
+                - generic [ref=e28]: Dashboard
+            - listitem [ref=e29]:
+              - link "Calendar" [ref=e30] [cursor=pointer]:
+                - /url: /calendar
+                - img [ref=e31]
+                - generic [ref=e33]: Calendar
+        - generic [ref=e34]:
+          - generic [ref=e35]: Inputs
+          - list [ref=e37]:
+            - listitem [ref=e38]:
+              - link "Todos" [ref=e39] [cursor=pointer]:
+                - /url: /todos
+                - img [ref=e40]
+                - generic [ref=e43]: Todos
+        - generic [ref=e44]:
+          - generic [ref=e45]: Outputs
+          - list [ref=e47]:
+            - listitem [ref=e48]:
+              - link "Goals" [ref=e49] [cursor=pointer]:
+                - /url: /goals
+                - img [ref=e50]
+                - generic [ref=e54]: Goals
+        - generic [ref=e55]:
+          - generic [ref=e56]: Knowledge
+          - list [ref=e58]:
+            - listitem [ref=e59]:
+              - link "Context" [ref=e60] [cursor=pointer]:
+                - /url: /context
+                - img [ref=e61]
+                - generic [ref=e69]: Context
+        - generic [ref=e70]:
+          - generic [ref=e71]: Categories
+          - list [ref=e73]:
+            - listitem [ref=e74]:
+              - button "Loading..." [disabled]:
+                - generic: Loading...
+        - list [ref=e77]:
+          - listitem [ref=e78]:
+            - link "Settings" [ref=e79] [cursor=pointer]:
+              - /url: /settings
+              - img [ref=e80]
+              - generic [ref=e83]: Settings
+      - button "Switch to light mode" [ref=e85]:
+        - img
+      - button "Toggle Sidebar" [ref=e86]
+    - main [ref=e87]:
+      - main [ref=e88]:
+        - generic [ref=e90]:
+          - heading "Dashboard" [level=1] [ref=e91]
+          - paragraph [ref=e92]: What are your inputs today?
+    - generic [ref=e114]:
+      - heading "Command Palette" [level=2] [ref=e115]
+      - paragraph [ref=e116]: Search for a command to run...
+  - region "Notifications alt+T"
+  - generic [ref=e227]:
+    - img [ref=e228]
+    - generic [ref=e231]:
+      - paragraph [ref=e232]: Install Ascend
+      - paragraph [ref=e233]: Add to your home screen for quick access
+    - generic [ref=e234]:
+      - button "Install" [ref=e235]
+      - button "Dismiss install prompt" [ref=e236]:
+        - img
+  - generic [ref=e117]:
+    - img [ref=e119]
+    - button "Open Tanstack query devtools" [ref=e167] [cursor=pointer]:
+      - img [ref=e168]
+  - button "Open Next.js Dev Tools" [ref=e222] [cursor=pointer]:
+    - img [ref=e223]
+  - alert [ref=e216]
