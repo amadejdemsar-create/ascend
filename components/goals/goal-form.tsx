@@ -6,6 +6,7 @@ import { DynamicIcon } from "lucide-react/dynamic";
 import type { IconName } from "lucide-react/dynamic";
 import type { CreateGoalInput, UpdateGoalInput } from "@/lib/validations";
 import { HORIZON_ORDER } from "@/lib/constants";
+import { horizonItems, priorityItems } from "@/lib/enum-display";
 import { useCategories } from "@/lib/hooks/use-categories";
 import { GoalParentSelect } from "@/components/goals/goal-parent-select";
 import { Button } from "@/components/ui/button";
@@ -184,6 +185,7 @@ export function GoalForm({
         <div className="space-y-2">
           <Label>Horizon</Label>
           <Select
+            items={horizonItems}
             value={horizon}
             onValueChange={(val) => {
               setHorizon(val as string);
@@ -195,9 +197,9 @@ export function GoalForm({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {HORIZON_ORDER.map((h) => (
-                <SelectItem key={h} value={h}>
-                  {h.charAt(0) + h.slice(1).toLowerCase()}
+              {horizonItems.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -207,6 +209,7 @@ export function GoalForm({
         <div className="space-y-2">
           <Label>Priority</Label>
           <Select
+            items={priorityItems}
             value={priority}
             onValueChange={(val) => setPriority(val as string)}
           >
@@ -214,9 +217,9 @@ export function GoalForm({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {PRIORITIES.map((p) => (
-                <SelectItem key={p} value={p}>
-                  {p.charAt(0) + p.slice(1).toLowerCase()}
+              {priorityItems.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -228,7 +231,7 @@ export function GoalForm({
       <div className="space-y-2">
         <Label>Category</Label>
         <Select
-          value={categoryId ?? "__none__"}
+          value={categoryId}
           onValueChange={(val) =>
             setCategoryId(!val || val === "__none__" ? undefined : val)
           }
