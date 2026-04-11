@@ -92,7 +92,7 @@ Example for an "enum source-of-truth consolidation" change (the one from the `as
 >
 > 5. **Todo quick-add with priority enum.** Precondition: /todos page. Action: use quick-add to create a HIGH priority todo. Expected: toast, input clears, new todo at top with a red HIGH badge. Why: exercises `Priority` enum through a different code path.
 >
-> 6. **Todo complete/uncomplete cycle.** Precondition: at least one todo in PENDING. Action: click the checkbox to complete → wait for toast → click again to uncomplete. Expected: both transitions work; `status` enum accepts DONE and reverts to PENDING. Why: reversible done state is an Ascend design rule and uses the TodoStatus enum.
+> 6. **Todo complete/uncomplete cycle.** Precondition: at least one todo in PENDING. Action: click the todo row's title cell (NOT the row checkbox, which is for bulk selection only, see the "Ascend-specific signals" section below) to open the detail panel, then click the "Complete" button. Wait for the status cell in the row to flip to "Done". Then click the row title again and click the "Reopen" button in the detail panel. Wait for the status cell to flip back to "Pending". Expected: both transitions work cleanly with toast feedback; `status` enum accepts DONE and reverts to PENDING. Why: reversible done state is an Ascend design rule and uses the `TodoStatus` enum on both sides.
 >
 > 7. **Category dropdown shows all options.** Precondition: category sidebar tree has at least 2 categories. Action: on /goals, select a goal, click the category dropdown in the detail panel. Expected: both categories listed, selectable. Why: enum-adjacent — the category list is not an enum but shares the same React Query invalidation surface.
 >
@@ -147,6 +147,24 @@ cd /Users/Shared/Domain/Code/Personal/ascend && npx tsc --noEmit 2>&1 | tail -20
 
 If tsc fails, STOP. The change cannot be meaningfully verified in the browser until it compiles. Record the errors in the report and return FAIL.
 
+### Warm the Turbopack route cache before opening the browser (mandatory)
+
+**Ascend runs on Next.js 16 + Turbopack in dev mode. Turbopack compiles each route on first hit, and cold compiles for Ascend regularly take 60 to 120 seconds per route because the recurring-goal and recurring-todo generator endpoints compile in parallel and hold their own locks.** If you open Playwright and click the "Goals" sidebar link first, the click will fire a client-side fetch that ends up waiting behind the Turbopack queue, Playwright's default 30-second wait will expire, and you will mistake a compile delay for a broken navigation.
+
+Avoid this entirely by curl-warming every authenticated route with a generous per-request timeout **before** you call `browser_navigate`:
+
+```bash
+PORT=<detected-port>
+for ROUTE in /dashboard /goals /todos /calendar /context /settings; do
+  echo "Warming $ROUTE ..."
+  curl -sf --max-time 180 -o /dev/null -w "  $ROUTE -> %{http_code} in %{time_total}s\n" "http://localhost:$PORT$ROUTE" || echo "  $ROUTE FAILED"
+done
+```
+
+Expect each first-hit entry to take anywhere from 5 to 120 seconds. Subsequent hits (including the Playwright ones) land in under one second because the compile cache is warm. If any route returns a 500, stop and report: that is a compile-time failure that your diff likely caused, and no amount of clicking will fix it.
+
+The warm-up step is not optional. Skipping it leads to false "sidebar link broken" reports like the one from the 11. 4. 2026 enum-consolidation run.
+
 ## Phase 2: Open the app
 
 1. `mcp__playwright__browser_navigate` to `http://localhost:<port>/dashboard`. This is the ONLY URL you are allowed to type. (The root `/` is the marketing landing page, which is not the app shell you need.)
@@ -163,6 +181,8 @@ From `/dashboard`, the `AppSidebar` exposes (at least): Dashboard, Calendar, Tod
 For nested navigation (open a specific goal, expand a category, open the detail panel), continue clicking: list row → detail panel → field → input. Always `browser_snapshot` before a click to get a fresh element reference.
 
 You may NOT type the target URL directly. If you cannot reach the target page through visible sidebar or in-page UI elements, that is a navigation regression. Record it and FAIL.
+
+**One narrow exception to the URL-typing rule: Turbopack cold-compile fallback.** If you completed the Phase 1 route warm-up AND a sidebar click still fails within Playwright's default wait, that is almost certainly a second compile burst (e.g., Turbopack is rebuilding because a file was touched) and not a real navigation regression. In that case only, you may call `browser_navigate` directly to the target route URL as a fallback, record the procedural deviation in the report under "Procedural notes", and continue. Do NOT use this fallback if you skipped the warm-up or if curl against the same route also times out (that would indicate a real compile or server failure, not a queued click).
 
 After arriving, take a full-page screenshot with a descriptive filename:
 
@@ -317,7 +337,9 @@ These are the specific runtime gotchas that compile-time checks miss in Ascend:
 - **Command palette (Cmd+K).** Cmd+K should open the command palette from any authenticated page. Escape closes it. Up/Down navigates. Enter selects.
 - **Keyboard shortcuts.** `/` focuses search, `g` + `g` navigates to goals, `g` + `t` to todos, `g` + `c` to calendar. If any of these are broken, that is a regression in `use-keyboard-shortcuts.ts`.
 - **Click-to-edit affordance.** Every editable field in a detail panel must switch to an input on click. Hovering should show a subtle highlight. If you click a field and nothing happens, it is a regression.
-- **Reversible done states.** Click to complete a todo, then click again to uncomplete. Both directions must work. If there is no uncomplete path, that is a one-way trap and a FAIL.
+- **Reversible done states.** Completing a todo must be reversible. On `/todos`, completion goes through the bulk action bar's "Complete" button (after selecting a row via its checkbox) OR through the "Complete" button in the detail panel. Reversal uses the **"Reopen"** button in the detail panel, which flips `TodoStatus` from DONE back to PENDING. If you cannot find a Reopen affordance after completing a todo, that is a one-way trap and a FAIL.
+- **Todo row checkbox is bulk selection, not completion.** The checkbox in the first column of the todos table selects rows for bulk actions ("Complete", "Delete") that appear in a floating action bar at the bottom. It does NOT toggle the todo's done state directly. If you want to complete a single todo, either (a) select it and click the bulk "Complete" button, or (b) open the detail panel and click the "Complete" button there. Programmatic `checkbox.click()` in `browser_evaluate` will NOT trigger a completion mutation; it only toggles the React selection state. The 11. 4. 2026 enum-consolidation run initially misread this and wasted a few round trips. Do not repeat.
+- **Detail panel 404-on-refetch race after delete (pre-existing, not a regression).** When you delete a goal or todo from the detail panel and then close it, React Query sometimes fires a trailing `GET /api/{goals|todos}/<id>` that returns 404 because the record is already gone. This is a known pre-existing pattern in Ascend's `useGoal(id)` / `useTodo(id)` hooks, not caused by any diff in the normal verifier run. Include it in the console-error report as a pre-existing NOTE, not as a fresh regression, unless the commit under test actually touches `lib/hooks/use-goals.ts`, `lib/hooks/use-todos.ts`, or `lib/queries/keys.ts`.
 
 ## Canonical pages and what to click
 
@@ -332,7 +354,8 @@ These are the specific runtime gotchas that compile-time checks miss in Ascend:
 
 ## Forbidden behaviors
 
-- Typing a URL other than the single bootstrap `http://localhost:<port>/dashboard`
+- Typing a URL other than the single bootstrap `http://localhost:<port>/dashboard` **(except the narrow Turbopack cold-compile fallback documented in Phase 3, which requires having completed the Phase 1 warm-up first)**
+- Skipping the Phase 1 Turbopack warm-up curl loop — it is mandatory, not optional
 - Skipping the mandatory `browser_resize` to 1728x1013 after the first navigate
 - Resizing the viewport more than once per session
 - Running Playwright in headless mode (it is already headed via the global MCP config; don't override)
