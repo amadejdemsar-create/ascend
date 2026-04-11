@@ -8,8 +8,6 @@ import { useKeyboardShortcuts } from "@/lib/hooks/use-keyboard-shortcuts";
 import { KeyboardShortcuts } from "@/components/command-palette/keyboard-shortcuts";
 import { CommandPalette } from "@/components/command-palette/command-palette";
 import { GoalModal } from "@/components/goals/goal-modal";
-import { OfflineSyncProvider } from "@/components/pwa/offline-sync-provider";
-import { OfflineIndicator } from "@/components/pwa/offline-indicator";
 
 export default function AppLayout({
   children,
@@ -25,23 +23,20 @@ export default function AppLayout({
   useKeyboardShortcuts(toggleShortcutRef);
 
   return (
-    <OfflineSyncProvider>
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
-          <OfflineIndicator />
-          <main className="flex-1 p-4 md:p-6 pb-20 md:pb-6">
-            <ViewTransition>{children}</ViewTransition>
-          </main>
-        </SidebarInset>
-        <BottomTabBar />
-        <CommandPalette />
-        <GoalModal />
-        <KeyboardShortcuts
-          open={shortcutRefOpen}
-          onOpenChange={setShortcutRefOpen}
-        />
-      </SidebarProvider>
-    </OfflineSyncProvider>
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        <main className="flex-1 p-4 md:p-6 pb-20 md:pb-6">
+          <ViewTransition>{children}</ViewTransition>
+        </main>
+      </SidebarInset>
+      <BottomTabBar />
+      <CommandPalette />
+      <GoalModal />
+      <KeyboardShortcuts
+        open={shortcutRefOpen}
+        onOpenChange={setShortcutRefOpen}
+      />
+    </SidebarProvider>
   );
 }
