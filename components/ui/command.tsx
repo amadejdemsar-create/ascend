@@ -60,7 +60,15 @@ function CommandDialog({
         )}
         showCloseButton={showCloseButton}
       >
-        {children}
+        {/*
+          CRITICAL: children must be wrapped in <Command> so cmdk's
+          internal context (filter, value registry, selected state) is
+          provided to CommandInput/CommandList/CommandItem. Dropping
+          this wrapper made Cmd+K throw "Cannot read properties of
+          undefined (reading 'toLocaleLowerCase')" because cmdk's
+          internal filter walked items without a registered value.
+        */}
+        <Command>{children}</Command>
       </DialogContent>
     </Dialog>
   )
