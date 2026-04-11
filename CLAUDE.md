@@ -42,6 +42,7 @@ The standard is SpaceX engineering: if it is worth doing, it is worth doing righ
    - Component: read `components/goals/goal-detail.tsx` (detail panel), `components/goals/goal-filter-bar.tsx` (filter), `components/goals/quick-add.tsx` (inline creation)
    - MCP tool: read `lib/mcp/schemas.ts` + `lib/mcp/tools/<domain>-tools.ts` + `lib/mcp/server.ts`
 3. **Check `COMPONENT_CATALOG.md`** at `.claude/COMPONENT_CATALOG.md` before creating any new component. Duplicating existing components is the most common UI mistake.
+4. **For UI-adjacent changes, plan to run `ax:verify-ui` before declaring done.** Any diff that touches `components/**`, `app/(app)/**`, `lib/hooks/**`, `lib/stores/**`, `lib/validations.ts`, `lib/api-client.ts`, or `lib/queries/keys.ts` must be verified end-to-end in a real browser via the `ascend-ui-verifier` agent (driven by Playwright). Type-checks and unit tests are not sufficient for the UI path.
 
 ### Ascend-Specific Quality Checks (mandatory before declaring done)
 
@@ -53,7 +54,7 @@ Every feature or fix must pass ALL of these before you may say "done":
 - [ ] Every touched POST/PUT/PATCH route parses the body through a Zod schema from `lib/validations.ts`
 - [ ] Every touched mutation invalidates the correct query keys, including cross-domain invalidations
 - [ ] No new direct imports of `@/lib/db` or `@prisma/client` outside `lib/services/`
-- [ ] No console errors in the browser on the affected page (verify in Dia via Chrome DevTools MCP for UI work)
+- [ ] For UI-adjacent changes (`components/**`, `app/(app)/**`, `lib/hooks/**`, `lib/stores/**`, `lib/validations.ts`, `lib/api-client.ts`, `lib/queries/keys.ts`), `ax:verify-ui` returns PASS or PASS WITH NOTES with zero blocking scenarios. The verifier clicks through the app via Playwright, writes a report to `.ascendflow/verification/`, and surfaces runtime regressions, console errors, stale cache, and broken navigation that type-checks cannot catch. `ascend-ux` (visual design audits via chrome-devtools in Dia) and `ax:verify-ui` (behavioral verification via Playwright) are complementary: run `ax:verify-ui` for any behavioral change, `ascend-ux` for any visual polish.
 - [ ] All relevant patterns from `.claude/rules/` followed (service-patterns, api-route-patterns, component-patterns, mcp-tool-patterns)
 
 ### Forbidden Phrases When Any Check Fails
