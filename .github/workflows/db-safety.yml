@@ -1,0 +1,66 @@
+name: DB safety checks
+
+# Fail fast if a PR touches prisma/ in a way that would drop the
+# search_vector full-text search column or any of its dependencies.
+# The column lives in a raw SQL migration
+# (prisma/migrations/20260409114539_add_context_fts) and is invisible
+# to Prisma; a generated migration can silently drop it if the author
+# forgets to edit the file before committing. See CLAUDE.md safety
+# rule 6 and the warning comment above `model ContextEntry` in
+# prisma/schema.prisma.
+
+on:
+  pull_request:
+    paths:
+      - "prisma/**"
+  push:
+    branches: [main]
+    paths:
+      - "prisma/**"
+
+jobs:
+  search-vector-guard:
+    name: search_vector not dropped
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan every migration.sql for forbidden drops
+        run: |
+          set -euo pipefail
+          found=0
+          while IFS= read -r file; do
+            if grep -qEi 'DROP COLUMN[[:space:]]+"?search_vector' "$file"; then
+              echo "::error file=$file::migration drops search_vector column"
+              found=1
+            fi
+            if grep -qEi 'DROP INDEX[[:space:]]+("|)ContextEntry_search_vector_idx' "$file"; then
+              echo "::error file=$file::migration drops search_vector index"
+              found=1
+            fi
+            if grep -qEi 'DROP (FUNCTION|TRIGGER)[[:space:]]+("|)context_entry_search_vector' "$file"; then
+              echo "::error file=$file::migration drops search_vector trigger/function"
+              found=1
+            fi
+          done < <(find prisma/migrations -name "migration.sql" -type f)
+
+          if [ "$found" -ne 0 ]; then
+            echo ""
+            echo "At least one migration tries to drop the ContextEntry search_vector column, index, or trigger."
+            echo "These were added by a raw SQL migration (20260409114539_add_context_fts) and Prisma does not know about them."
+            echo "If Prisma generated a DROP statement, edit the migration file to remove it BEFORE applying."
+            echo "See CLAUDE.md safety rule 6."
+            exit 1
+          fi
+          echo "OK: no migration drops search_vector."
+
+      - name: ContextEntry schema still has warning comment
+        run: |
+          set -euo pipefail
+          if ! grep -q "search_vector tsvector column" prisma/schema.prisma; then
+            echo "::error file=prisma/schema.prisma::warning comment about search_vector is missing"
+            echo ""
+            echo "The warning block above \`model ContextEntry\` was removed or altered."
+            echo "Restore it so future developers see the danger zone at read time."
+            exit 1
+          fi
+          echo "OK: schema warning comment present."
