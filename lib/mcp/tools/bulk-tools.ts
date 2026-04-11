@@ -1,5 +1,4 @@
 import { goalService } from "@/lib/services/goal-service";
-import { gamificationService } from "@/lib/services/gamification-service";
 import { updateGoalSchema } from "@/lib/validations";
 import { ZodError } from "zod";
 
@@ -47,14 +46,15 @@ export async function handleBulkTool(
               skipped.push(id);
               continue;
             }
-            await goalService.update(userId, id, { status: "COMPLETED" });
-            const xpResult = await gamificationService.awardXp(
+            // Atomic: update + XP award + recurring streak run inside a
+            // single prisma.$transaction so a mid-flow failure rolls
+            // back the whole per-goal completion.
+            const result = await goalService.completeWithSideEffects(
               userId,
               id,
-              existing.horizon,
-              existing.priority,
+              { status: "COMPLETED" },
             );
-            totalXpAwarded += xpResult.amount;
+            totalXpAwarded += result._xp.amount;
             succeeded.push(id);
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);

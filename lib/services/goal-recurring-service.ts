@@ -1,5 +1,10 @@
 import { prisma } from "@/lib/db";
+import type { Prisma } from "../../generated/prisma/client";
 import { bumpStreak } from "@/lib/services/recurring-helpers";
+
+// Reusable client type so methods can participate in an interactive
+// $transaction or run standalone. Same pattern as the other services.
+type PrismaClientLike = typeof prisma | Prisma.TransactionClient;
 import {
   addDays,
   addWeeks,
@@ -174,8 +179,12 @@ export const goalRecurringService = {
    *
    * Returns the updated template with streak information.
    */
-  async completeRecurringInstance(userId: string, instanceId: string) {
-    const instance = await prisma.goal.findFirst({
+  async completeRecurringInstance(
+    userId: string,
+    instanceId: string,
+    client: PrismaClientLike = prisma,
+  ) {
+    const instance = await client.goal.findFirst({
       where: { id: instanceId, userId },
     });
 
@@ -183,7 +192,7 @@ export const goalRecurringService = {
       throw new Error("Not a recurring instance");
     }
 
-    const template = await prisma.goal.findFirst({
+    const template = await client.goal.findFirst({
       where: { id: instance.recurringSourceId, userId },
     });
 
@@ -196,7 +205,7 @@ export const goalRecurringService = {
       longestStreak: template.longestStreak,
     });
 
-    const updated = await prisma.goal.update({
+    const updated = await client.goal.update({
       where: { id: template.id },
       data: {
         currentStreak,

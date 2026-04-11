@@ -2,6 +2,8 @@ import { prisma } from "@/lib/db";
 import type { Prisma } from "../../generated/prisma/client";
 import type { CreateGoalInput, UpdateGoalInput, GoalFilters, AddProgressInput, ReorderGoalsInput } from "@/lib/validations";
 import { validateHierarchy } from "@/lib/services/hierarchy-helpers";
+import { gamificationService } from "@/lib/services/gamification-service";
+import { goalRecurringService } from "@/lib/services/goal-recurring-service";
 
 // A Prisma client suitable for either standalone use or inside an
 // interactive transaction. Service methods that perform multiple
@@ -73,9 +75,18 @@ export const goalService = {
   /**
    * Update a goal. Always verifies ownership before mutating.
    * Re-validates hierarchy if parentId or horizon is changing.
+   *
+   * Accepts an optional Prisma client so callers inside an interactive
+   * transaction (e.g. completeWithSideEffects) can thread the tx
+   * through.
    */
-  async update(userId: string, id: string, data: UpdateGoalInput) {
-    const existing = await prisma.goal.findFirst({ where: { id, userId } });
+  async update(
+    userId: string,
+    id: string,
+    data: UpdateGoalInput,
+    client: PrismaClientLike = prisma,
+  ) {
+    const existing = await client.goal.findFirst({ where: { id, userId } });
     if (!existing) throw new Error("Goal not found");
 
     if (data.parentId !== undefined || data.horizon) {
@@ -96,9 +107,69 @@ export const goalService = {
       updateData.completedAt = new Date();
     }
 
-    return prisma.goal.update({
+    return client.goal.update({
       where: { id },
       data: updateData,
+    });
+  },
+
+  /**
+   * Complete a goal with all side effects atomically:
+   *   1. goalService.update with the incoming patch (usually status:COMPLETED)
+   *   2. gamificationService.awardXp (XpEvent + UserStats + level + weekly score)
+   *   3. goalRecurringService.completeRecurringInstance if this is a recurring
+   *      instance (template streak + longestStreak bookkeeping)
+   *
+   * Every write runs inside a single prisma.$transaction so a mid-flow
+   * failure rolls back goal state, XP, and streak together. Mirrors the
+   * todoService.complete contract introduced by H1/H3.
+   *
+   * The caller (PATCH route or MCP tool) is responsible for deciding
+   * whether the goal is actually transitioning to COMPLETED for the
+   * first time; this method does not re-check "was already completed"
+   * because the callers often want the update to apply unconditionally.
+   */
+  async completeWithSideEffects(
+    userId: string,
+    id: string,
+    data: UpdateGoalInput,
+  ) {
+    return prisma.$transaction(async (tx) => {
+      // Read the existing goal before the update so we have the
+      // correct horizon + priority for the XP calculation and the
+      // recurringSourceId to decide whether to bump a streak.
+      const existing = await tx.goal.findFirst({ where: { id, userId } });
+      if (!existing) throw new Error("Goal not found");
+
+      // 1. Apply the update inside the transaction.
+      const goal = await goalService.update(userId, id, data, tx);
+
+      // 2. Award XP using the pre-update horizon/priority so the
+      // source string is stable even if the caller patched them.
+      const xpResult = await gamificationService.awardXp(
+        userId,
+        id,
+        existing.horizon,
+        existing.priority,
+        tx,
+      );
+
+      // 3. Bump the recurring template streak if this instance belongs
+      // to one.
+      let streakResult = null;
+      if (existing.recurringSourceId) {
+        streakResult = await goalRecurringService.completeRecurringInstance(
+          userId,
+          id,
+          tx,
+        );
+      }
+
+      return {
+        ...goal,
+        _xp: xpResult,
+        ...(streakResult && { _streak: streakResult }),
+      };
     });
   },
 

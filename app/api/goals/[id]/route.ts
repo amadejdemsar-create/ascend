@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateApiKey, unauthorizedResponse, handleApiError } from "@/lib/auth";
 import { goalService } from "@/lib/services/goal-service";
-import { gamificationService } from "@/lib/services/gamification-service";
-import { goalRecurringService } from "@/lib/services/goal-recurring-service";
 import { updateGoalSchema } from "@/lib/validations";
 
 export async function GET(
@@ -36,42 +34,27 @@ export async function PATCH(
     const body = await request.json();
     const data = updateGoalSchema.parse(body);
 
-    // Check previous status before updating (for XP award on completion)
-    const existing = data.status === "COMPLETED"
-      ? await goalService.getById(auth.userId, id)
-      : null;
-
-    const goal = await goalService.update(auth.userId, id, data);
-
-    // Award XP only on genuine transition to COMPLETED (not re-completion)
-    if (
-      data.status === "COMPLETED" &&
-      existing &&
-      existing.status !== "COMPLETED"
-    ) {
-      const xpResult = await gamificationService.awardXp(
-        auth.userId,
-        id,
-        existing.horizon,
-        existing.priority,
-      );
-
-      // Update recurring template streak if this is a recurring instance
-      let streakResult = null;
-      if (existing.recurringSourceId) {
-        streakResult = await goalRecurringService.completeRecurringInstance(
+    // A genuine NOT_COMPLETED -> COMPLETED transition runs through the
+    // atomic completeWithSideEffects path so update, XP, and recurring
+    // streak all roll back together on failure. Other updates (title
+    // rename, priority change, re-completion that was already DONE) go
+    // through plain update() — no side effects, no transaction needed.
+    if (data.status === "COMPLETED") {
+      const existing = await goalService.getById(auth.userId, id);
+      if (!existing) {
+        return NextResponse.json({ error: "Goal not found" }, { status: 404 });
+      }
+      if (existing.status !== "COMPLETED") {
+        const result = await goalService.completeWithSideEffects(
           auth.userId,
           id,
+          data,
         );
+        return NextResponse.json(result);
       }
-
-      return NextResponse.json({
-        ...goal,
-        _xp: xpResult,
-        ...(streakResult && { _streak: streakResult }),
-      });
     }
 
+    const goal = await goalService.update(auth.userId, id, data);
     return NextResponse.json(goal);
   } catch (error) {
     return handleApiError(error);
