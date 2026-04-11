@@ -40,20 +40,21 @@ export const gamificationService = {
       },
     });
 
-    // Upsert UserStats: increment totalXp and goalsCompleted
+    // Upsert UserStats: increment totalXp. The explicit update below
+    // handles weeklyScore and level; initialize weeklyScore at 0 in
+    // the create branch so the first-ever completion isn't double
+    // counted (same fix applied to todoService.complete).
     const stats = await prisma.userStats.upsert({
       where: { userId },
       create: {
         userId,
         totalXp: amount,
         level: levelFromXp(amount) || 1,
-        goalsCompleted: 1,
-        weeklyScore: amount,
+        weeklyScore: 0,
         weekStartDate: startOfWeek(new Date(), { weekStartsOn: 1 }),
       },
       update: {
         totalXp: { increment: amount },
-        goalsCompleted: { increment: 1 },
       },
     });
 
