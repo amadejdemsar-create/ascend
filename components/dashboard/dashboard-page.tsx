@@ -97,17 +97,31 @@ export function DashboardPage() {
         <>
           {/* Quick Actions */}
           <div className="mb-4 flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" render={<Link href="/todos" />}>
+            {/*
+              New To-do button: passes nativeButton={false} so Base UI
+              does not complain about rendering a non-<button> element
+              (the <Link> is an <a>). Without this prop Base UI logs
+              a console error on every mount. (C2)
+            */}
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={<Link href="/todos" />}
+            >
               <PlusIcon className="size-3.5" />
               New To-do
             </Button>
+            {/*
+              One New Goal button, no horizon-specific variants. The goal
+              modal has a Horizon dropdown (default WEEKLY) that lets the
+              user pick any of the four levels. Having per-horizon buttons
+              in the header was asymmetric (weekly + yearly but not
+              monthly or quarterly) and cluttered the action row. (H2)
+            */}
             <Button variant="outline" size="sm" onClick={() => openGoalModal("create", "WEEKLY")}>
               <PlusIcon className="size-3.5" />
-              New Weekly Goal
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => openGoalModal("create", "YEARLY")}>
-              <PlusIcon className="size-3.5" />
-              New Yearly Goal
+              New Goal
             </Button>
           </div>
 
