@@ -10,7 +10,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { useCategories } from "@/lib/hooks/use-categories";
-import { useGoals } from "@/lib/hooks/use-goals";
+import { GoalPickerTree } from "@/components/goals/goal-picker-tree";
 import type { TodoFilters } from "@/lib/validations";
 
 const STATUS_OPTIONS = [
@@ -50,16 +50,10 @@ interface TodoFilterBarProps {
 
 export function TodoFilterBar({ filters, onFiltersChange }: TodoFilterBarProps) {
   const { data: categoryTree } = useCategories();
-  const { data: goals } = useGoals();
 
   const flatCategories = categoryTree
     ? flattenCategories(categoryTree as CategoryFlat[])
     : [];
-
-  // Group goals by horizon for a structured dropdown instead of a flat list
-  const allGoals = (goals ?? []) as Array<{ id: string; title: string; horizon: string; parentId: string | null }>;
-  const topLevelGoals = allGoals.filter((g) => g.parentId === null);
-  const childGoals = allGoals.filter((g) => g.parentId !== null);
 
   const hasActiveFilters =
     !!filters.status ||
@@ -141,36 +135,13 @@ export function TodoFilterBar({ filters, onFiltersChange }: TodoFilterBarProps) 
         </SelectContent>
       </Select>
 
-      <Select
-        value={filters.goalId ?? ""}
-        onValueChange={(v) => handleChange("goalId", v)}
-      >
-        <SelectTrigger className="h-8 w-[160px]">
-          <SelectValue placeholder="All goals">
-            {filters.goalId
-              ? allGoals.find((g) => g.id === filters.goalId)?.title ?? "All goals"
-              : undefined}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent className="max-h-[300px]">
-          <SelectItem value="">All goals</SelectItem>
-          {topLevelGoals.map((goal) => {
-            const children = childGoals.filter((c) => c.parentId === goal.id);
-            return (
-              <div key={goal.id}>
-                <SelectItem value={goal.id}>
-                  <span className="font-medium">{goal.title.length > 35 ? `${goal.title.slice(0, 35)}...` : goal.title}</span>
-                </SelectItem>
-                {children.map((child) => (
-                  <SelectItem key={child.id} value={child.id}>
-                    <span className="pl-3 text-muted-foreground">└ {child.title.length > 30 ? `${child.title.slice(0, 30)}...` : child.title}</span>
-                  </SelectItem>
-                ))}
-              </div>
-            );
-          })}
-        </SelectContent>
-      </Select>
+      <GoalPickerTree
+        value={filters.goalId ?? undefined}
+        onChange={(next) =>
+          onFiltersChange({ ...filters, goalId: next ?? undefined })
+        }
+        placeholder="All goals"
+      />
 
       {hasActiveFilters && (
         <Button
