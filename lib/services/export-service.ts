@@ -1,6 +1,6 @@
 import { goalService } from "@/lib/services/goal-service";
 import { categoryService } from "@/lib/services/category-service";
-import { HORIZON_ORDER } from "@/lib/services/import-helpers";
+import { HORIZON_ORDER } from "@/lib/constants";
 import { formatCSV, formatMarkdown } from "@/lib/services/export-helpers";
 import PDFDocument from "pdfkit";
 import {

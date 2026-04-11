@@ -5,6 +5,7 @@
 
 import { goalService } from "@/lib/services/goal-service";
 import { categoryService } from "@/lib/services/category-service";
+import { HORIZON_ORDER } from "@/lib/constants";
 import type {
   CreateGoalInput,
   ImportData,
@@ -12,7 +13,6 @@ import type {
   ImportGoalEntry,
 } from "@/lib/validations";
 
-export const HORIZON_ORDER = ["YEARLY", "QUARTERLY", "MONTHLY", "WEEKLY"] as const;
 type Horizon = typeof HORIZON_ORDER[number];
 type PriorityKey = "LOW" | "MEDIUM" | "HIGH";
 

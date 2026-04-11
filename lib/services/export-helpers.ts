@@ -3,7 +3,7 @@
  * Used by both the MCP data tools and the export service.
  */
 
-import { HORIZON_ORDER } from "@/lib/services/import-helpers";
+import { HORIZON_ORDER } from "@/lib/constants";
 
 /**
  * Minimal goal shape consumed by the export helpers. A structural

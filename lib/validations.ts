@@ -1,10 +1,20 @@
 import { z } from "zod";
+import {
+  GoalStatus,
+  Horizon,
+  Priority,
+  RecurringFrequency,
+  TodoStatus,
+} from "../generated/prisma/enums";
 
-// Enum schemas matching Prisma enums
-export const horizonEnum = z.enum(["YEARLY", "QUARTERLY", "MONTHLY", "WEEKLY"]);
-export const statusEnum = z.enum(["NOT_STARTED", "IN_PROGRESS", "COMPLETED", "ABANDONED"]);
-export const priorityEnum = z.enum(["LOW", "MEDIUM", "HIGH"]);
-export const recurringFrequencyEnum = z.enum(["DAILY", "WEEKLY", "MONTHLY"]);
+// Enum schemas derived from Prisma-generated enums. Adding a value to
+// schema.prisma and running `prisma generate` updates both the Zod
+// schemas here and the MCP JSON Schemas in lib/mcp/schemas.ts (which
+// also imports from generated/prisma/enums) with no manual sync step.
+export const horizonEnum = z.enum(Horizon);
+export const statusEnum = z.enum(GoalStatus);
+export const priorityEnum = z.enum(Priority);
+export const recurringFrequencyEnum = z.enum(RecurringFrequency);
 
 // Goal schemas
 export const createGoalSchema = z.object({
@@ -72,8 +82,8 @@ export const reorderGoalsSchema = z.object({
 });
 export type ReorderGoalsInput = z.infer<typeof reorderGoalsSchema>;
 
-// Todo enums
-export const todoStatusEnum = z.enum(["PENDING", "DONE", "SKIPPED"]);
+// Todo enums (derived from Prisma's TodoStatus, see note above)
+export const todoStatusEnum = z.enum(TodoStatus);
 
 // Todo schemas
 export const createTodoSchema = z.object({
