@@ -10,7 +10,7 @@ Audits the uncommitted (or specified) changes in the Ascend repo against the six
 
 ## Execution Quality Bar (read first)
 
-This skill enforces the Ascend quality bar from `/Users/Shared/Domain/Code/Personal/goals/CLAUDE.md` and the global rule in `~/.claude/CLAUDE.md`.
+This skill enforces the Ascend quality bar from `/Users/Shared/Domain/Code/Personal/ascend/CLAUDE.md` and the global rule in `~/.claude/CLAUDE.md`.
 
 **Mandatory verifications before any PASS verdict:**
 
@@ -29,7 +29,7 @@ You MUST instead say:
 - "FAIL verdict. <N> blocking issues. Fix and re-run `ax:review`."
 - "PASS WITH NOTES. <N> non-blocking recommendations. Safe to commit, but consider: [list]."
 
-**Reference agent:** The actual safety rule checks, pattern checks, and danger zone checks are performed by the `ascend-reviewer` agent at `/Users/Shared/Domain/Code/Personal/goals/.claude/agents/ascend-reviewer.md`. Read it for the exact rules being enforced.
+**Reference agent:** The actual safety rule checks, pattern checks, and danger zone checks are performed by the `ascend-reviewer` agent at `/Users/Shared/Domain/Code/Personal/ascend/.claude/agents/ascend-reviewer.md`. Read it for the exact rules being enforced.
 
 ## When to Use
 
@@ -46,9 +46,9 @@ You MUST instead say:
 Run these commands in parallel via Bash:
 
 ```bash
-cd /Users/Shared/Domain/Code/Personal/goals && git status
-cd /Users/Shared/Domain/Code/Personal/goals && git diff
-cd /Users/Shared/Domain/Code/Personal/goals && git diff --staged
+cd /Users/Shared/Domain/Code/Personal/ascend && git status
+cd /Users/Shared/Domain/Code/Personal/ascend && git diff
+cd /Users/Shared/Domain/Code/Personal/ascend && git diff --staged
 ```
 
 If `git status` shows no changes, tell the user there is nothing to review and exit.
@@ -77,7 +77,7 @@ The agent will:
 Write the verdict to disk:
 
 ```
-/Users/Shared/Domain/Code/Personal/goals/.ascendflow/reviews/<YYYY-MM-DD-HHMM>-review.md
+/Users/Shared/Domain/Code/Personal/ascend/.ascendflow/reviews/<YYYY-MM-DD-HHMM>-review.md
 ```
 
 Use ISO-8601 for the filename but European date format (D. M. YYYY) in the body.

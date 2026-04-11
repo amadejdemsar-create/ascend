@@ -93,7 +93,7 @@ Focus on inputs and the outputs will come. Give the user instant clarity on toda
 - **Desktop**: Collapsible sidebar, keyboard-driven with Cmd+K
 - **Architecture**: Multi-user schema even for single-user v1 (user_id on all tables)
 - **GitHub**: Repository under amadejdemsar-create organization
-- **Local path**: /Users/Shared/Domain/Code/Personal/goals/
+- **Local path**: /Users/Shared/Domain/Code/Personal/ascend/
 
 ## Key Decisions
 

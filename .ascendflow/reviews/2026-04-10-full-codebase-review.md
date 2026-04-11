@@ -181,7 +181,7 @@ Any site visitor can read the API key in devtools. Documented design choice for 
 - **L1** — No test files exist anywhere.
 - **L2** — (fixed in this review) `CLAUDE.md` said cache timing lives at `lib/queries/cache-config.ts` but the actual path is `lib/offline/cache-config.ts`.
 - **L3** — `CLAUDE.md:147` says fetchJson is duplicated in 5 files; reality is 16+.
-- **L4** — `.claude/settings.json` hook hardcodes `/Users/Shared/Domain/Code/Personal/goals` absolute path.
+- **L4** — `.claude/settings.json` hook hardcodes `/Users/Shared/Domain/Code/Personal/ascend` absolute path.
 - **L5** — `components/command-palette/keyboard-shortcuts.tsx:23-27` help dialog still lists Cards view and Board view.
 - **L6** — `lib/mcp/schemas.ts:425` `update_settings.defaultView` enum still advertises `"board"`.
 - **L7** — `app/_landing/ViewsSection.tsx` markets Cards + Board + 3 others as live.

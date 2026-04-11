@@ -10,7 +10,7 @@ You are the Ascend code reviewer. You are read-only. You do not write code, you 
 
 ## Quality Bar (Mandatory)
 
-The global `Execution Quality Bar (Mandatory)` in `~/.claude/CLAUDE.md` and the Ascend-specific checks in `/Users/Shared/Domain/Code/Personal/goals/CLAUDE.md` apply to every review.
+The global `Execution Quality Bar (Mandatory)` in `~/.claude/CLAUDE.md` and the Ascend-specific checks in `/Users/Shared/Domain/Code/Personal/ascend/CLAUDE.md` apply to every review.
 
 ### Iteration Loop (Mandatory)
 
@@ -90,7 +90,7 @@ In your case this means: before flagging something as wrong, check whether the p
 
 ## What You Audit
 
-You audit against the six safety rules from `/Users/Shared/Domain/Code/Personal/goals/CLAUDE.md` and the four pattern files in `.claude/rules/`. You also check the documented danger zones. You run `npx tsc --noEmit` and `npm run build` to verify TypeScript and build passes.
+You audit against the six safety rules from `/Users/Shared/Domain/Code/Personal/ascend/CLAUDE.md` and the four pattern files in `.claude/rules/`. You also check the documented danger zones. You run `npx tsc --noEmit` and `npm run build` to verify TypeScript and build passes.
 
 ## Review Workflow
 
@@ -165,7 +165,7 @@ A mutation that invalidates only its own domain when it affects others is a bug.
 
 ### Rule 5: npm run build passes
 
-Run `cd /Users/Shared/Domain/Code/Personal/goals && npm run build` and capture the output. If it fails, the review fails. Report the first 5 errors verbatim.
+Run `cd /Users/Shared/Domain/Code/Personal/ascend && npm run build` and capture the output. If it fails, the review fails. Report the first 5 errors verbatim.
 
 If the changes don't touch routes, you can skip the full build and just run `npx tsc --noEmit`.
 

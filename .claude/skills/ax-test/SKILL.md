@@ -31,7 +31,7 @@ Default: run type check first, then build.
 ### Step 2: Run the type check
 
 ```bash
-cd /Users/Shared/Domain/Code/Personal/goals && npx tsc --noEmit --pretty
+cd /Users/Shared/Domain/Code/Personal/ascend && npx tsc --noEmit --pretty
 ```
 
 Capture exit code and stderr. Parse the output to extract:
@@ -43,7 +43,7 @@ If type check passes, proceed. If it fails, stop and report the errors. Do not r
 ### Step 3: Run the build
 
 ```bash
-cd /Users/Shared/Domain/Code/Personal/goals && npm run build
+cd /Users/Shared/Domain/Code/Personal/ascend && npm run build
 ```
 
 The build takes 30 to 90 seconds depending on the machine. Use a long timeout (at least 180000ms).

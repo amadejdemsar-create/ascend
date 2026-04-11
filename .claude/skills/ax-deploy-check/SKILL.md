@@ -22,7 +22,7 @@ Run each of these checks in sequence. Stop and report if any FAIL.
 ### Check 1: Clean working tree or explicit commit
 
 ```bash
-cd /Users/Shared/Domain/Code/Personal/goals && git status --porcelain
+cd /Users/Shared/Domain/Code/Personal/ascend && git status --porcelain
 ```
 
 - If empty: PASS. The tree is clean.
@@ -31,7 +31,7 @@ cd /Users/Shared/Domain/Code/Personal/goals && git status --porcelain
 ### Check 2: On the main branch
 
 ```bash
-cd /Users/Shared/Domain/Code/Personal/goals && git branch --show-current
+cd /Users/Shared/Domain/Code/Personal/ascend && git branch --show-current
 ```
 
 - If `main`: PASS.
@@ -40,7 +40,7 @@ cd /Users/Shared/Domain/Code/Personal/goals && git branch --show-current
 ### Check 3: Up to date with remote
 
 ```bash
-cd /Users/Shared/Domain/Code/Personal/goals && git fetch origin main && git status
+cd /Users/Shared/Domain/Code/Personal/ascend && git fetch origin main && git status
 ```
 
 - If ahead of origin/main: OK, there are commits to push.
@@ -50,7 +50,7 @@ cd /Users/Shared/Domain/Code/Personal/goals && git fetch origin main && git stat
 ### Check 4: Production build passes
 
 ```bash
-cd /Users/Shared/Domain/Code/Personal/goals && npm run build
+cd /Users/Shared/Domain/Code/Personal/ascend && npm run build
 ```
 
 Use a long timeout (at least 180000ms). This is the same build Dokploy runs on the VPS. If it fails locally, it will fail in production.
@@ -60,7 +60,7 @@ If the build fails, extract the first 10 errors and stop. Do not proceed.
 ### Check 5: TypeScript passes
 
 ```bash
-cd /Users/Shared/Domain/Code/Personal/goals && npx tsc --noEmit
+cd /Users/Shared/Domain/Code/Personal/ascend && npx tsc --noEmit
 ```
 
 Usually redundant with Check 4, but catches issues the build may miss (for example, config files that tsc checks but next build does not).
@@ -72,7 +72,7 @@ Check two things:
 a) Are there pending schema changes not yet migrated?
 
 ```bash
-cd /Users/Shared/Domain/Code/Personal/goals && npx prisma migrate status
+cd /Users/Shared/Domain/Code/Personal/ascend && npx prisma migrate status
 ```
 
 Parse the output. If there are drift or pending migrations, STOP. Tell the user to run `npx prisma migrate dev --name <name>` first.
@@ -80,7 +80,7 @@ Parse the output. If there are drift or pending migrations, STOP. Tell the user 
 b) Is the `search_vector` tsvector migration present?
 
 ```bash
-cd /Users/Shared/Domain/Code/Personal/goals && ls prisma/migrations/ | grep -i search
+cd /Users/Shared/Domain/Code/Personal/ascend && ls prisma/migrations/ | grep -i search
 ```
 
 Should exist. If missing, flag as a critical warning (the full-text search on context entries depends on it).
@@ -90,7 +90,7 @@ Should exist. If missing, flag as a critical warning (the full-text search on co
 Grep for any forbidden command in `package.json`, `Dockerfile`, and recent commits:
 
 ```bash
-cd /Users/Shared/Domain/Code/Personal/goals && grep -rE 'prisma db push|prisma migrate reset' package.json Dockerfile scripts/ 2>/dev/null
+cd /Users/Shared/Domain/Code/Personal/ascend && grep -rE 'prisma db push|prisma migrate reset' package.json Dockerfile scripts/ 2>/dev/null
 ```
 
 If any match, STOP. These commands drop the `search_vector` column. CLAUDE.md safety rule 6.
@@ -100,7 +100,7 @@ If any match, STOP. These commands drop the `search_vector` column. CLAUDE.md sa
 Launch the `ascend-reviewer` agent on the changes since origin/main:
 
 ```bash
-cd /Users/Shared/Domain/Code/Personal/goals && git diff origin/main...HEAD
+cd /Users/Shared/Domain/Code/Personal/ascend && git diff origin/main...HEAD
 ```
 
 If the diff is non-empty, pass it to the reviewer. If the reviewer returns FAIL, STOP.
@@ -121,7 +121,7 @@ Do not fail the check on danger zone touches, but surface them prominently.
 If the change added new environment variables (via grep for `process.env.`), verify they are documented in `.env.example` or README:
 
 ```bash
-cd /Users/Shared/Domain/Code/Personal/goals && grep -rn 'process\.env\.' lib/ app/ | grep -v NEXT_PUBLIC_ | grep -v NODE_ENV
+cd /Users/Shared/Domain/Code/Personal/ascend && grep -rn 'process\.env\.' lib/ app/ | grep -v NEXT_PUBLIC_ | grep -v NODE_ENV
 ```
 
 For each non-public env var, check it exists in `.env.example`. Warn if missing.
@@ -186,7 +186,7 @@ Fix and re-run ax:deploy-check.
 
 **Before declaring "ready to deploy" or "safe to push", you MUST present the following checklist with every check marked explicitly. This is the completion gate for the entire skill.**
 
-The global `Execution Quality Bar` in `~/.claude/CLAUDE.md` and the Ascend-specific checks in `/Users/Shared/Domain/Code/Personal/goals/CLAUDE.md` apply in full.
+The global `Execution Quality Bar` in `~/.claude/CLAUDE.md` and the Ascend-specific checks in `/Users/Shared/Domain/Code/Personal/ascend/CLAUDE.md` apply in full.
 
 ### Required output format
 

@@ -10,12 +10,12 @@ Plans a new Ascend feature from a prompt. Produces a Product Requirements Docume
 
 ## Execution Quality Bar (read first)
 
-This skill enforces the Ascend quality bar. The global `Execution Quality Bar (Mandatory)` rule in `~/.claude/CLAUDE.md` and the Ascend-specific quality checks in `/Users/Shared/Domain/Code/Personal/goals/CLAUDE.md` apply in full.
+This skill enforces the Ascend quality bar. The global `Execution Quality Bar (Mandatory)` rule in `~/.claude/CLAUDE.md` and the Ascend-specific quality checks in `/Users/Shared/Domain/Code/Personal/ascend/CLAUDE.md` apply in full.
 
 **Mandatory before writing a single line of code:**
 
 1. **Generate an explicit deliverables checklist.** Every feature plan MUST produce a `TASKS.md` with every deliverable listed as a checkbox. This checklist is what "done" means.
-2. **Read quality reference PRDs before writing a new one.** Before generating the PRD, list and read at least one existing feature in `.ascendflow/features/` so the new plan matches the established quality bar. Run `ls /Users/Shared/Domain/Code/Personal/goals/.ascendflow/features/ 2>/dev/null` and pick the most recent example. Read its `PRD.md` and `TASKS.md` end to end. If the directory is empty, this is the first plan and you set the bar.
+2. **Read quality reference PRDs before writing a new one.** Before generating the PRD, list and read at least one existing feature in `.ascendflow/features/` so the new plan matches the established quality bar. Run `ls /Users/Shared/Domain/Code/Personal/ascend/.ascendflow/features/ 2>/dev/null` and pick the most recent example. Read its `PRD.md` and `TASKS.md` end to end. If the directory is empty, this is the first plan and you set the bar.
 3. **Every task must reference actual file paths from the codebase.** Never write "add the service method". Write "add `archiveGoal(userId, id)` to `lib/services/goal-service.ts` using the existing `deleteGoal` method as a template".
 4. **Present the checklist to the user BEFORE starting implementation.** The user must explicitly approve the plan (say "start phase 1", "start coding", or equivalent) before any code is written. No implementation runs inside this skill.
 
@@ -55,7 +55,7 @@ Ask these in sequence. Stop asking when you have enough to write the PRD.
 ### Step 3: Create the feature directory
 
 ```bash
-mkdir -p /Users/Shared/Domain/Code/Personal/goals/.ascendflow/features/<slug>
+mkdir -p /Users/Shared/Domain/Code/Personal/ascend/.ascendflow/features/<slug>
 ```
 
 ### Step 4: Write the PRD

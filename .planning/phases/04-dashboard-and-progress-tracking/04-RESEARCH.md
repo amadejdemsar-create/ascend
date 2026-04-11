@@ -63,7 +63,7 @@ The primary technical challenge is the dashboard API layer. The four widgets eac
 
 **Installation:**
 ```bash
-cd /Users/Shared/Domain/Code/Personal/goals && npx shadcn@latest add card
+cd /Users/Shared/Domain/Code/Personal/ascend && npx shadcn@latest add card
 ```
 
 No other new packages needed. All core libraries are already installed.

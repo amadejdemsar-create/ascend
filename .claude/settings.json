@@ -34,7 +34,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "file=\"$CLAUDE_FILE_PATH\"; if echo \"$file\" | grep -qE '\\.(ts|tsx)$'; then cd /Users/Shared/Domain/Code/Personal/goals && npx tsc --noEmit --pretty 2>&1 | head -30; fi",
+            "command": "file=\"$CLAUDE_FILE_PATH\"; if echo \"$file\" | grep -qE '\\.(ts|tsx)$'; then cd /Users/Shared/Domain/Code/Personal/ascend && npx tsc --noEmit --pretty 2>&1 | head -30; fi",
             "timeout": 30000
           }
         ]

@@ -58,7 +58,7 @@ The main implementation effort is in the frontend: building the category managem
 
 **Installation:**
 ```bash
-cd /Users/Shared/Domain/Code/Personal/goals && npm install @tanstack/react-table
+cd /Users/Shared/Domain/Code/Personal/ascend && npm install @tanstack/react-table
 ```
 
 No other new packages needed. Everything else is already installed.

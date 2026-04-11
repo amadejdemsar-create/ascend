@@ -24,7 +24,7 @@ If a blocker exists, the session state MUST be `blocked` and the blocker must be
 Before writing the first session file in this directory, read an existing example to match the quality bar:
 
 ```bash
-ls /Users/Shared/Domain/Code/Personal/goals/.ascendflow/sessions/ 2>/dev/null | tail -5
+ls /Users/Shared/Domain/Code/Personal/ascend/.ascendflow/sessions/ 2>/dev/null | tail -5
 ```
 
 Read the most recent example's structure. If the directory is empty, this is the first session file and you set the bar. Look especially at the "Files Being Worked On" section, which is the single most important section for a future resume.
@@ -43,16 +43,16 @@ Read the most recent example's structure. If the directory is empty, this is the
 Run these in parallel:
 
 ```bash
-cd /Users/Shared/Domain/Code/Personal/goals && git status
-cd /Users/Shared/Domain/Code/Personal/goals && git diff --stat
-cd /Users/Shared/Domain/Code/Personal/goals && git log --oneline -20
-cd /Users/Shared/Domain/Code/Personal/goals && git branch --show-current
+cd /Users/Shared/Domain/Code/Personal/ascend && git status
+cd /Users/Shared/Domain/Code/Personal/ascend && git diff --stat
+cd /Users/Shared/Domain/Code/Personal/ascend && git log --oneline -20
+cd /Users/Shared/Domain/Code/Personal/ascend && git branch --show-current
 ```
 
 Also check if there is an active feature plan:
 
 ```bash
-ls /Users/Shared/Domain/Code/Personal/goals/.ascendflow/features/ 2>/dev/null
+ls /Users/Shared/Domain/Code/Personal/ascend/.ascendflow/features/ 2>/dev/null
 ```
 
 ### Step 2: Ask the user for a brief summary
@@ -75,7 +75,7 @@ Slug is kebab-case from the user's summary. Use Europe/Ljubljana timezone for th
 
 ### Step 4: Write the session file
 
-Path: `/Users/Shared/Domain/Code/Personal/goals/.ascendflow/sessions/<filename>`
+Path: `/Users/Shared/Domain/Code/Personal/ascend/.ascendflow/sessions/<filename>`
 
 Structure:
 
@@ -149,7 +149,7 @@ What is next:
 ## Commands to Run When Resuming
 
 ```bash
-cd /Users/Shared/Domain/Code/Personal/goals
+cd /Users/Shared/Domain/Code/Personal/ascend
 git status
 cat .ascendflow/sessions/<this-file>.md  # Read this file
 cat <key-files-from-above>

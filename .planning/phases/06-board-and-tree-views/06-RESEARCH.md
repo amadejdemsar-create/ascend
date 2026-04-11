@@ -344,7 +344,7 @@ function BoardGroupingToggle({
 
 ### Primary (HIGH confidence)
 
-- **Project codebase** (local disk): UI store (`lib/stores/ui-store.ts`), view switcher (`components/goals/goal-view-switcher.tsx`), goals page (`app/(app)/goals/page.tsx`), goal service (`lib/services/goal-service.ts`), tree queries (`lib/tree-queries.ts`), query keys (`lib/queries/keys.ts`). All read directly from `/Users/Shared/Domain/Code/Personal/goals/`.
+- **Project codebase** (local disk): UI store (`lib/stores/ui-store.ts`), view switcher (`components/goals/goal-view-switcher.tsx`), goals page (`app/(app)/goals/page.tsx`), goal service (`lib/services/goal-service.ts`), tree queries (`lib/tree-queries.ts`), query keys (`lib/queries/keys.ts`). All read directly from `/Users/Shared/Domain/Code/Personal/ascend/`.
 - **Prisma schema** (`prisma/schema.prisma`): Goal model with adjacency list hierarchy (parentId self-reference, children relation).
 - **@base-ui/react Collapsible**: Already installed and used in sidebar category tree component.
 

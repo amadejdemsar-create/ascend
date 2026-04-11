@@ -626,7 +626,7 @@ Note: the label column width changes from `8rem` (128px) to `240px` in the redes
 
 ### Primary (HIGH confidence)
 
-- **Project codebase** (local disk at `/Users/Shared/Domain/Code/Personal/goals/`): All source files inspected directly. Key files:
+- **Project codebase** (local disk at `/Users/Shared/Domain/Code/Personal/ascend/`): All source files inspected directly. Key files:
   - `components/goals/goal-timeline-view.tsx` (333 lines, current swim-lane implementation)
   - `components/goals/goal-timeline-node.tsx` (141 lines, current Collapsible node)
   - `lib/timeline-utils.ts` (209 lines, date math and positioning)
