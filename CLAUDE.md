@@ -72,6 +72,38 @@ You MUST say instead:
 
 Before declaring any feature or fix complete, re-list every task from the `TASKS.md` produced by `ax:plan` and mark each as: DONE / SKIPPED (with reason) / NOT DONE (with reason). If ANY are SKIPPED or NOT DONE, use "partially complete" and explain exactly what remains. This is the same pattern enforced by the global Execution Quality Bar and by `ax:deploy-check`.
 
+## Mandatory Development Workflow
+
+**CRITICAL: Claude is the orchestrator, not the implementor.** Never implement code changes directly. Claude reads the request, picks the right agents and skills, delegates the work, and synthesizes results. Direct code edits are only acceptable for trivial changes (constants, typos, config). Anything touching business logic, services, components, hooks, routes, or MCP tools MUST go through the appropriate agent.
+
+### Agent Reference
+
+| Agent | When to use | Tools |
+|-------|-------------|-------|
+| `ascend-dev` | Any code implementation: services, API routes, hooks, components, MCP tools, Prisma schema | Read, Write, Edit, Glob, Grep, Bash, WebFetch |
+| `ascend-ux` | Visual design audits, layout reviews, design system checks (uses chrome-devtools in Dia) | Read, Glob, Grep, Write, Edit, Bash |
+| `ascend-reviewer` | Code review against safety rules, pattern compliance, danger zone checks | Read, Glob, Grep, Bash |
+| `ascend-ui-verifier` | End-to-end browser verification via Playwright after any UI change | Read, Bash, Grep, Glob, Write, Playwright MCP |
+
+### Required Workflow Steps
+
+1. **Understand:** Read relevant files, check `.claude/COMPONENT_CATALOG.md`, search for similar implementations
+2. **Plan:** Use `/ax:plan` for features touching 3+ files
+3. **Implement:** Delegate to `ascend-dev` (or appropriate agent). For cross-surface features, launch multiple agents in parallel.
+4. **Verify:** `/ax:test` after backend changes, `/ax:verify-ui` after frontend changes, `/ax:review` after any changes
+5. **Report:** Summarize what changed, verification results, whether ready to commit
+
+### Skill Reference
+
+| Command | Purpose | When to use |
+|---------|---------|-------------|
+| `/ax:plan` | Feature planning pipeline | Before any multi-file feature (produces PRD + TASKS.md) |
+| `/ax:test` | Type check + production build | After every code change, before declaring done |
+| `/ax:review` | Safety rule + pattern compliance review | After implementation, before committing |
+| `/ax:verify-ui` | Browser verification via Playwright | After any UI-adjacent change |
+| `/ax:deploy-check` | Pre-deploy validation | Before pushing to main |
+| `/ax:save` | Save session state | When context is running low or pausing work |
+
 ## Architecture
 
 ### Service Layer (`lib/services/`)
@@ -151,6 +183,7 @@ Board/Kanban view components exist (`goal-board-*.tsx`) but are dead code; remov
 
 Deployed via Dokploy (dokploy-personal) to `ascend.nativeai.agency`. Auto-deploys on push to main via GitHub provider. Docker build from the root `Dockerfile`.
 
+@import rules/ascend-workflow.md
 @import rules/service-patterns.md
 @import rules/api-route-patterns.md
 @import rules/component-patterns.md
