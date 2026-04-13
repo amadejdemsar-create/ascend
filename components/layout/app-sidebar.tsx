@@ -32,11 +32,11 @@ export function AppSidebar() {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" render={<Link href="/dashboard" />} tooltip="Ascend">
-              <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <SidebarMenuButton size="lg" render={<Link href="/dashboard" />} tooltip="Ascend" className="transition-opacity hover:opacity-80">
+              <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-transform group-hover/menu-button:scale-105">
                 <Target className="size-4" />
               </div>
-              <span className="truncate font-serif text-lg font-semibold">
+              <span className="truncate font-serif text-lg font-semibold transition-colors group-hover/menu-button:text-primary">
                 Ascend
               </span>
             </SidebarMenuButton>

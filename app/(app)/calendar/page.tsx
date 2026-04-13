@@ -7,6 +7,7 @@ import { useGoalDeadlinesByRange } from "@/lib/hooks/use-goals";
 import type { GoalDeadlineItem } from "@/lib/hooks/use-goals";
 import { CalendarMonthGrid } from "@/components/calendar/calendar-month-grid";
 import { CalendarDayDetail } from "@/components/calendar/calendar-day-detail";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface RangeTodoItem {
   dueDate?: string | null;
@@ -39,11 +40,13 @@ export default function CalendarPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rangeStart, rangeEnd]);
 
-  const { data: rawMonthTodos } = useTodosByRange(rangeStart, rangeEnd);
-  const { data: rawMonthDeadlines } = useGoalDeadlinesByRange(
+  const { data: rawMonthTodos, isLoading: todosLoading } = useTodosByRange(rangeStart, rangeEnd);
+  const { data: rawMonthDeadlines, isLoading: deadlinesLoading } = useGoalDeadlinesByRange(
     rangeStart,
     rangeEnd,
   );
+
+  const isLoading = todosLoading || deadlinesLoading;
 
   const monthTodos = (rawMonthTodos ?? []) as RangeTodoItem[];
   const monthDeadlines = (rawMonthDeadlines ?? []) as GoalDeadlineItem[];
@@ -125,15 +128,44 @@ export default function CalendarPage() {
 
         {/* Calendar grid */}
         <div className="p-4">
-          <CalendarMonthGrid
-            selectedDate={selectedDate}
-            onSelectDate={handleSelectDate}
-            todoCounts={todoCounts}
-            goalDeadlineDates={goalDeadlineDates}
-            dayIndicators={dayIndicators}
-            month={month}
-            onMonthChange={setMonth}
-          />
+          {isLoading ? (
+            <div className="space-y-4">
+              {/* Month header skeleton */}
+              <div className="flex items-center justify-between px-1">
+                <Skeleton className="h-7 w-36" />
+                <Skeleton className="h-8 w-16 rounded-md" />
+              </div>
+              {/* Calendar grid skeleton: header row + 6 week rows */}
+              <div className="space-y-2">
+                {/* Day-of-week header */}
+                <div className="grid grid-cols-8 gap-1">
+                  <Skeleton className="h-4 w-full" />
+                  {Array.from({ length: 7 }).map((_, i) => (
+                    <Skeleton key={i} className="h-4 w-full" />
+                  ))}
+                </div>
+                {/* 6 week rows */}
+                {Array.from({ length: 6 }).map((_, row) => (
+                  <div key={row} className="grid grid-cols-8 gap-1">
+                    <Skeleton className="h-4 w-8" />
+                    {Array.from({ length: 7 }).map((_, col) => (
+                      <Skeleton key={col} className="h-11 w-full rounded-md" />
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <CalendarMonthGrid
+              selectedDate={selectedDate}
+              onSelectDate={handleSelectDate}
+              todoCounts={todoCounts}
+              goalDeadlineDates={goalDeadlineDates}
+              dayIndicators={dayIndicators}
+              month={month}
+              onMonthChange={setMonth}
+            />
+          )}
         </div>
       </div>
 

@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { GoalPriorityBadge } from "@/components/goals/goal-priority-badge";
 import { useGoals } from "@/lib/hooks/use-goals";
 import { useUIStore } from "@/lib/stores/ui-store";
@@ -224,7 +225,15 @@ function WeeklyFocusPicker({
 
         <div className="flex-1 min-h-0 overflow-y-auto space-y-0.5 -mx-2 px-2">
           {isLoading && (
-            <p className="py-8 text-center text-sm text-muted-foreground">Loading...</p>
+            <div className="space-y-1 py-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-2 px-3 py-2.5">
+                  <Skeleton className="size-2 shrink-0 rounded-full" />
+                  <Skeleton className="h-4 flex-1" />
+                  <Skeleton className="h-5 w-14 rounded" />
+                </div>
+              ))}
+            </div>
           )}
           {!isLoading && filtered.length === 0 && (
             <p className="py-8 text-center text-sm text-muted-foreground">

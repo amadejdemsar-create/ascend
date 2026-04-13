@@ -28,11 +28,11 @@ export function SortableHeader<TData, TValue>({
     >
       {title}
       {sorted === "asc" ? (
-        <ArrowUp className="size-3.5 ml-1" />
+        <ArrowUp className="ml-1 size-4 text-foreground" />
       ) : sorted === "desc" ? (
-        <ArrowDown className="size-3.5 ml-1" />
+        <ArrowDown className="ml-1 size-4 text-foreground" />
       ) : (
-        <ChevronsUpDown className="size-3.5 ml-1" />
+        <ChevronsUpDown className="ml-1 size-3.5 opacity-50" />
       )}
     </Button>
   );

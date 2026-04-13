@@ -29,6 +29,16 @@ export default function AppLayout({
         <main className="flex-1 p-4 md:p-6 pb-20 md:pb-6">
           <ViewTransition>{children}</ViewTransition>
         </main>
+        <footer className="hidden border-t px-4 py-2 text-xs text-muted-foreground md:flex items-center justify-between">
+          <span>Ascend</span>
+          <span>
+            Press{" "}
+            <kbd className="rounded border border-border bg-muted px-1 py-0.5 font-mono text-[0.65rem]">
+              ?
+            </kbd>{" "}
+            for shortcuts
+          </span>
+        </footer>
       </SidebarInset>
       <BottomTabBar />
       <CommandPalette />
