@@ -43,12 +43,12 @@ const HORIZON_LABELS: Record<string, string> = {
   WEEKLY: "Weekly",
 };
 
-function TitleCell({ id, title, depth }: { id: string; title: string; depth: number }) {
+function TitleCell({ id, title, depth, childCount }: { id: string; title: string; depth: number; childCount: number }) {
   const selectGoal = useUIStore((s) => s.selectGoal);
   return (
-    <div className="flex items-center" style={{ paddingLeft: `${depth * 1.25}rem` }}>
+    <div className="flex items-center gap-1.5" style={{ paddingLeft: `${depth * 1.25}rem` }}>
       {depth > 0 && (
-        <span className="mr-1.5 text-muted-foreground/40 text-xs">└</span>
+        <span className="mr-0.5 text-muted-foreground/40 text-xs">└</span>
       )}
       <button
         type="button"
@@ -57,6 +57,11 @@ function TitleCell({ id, title, depth }: { id: string; title: string; depth: num
       >
         {title}
       </button>
+      {childCount > 0 && (
+        <span className="text-[0.6rem] text-muted-foreground bg-muted rounded px-1 py-0.5 leading-none">
+          {childCount}
+        </span>
+      )}
     </div>
   );
 }
@@ -66,7 +71,7 @@ export const columns: ColumnDef<GoalListItem>[] = [
     accessorKey: "title",
     header: ({ column }) => <SortableHeader column={column} title="Title" />,
     cell: ({ row }) => (
-      <TitleCell id={row.original.id} title={row.original.title} depth={row.original._depth ?? 0} />
+      <TitleCell id={row.original.id} title={row.original.title} depth={row.original._depth ?? 0} childCount={row.original.children?.length ?? 0} />
     ),
   },
   {

@@ -36,7 +36,7 @@ export function TodoQuickAdd() {
         title: trimmed,
         priority: priority as "LOW" | "MEDIUM" | "HIGH",
       });
-      toast.success("To-do created!");
+      toast.success("Todo created!");
       setTitle("");
     } catch (err) {
       const message =

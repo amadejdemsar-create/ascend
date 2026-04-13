@@ -267,8 +267,8 @@ export default function TodosPage() {
           </div>
         </>
       ) : (
-        <div className="hidden md:flex w-[400px] lg:w-[440px] items-center justify-center text-muted-foreground border-l">
-          <p className="text-sm">Select a to-do to see details</p>
+        <div className="hidden md:flex w-[400px] lg:w-[440px] items-center justify-center border-l">
+          <p className="text-sm text-muted-foreground/80">Select a todo to see details</p>
         </div>
       )}
 

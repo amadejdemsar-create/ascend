@@ -315,8 +315,14 @@ export default function GoalsPage() {
 
         {/* Desktop empty state when nothing selected */}
         {!selectedGoalId && (
-          <div className="hidden md:flex w-[400px] lg:w-[440px] items-center justify-center text-muted-foreground border-l">
-            <p className="text-sm">Select a goal to see details</p>
+          <div className="hidden md:flex w-[400px] lg:w-[440px] flex-col items-center justify-center border-l px-6 text-center gap-4">
+            <TargetIcon className="size-10 text-muted-foreground/30" />
+            <div>
+              <p className="text-sm font-medium">Select a goal to see details</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Click any goal in the list to view progress, sub-goals, and SMART fields.
+              </p>
+            </div>
           </div>
         )}
       </div>

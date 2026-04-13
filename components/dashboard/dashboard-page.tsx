@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
 import { useDashboard } from "@/lib/hooks/use-dashboard";
 import { useUIStore } from "@/lib/stores/ui-store";
 import { queryKeys } from "@/lib/queries/keys";
@@ -38,7 +39,7 @@ export function DashboardPage() {
       <div className="mb-6">
         <h1 className="font-serif text-3xl font-bold">Dashboard</h1>
         <p className="mt-1 text-muted-foreground">
-          What are your inputs today?
+          {format(new Date(), "EEEE, d MMMM yyyy")}
         </p>
       </div>
 
@@ -98,7 +99,7 @@ export function DashboardPage() {
           {/* Quick Actions */}
           <div className="mb-4 flex flex-wrap items-center gap-2">
             {/*
-              New To-do button: passes nativeButton={false} so Base UI
+              New Todo button: passes nativeButton={false} so Base UI
               does not complain about rendering a non-<button> element
               (the <Link> is an <a>). Without this prop Base UI logs
               a console error on every mount. (C2)
@@ -110,7 +111,7 @@ export function DashboardPage() {
               render={<Link href="/todos" />}
             >
               <PlusIcon className="size-3.5" />
-              New To-do
+              New Todo
             </Button>
             {/*
               One New Goal button, no horizon-specific variants. The goal

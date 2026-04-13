@@ -155,8 +155,8 @@ export default function CalendarPage() {
           </div>
         </>
       ) : (
-        <div className="hidden md:flex flex-1 min-w-0 items-center justify-center text-muted-foreground border-l">
-          <p className="text-sm">Select a day to see details</p>
+        <div className="hidden md:flex flex-1 min-w-0 items-center justify-center border-l">
+          <p className="text-sm text-muted-foreground/80">Select a day to see details</p>
         </div>
       )}
     </div>

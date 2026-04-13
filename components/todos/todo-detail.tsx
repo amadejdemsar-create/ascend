@@ -98,7 +98,7 @@ export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps
   if (!todo) {
     return (
       <div className="flex items-center justify-center p-8 text-muted-foreground">
-        To-do not found.
+        Todo not found.
       </div>
     );
   }
@@ -127,7 +127,7 @@ export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps
   async function handleComplete() {
     try {
       await completeTodo.mutateAsync(todoId);
-      toast.success("To-do completed");
+      toast.success("Todo completed");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to complete";
       toast.error(message);
@@ -137,7 +137,7 @@ export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps
   async function handleSkip() {
     try {
       await skipTodo.mutateAsync(todoId);
-      toast.success("To-do skipped");
+      toast.success("Todo skipped");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to skip";
       toast.error(message);
@@ -150,7 +150,7 @@ export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps
         id: todoId,
         data: { status: "PENDING" },
       });
-      toast.success("To-do reopened");
+      toast.success("Todo reopened");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to reopen";
       toast.error(message);
@@ -160,7 +160,7 @@ export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps
   async function handleDelete() {
     try {
       await deleteTodo.mutateAsync(todoId);
-      toast.success("To-do deleted");
+      toast.success("Todo deleted");
       onClose();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to delete";
@@ -489,7 +489,7 @@ export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps
             className="gap-1.5"
           >
             <Trash2Icon className="size-3.5" />
-            Delete To-do
+            Delete Todo
           </Button>
         </div>
       </div>
@@ -500,7 +500,7 @@ export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete To-do?</AlertDialogTitle>
+            <AlertDialogTitle>Delete Todo?</AlertDialogTitle>
             <AlertDialogDescription>
               This will permanently delete &ldquo;{todo.title}&rdquo;.
             </AlertDialogDescription>

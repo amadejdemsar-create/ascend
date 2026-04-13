@@ -85,6 +85,7 @@ export function QuickAdd() {
         onClick={handleCreate}
         disabled={!title.trim() || createGoal.isPending}
         aria-label="Add goal"
+        title={!title.trim() ? "Type a title first" : "Add goal"}
       >
         <PlusIcon />
       </Button>

@@ -75,6 +75,7 @@ export function TodaysBig3Widget() {
           <Star className="size-4 fill-amber-400 text-amber-400" />
           Today&apos;s Big 3
         </CardTitle>
+        <p className="text-xs text-muted-foreground">Three todos you will finish today, no matter what.</p>
       </CardHeader>
       <CardContent className="space-y-2">
         {big3.map((todo) => (

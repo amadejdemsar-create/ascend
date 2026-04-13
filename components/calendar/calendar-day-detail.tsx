@@ -238,7 +238,7 @@ export function CalendarDayDetail({
         {otherTodos.length > 0 && (
           <section className="space-y-2">
             <h3 className="text-sm font-semibold text-muted-foreground">
-              To-dos
+              Todos
             </h3>
             <div className="space-y-1">
               {otherTodos.map((todo) => (

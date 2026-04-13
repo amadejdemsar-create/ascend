@@ -31,7 +31,7 @@ export function TodoOverdueActions({ todoId, dueDate }: TodoOverdueActionsProps)
         id: todoId,
         data: { dueDate: newDate },
       });
-      toast.success("To-do rescheduled");
+      toast.success("Todo rescheduled");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to reschedule";
       toast.error(message);
@@ -41,7 +41,7 @@ export function TodoOverdueActions({ todoId, dueDate }: TodoOverdueActionsProps)
   async function handleComplete() {
     try {
       await completeTodo.mutateAsync(todoId);
-      toast.success("To-do completed");
+      toast.success("Todo completed");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to complete";
       toast.error(message);
