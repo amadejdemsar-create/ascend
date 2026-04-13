@@ -1,6 +1,6 @@
 # Ascend Component Catalog
 
-**Total**: 85 reusable components across 13 directories.
+**Total**: 86 reusable components across 13 directories.
 
 Use this catalog before creating any new component. Duplicating existing components is the most common UI mistake in Ascend. Check here first, then grep for similar implementations.
 
@@ -9,7 +9,7 @@ For each component: file path, one-line purpose, where it is used, and key props
 ## Table of Contents
 
 - [UI Primitives (shadcn)](#ui-primitives-shadcn) (23)
-- [Goal Components](#goal-components) (25)
+- [Goal Components](#goal-components) (26)
 - [Todo Components](#todo-components) (7)
 - [Calendar Components](#calendar-components) (3)
 - [Context Components](#context-components) (5)
@@ -58,7 +58,7 @@ Base primitives generated via shadcn CLI. Do not modify these unless you are exp
 
 ## Goal Components
 
-Location: `components/goals/`. The largest module in the app. Note that `goal-board-card.tsx`, `goal-board-column.tsx`, and `goal-board-view.tsx` are dead code (board view was removed from the view switcher).
+Location: `components/goals/`. The largest module in the app (26 components). Note that `goal-board-card.tsx`, `goal-board-column.tsx`, and `goal-board-view.tsx` are dead code (board view was removed from the view switcher).
 
 | Component | File | Purpose | Used by | Key Props |
 |-----------|------|---------|---------|-----------|
@@ -72,6 +72,7 @@ Location: `components/goals/`. The largest module in the app. Note that `goal-bo
 | GoalDragOverlay | `components/goals/goal-drag-overlay.tsx` | DnD visual overlay during drag | `dnd-goal-provider.tsx` | `goal: TreeGoal` |
 | GoalFilterBar | `components/goals/goal-filter-bar.tsx` | Canonical filter bar wired to `useUIStore` | Goals page | None (reads/writes Zustand) |
 | GoalForm | `components/goals/goal-form.tsx` | Create/edit form rendered inside the modal | `goal-modal.tsx` | `mode: "create" \| "edit"`, `initialData?`, `onSuccess` |
+| GoalLinkedTodos | `components/goals/goal-linked-todos.tsx` | Shows todos linked to a goal with inline completion toggle | `goal-detail.tsx` | `goalId: string` |
 | GoalListColumns | `components/goals/goal-list-columns.tsx` | Column definitions for the goal list view (sortable headers) | `goal-list-view.tsx` | Column config exports |
 | GoalListView | `components/goals/goal-list-view.tsx` | Table-style list view of goals with sorting and selection | Goals page | `goals: Goal[]`, selection from `useUIStore` |
 | GoalModal | `components/goals/goal-modal.tsx` | Shared create/edit modal wrapping GoalForm | Root layout (mounted once) | Controlled via `useUIStore.goalModal` |

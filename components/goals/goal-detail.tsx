@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { ProgressIncrement } from "@/components/goals/progress-increment";
 import { ProgressHistorySheet } from "@/components/goals/progress-history-sheet";
+import { GoalLinkedTodos } from "@/components/goals/goal-linked-todos";
 
 const HORIZON_LABELS: Record<string, string> = {
   YEARLY: "Yearly",
@@ -453,6 +454,11 @@ export function GoalDetail({ goalId, onClose, isMobileOverlay }: GoalDetailProps
             </Button>
           )}
         </div>
+
+        <Separator />
+
+        {/* Linked Todos */}
+        <GoalLinkedTodos goalId={goalId} />
 
         {/* Deadline */}
         <div className="space-y-1">
