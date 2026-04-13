@@ -28,6 +28,8 @@ interface TodoListViewProps {
   onToggleSelect: (id: string) => void;
   onToggleAll: () => void;
   allSelected: boolean;
+  onCompleteTodo: (id: string) => void;
+  onUncompleteTodo: (id: string) => void;
 }
 
 export function TodoListView({
@@ -38,6 +40,8 @@ export function TodoListView({
   onToggleSelect,
   onToggleAll,
   allSelected,
+  onCompleteTodo,
+  onUncompleteTodo,
 }: TodoListViewProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
 
@@ -46,6 +50,8 @@ export function TodoListView({
     toggleRow: onToggleSelect,
     toggleAll: onToggleAll,
     allSelected,
+    completeTodo: onCompleteTodo,
+    uncompleteTodo: onUncompleteTodo,
   };
 
   const table = useReactTable({

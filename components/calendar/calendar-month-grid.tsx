@@ -62,6 +62,7 @@ export function CalendarMonthGrid({
         onMonthChange={onMonthChange}
         weekStartsOn={1}
         showWeekNumber
+        formatters={{ formatWeekNumber: (weekNumber) => `W${weekNumber}` }}
         showOutsideDays
         fixedWeeks
         classNames={{

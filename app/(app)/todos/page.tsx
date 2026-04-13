@@ -3,7 +3,7 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 import { endOfDay, addDays, endOfWeek, isBefore } from "date-fns";
-import { useTodos, useBulkCompleteTodos, useDeleteTodo } from "@/lib/hooks/use-todos";
+import { useTodos, useBulkCompleteTodos, useCompleteTodo, useUncompleteTodo, useDeleteTodo } from "@/lib/hooks/use-todos";
 import { useUIStore, type TodoDateTab } from "@/lib/stores/ui-store";
 import { TodoFilterBar } from "@/components/todos/todo-filter-bar";
 import { TodoQuickAdd } from "@/components/todos/todo-quick-add";
@@ -39,6 +39,8 @@ export default function TodosPage() {
 
   const { data: rawTodos, isLoading } = useTodos(filters);
   const bulkComplete = useBulkCompleteTodos();
+  const completeTodo = useCompleteTodo();
+  const uncompleteTodo = useUncompleteTodo();
   const deleteTodo = useDeleteTodo();
 
   // Clear bulk selection when filters change
@@ -120,6 +122,27 @@ export default function TodosPage() {
 
   const allSelected = todos.length > 0 && selectedIds.size === todos.length;
 
+  // Single-item completion handlers
+  const handleCompleteTodo = useCallback(async (id: string) => {
+    try {
+      await completeTodo.mutateAsync(id);
+      toast.success("Todo completed");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to complete";
+      toast.error(message);
+    }
+  }, [completeTodo]);
+
+  const handleUncompleteTodo = useCallback(async (id: string) => {
+    try {
+      await uncompleteTodo.mutateAsync(id);
+      toast.success("Todo reopened");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to reopen";
+      toast.error(message);
+    }
+  }, [uncompleteTodo]);
+
   // Bulk action handlers
   async function handleBulkComplete() {
     const ids = Array.from(selectedIds);
@@ -186,6 +209,8 @@ export default function TodosPage() {
           onToggleSelect={handleToggleSelect}
           onToggleAll={handleToggleAll}
           allSelected={allSelected}
+          onCompleteTodo={handleCompleteTodo}
+          onUncompleteTodo={handleUncompleteTodo}
         />
       </div>
     );

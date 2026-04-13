@@ -105,7 +105,7 @@ export function ContextEntryList({
           <FileText className="size-12 text-muted-foreground/40 mb-4" />
           <p className="text-lg font-medium">No context documents</p>
           <p className="text-sm text-muted-foreground mt-1">
-            Create your first document to build your knowledge base.
+            Your knowledge base is empty. Click <span className="font-medium text-foreground">New</span> above to create your first document: a weekly review template, project notes, or anything you want your AI to remember.
           </p>
         </div>
       )}

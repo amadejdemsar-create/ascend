@@ -1,7 +1,8 @@
+import { AppearanceSection } from "@/components/settings/appearance-section";
+import { ShortcutsSection } from "@/components/settings/shortcuts-section";
 import { ApiKeySection } from "@/components/settings/api-key-section";
 import { ImportSection } from "@/components/settings/import-section";
 import { ExportSection } from "@/components/settings/export-section";
-import { AppearanceSection } from "@/components/settings/appearance-section";
 
 export default function SettingsPage() {
   return (
@@ -12,6 +13,7 @@ export default function SettingsPage() {
       </p>
       <div className="mt-6 max-w-2xl space-y-6">
         <AppearanceSection />
+        <ShortcutsSection />
         <ApiKeySection />
         <ImportSection />
         <ExportSection />

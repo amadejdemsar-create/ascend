@@ -6,7 +6,7 @@ import { GoalPriorityBadge } from "@/components/goals/goal-priority-badge";
 import { SortableHeader } from "@/components/goals/sortable-header";
 import { TodoOverdueActions } from "@/components/todos/todo-overdue-actions";
 import { isOverdue } from "@/lib/todo-utils";
-import { Star, Repeat } from "lucide-react";
+import { Star, Repeat, Check } from "lucide-react";
 
 export interface TodoListItem {
   id: string;
@@ -35,6 +35,8 @@ export interface TodoTableMeta {
   toggleRow: (id: string) => void;
   toggleAll: () => void;
   allSelected: boolean;
+  completeTodo: (id: string) => void;
+  uncompleteTodo: (id: string) => void;
 }
 
 const STATUS_CONFIG: Record<
@@ -49,28 +51,35 @@ const STATUS_CONFIG: Record<
 export const columns: ColumnDef<TodoListItem>[] = [
   {
     id: "select",
-    header: ({ table }) => {
-      const meta = table.options.meta as TodoTableMeta | undefined;
-      return (
-        <input
-          type="checkbox"
-          className="size-4 rounded border-border accent-primary cursor-pointer"
-          checked={meta?.allSelected ?? false}
-          onChange={() => meta?.toggleAll()}
-          onClick={(e) => e.stopPropagation()}
-        />
-      );
-    },
+    header: () => null,
     cell: ({ row, table }) => {
       const meta = table.options.meta as TodoTableMeta | undefined;
+      const isDone = row.original.status === "DONE";
+      const isSelected = meta?.isSelected(row.original.id) ?? false;
       return (
-        <input
-          type="checkbox"
-          className="size-4 rounded border-border accent-primary cursor-pointer"
-          checked={meta?.isSelected(row.original.id) ?? false}
-          onChange={() => meta?.toggleRow(row.original.id)}
-          onClick={(e) => e.stopPropagation()}
-        />
+        <button
+          type="button"
+          aria-label={isDone ? "Mark as pending" : "Mark as done"}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (e.shiftKey) {
+              meta?.toggleRow(row.original.id);
+            } else if (isDone) {
+              meta?.uncompleteTodo(row.original.id);
+            } else {
+              meta?.completeTodo(row.original.id);
+            }
+          }}
+          className={`size-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+            isDone
+              ? "border-primary bg-primary text-primary-foreground"
+              : isSelected
+                ? "border-primary bg-primary/10"
+                : "border-muted-foreground/40 hover:border-primary"
+          }`}
+        >
+          {isDone && <Check className="size-3" strokeWidth={3} />}
+        </button>
       );
     },
     enableSorting: false,

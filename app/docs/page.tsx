@@ -98,8 +98,15 @@ export default function DocsPage() {
         </div>
       </nav>
 
+      {/* Developer docs notice */}
+      <div className="relative z-10 mx-auto max-w-6xl px-6 pt-20">
+        <div className="rounded-lg border border-violet-500/20 bg-violet-500/5 px-4 py-3 text-sm text-zinc-400">
+          <span className="font-medium text-violet-400">Developer Reference</span> — This page documents the MCP API for AI tool integrations. For app help, use <kbd className="rounded border border-zinc-700 bg-zinc-800 px-1.5 py-0.5 text-xs font-mono">?</kbd> inside the app or <kbd className="rounded border border-zinc-700 bg-zinc-800 px-1.5 py-0.5 text-xs font-mono">Cmd+K</kbd> to search.
+        </div>
+      </div>
+
       {/* Content */}
-      <div className="relative z-10 mx-auto max-w-6xl px-6 pt-24 pb-16">
+      <div className="relative z-10 mx-auto max-w-6xl px-6 pt-6 pb-16">
         <div className="flex gap-12">
           {/* Sidebar TOC (desktop only) */}
           <aside className="hidden lg:block w-56 shrink-0">
