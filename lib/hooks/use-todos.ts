@@ -64,6 +64,14 @@ export function useSearchTodos(query: string) {
   });
 }
 
+export function useStreakHistory(todoId: string) {
+  return useQuery({
+    queryKey: queryKeys.todos.streakHistory(todoId),
+    queryFn: () => fetchJson(`/api/todos/${todoId}/streak-history`),
+    enabled: !!todoId,
+  });
+}
+
 // --- Mutation Hooks ---
 
 export function useCreateTodo() {

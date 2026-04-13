@@ -252,3 +252,10 @@ export const saveReviewSchema = z.object({
   toImprove: z.string(),
 });
 export type SaveReviewInput = z.infer<typeof saveReviewSchema>;
+
+// --- Streak Heatmap ---
+
+export const streakHistoryQuerySchema = z.object({
+  days: z.coerce.number().min(7).max(365).default(90),
+});
+export type StreakHistoryQuery = z.infer<typeof streakHistoryQuerySchema>;

@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 import type { Prisma } from "../../generated/prisma/client";
 import { bumpStreak, clampStreakDown } from "@/lib/services/recurring-helpers";
 import { rrulestr } from "rrule";
-import { startOfDay, subDays, addDays, format } from "date-fns";
+import { startOfDay, endOfDay, subDays, addDays, format, isBefore } from "date-fns";
 
 // Reusable client type so methods can run inside an interactive
 // $transaction or standalone. See goal-service.ts for the same pattern.
@@ -424,5 +424,92 @@ export const todoRecurringService = {
     }
 
     return template;
+  },
+
+  /**
+   * Get day-by-day completion history for a recurring template over N days.
+   * Powers the streak heatmap component.
+   *
+   * Each day in the range is classified as:
+   *   - "completed": instance exists and was completed
+   *   - "missed": instance exists, not completed, and due date is in the past
+   *   - "pending": instance exists, not completed, and due date is today or future
+   *   - "none": no instance exists for that day
+   */
+  async getCompletionHistory(userId: string, templateId: string, days: number = 90) {
+    const template = await prisma.todo.findFirst({
+      where: { id: templateId, userId, isRecurring: true, recurringSourceId: null },
+      select: {
+        id: true,
+        title: true,
+        currentStreak: true,
+        longestStreak: true,
+        consistencyScore: true,
+        recurrenceRule: true,
+      },
+    });
+
+    if (!template) {
+      throw new Error("Recurring template not found");
+    }
+
+    const now = new Date();
+    const rangeStart = startOfDay(subDays(now, days));
+    const rangeEnd = endOfDay(now);
+
+    const instances = await prisma.todo.findMany({
+      where: {
+        userId,
+        recurringSourceId: templateId,
+        dueDate: { gte: rangeStart, lte: rangeEnd },
+      },
+      select: { dueDate: true, completedAt: true, status: true },
+      orderBy: { dueDate: "asc" },
+    });
+
+    // Index instances by date string for O(1) lookup
+    const instanceMap = new Map<string, { dueDate: Date | null; completedAt: Date | null; status: string }>();
+    for (const inst of instances) {
+      if (inst.dueDate) {
+        const key = format(inst.dueDate, "yyyy-MM-dd");
+        instanceMap.set(key, inst);
+      }
+    }
+
+    // Build day-by-day array
+    const todayStart = startOfDay(now);
+    const dayEntries: Array<{ date: string; status: "completed" | "missed" | "pending" | "none" }> = [];
+    let cursor = rangeStart;
+
+    while (!isBefore(rangeEnd, cursor)) {
+      const dateStr = format(cursor, "yyyy-MM-dd");
+      const instance = instanceMap.get(dateStr);
+
+      let status: "completed" | "missed" | "pending" | "none";
+      if (instance) {
+        if (instance.completedAt !== null) {
+          status = "completed";
+        } else if (instance.dueDate && isBefore(instance.dueDate, todayStart)) {
+          status = "missed";
+        } else {
+          status = "pending";
+        }
+      } else {
+        status = "none";
+      }
+
+      dayEntries.push({ date: dateStr, status });
+      cursor = addDays(cursor, 1);
+    }
+
+    return {
+      templateId: template.id,
+      title: template.title,
+      currentStreak: template.currentStreak,
+      longestStreak: template.longestStreak,
+      consistencyScore: template.consistencyScore,
+      recurrenceRule: template.recurrenceRule,
+      days: dayEntries,
+    };
   },
 };

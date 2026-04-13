@@ -47,6 +47,7 @@ import {
   PencilIcon,
 } from "lucide-react";
 import { isOverdue } from "@/lib/todo-utils";
+import { StreakHeatmap } from "./streak-heatmap";
 
 const STATUS_CONFIG: Record<
   string,
@@ -444,6 +445,11 @@ export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps
                 </div>
               )}
             </div>
+          )}
+
+          {/* Streak heatmap for recurring todos */}
+          {todo.isRecurring && (
+            <StreakHeatmap todoId={todo.recurringSourceId ?? todoId} />
           )}
         </div>
 

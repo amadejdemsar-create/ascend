@@ -17,6 +17,7 @@ export const queryKeys = {
     byRange: (start: string, end: string) => ["todos", "by-range", start, end] as const,
     big3: (date?: string) => ["todos", "big3", date] as const,
     search: (q: string) => ["todos", "search", q] as const,
+    streakHistory: (todoId: string) => ["todos", "streak-history", todoId] as const,
   },
   context: {
     all: () => ["context"] as const,
