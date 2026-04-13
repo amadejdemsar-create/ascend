@@ -28,5 +28,8 @@ export const queryKeys = {
     all: () => ["categories"] as const,
     tree: () => ["categories", "tree"] as const,
   },
+  review: {
+    weekly: (weekStart: string) => ["review", "weekly", weekStart] as const,
+  },
   dashboard: () => ["dashboard"] as const,
 };

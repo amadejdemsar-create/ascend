@@ -3,6 +3,7 @@ import {
   Target,
   CheckSquare,
   CalendarDays,
+  ClipboardCheck,
   Brain,
   Settings,
   type LucideIcon,
@@ -26,6 +27,7 @@ export const navGroups: NavGroup[] = [
     items: [
       { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
       { label: "Calendar", href: "/calendar", icon: CalendarDays },
+      { label: "Review", href: "/review", icon: ClipboardCheck },
     ],
   },
   {

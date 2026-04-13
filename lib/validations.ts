@@ -238,3 +238,17 @@ export type ReorderTodosInput = z.infer<typeof reorderTodosSchema>;
 export type CreateContextInput = z.input<typeof createContextSchema>;
 export type UpdateContextInput = z.input<typeof updateContextSchema>;
 export type ContextFilters = z.infer<typeof contextFiltersSchema>;
+
+// --- Weekly Review ---
+
+export const weeklyReviewQuerySchema = z.object({
+  weekStart: z.string(),
+});
+export type WeeklyReviewQuery = z.infer<typeof weeklyReviewQuerySchema>;
+
+export const saveReviewSchema = z.object({
+  weekStart: z.string(),
+  wentWell: z.string(),
+  toImprove: z.string(),
+});
+export type SaveReviewInput = z.infer<typeof saveReviewSchema>;
