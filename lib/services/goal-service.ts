@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
 import type { Prisma } from "../../generated/prisma/client";
 import type { CreateGoalInput, UpdateGoalInput, GoalFilters, AddProgressInput, ReorderGoalsInput } from "@/lib/validations";
-import { validateHierarchy } from "@/lib/services/hierarchy-helpers";
+import { validateHierarchy, recalcParentProgress } from "@/lib/services/hierarchy-helpers";
 import { gamificationService } from "@/lib/services/gamification-service";
 import { goalRecurringService } from "@/lib/services/goal-recurring-service";
 
@@ -107,10 +107,17 @@ export const goalService = {
       updateData.completedAt = new Date();
     }
 
-    return client.goal.update({
+    const updated = await client.goal.update({
       where: { id },
       data: updateData,
     });
+
+    // If status changed on a goal with a parent, recalculate parent progress.
+    if (data.status && updated.parentId) {
+      await recalcParentProgress(userId, id, client);
+    }
+
+    return updated;
   },
 
   /**
@@ -164,6 +171,9 @@ export const goalService = {
           tx,
         );
       }
+
+      // 4. Recalculate parent progress up the hierarchy.
+      await recalcParentProgress(userId, id, tx);
 
       return {
         ...goal,
