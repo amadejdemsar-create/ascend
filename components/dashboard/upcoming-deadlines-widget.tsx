@@ -1,9 +1,11 @@
 "use client";
 
-import { CalendarClock } from "lucide-react";
+import { CalendarClock, ArrowRight } from "lucide-react";
 import { format, isAfter, isBefore, addDays } from "date-fns";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useUIStore } from "@/lib/stores/ui-store";
 import type { DeadlineGoal } from "@/lib/services/dashboard-service";
 
 interface UpcomingDeadlinesWidgetProps {
@@ -13,6 +15,7 @@ interface UpcomingDeadlinesWidgetProps {
 export function UpcomingDeadlinesWidget({
   goals,
 }: UpcomingDeadlinesWidgetProps) {
+  const openGoalModal = useUIStore((s) => s.openGoalModal);
   const now = new Date();
   const sevenDaysOut = addDays(now, 7);
   const twoDaysOut = addDays(now, 2);
@@ -62,9 +65,19 @@ export function UpcomingDeadlinesWidget({
       </CardHeader>
       <CardContent>
         {goals.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No upcoming deadlines. Your schedule is clear.
-          </p>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              No upcoming deadlines. Your schedule is clear.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openGoalModal("create")}
+            >
+              Set a deadline
+              <ArrowRight className="ml-1 size-3.5" />
+            </Button>
+          </div>
         ) : (
           <div className="space-y-4">
             {next7.length > 0 && (

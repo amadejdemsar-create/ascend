@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { format, isSameDay } from "date-fns";
 import { toast } from "sonner";
 import {
@@ -12,6 +13,7 @@ import { useGoalDeadlinesByRange } from "@/lib/hooks/use-goals";
 import type { GoalDeadlineItem } from "@/lib/hooks/use-goals";
 import type { TodoListItem } from "@/components/todos/todo-list-columns";
 import { GoalPriorityBadge } from "@/components/goals/goal-priority-badge";
+import { MorningPlanningPrompt } from "@/components/calendar/morning-planning-prompt";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -37,6 +39,7 @@ export function CalendarDayDetail({
 }: CalendarDayDetailProps) {
   const dateStr = format(date, "yyyy-MM-dd");
   const isViewingToday = isSameDay(date, new Date());
+  const [promptDismissed, setPromptDismissed] = useState(false);
 
   const { data: rawDayTodos, isLoading: todosLoading } = useTodosByDate(dateStr);
   const { data: rawBig3, isLoading: big3Loading } = useTop3Todos(dateStr);
@@ -121,6 +124,14 @@ export function CalendarDayDetail({
           {format(date, "EEEE, d MMMM yyyy")}
         </h2>
       </div>
+
+      {/* Morning planning prompt (today only, when no Big 3 set) */}
+      {isViewingToday && !promptDismissed && big3.length === 0 && (
+        <MorningPlanningPrompt
+          todayTodos={dayTodos.filter((t) => t.status === "PENDING")}
+          onDismiss={() => setPromptDismissed(true)}
+        />
+      )}
 
       <div className="flex-1 space-y-4 p-4">
         {/* Empty state */}

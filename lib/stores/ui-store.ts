@@ -4,6 +4,7 @@ import type { SortingState } from "@tanstack/react-table";
 import type { TimelineZoom } from "@/lib/timeline-utils";
 
 export type ViewType = "list" | "tree" | "timeline";
+export type TodoDateTab = "today" | "week" | "all";
 
 export interface ActiveFilters {
   horizon?: "YEARLY" | "QUARTERLY" | "MONTHLY" | "WEEKLY";
@@ -43,6 +44,10 @@ interface UIStore {
   timelineZoom: TimelineZoom;
   timelineYear: number;
   timelineMonth: number;
+  todoDateTab: TodoDateTab;
+  todoHideCompleted: boolean;
+  setTodoDateTab: (tab: TodoDateTab) => void;
+  setTodoHideCompleted: (hide: boolean) => void;
   toggleSidebar: () => void;
   selectGoal: (id: string | null) => void;
   openGoalModal: (mode: "create" | "edit", horizon?: string) => void;
@@ -72,6 +77,10 @@ export const useUIStore = create<UIStore>()(
       timelineZoom: "quarter",
       timelineYear: new Date().getFullYear(),
       timelineMonth: new Date().getMonth(),
+      todoDateTab: "today",
+      todoHideCompleted: true,
+      setTodoDateTab: (tab) => set({ todoDateTab: tab }),
+      setTodoHideCompleted: (hide) => set({ todoHideCompleted: hide }),
       toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
       selectGoal: (id) => set({ selectedGoalId: id }),
       openGoalModal: (mode, horizon) =>
@@ -93,7 +102,7 @@ export const useUIStore = create<UIStore>()(
     }),
     {
       name: "ascend-ui",
-      version: 6,
+      version: 7,
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as Record<string, unknown>;
         if (version < 4) {
@@ -122,6 +131,13 @@ export const useUIStore = create<UIStore>()(
             activeView: view === "cards" || view === "board" ? "list" : view,
           };
         }
+        if (version === 6) {
+          return {
+            ...state,
+            todoDateTab: "today",
+            todoHideCompleted: true,
+          };
+        }
         return state;
       },
       partialize: (state) => ({
@@ -132,6 +148,8 @@ export const useUIStore = create<UIStore>()(
         timelineZoom: state.timelineZoom,
         timelineYear: state.timelineYear,
         timelineMonth: state.timelineMonth,
+        todoDateTab: state.todoDateTab,
+        todoHideCompleted: state.todoHideCompleted,
       }),
     }
   )

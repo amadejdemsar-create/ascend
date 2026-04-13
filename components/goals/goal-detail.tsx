@@ -197,6 +197,18 @@ export function GoalDetail({ goalId, onClose, isMobileOverlay }: GoalDetailProps
 
   return (
     <div className="flex h-full flex-col overflow-y-auto">
+      {/* Parent breadcrumb */}
+      {goal.parent && (
+        <button
+          type="button"
+          onClick={() => selectGoal(goal.parent.id)}
+          className="flex items-center gap-1 px-4 pt-3 pb-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+        >
+          <ArrowLeftIcon className="size-3" />
+          <span className="truncate">{goal.parent.title}</span>
+        </button>
+      )}
+
       {/* Header */}
       <div className="flex items-start gap-2 border-b p-4">
         {isMobileOverlay && (
@@ -289,6 +301,22 @@ export function GoalDetail({ goalId, onClose, isMobileOverlay }: GoalDetailProps
             </Select>
           </div>
         </div>
+
+        {/* Overall progress (when no measurable target is set) */}
+        {goal.targetValue == null && goal.progress > 0 && (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-muted-foreground">Progress</Label>
+              <span className="text-xs font-mono text-muted-foreground">{goal.progress}%</span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary transition-all"
+                style={{ width: `${Math.min(goal.progress, 100)}%` }}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Recurring streak info (templates only) */}
         {goal.isRecurring && !goal.recurringSourceId && (

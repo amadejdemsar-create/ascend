@@ -1,7 +1,9 @@
 "use client";
 
-import { BarChart3 } from "lucide-react";
+import Link from "next/link";
+import { BarChart3, ArrowRight } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import type { CategoryProgress } from "@/lib/services/dashboard-service";
 
 interface ProgressOverviewWidgetProps {
@@ -23,9 +25,15 @@ export function ProgressOverviewWidget({
       </CardHeader>
       <CardContent>
         {sorted.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Assign goals to categories to see progress breakdown.
-          </p>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Assign goals to categories to see progress breakdown.
+            </p>
+            <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/goals" />}>
+              Assign categories
+              <ArrowRight className="ml-1 size-3.5" />
+            </Button>
+          </div>
         ) : (
           <div className="space-y-3">
             {sorted.map((cat) => (

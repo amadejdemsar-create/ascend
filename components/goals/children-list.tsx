@@ -57,14 +57,17 @@ export function ChildrenList({
               >
                 <span className="flex-1 truncate">{child.title}</span>
                 <GoalPriorityBadge priority={child.priority} />
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
-                  {STATUS_LABELS[child.status] ?? child.status}
-                </span>
-                {child.progress > 0 && (
-                  <span className="text-xs font-mono text-muted-foreground">
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-primary transition-all"
+                      style={{ width: `${Math.min(child.progress, 100)}%` }}
+                    />
+                  </div>
+                  <span className="text-[0.6rem] font-mono text-muted-foreground w-7 text-right">
                     {child.progress}%
                   </span>
-                )}
+                </div>
               </button>
             </li>
           ))}

@@ -5,11 +5,18 @@ import "react-day-picker/src/style.css";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 
+interface DayIndicator {
+  hasPending: boolean;
+  hasBig3: boolean;
+  allDone: boolean;
+}
+
 interface CalendarMonthGridProps {
   selectedDate: Date;
   onSelectDate: (date: Date) => void;
   todoCounts: Record<string, number>;
   goalDeadlineDates: Set<string>;
+  dayIndicators: Record<string, DayIndicator>;
   month: Date;
   onMonthChange: (month: Date) => void;
 }
@@ -23,6 +30,7 @@ export function CalendarMonthGrid({
   onSelectDate,
   todoCounts,
   goalDeadlineDates,
+  dayIndicators,
   month,
   onMonthChange,
 }: CalendarMonthGridProps) {
@@ -75,19 +83,55 @@ export function CalendarMonthGrid({
         components={{
           DayButton: ({ day, modifiers, ...buttonProps }) => {
             const dateKey = formatDateKey(day.date);
-            const todoCount = todoCounts[dateKey] ?? 0;
+            const indicator = dayIndicators[dateKey];
             const hasDeadline = goalDeadlineDates.has(dateKey);
+
+            // Build dot list, capped at 3, in priority order:
+            // 1. Goal deadline (destructive red)
+            // 2. Big 3 (amber)
+            // 3. All done (green) OR pending (muted neutral)
+            const dots: Array<{ key: string; className: string }> = [];
+
+            if (hasDeadline) {
+              dots.push({
+                key: "deadline",
+                className: "bg-destructive",
+              });
+            }
+
+            if (indicator?.hasBig3) {
+              dots.push({
+                key: "big3",
+                className: "bg-amber-400",
+              });
+            }
+
+            if (indicator) {
+              if (indicator.allDone) {
+                dots.push({
+                  key: "done",
+                  className: "bg-green-500",
+                });
+              } else if (indicator.hasPending) {
+                dots.push({
+                  key: "pending",
+                  className: "bg-muted-foreground",
+                });
+              }
+            }
+
+            const visibleDots = dots.slice(0, 3);
 
             return (
               <button {...buttonProps}>
                 <span>{day.date.getDate()}</span>
-                <span className="flex items-center gap-0.5 h-2.5 mt-0.5">
-                  {todoCount > 0 && (
-                    <span className="inline-block size-1.5 rounded-full bg-primary" />
-                  )}
-                  {hasDeadline && (
-                    <span className="inline-block size-1.5 rounded-sm rotate-45 bg-amber-500" />
-                  )}
+                <span className="flex items-center justify-center gap-0.5 h-2.5 mt-0.5">
+                  {visibleDots.map((dot) => (
+                    <span
+                      key={dot.key}
+                      className={`inline-block size-1.5 rounded-full ${dot.className}`}
+                    />
+                  ))}
                 </span>
               </button>
             );

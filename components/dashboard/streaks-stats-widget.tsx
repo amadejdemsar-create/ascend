@@ -18,19 +18,20 @@ interface StreaksStatsWidgetProps {
 }
 
 export function StreaksStatsWidget({ stats }: StreaksStatsWidgetProps) {
-  const animatedLevel = useAnimatedCounter(stats.level);
   const animatedWeeklyScore = useAnimatedCounter(stats.weeklyScore);
   const animatedActiveStreaks = useAnimatedCounter(stats.activeStreaks);
   const animatedCompletedThisMonth = useAnimatedCounter(stats.completedThisMonth);
   const animatedTotalCompleted = useAnimatedCounter(stats.totalCompleted);
 
   const statItems = [
-    { label: "Level", icon: Trophy, value: animatedLevel },
+    // This week
     { label: "Weekly score", icon: Zap, value: animatedWeeklyScore, suffix: "pts" },
     { label: "Active streaks", icon: Flame, value: animatedActiveStreaks },
-    { label: "Completed this month", icon: CalendarCheck, value: animatedCompletedThisMonth },
-    { label: "Completion rate", icon: Percent, value: stats.completionRate, suffix: "%" },
+    // All-time
     { label: "Total completed", icon: CheckCircle2, value: animatedTotalCompleted },
+    { label: "Completion rate", icon: Percent, value: stats.completionRate, suffix: "%" },
+    // This month
+    { label: "Completed this month", icon: CalendarCheck, value: animatedCompletedThisMonth },
   ];
 
   return (

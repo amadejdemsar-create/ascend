@@ -263,15 +263,20 @@ export function GoalForm({
         </Select>
       </div>
 
-      {/* === Advanced Fields Toggle === */}
+      {/* === More Fields Toggle === */}
       <button
         type="button"
         onClick={() => setShowAdvanced(!showAdvanced)}
         className="flex w-full items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
       >
         <ChevronRight className={cn("size-4 transition-transform", showAdvanced && "rotate-90")} />
-        Advanced options
+        {showSmartFields ? "SMART Goal & Details" : "More details"}
       </button>
+      {showAdvanced && showSmartFields && (
+        <p className="text-xs text-muted-foreground px-6">
+          A SMART goal is Specific, Measurable, Attainable, Relevant, and Timely. Filling these in massively increases follow-through.
+        </p>
+      )}
 
       {showAdvanced && (
         <div className="space-y-4">

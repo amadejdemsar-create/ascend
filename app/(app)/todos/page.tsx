@@ -1,17 +1,19 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { toast } from "sonner";
+import { endOfDay, addDays, endOfWeek, isBefore } from "date-fns";
 import { useTodos, useBulkCompleteTodos, useDeleteTodo } from "@/lib/hooks/use-todos";
+import { useUIStore, type TodoDateTab } from "@/lib/stores/ui-store";
 import { TodoFilterBar } from "@/components/todos/todo-filter-bar";
 import { TodoQuickAdd } from "@/components/todos/todo-quick-add";
 import { TodoListView } from "@/components/todos/todo-list-view";
 import { TodoBulkBar } from "@/components/todos/todo-bulk-bar";
 import { TodoDetail } from "@/components/todos/todo-detail";
 import type { TodoListItem } from "@/components/todos/todo-list-columns";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CheckSquare } from "lucide-react";
+import { CheckSquare, Eye, EyeOff } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { TodoFilters } from "@/lib/validations";
 
 const PRIORITY_RANK: Record<string, number> = {
@@ -20,16 +22,20 @@ const PRIORITY_RANK: Record<string, number> = {
   LOW: 2,
 };
 
-const STATUS_RANK: Record<string, number> = {
-  PENDING: 0,
-  DONE: 1,
-  SKIPPED: 2,
-};
+const DATE_TABS: { value: TodoDateTab; label: string }[] = [
+  { value: "today", label: "Today & Overdue" },
+  { value: "week", label: "This Week" },
+  { value: "all", label: "All" },
+];
 
 export default function TodosPage() {
   const [filters, setFilters] = useState<TodoFilters>({});
   const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const todoDateTab = useUIStore((s) => s.todoDateTab);
+  const todoHideCompleted = useUIStore((s) => s.todoHideCompleted);
+  const setTodoDateTab = useUIStore((s) => s.setTodoDateTab);
+  const setTodoHideCompleted = useUIStore((s) => s.setTodoHideCompleted);
 
   const { data: rawTodos, isLoading } = useTodos(filters);
   const bulkComplete = useBulkCompleteTodos();
@@ -38,12 +44,46 @@ export default function TodosPage() {
   // Clear bulk selection when filters change
   useEffect(() => {
     setSelectedIds(new Set());
-  }, [filters]);
+  }, [filters, todoDateTab, todoHideCompleted]);
 
-  // Default sort: due date ascending, then priority (high first), then status (pending first)
-  const todos: TodoListItem[] = (() => {
-    const items = (rawTodos ?? []) as TodoListItem[];
+  // Filter by date tab + hide completed, then sort: Big 3 first, due date asc, priority desc
+  const todos: TodoListItem[] = useMemo(() => {
+    let items = (rawTodos ?? []) as TodoListItem[];
+
+    // Hide completed/skipped
+    if (todoHideCompleted) {
+      items = items.filter((t) => t.status === "PENDING");
+    }
+
+    // Date tab filtering
+    const now = new Date();
+    const todayEnd = endOfDay(now);
+    const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
+
+    if (todoDateTab === "today") {
+      items = items.filter((t) => {
+        if (!t.dueDate) return true; // No due date: always show
+        const due = new Date(t.dueDate);
+        // Show if due today or overdue
+        return isBefore(due, addDays(todayEnd, 1));
+      });
+    } else if (todoDateTab === "week") {
+      items = items.filter((t) => {
+        if (!t.dueDate) return true;
+        const due = new Date(t.dueDate);
+        // Show if due this week or overdue
+        return isBefore(due, addDays(weekEnd, 1));
+      });
+    }
+    // "all" tab: no date filtering
+
+    // Sort: Big 3 first, then due date asc, then priority desc
     return [...items].sort((a, b) => {
+      // Big 3 first
+      const aBig3 = a.isBig3 ? 0 : 1;
+      const bBig3 = b.isBig3 ? 0 : 1;
+      if (aBig3 !== bBig3) return aBig3 - bBig3;
+
       // Due date ascending (nulls last)
       const aDate = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
       const bDate = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
@@ -52,14 +92,9 @@ export default function TodosPage() {
       // Priority: HIGH first
       const aPri = PRIORITY_RANK[a.priority] ?? 1;
       const bPri = PRIORITY_RANK[b.priority] ?? 1;
-      if (aPri !== bPri) return aPri - bPri;
-
-      // Status: PENDING first
-      const aStat = STATUS_RANK[a.status] ?? 0;
-      const bStat = STATUS_RANK[b.status] ?? 0;
-      return aStat - bStat;
+      return aPri - bPri;
     });
-  })();
+  }, [rawTodos, todoDateTab, todoHideCompleted]);
 
   // Selection handlers
   const handleToggleSelect = useCallback((id: string) => {
@@ -166,15 +201,47 @@ export default function TodosPage() {
       >
         {/* Header */}
         <div className="sticky top-0 z-10 border-b bg-background p-4 space-y-3">
-          {/* Row 1: Title */}
+          {/* Row 1: Title + hide completed toggle */}
           <div className="flex items-center justify-between gap-3">
-            <h1 className="font-serif text-2xl font-bold">To-dos</h1>
+            <h1 className="font-serif text-2xl font-bold">Todos</h1>
+            <button
+              type="button"
+              onClick={() => setTodoHideCompleted(!todoHideCompleted)}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              title={todoHideCompleted ? "Show completed" : "Hide completed"}
+            >
+              {todoHideCompleted ? (
+                <EyeOff className="size-3.5" />
+              ) : (
+                <Eye className="size-3.5" />
+              )}
+              {todoHideCompleted ? "Show done" : "Hide done"}
+            </button>
           </div>
 
-          {/* Row 2: Quick add */}
+          {/* Row 2: Date tabs */}
+          <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
+            {DATE_TABS.map((tab) => (
+              <button
+                key={tab.value}
+                type="button"
+                onClick={() => setTodoDateTab(tab.value)}
+                className={cn(
+                  "flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                  todoDateTab === tab.value
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Row 3: Quick add */}
           <TodoQuickAdd />
 
-          {/* Row 3: Filters */}
+          {/* Row 4: Filters */}
           <TodoFilterBar filters={filters} onFiltersChange={setFilters} />
         </div>
 

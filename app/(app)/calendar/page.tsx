@@ -1,18 +1,18 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import { format, startOfMonth, endOfMonth, isSameDay } from "date-fns";
-import { useTodosByRange, useTodosByDate, useTop3Todos, useGenerateRecurring } from "@/lib/hooks/use-todos";
+import { format, startOfMonth, endOfMonth } from "date-fns";
+import { useTodosByRange, useGenerateRecurring } from "@/lib/hooks/use-todos";
 import { useGoalDeadlinesByRange } from "@/lib/hooks/use-goals";
 import type { GoalDeadlineItem } from "@/lib/hooks/use-goals";
-import type { TodoListItem } from "@/components/todos/todo-list-columns";
 import { CalendarMonthGrid } from "@/components/calendar/calendar-month-grid";
 import { CalendarDayDetail } from "@/components/calendar/calendar-day-detail";
-import { MorningPlanningPrompt } from "@/components/calendar/morning-planning-prompt";
 
 interface RangeTodoItem {
   dueDate?: string | null;
   scheduledDate?: string | null;
+  status?: string;
+  isBig3?: boolean;
 }
 
 export default function CalendarPage() {
@@ -20,18 +20,6 @@ export default function CalendarPage() {
   const [month, setMonth] = useState<Date>(new Date());
   // Track whether user has explicitly selected a date (for mobile overlay)
   const [showDetail, setShowDetail] = useState(false);
-  const [promptDismissed, setPromptDismissed] = useState(false);
-
-  // Morning planning prompt data
-  const todayStr = format(new Date(), "yyyy-MM-dd");
-  const { data: rawTodayBig3 } = useTop3Todos(todayStr);
-  const { data: rawTodayTodos } = useTodosByDate(todayStr);
-  const todayBig3 = (rawTodayBig3 ?? []) as TodoListItem[];
-  const todayTodos = (rawTodayTodos ?? []) as TodoListItem[];
-  const pendingTodayTodos = todayTodos.filter((t) => t.status === "PENDING");
-  const isViewingToday = isSameDay(selectedDate, new Date());
-  const showPrompt =
-    !promptDismissed && isViewingToday && todayBig3.length === 0;
 
   const monthStart = startOfMonth(month);
   const monthEnd = endOfMonth(month);
@@ -73,6 +61,35 @@ export default function CalendarPage() {
     return counts;
   }, [monthTodos]);
 
+  // Compute per-day indicators for the month grid dots
+  const dayIndicators = useMemo(() => {
+    const indicators: Record<
+      string,
+      { hasPending: boolean; hasBig3: boolean; allDone: boolean }
+    > = {};
+
+    // Group todos by date
+    const byDate: Record<string, RangeTodoItem[]> = {};
+    for (const todo of monthTodos) {
+      const dateStr = todo.scheduledDate ?? todo.dueDate;
+      if (!dateStr) continue;
+      const key = format(new Date(dateStr), "yyyy-MM-dd");
+      if (!byDate[key]) byDate[key] = [];
+      byDate[key].push(todo);
+    }
+
+    for (const [key, todos] of Object.entries(byDate)) {
+      const hasPending = todos.some((t) => t.status === "PENDING");
+      const hasBig3 = todos.some((t) => t.isBig3);
+      const allDone =
+        todos.length > 0 && todos.every((t) => t.status === "DONE");
+
+      indicators[key] = { hasPending, hasBig3, allDone };
+    }
+
+    return indicators;
+  }, [monthTodos]);
+
   // Compute goal deadline dates
   const goalDeadlineDates = useMemo(() => {
     const dates = new Set<string>();
@@ -95,9 +112,9 @@ export default function CalendarPage() {
 
   return (
     <div className="flex h-full">
-      {/* Left panel: Month grid */}
+      {/* Left panel: Month grid (65-70% width) */}
       <div
-        className={`flex-1 flex flex-col border-r overflow-y-auto ${
+        className={`flex-[2] min-w-0 flex flex-col border-r overflow-y-auto ${
           showDetail ? "hidden md:flex" : "flex"
         }`}
       >
@@ -106,14 +123,6 @@ export default function CalendarPage() {
           <h1 className="font-serif text-2xl font-bold">Calendar</h1>
         </div>
 
-        {/* Morning planning prompt */}
-        {showPrompt && (
-          <MorningPlanningPrompt
-            todayTodos={pendingTodayTodos}
-            onDismiss={() => setPromptDismissed(true)}
-          />
-        )}
-
         {/* Calendar grid */}
         <div className="p-4">
           <CalendarMonthGrid
@@ -121,6 +130,7 @@ export default function CalendarPage() {
             onSelectDate={handleSelectDate}
             todoCounts={todoCounts}
             goalDeadlineDates={goalDeadlineDates}
+            dayIndicators={dayIndicators}
             month={month}
             onMonthChange={setMonth}
           />
@@ -130,8 +140,8 @@ export default function CalendarPage() {
       {/* Right panel: Day detail */}
       {showDetail ? (
         <>
-          {/* Desktop: side panel */}
-          <div className="hidden md:flex w-[400px] lg:w-[440px] flex-col border-l">
+          {/* Desktop: side panel (30-35% width) */}
+          <div className="hidden md:flex flex-1 min-w-0 flex-col border-l">
             <CalendarDayDetail date={selectedDate} />
           </div>
 
@@ -145,7 +155,7 @@ export default function CalendarPage() {
           </div>
         </>
       ) : (
-        <div className="hidden md:flex w-[400px] lg:w-[440px] items-center justify-center text-muted-foreground border-l">
+        <div className="hidden md:flex flex-1 min-w-0 items-center justify-center text-muted-foreground border-l">
           <p className="text-sm">Select a day to see details</p>
         </div>
       )}
