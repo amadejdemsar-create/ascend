@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { useCreateTodo } from "@/lib/hooks/use-todos";
+import { TemplatePickerDialog } from "@/components/templates/template-picker-dialog";
+import { TODO_TEMPLATES, type TodoTemplate } from "@/lib/templates/todo-templates";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PlusIcon } from "lucide-react";
+import { LayoutTemplate, PlusIcon } from "lucide-react";
 
 const PRIORITY_ABBREV: Record<string, string> = {
   HIGH: "H",
@@ -25,6 +27,7 @@ const PRIORITY_ORDER = ["HIGH", "MEDIUM", "LOW"] as const;
 export function TodoQuickAdd() {
   const [title, setTitle] = useState("");
   const [priority, setPriority] = useState<string>("MEDIUM");
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const createTodo = useCreateTodo();
 
   async function handleCreate() {
@@ -42,6 +45,27 @@ export function TodoQuickAdd() {
       const message =
         err instanceof Error ? err.message : "Something went wrong";
       toast.error(message);
+    }
+  }
+
+  async function handleApplyTemplate(template: TodoTemplate) {
+    try {
+      await Promise.all(
+        template.todos.map((t) =>
+          createTodo.mutateAsync({
+            title: t.title,
+            priority: t.priority,
+            ...(t.description && { description: t.description }),
+          })
+        )
+      );
+      toast.success(
+        `Created ${template.todos.length} todo${template.todos.length > 1 ? "s" : ""} from "${template.name}"`
+      );
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to apply template"
+      );
     }
   }
 
@@ -80,6 +104,16 @@ export function TodoQuickAdd() {
         </SelectContent>
       </Select>
       <Button
+        type="button"
+        size="icon-sm"
+        variant="ghost"
+        onClick={() => setTemplatePickerOpen(true)}
+        title="Use a template"
+        aria-label="Use a template"
+      >
+        <LayoutTemplate className="size-3.5" />
+      </Button>
+      <Button
         size="icon-sm"
         onClick={handleCreate}
         disabled={!title.trim() || createTodo.isPending}
@@ -87,6 +121,14 @@ export function TodoQuickAdd() {
       >
         <PlusIcon />
       </Button>
+      <TemplatePickerDialog
+        open={templatePickerOpen}
+        onOpenChange={setTemplatePickerOpen}
+        templates={TODO_TEMPLATES}
+        title="Pick a todo template"
+        description="Create a set of todos from a pre-built routine or checklist."
+        onPick={handleApplyTemplate}
+      />
     </div>
   );
 }
