@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
+import { format, isSameDay } from "date-fns";
 import { Sparkles, X } from "lucide-react";
 import { DragDropProvider, PointerSensor } from "@dnd-kit/react";
 import type { DragEndEvent } from "@dnd-kit/react";
@@ -17,6 +18,7 @@ type DragEndEventArg = Parameters<DragEndEvent>[0];
 interface MorningPlanningPromptProps {
   todayTodos: TodoListItem[];
   onDismiss: () => void;
+  date?: Date;
 }
 
 type Slots = [
@@ -28,9 +30,15 @@ type Slots = [
 export function MorningPlanningPrompt({
   todayTodos,
   onDismiss,
+  date,
 }: MorningPlanningPromptProps) {
   const [slots, setSlots] = useState<Slots>([null, null, null]);
   const setBig3 = useSetBig3();
+  const targetDate = date ?? new Date();
+  const isToday = isSameDay(targetDate, new Date());
+  const headingLabel = isToday
+    ? "Plan Your Day"
+    : `Plan ${format(targetDate, "EEEE")}`;
 
   // Todos not currently in any slot
   const pool = todayTodos.filter((t) => !slots.some((s) => s?.id === t.id));
@@ -100,8 +108,15 @@ export function MorningPlanningPrompt({
       .map((s) => s.id);
     if (todoIds.length === 0) return;
     try {
-      await setBig3.mutateAsync({ todoIds });
-      toast.success("Big 3 set for today!");
+      await setBig3.mutateAsync({
+        todoIds,
+        date: format(targetDate, "yyyy-MM-dd"),
+      });
+      toast.success(
+        isToday
+          ? "Big 3 set for today!"
+          : `Big 3 set for ${format(targetDate, "EEEE")}!`,
+      );
       onDismiss();
     } catch (err) {
       toast.error(
@@ -116,10 +131,12 @@ export function MorningPlanningPrompt({
       <div className="mx-4 mt-4 rounded-xl border border-primary/20 bg-primary/5 p-6">
         <div className="flex items-center gap-2 mb-2">
           <Sparkles className="size-5 text-primary" />
-          <h2 className="font-serif text-xl font-semibold">Plan Your Day</h2>
+          <h2 className="font-serif text-xl font-semibold">{headingLabel}</h2>
         </div>
         <p className="text-sm text-muted-foreground mb-4">
-          No to-dos for today. Create some from the to-dos page to plan your day.
+          {isToday
+            ? "No to-dos for today. Create some from the to-dos page to plan your day."
+            : `No to-dos scheduled for ${format(targetDate, "EEEE, d MMM")}. Create some from the to-dos page to plan ahead.`}
         </p>
         <Button variant="outline" size="sm" onClick={onDismiss}>
           Got it
@@ -134,7 +151,7 @@ export function MorningPlanningPrompt({
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2">
           <Sparkles className="size-5 text-primary" />
-          <h2 className="font-serif text-xl font-semibold">Plan Your Day</h2>
+          <h2 className="font-serif text-xl font-semibold">{headingLabel}</h2>
         </div>
         <Button
           variant="ghost"

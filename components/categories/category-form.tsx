@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,14 @@ import {
 } from "@/components/ui/select";
 import { CategoryColorPicker } from "./category-color-picker";
 import { CategoryIconPicker } from "./category-icon-picker";
+import { getContrastRatio } from "@/lib/color-contrast";
 import type { CreateCategoryInput } from "@/lib/validations";
+
+// Approximates the neutral sidebar background. The sidebar renders at slightly
+// different tones in light vs dark mode; we pick the lighter of the two as the
+// worst case so we warn on any color that would be unreadable in light mode.
+const SIDEBAR_BG_REFERENCE = "#ffffff";
+const WCAG_AA_NORMAL_TEXT = 4.5;
 
 interface CategoryData {
   id: string;
@@ -83,6 +91,12 @@ export function CategoryForm({
       <div className="space-y-2">
         <Label>Color</Label>
         <CategoryColorPicker value={color} onChange={setColor} />
+        {getContrastRatio(color, SIDEBAR_BG_REFERENCE) < WCAG_AA_NORMAL_TEXT && (
+          <p className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+            <AlertTriangle className="size-3.5" />
+            This color may be hard to read on the sidebar. Pick a more saturated or darker shade.
+          </p>
+        )}
       </div>
 
       <div className="space-y-2">

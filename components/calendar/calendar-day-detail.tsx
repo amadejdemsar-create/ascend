@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { format, isSameDay } from "date-fns";
+import { format, isSameDay, startOfDay } from "date-fns";
 import { toast } from "sonner";
 import {
   useTodosByDate,
@@ -32,15 +32,18 @@ interface CalendarDayDetailProps {
   date: Date;
   onClose?: () => void;
   isMobileOverlay?: boolean;
+  onPlanTomorrow?: () => void;
 }
 
 export function CalendarDayDetail({
   date,
   onClose,
   isMobileOverlay,
+  onPlanTomorrow,
 }: CalendarDayDetailProps) {
   const dateStr = format(date, "yyyy-MM-dd");
   const isViewingToday = isSameDay(date, new Date());
+  const isPastDate = startOfDay(date) < startOfDay(new Date());
   const [promptDismissed, setPromptDismissed] = useState(false);
 
   const { data: rawDayTodos, isLoading: todosLoading } = useTodosByDate(dateStr);
@@ -127,12 +130,28 @@ export function CalendarDayDetail({
         </h2>
       </div>
 
-      {/* Morning planning prompt (today only, when no Big 3 set) */}
-      {isViewingToday && !promptDismissed && big3.length === 0 && (
+      {/* Morning planning prompt (today and future dates, when no Big 3 set) */}
+      {!isPastDate && !promptDismissed && big3.length === 0 && (
         <MorningPlanningPrompt
           todayTodos={dayTodos.filter((t) => t.status === "PENDING")}
           onDismiss={() => setPromptDismissed(true)}
+          date={date}
         />
+      )}
+
+      {/* Plan tomorrow shortcut (today only) */}
+      {isViewingToday && onPlanTomorrow && (
+        <div className="flex justify-end px-4 pt-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onPlanTomorrow}
+            className="gap-1.5"
+          >
+            <CalendarDays className="size-3.5" />
+            Plan tomorrow
+          </Button>
+        </div>
       )}
 
       <div className="flex-1 space-y-4 p-4">

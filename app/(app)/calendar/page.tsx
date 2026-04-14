@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import { format, startOfMonth, endOfMonth } from "date-fns";
+import { addDays, format, startOfMonth, endOfMonth } from "date-fns";
 import { useTodosByRange, useGenerateRecurring } from "@/lib/hooks/use-todos";
 import { useGoalDeadlinesByRange } from "@/lib/hooks/use-goals";
 import type { GoalDeadlineItem } from "@/lib/hooks/use-goals";
@@ -114,6 +114,11 @@ export default function CalendarPage() {
     setShowDetail(false);
   }
 
+  function handlePlanTomorrow() {
+    setSelectedDate(addDays(new Date(), 1));
+    setShowDetail(true);
+  }
+
   return (
     <div className="flex h-full">
       {/* Left panel: Month grid (65-70% width) */}
@@ -175,7 +180,10 @@ export default function CalendarPage() {
         <>
           {/* Desktop: side panel (30-35% width) */}
           <div className="hidden md:flex flex-1 min-w-0 flex-col border-l">
-            <CalendarDayDetail date={selectedDate} />
+            <CalendarDayDetail
+              date={selectedDate}
+              onPlanTomorrow={handlePlanTomorrow}
+            />
           </div>
 
           {/* Mobile: full-screen overlay */}
@@ -184,6 +192,7 @@ export default function CalendarPage() {
               date={selectedDate}
               onClose={handleCloseDetail}
               isMobileOverlay
+              onPlanTomorrow={handlePlanTomorrow}
             />
           </div>
         </>

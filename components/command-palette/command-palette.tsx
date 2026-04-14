@@ -147,6 +147,10 @@ export function CommandPalette() {
 
   const hasSearchResults = searchResults.length > 0 || todoResults.length > 0 || contextResults.length > 0;
 
+  const visibleGoals = searchResults.slice(0, 5);
+  const visibleTodos = todoResults.slice(0, 5);
+  const visibleContext = contextResults.slice(0, 5);
+
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
       <CommandInput
@@ -157,9 +161,9 @@ export function CommandPalette() {
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
 
-        {searchResults.length > 0 && (
+        {visibleGoals.length > 0 && (
           <CommandGroup heading="Goals">
-            {searchResults.map((goal) => (
+            {visibleGoals.map((goal) => (
               <CommandItem
                 key={goal.id}
                 value={`goal-${goal.id}-${goal.title}`}
@@ -171,12 +175,17 @@ export function CommandPalette() {
                 </Badge>
               </CommandItem>
             ))}
+            {searchResults.length > 5 && (
+              <div className="px-2 py-1 text-[0.65rem] text-muted-foreground">
+                Showing top 5 of {searchResults.length}. Refine your search to see more.
+              </div>
+            )}
           </CommandGroup>
         )}
 
-        {todoResults.length > 0 && (
+        {visibleTodos.length > 0 && (
           <CommandGroup heading="Todos">
-            {todoResults.map((todo) => (
+            {visibleTodos.map((todo) => (
               <CommandItem
                 key={todo.id}
                 value={`todo-${todo.id}-${todo.title}`}
@@ -188,12 +197,17 @@ export function CommandPalette() {
                 </Badge>
               </CommandItem>
             ))}
+            {todoResults.length > 5 && (
+              <div className="px-2 py-1 text-[0.65rem] text-muted-foreground">
+                Showing top 5 of {todoResults.length}. Refine your search to see more.
+              </div>
+            )}
           </CommandGroup>
         )}
 
-        {contextResults.length > 0 && (
+        {visibleContext.length > 0 && (
           <CommandGroup heading="Context">
-            {contextResults.map((ctx) => (
+            {visibleContext.map((ctx) => (
               <CommandItem
                 key={ctx.id}
                 value={`context-${ctx.id}-${ctx.title}`}
@@ -202,6 +216,11 @@ export function CommandPalette() {
                 <span className="flex-1 truncate">{ctx.title}</span>
               </CommandItem>
             ))}
+            {contextResults.length > 5 && (
+              <div className="px-2 py-1 text-[0.65rem] text-muted-foreground">
+                Showing top 5 of {contextResults.length}. Refine your search to see more.
+              </div>
+            )}
           </CommandGroup>
         )}
 

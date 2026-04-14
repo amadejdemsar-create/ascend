@@ -31,7 +31,7 @@ export default function AppLayout({
         <main className="flex-1 p-4 md:p-6 pb-20 md:pb-6">
           <ViewTransition>{children}</ViewTransition>
         </main>
-        <footer className="hidden border-t px-4 py-2 text-xs text-muted-foreground md:flex items-center justify-between">
+        <footer className="sticky bottom-0 z-10 hidden border-t bg-background px-4 py-2 text-xs text-muted-foreground md:flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span>Ascend</span>
             <FocusTimerWidget />
