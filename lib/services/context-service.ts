@@ -15,7 +15,7 @@ export const contextService = {
 
     return prisma.contextEntry.findMany({
       where,
-      orderBy: { updatedAt: "desc" },
+      orderBy: [{ isPinned: "desc" }, { updatedAt: "desc" }],
       include: {
         category: { select: { id: true, name: true, color: true, icon: true } },
       },
@@ -129,6 +129,25 @@ export const contextService = {
     `;
 
     return prisma.contextEntry.delete({ where: { id } });
+  },
+
+  /**
+   * Toggle (or explicitly set) the pinned state of a context entry.
+   * If `isPinned` is provided, uses that value; otherwise flips the current value.
+   */
+  async togglePin(userId: string, id: string, isPinned?: boolean) {
+    const entry = await prisma.contextEntry.findFirst({ where: { id, userId } });
+    if (!entry) throw new Error("Context entry not found");
+
+    const newValue = typeof isPinned === "boolean" ? isPinned : !entry.isPinned;
+
+    return prisma.contextEntry.update({
+      where: { id },
+      data: { isPinned: newValue },
+      include: {
+        category: { select: { id: true, name: true, color: true, icon: true } },
+      },
+    });
   },
 
   /**

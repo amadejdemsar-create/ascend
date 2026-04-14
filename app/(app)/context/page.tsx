@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Brain } from "lucide-react";
-import { useContextEntries } from "@/lib/hooks/use-context";
+import { useContextEntries, useTogglePin } from "@/lib/hooks/use-context";
+import { useUIStore } from "@/lib/stores/ui-store";
 import { ContextSearch } from "@/components/context/context-search";
 import { ContextCategoryTree } from "@/components/context/context-category-tree";
 import { ContextEntryList } from "@/components/context/context-entry-list";
@@ -22,6 +23,7 @@ interface ContextEntry {
   content: string;
   tags: string[];
   updatedAt: string;
+  isPinned: boolean;
   category?: { id: string; name: string; color: string } | null;
 }
 
@@ -34,11 +36,42 @@ export default function ContextPage() {
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [showCurrentPriorities, setShowCurrentPriorities] = useState(false);
 
+  const contextFilters = useUIStore((s) => s.contextFilters);
+  const setContextTagFilter = useUIStore((s) => s.setContextTagFilter);
+  const tagFilter = contextFilters.tag ?? null;
+
   const { data: entries, isLoading } = useContextEntries(
     selectedCategoryId ? { categoryId: selectedCategoryId } : undefined,
   );
 
   const entryList = (entries ?? []) as ContextEntry[];
+
+  const filteredEntries = useMemo(() => {
+    if (!tagFilter) return entryList;
+    return entryList.filter((entry) => entry.tags.includes(tagFilter));
+  }, [entryList, tagFilter]);
+
+  const hasCategoryFilter = selectedCategoryId !== null;
+
+  const togglePin = useTogglePin();
+
+  function handleTogglePin(id: string, currentlyPinned: boolean) {
+    togglePin.mutate(
+      { id, isPinned: !currentlyPinned },
+      {
+        onSuccess: () => {
+          toast.success(currentlyPinned ? "Unpinned" : "Pinned");
+        },
+        onError: (err) => {
+          toast.error(err instanceof Error ? err.message : "Failed to update pin");
+        },
+      },
+    );
+  }
+
+  function handleClearTagFilter() {
+    setContextTagFilter(null);
+  }
 
   function handleSelectEntry(id: string) {
     setSelectedEntryId(id);
@@ -137,12 +170,17 @@ export default function ContextPage() {
 
         {/* Entry list */}
         <ContextEntryList
-          entries={entryList}
+          entries={filteredEntries}
           selectedId={selectedEntryId}
           onSelect={handleSelectEntry}
           isLoading={isLoading}
           currentPrioritiesSelected={showCurrentPriorities}
           onSelectCurrentPriorities={handleSelectCurrentPriorities}
+          hasCategoryFilter={hasCategoryFilter}
+          tagFilter={tagFilter}
+          onClearTagFilter={handleClearTagFilter}
+          onTagClick={setContextTagFilter}
+          onTogglePin={handleTogglePin}
         />
       </div>
 

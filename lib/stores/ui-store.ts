@@ -13,6 +13,10 @@ export interface ActiveFilters {
   categoryId?: string;
 }
 
+export interface ContextFilters {
+  tag?: string;
+}
+
 interface GoalEditData {
   id: string;
   title?: string;
@@ -46,8 +50,10 @@ interface UIStore {
   timelineMonth: number;
   todoDateTab: TodoDateTab;
   todoHideCompleted: boolean;
+  contextFilters: ContextFilters;
   setTodoDateTab: (tab: TodoDateTab) => void;
   setTodoHideCompleted: (hide: boolean) => void;
+  setContextTagFilter: (tag: string | null) => void;
   toggleSidebar: () => void;
   selectGoal: (id: string | null) => void;
   openGoalModal: (mode: "create" | "edit", horizon?: string) => void;
@@ -79,8 +85,15 @@ export const useUIStore = create<UIStore>()(
       timelineMonth: new Date().getMonth(),
       todoDateTab: "today",
       todoHideCompleted: true,
+      contextFilters: {},
       setTodoDateTab: (tab) => set({ todoDateTab: tab }),
       setTodoHideCompleted: (hide) => set({ todoHideCompleted: hide }),
+      setContextTagFilter: (tag) =>
+        set((s) => ({
+          contextFilters: tag
+            ? { ...s.contextFilters, tag }
+            : { ...s.contextFilters, tag: undefined },
+        })),
       toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
       selectGoal: (id) => set({ selectedGoalId: id }),
       openGoalModal: (mode, horizon) =>
@@ -102,7 +115,7 @@ export const useUIStore = create<UIStore>()(
     }),
     {
       name: "ascend-ui",
-      version: 7,
+      version: 8,
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as Record<string, unknown>;
         if (version < 4) {
@@ -138,6 +151,12 @@ export const useUIStore = create<UIStore>()(
             todoHideCompleted: true,
           };
         }
+        if (version === 7) {
+          return {
+            ...state,
+            contextFilters: {},
+          };
+        }
         return state;
       },
       partialize: (state) => ({
@@ -150,6 +169,7 @@ export const useUIStore = create<UIStore>()(
         timelineMonth: state.timelineMonth,
         todoDateTab: state.todoDateTab,
         todoHideCompleted: state.todoHideCompleted,
+        contextFilters: state.contextFilters,
       }),
     }
   )

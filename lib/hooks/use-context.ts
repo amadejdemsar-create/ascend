@@ -77,3 +77,17 @@ export function useDeleteContext() {
     },
   });
 }
+
+export function useTogglePin() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, isPinned }: { id: string; isPinned?: boolean }) =>
+      fetchJson(`/api/context/${id}/pin`, {
+        method: "PATCH",
+        body: JSON.stringify(typeof isPinned === "boolean" ? { isPinned } : {}),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.context.all() });
+    },
+  });
+}

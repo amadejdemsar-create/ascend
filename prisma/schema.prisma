@@ -331,6 +331,9 @@ model ContextEntry {
   // Tags for cross-cutting discovery (stored as string array)
   tags String[] @default([])
 
+  // Pinned entries surface at the top of the context list
+  isPinned Boolean @default(false)
+
   // Backlinks: store IDs of documents this entry links TO via [[Title]] syntax
   // Bidirectional resolution happens at query time (find entries linking to me)
   linkedEntryIds String[] @default([])
@@ -346,4 +349,5 @@ model ContextEntry {
   @@index([userId])
   @@index([categoryId])
   @@index([userId, title])
+  @@index([userId, isPinned])
 }
