@@ -112,7 +112,12 @@ export function GoalForm({
                 initialData?.specific || initialData?.measurable || initialData?.attainable ||
                 initialData?.relevant || initialData?.timely);
     }
-    return false;
+    // In create mode, default-open the advanced section when the horizon is
+    // YEARLY or QUARTERLY so SMART fields are visible upfront. SMART is
+    // central to the goal model for long-horizon goals; leaving it hidden
+    // behind a collapsible made it feel optional.
+    const initialHorizon = initialData?.horizon ?? "WEEKLY";
+    return SMART_HORIZONS.has(initialHorizon);
   });
 
   const { data: categoryTree } = useCategories();

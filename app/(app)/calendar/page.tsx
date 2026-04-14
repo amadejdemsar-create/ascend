@@ -8,6 +8,7 @@ import type { GoalDeadlineItem } from "@/lib/hooks/use-goals";
 import { CalendarMonthGrid } from "@/components/calendar/calendar-month-grid";
 import { CalendarDayDetail } from "@/components/calendar/calendar-day-detail";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface RangeTodoItem {
   dueDate?: string | null;
@@ -123,7 +124,7 @@ export default function CalendarPage() {
       >
         {/* Header */}
         <div className="sticky top-0 z-10 border-b bg-background p-4">
-          <h1 className="font-serif text-2xl font-bold">Calendar</h1>
+          <PageHeader title="Calendar" className="mb-0" />
         </div>
 
         {/* Calendar grid */}

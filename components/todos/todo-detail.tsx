@@ -53,15 +53,6 @@ import { StreakHeatmap } from "./streak-heatmap";
 import { useTodoFocusSummary } from "@/lib/hooks/use-focus";
 import { useFocusStore } from "@/lib/stores/focus-store";
 
-const STATUS_CONFIG: Record<
-  string,
-  { label: string; variant: "default" | "secondary" | "destructive" | "outline" }
-> = {
-  PENDING: { label: "Pending", variant: "outline" },
-  DONE: { label: "Done", variant: "default" },
-  SKIPPED: { label: "Skipped", variant: "secondary" },
-};
-
 function formatDuration(seconds: number): string {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
@@ -230,7 +221,6 @@ export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps
     }
   }
 
-  const statusConfig = STATUS_CONFIG[todo.status] ?? STATUS_CONFIG.PENDING;
   const overdue = isOverdue(todo.dueDate, todo.status);
 
   return (
@@ -303,8 +293,7 @@ export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
             <Label className="text-xs text-muted-foreground">Status</Label>
-            <div className="flex items-center gap-2">
-              <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
+            <div className="flex flex-wrap items-center gap-2">
               {todo.status === "PENDING" && (
                 <>
                   <Button
@@ -343,7 +332,19 @@ export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps
                   </Button>
                 </>
               )}
-              {(todo.status === "DONE" || todo.status === "SKIPPED") && (
+              {todo.status === "DONE" && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleReopen}
+                  disabled={updateTodo.isPending}
+                  className="gap-1.5"
+                >
+                  <RotateCcw className="size-3.5" />
+                  {updateTodo.isPending ? "..." : "Mark incomplete"}
+                </Button>
+              )}
+              {todo.status === "SKIPPED" && (
                 <Button
                   size="sm"
                   variant="outline"

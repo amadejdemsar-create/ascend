@@ -19,6 +19,8 @@ import {
 import { columns, type TodoListItem, type TodoTableMeta } from "@/components/todos/todo-list-columns";
 import { isOverdue } from "@/lib/todo-utils";
 import { useListNavigation } from "@/lib/hooks/use-list-navigation";
+import { EmptyState } from "@/components/ui/empty-state";
+import { CheckSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TodoListViewProps {
@@ -124,11 +126,11 @@ export function TodoListView({
           })
         ) : (
           <TableRow>
-            <TableCell
-              colSpan={columns.length}
-              className="h-24 text-center text-muted-foreground"
-            >
-              No to-dos match your filters
+            <TableCell colSpan={columns.length} className="p-0">
+              <EmptyState
+                icon={CheckSquare}
+                title="No todos match your filters"
+              />
             </TableCell>
           </TableRow>
         )}

@@ -5,6 +5,7 @@ import { FileText, Pin, Zap, X } from "lucide-react";
 import { formatDistanceToNowStrict } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Collapsible,
   CollapsibleTrigger,
@@ -311,26 +312,19 @@ export function ContextEntryList({
       )}
 
       {showEmptyState && (
-        <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-          <FileText className="size-12 text-muted-foreground/40 mb-4" />
-          <p className="text-lg font-medium">No context documents</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            Your knowledge base is empty. Click{" "}
-            <span className="font-medium text-foreground">New</span> above to
-            create your first document: a weekly review template, project
-            notes, or anything you want your AI to remember.
-          </p>
-        </div>
+        <EmptyState
+          icon={FileText}
+          title="No context documents"
+          description="Your knowledge base is empty. Click New above to create your first document."
+        />
       )}
 
       {entries.length === 0 && tagFilter && (
-        <div className="flex flex-col items-center justify-center py-12 text-center px-4">
-          <FileText className="size-10 text-muted-foreground/40 mb-3" />
-          <p className="text-sm font-medium">No entries match #{tagFilter}</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Clear the tag filter to see all documents.
-          </p>
-        </div>
+        <EmptyState
+          icon={FileText}
+          title={`No entries match #${tagFilter}`}
+          description="Clear the tag filter to see all documents."
+        />
       )}
 
       {/* Flat list when filtered */}

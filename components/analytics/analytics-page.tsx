@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 import { TodoCompletionChart } from "./todo-completion-chart";
 import { XpEarnedChart } from "./xp-earned-chart";
 import { GoalProgressChart } from "./goal-progress-chart";
@@ -76,10 +78,7 @@ export function AnalyticsPage({ data, isLoading }: Props) {
   if (isLoading || !data) {
     return (
       <div>
-        <div className="mb-6">
-          <h1 className="font-serif text-2xl font-bold">Analytics</h1>
-          <p className="mt-1 text-muted-foreground">Last 12 weeks</p>
-        </div>
+        <PageHeader title="Analytics" subtitle="Last 12 weeks" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
           {Array.from({ length: 3 }).map((_, i) => (
             <Card key={i}>
@@ -115,16 +114,14 @@ export function AnalyticsPage({ data, isLoading }: Props) {
   if (totalActivity === 0) {
     return (
       <div>
-        <div className="mb-6">
-          <h1 className="font-serif text-2xl font-bold">Analytics</h1>
-          <p className="mt-1 text-muted-foreground">Last 12 weeks</p>
-        </div>
+        <PageHeader title="Analytics" subtitle="Last 12 weeks" />
         <Card>
-          <CardContent className="pt-10 pb-10 flex flex-col items-center gap-3">
-            <BarChart3 className="size-10 text-muted-foreground/30" />
-            <p className="text-sm text-muted-foreground text-center">
-              Not enough data yet. Complete some todos and goals to see trends.
-            </p>
+          <CardContent>
+            <EmptyState
+              icon={BarChart3}
+              title="Not enough data yet"
+              description="Complete some todos and goals to see trends."
+            />
           </CardContent>
         </Card>
       </div>
@@ -133,10 +130,7 @@ export function AnalyticsPage({ data, isLoading }: Props) {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="font-serif text-2xl font-bold">Analytics</h1>
-        <p className="mt-1 text-muted-foreground">Last 12 weeks</p>
-      </div>
+      <PageHeader title="Analytics" subtitle="Last 12 weeks" />
 
       {/* Summary row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">

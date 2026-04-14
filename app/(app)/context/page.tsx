@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Brain } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useContextEntries, useTogglePin } from "@/lib/hooks/use-context";
 import { useUIStore } from "@/lib/stores/ui-store";
 import { ContextSearch } from "@/components/context/context-search";
@@ -11,6 +11,7 @@ import { ContextEntryList } from "@/components/context/context-entry-list";
 import { ContextEntryDetail } from "@/components/context/context-entry-detail";
 import { ContextEntryEditor } from "@/components/context/context-entry-editor";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   Collapsible,
   CollapsibleTrigger,
@@ -138,16 +139,16 @@ export default function ContextPage() {
         {/* Header */}
         <div className="sticky top-0 z-10 border-b bg-background p-4 space-y-3">
           {/* Row 1: Title + New button */}
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Brain className="size-5 text-muted-foreground" />
-              <h1 className="font-serif text-2xl font-bold">Context</h1>
-            </div>
-            <Button size="sm" onClick={handleNewDocument} className="gap-1.5">
-              <Plus className="size-3.5" />
-              New
-            </Button>
-          </div>
+          <PageHeader
+            title="Context"
+            className="mb-0"
+            actions={
+              <Button size="sm" onClick={handleNewDocument} className="gap-1.5">
+                <Plus className="size-3.5" />
+                New
+              </Button>
+            }
+          />
 
           {/* Row 2: Search */}
           <ContextSearch onSelect={handleSearchSelect} />

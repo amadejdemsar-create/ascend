@@ -10,6 +10,7 @@ import { apiFetch } from "@/lib/api-client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/ui/page-header";
 import Link from "next/link";
 import { PlusIcon } from "lucide-react";
 import { TodaysBig3Widget } from "./todays-big3-widget";
@@ -36,12 +37,10 @@ export function DashboardPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="font-serif text-3xl font-bold">Dashboard</h1>
-        <p className="mt-1 text-muted-foreground">
-          {format(new Date(), "EEEE, d MMMM yyyy")}
-        </p>
-      </div>
+      <PageHeader
+        title="Dashboard"
+        subtitle={format(new Date(), "EEEE, d MMMM yyyy")}
+      />
 
       {isLoading && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

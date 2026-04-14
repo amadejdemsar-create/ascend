@@ -19,6 +19,8 @@ import {
 import { columns, type GoalListItem } from "@/components/goals/goal-list-columns";
 import { useUIStore } from "@/lib/stores/ui-store";
 import { useListNavigation } from "@/lib/hooks/use-list-navigation";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 function SortableGoalRow({
@@ -44,7 +46,7 @@ function SortableGoalRow({
       ref={ref}
       data-list-item-id={goalId}
       className={cn(
-        "hover:bg-muted/50 transition-colors",
+        "group hover:bg-muted/50 transition-colors",
         isDragging && "opacity-30 bg-muted/30",
         isDropTarget && !isDragging && "bg-primary/5 border-t-2 border-t-primary",
         isFocused && "ring-2 ring-primary ring-inset"
@@ -54,8 +56,12 @@ function SortableGoalRow({
         <span
           ref={handleRef}
           className={cn(
-            "inline-flex text-muted-foreground hover:text-foreground",
-            isDragging ? "cursor-grabbing" : "cursor-grab"
+            "inline-flex text-muted-foreground hover:text-foreground transition-opacity",
+            // Hide by default, reveal on row hover (or while dragging,
+            // so the handle stays visible during the drag operation).
+            isDragging
+              ? "opacity-100 cursor-grabbing"
+              : "opacity-0 group-hover:opacity-100 cursor-grab"
           )}
         >
           <GripVertical className="size-4" />
@@ -133,11 +139,11 @@ export function GoalListView({ goals }: GoalListViewProps) {
           ))
         ) : (
           <TableRow>
-            <TableCell
-              colSpan={columns.length + 1}
-              className="h-24 text-center text-muted-foreground"
-            >
-              No goals match your filters
+            <TableCell colSpan={columns.length + 1} className="p-0">
+              <EmptyState
+                icon={Target}
+                title="No goals match your filters"
+              />
             </TableCell>
           </TableRow>
         )}

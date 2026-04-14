@@ -20,6 +20,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Collapsible,
   CollapsibleTrigger,
@@ -135,13 +137,11 @@ function ReviewSkeleton() {
 
 function EmptyWeek() {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-      <ClipboardCheck className="size-12 text-muted-foreground/40 mb-4" />
-      <p className="text-lg font-medium">No activity recorded for this week.</p>
-      <p className="text-sm text-muted-foreground mt-1">
-        Complete some todos or make progress on goals to populate your review.
-      </p>
-    </div>
+    <EmptyState
+      icon={ClipboardCheck}
+      title="No activity recorded for this week."
+      description="Complete some todos or make progress on goals to populate your review."
+    />
   );
 }
 
@@ -195,7 +195,7 @@ export function WeeklyReviewPage({
     <div className="flex-1 flex flex-col overflow-y-auto">
       {/* Header */}
       <div className="sticky top-0 z-10 border-b bg-background p-4">
-        <h1 className="font-serif text-2xl font-bold">Weekly Review</h1>
+        <PageHeader title="Weekly Review" className="mb-0" />
       </div>
 
       <div className="p-4 max-w-3xl mx-auto w-full space-y-6">

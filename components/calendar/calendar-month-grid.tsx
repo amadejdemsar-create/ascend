@@ -52,6 +52,26 @@ export function CalendarMonthGrid({
         </Button>
       </div>
 
+      {/* Legend for day-indicator dots */}
+      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mb-2 px-1">
+        <span className="flex items-center gap-1">
+          <span className="size-1.5 rounded-full bg-muted-foreground/60" />
+          Pending
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="size-1.5 rounded-full bg-amber-400" />
+          Big 3
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="size-1.5 rounded-full bg-destructive" />
+          Deadline
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="size-1.5 rounded-full bg-green-500" />
+          Done
+        </span>
+      </div>
+
       <DayPicker
         mode="single"
         selected={selectedDate}

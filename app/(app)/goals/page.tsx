@@ -16,6 +16,8 @@ import { QuickAdd } from "@/components/goals/quick-add";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PlusIcon, TargetIcon } from "lucide-react";
 import type { GoalFilters } from "@/lib/validations";
 import type { GoalDragOverlayData } from "@/components/goals/goal-drag-overlay";
@@ -203,17 +205,17 @@ export default function GoalsPage() {
 
     if (goalList.length === 0) {
       return (
-        <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-          <TargetIcon className="size-12 text-muted-foreground/40 mb-4" />
-          <p className="text-lg font-medium">No goals yet</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            Create your first goal to start tracking your ambitions.
-          </p>
-          <Button className="mt-4" onClick={() => openGoalModal("create")}>
-            <PlusIcon className="size-3.5" />
-            Create Goal
-          </Button>
-        </div>
+        <EmptyState
+          icon={TargetIcon}
+          title="No goals yet"
+          description="Create your first goal to start tracking your ambitions."
+          action={
+            <Button onClick={() => openGoalModal("create")}>
+              <PlusIcon className="size-3.5" />
+              Create Goal
+            </Button>
+          }
+        />
       );
     }
 
@@ -257,16 +259,19 @@ export default function GoalsPage() {
           {/* Header */}
           <div className="sticky top-0 z-10 border-b bg-background p-4 space-y-3">
             {/* Row 1: Title + View Switcher + New Goal */}
-            <div className="flex items-center justify-between gap-3">
-              <h1 className="font-serif text-2xl font-bold">Goals</h1>
-              <div className="flex items-center gap-2">
-                <GoalViewSwitcher />
-                <Button size="sm" onClick={() => openGoalModal("create")}>
-                  <PlusIcon className="size-3.5" />
-                  <span className="hidden sm:inline">New Goal</span>
-                </Button>
-              </div>
-            </div>
+            <PageHeader
+              title="Goals"
+              className="mb-0"
+              actions={
+                <>
+                  <GoalViewSwitcher />
+                  <Button size="sm" onClick={() => openGoalModal("create")}>
+                    <PlusIcon className="size-3.5" />
+                    <span className="hidden sm:inline">New Goal</span>
+                  </Button>
+                </>
+              }
+            />
 
             {/* Row 2: Filter bar */}
             <GoalFilterBar />

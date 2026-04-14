@@ -17,6 +17,7 @@ import { MorningPlanningPrompt } from "@/components/calendar/morning-planning-pr
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   ArrowLeftIcon,
   AlertTriangle,
@@ -24,6 +25,7 @@ import {
   Repeat,
   Flag,
   CheckCircle2,
+  CalendarDays,
 } from "lucide-react";
 
 interface CalendarDayDetailProps {
@@ -136,11 +138,10 @@ export function CalendarDayDetail({
       <div className="flex-1 space-y-4 p-4">
         {/* Empty state */}
         {isEmpty && (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <p className="text-sm text-muted-foreground">
-              No to-dos or deadlines for this day.
-            </p>
-          </div>
+          <EmptyState
+            icon={CalendarDays}
+            title="No todos or deadlines for this day"
+          />
         )}
 
         {/* Overdue section (today only) */}

@@ -12,6 +12,8 @@ import { TodoBulkBar } from "@/components/todos/todo-bulk-bar";
 import { TodoDetail } from "@/components/todos/todo-detail";
 import type { TodoListItem } from "@/components/todos/todo-list-columns";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 import { CheckSquare, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TodoFilters } from "@/lib/validations";
@@ -189,13 +191,11 @@ export default function TodosPage() {
 
     if (todos.length === 0) {
       return (
-        <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-          <CheckSquare className="size-12 text-muted-foreground/40 mb-4" />
-          <p className="text-lg font-medium">No to-dos yet</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            Create your first to-do to start getting things done.
-          </p>
-        </div>
+        <EmptyState
+          icon={CheckSquare}
+          title="No todos yet"
+          description="Create your first todo above or pick a template."
+        />
       );
     }
 
@@ -227,22 +227,25 @@ export default function TodosPage() {
         {/* Header */}
         <div className="sticky top-0 z-10 border-b bg-background p-4 space-y-3">
           {/* Row 1: Title + hide completed toggle */}
-          <div className="flex items-center justify-between gap-3">
-            <h1 className="font-serif text-2xl font-bold">Todos</h1>
-            <button
-              type="button"
-              onClick={() => setTodoHideCompleted(!todoHideCompleted)}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-              title={todoHideCompleted ? "Show completed" : "Hide completed"}
-            >
-              {todoHideCompleted ? (
-                <EyeOff className="size-3.5" />
-              ) : (
-                <Eye className="size-3.5" />
-              )}
-              {todoHideCompleted ? "Show done" : "Hide done"}
-            </button>
-          </div>
+          <PageHeader
+            title="Todos"
+            className="mb-0"
+            actions={
+              <button
+                type="button"
+                onClick={() => setTodoHideCompleted(!todoHideCompleted)}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                title={todoHideCompleted ? "Show completed" : "Hide completed"}
+              >
+                {todoHideCompleted ? (
+                  <EyeOff className="size-3.5" />
+                ) : (
+                  <Eye className="size-3.5" />
+                )}
+                {todoHideCompleted ? "Show done" : "Hide done"}
+              </button>
+            }
+          />
 
           {/* Row 2: Date tabs */}
           <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
