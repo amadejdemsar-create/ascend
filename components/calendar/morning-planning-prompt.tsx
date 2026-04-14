@@ -1,48 +1,98 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { toast } from "sonner";
-import { Star, Sparkles, X } from "lucide-react";
+import { Sparkles, X } from "lucide-react";
+import { DragDropProvider, PointerSensor } from "@dnd-kit/react";
+import type { DragEndEvent } from "@dnd-kit/react";
+import { PointerActivationConstraints } from "@dnd-kit/dom";
 import { useSetBig3 } from "@/lib/hooks/use-todos";
 import type { TodoListItem } from "@/components/todos/todo-list-columns";
-import { GoalPriorityBadge } from "@/components/goals/goal-priority-badge";
 import { Button } from "@/components/ui/button";
+import { Big3Slot } from "./big3-slot";
+import { Big3DraggableTodo } from "./big3-draggable-todo";
+
+type DragEndEventArg = Parameters<DragEndEvent>[0];
 
 interface MorningPlanningPromptProps {
   todayTodos: TodoListItem[];
   onDismiss: () => void;
 }
 
+type Slots = [
+  TodoListItem | null,
+  TodoListItem | null,
+  TodoListItem | null,
+];
+
 export function MorningPlanningPrompt({
   todayTodos,
   onDismiss,
 }: MorningPlanningPromptProps) {
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [slots, setSlots] = useState<Slots>([null, null, null]);
   const setBig3 = useSetBig3();
 
-  function handleToggle(id: string) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        if (next.size >= 3) {
-          toast("You can only pick 3 priorities. Deselect one first.");
-          return prev;
-        }
-        next.add(id);
-      }
+  // Todos not currently in any slot
+  const pool = todayTodos.filter((t) => !slots.some((s) => s?.id === t.id));
+  const filledCount = slots.filter((s) => s !== null).length;
+
+  function handleRemoveFromSlot(index: number) {
+    setSlots((prev) => {
+      const next = [...prev] as Slots;
+      next[index] = null;
       return next;
     });
   }
 
+  const handleDragEnd = useCallback(
+    (event: DragEndEventArg) => {
+      if (event.canceled) return;
+
+      const source = event.operation?.source;
+      const target = event.operation?.target;
+      if (!source || !target) return;
+
+      // Only handle big3-todo → big3-slot drops
+      if (source.type !== "big3-todo" || target.type !== "big3-slot") return;
+
+      const todoId = String(source.id);
+      const targetData = target.data as
+        | { slotIndex?: number }
+        | undefined;
+      const slotIndex = targetData?.slotIndex;
+      if (slotIndex !== 0 && slotIndex !== 1 && slotIndex !== 2) return;
+
+      const todo = todayTodos.find((t) => t.id === todoId);
+      if (!todo) return;
+
+      setSlots((prev) => {
+        const next = [...prev] as Slots;
+        // If the todo is already in another slot, clear that slot first
+        for (let i = 0; i < 3; i++) {
+          if (next[i]?.id === todoId) next[i] = null;
+        }
+        // Place todo in the target slot (any previous occupant drops out
+        // and re-appears in the pool via the filter above).
+        next[slotIndex] = todo;
+        return next;
+      });
+    },
+    [todayTodos],
+  );
+
   async function handleSetBig3() {
+    const todoIds = slots
+      .filter((s): s is TodoListItem => s !== null)
+      .map((s) => s.id);
+    if (todoIds.length === 0) return;
     try {
-      await setBig3.mutateAsync({ todoIds: Array.from(selectedIds) });
+      await setBig3.mutateAsync({ todoIds });
       toast.success("Big 3 set for today!");
       onDismiss();
-    } catch {
-      toast.error("Failed to set Big 3. Please try again.");
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to set Big 3",
+      );
     }
   }
 
@@ -82,55 +132,52 @@ export function MorningPlanningPrompt({
         </Button>
       </div>
       <p className="text-sm text-muted-foreground mb-4">
-        Pick up to 3 priorities for today
+        Drag your 3 priorities into the slots below
       </p>
 
-      {/* Selectable todo list */}
-      <div className="space-y-1.5 mb-4">
-        {todayTodos.map((todo) => {
-          const isSelected = selectedIds.has(todo.id);
-          return (
-            <button
-              key={todo.id}
-              type="button"
-              onClick={() => handleToggle(todo.id)}
-              className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors ${
-                isSelected
-                  ? "border-amber-400/60 bg-amber-500/10"
-                  : "border-transparent bg-background/60 hover:bg-background"
-              }`}
-            >
-              <Star
-                className={`size-4 shrink-0 transition-colors ${
-                  isSelected
-                    ? "fill-amber-400 text-amber-400"
-                    : "text-muted-foreground/40"
-                }`}
-              />
-              <span className="flex-1 min-w-0 text-sm font-medium truncate">
-                {todo.title}
-              </span>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <GoalPriorityBadge priority={todo.priority} />
-                {todo.goal && (
-                  <span className="text-xs text-muted-foreground max-w-[120px] truncate">
-                    {todo.goal.title}
-                  </span>
-                )}
-              </div>
-            </button>
-          );
-        })}
-      </div>
+      <DragDropProvider
+        sensors={[
+          PointerSensor.configure({
+            activationConstraints: [
+              new PointerActivationConstraints.Distance({ value: 8 }),
+            ],
+          }),
+        ]}
+        onDragEnd={handleDragEnd}
+      >
+        {/* Big 3 slots */}
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          {slots.map((todo, i) => (
+            <Big3Slot
+              key={i}
+              slotIndex={i as 0 | 1 | 2}
+              todo={todo}
+              onRemove={() => handleRemoveFromSlot(i)}
+            />
+          ))}
+        </div>
 
-      {/* Footer buttons */}
+        {/* Pool of remaining todos */}
+        <div className="flex flex-col gap-1.5 mb-4">
+          {pool.map((todo) => (
+            <Big3DraggableTodo key={todo.id} todo={todo} />
+          ))}
+          {pool.length === 0 && filledCount === 3 && (
+            <p className="text-xs text-muted-foreground text-center py-4">
+              All todos placed. Ready to go!
+            </p>
+          )}
+        </div>
+      </DragDropProvider>
+
+      {/* Footer */}
       <div className="flex items-center gap-2">
         <Button
           size="sm"
-          disabled={selectedIds.size === 0 || setBig3.isPending}
+          disabled={filledCount === 0 || setBig3.isPending}
           onClick={handleSetBig3}
         >
-          {setBig3.isPending ? "Setting..." : "Set Big 3"}
+          {setBig3.isPending ? "Setting..." : `Set Big 3 (${filledCount}/3)`}
         </Button>
         <Button variant="ghost" size="sm" onClick={onDismiss}>
           Skip for now
