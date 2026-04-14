@@ -259,3 +259,10 @@ export const streakHistoryQuerySchema = z.object({
   days: z.coerce.number().min(7).max(365).default(90),
 });
 export type StreakHistoryQuery = z.infer<typeof streakHistoryQuerySchema>;
+
+// --- Analytics Trends ---
+
+export const analyticsQuerySchema = z.object({
+  weeks: z.coerce.number().min(4).max(52).default(12),
+});
+export type AnalyticsQuery = z.infer<typeof analyticsQuerySchema>;

@@ -32,5 +32,9 @@ export const queryKeys = {
   review: {
     weekly: (weekStart: string) => ["review", "weekly", weekStart] as const,
   },
+  analytics: {
+    all: () => ["analytics"] as const,
+    trends: (weeks?: number) => ["analytics", "trends", weeks] as const,
+  },
   dashboard: () => ["dashboard"] as const,
 };
