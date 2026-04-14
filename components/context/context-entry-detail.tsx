@@ -367,7 +367,7 @@ export function ContextEntryDetail({
             ))}
           </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1 shrink-0">
           <Button
             variant="ghost"
             size="icon-sm"

@@ -76,8 +76,8 @@ export function DashboardPage() {
       {data && data.onboardingComplete !== false && data.streaksStats.totalGoals === 0 && (
         <>
           <ContextualHints />
-          <Card>
-            <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-6">
+            <div className="flex flex-col items-center gap-4 py-6 text-center">
               <h2 className="font-serif text-2xl font-bold">
                 Welcome to Ascend
               </h2>
@@ -88,8 +88,8 @@ export function DashboardPage() {
               <Button onClick={() => openGoalModal("create", "YEARLY")}>
                 Create your first goal
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </>
       )}
 

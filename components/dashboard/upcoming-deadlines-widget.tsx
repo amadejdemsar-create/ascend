@@ -56,7 +56,7 @@ export function UpcomingDeadlinesWidget({
   }
 
   return (
-    <Card>
+    <Card className="hover-lift">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CalendarClock className="size-4 text-muted-foreground" />

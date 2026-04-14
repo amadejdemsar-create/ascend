@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { Check, Star, Repeat } from "lucide-react";
 import { useTodos, useCompleteTodo, useUncompleteTodo } from "@/lib/hooks/use-todos";
 import { GoalPriorityBadge } from "@/components/goals/goal-priority-badge";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { TodoListItem } from "@/components/todos/todo-list-columns";
@@ -14,10 +15,15 @@ interface GoalLinkedTodosProps {
   goalId: string;
 }
 
+// Only show this many todos on mobile before collapsing the rest behind
+// a "Show all (N)" toggle. Desktop (md+) always shows every todo.
+const MOBILE_TODO_PREVIEW = 3;
+
 export function GoalLinkedTodos({ goalId }: GoalLinkedTodosProps) {
   const { data, isLoading } = useTodos({ goalId });
   const completeTodo = useCompleteTodo();
   const uncompleteTodo = useUncompleteTodo();
+  const [showAllMobile, setShowAllMobile] = useState(false);
 
   const todos = data as TodoListItem[] | undefined;
 
@@ -67,6 +73,54 @@ export function GoalLinkedTodos({ goalId }: GoalLinkedTodosProps) {
     );
   }
 
+  function renderRow(todo: TodoListItem) {
+    const isDone = todo.status === "DONE";
+    return (
+      <div
+        key={todo.id}
+        className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted transition-colors"
+      >
+        <button
+          type="button"
+          aria-label={isDone ? "Mark as pending" : "Mark as done"}
+          onClick={() => handleToggle(todo)}
+          className={`size-5 shrink-0 rounded-full border-2 flex items-center justify-center transition-colors ${
+            isDone
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-muted-foreground/40 hover:border-primary"
+          }`}
+        >
+          {isDone && <Check className="size-3" strokeWidth={3} />}
+        </button>
+
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          {todo.isBig3 && (
+            <Star className="size-3.5 shrink-0 fill-amber-400 text-amber-400" />
+          )}
+          <span
+            className={`truncate text-sm ${
+              isDone ? "line-through text-muted-foreground" : "font-medium"
+            }`}
+          >
+            {todo.title}
+          </span>
+          {todo.isRecurring && (
+            <Repeat className="size-3 shrink-0 text-muted-foreground" />
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <GoalPriorityBadge priority={todo.priority} />
+          {todo.dueDate && (
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              {format(new Date(todo.dueDate), "MMM d")}
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2">
       <Label className="text-xs text-muted-foreground">
@@ -78,55 +132,32 @@ export function GoalLinkedTodos({ goalId }: GoalLinkedTodosProps) {
           No todos linked to this goal. Link a todo from the Todos page.
         </p>
       ) : (
-        <div className="space-y-1">
-          {sortedTodos.map((todo) => {
-            const isDone = todo.status === "DONE";
-            return (
-              <div
-                key={todo.id}
-                className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted transition-colors"
+        <>
+          {/* Mobile: collapse long lists behind a "Show all" toggle so
+              the detail panel stays scannable on narrow viewports. */}
+          <div className="md:hidden space-y-1">
+            {(showAllMobile || sortedTodos.length <= MOBILE_TODO_PREVIEW
+              ? sortedTodos
+              : sortedTodos.slice(0, MOBILE_TODO_PREVIEW)
+            ).map(renderRow)}
+            {sortedTodos.length > MOBILE_TODO_PREVIEW && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAllMobile((v) => !v)}
+                className="w-full text-muted-foreground"
               >
-                <button
-                  type="button"
-                  aria-label={isDone ? "Mark as pending" : "Mark as done"}
-                  onClick={() => handleToggle(todo)}
-                  className={`size-5 shrink-0 rounded-full border-2 flex items-center justify-center transition-colors ${
-                    isDone
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-muted-foreground/40 hover:border-primary"
-                  }`}
-                >
-                  {isDone && <Check className="size-3" strokeWidth={3} />}
-                </button>
-
-                <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                  {todo.isBig3 && (
-                    <Star className="size-3.5 shrink-0 fill-amber-400 text-amber-400" />
-                  )}
-                  <span
-                    className={`truncate text-sm ${
-                      isDone ? "line-through text-muted-foreground" : "font-medium"
-                    }`}
-                  >
-                    {todo.title}
-                  </span>
-                  {todo.isRecurring && (
-                    <Repeat className="size-3 shrink-0 text-muted-foreground" />
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  <GoalPriorityBadge priority={todo.priority} />
-                  {todo.dueDate && (
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      {format(new Date(todo.dueDate), "MMM d")}
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                {showAllMobile
+                  ? "Show fewer"
+                  : `Show all (${sortedTodos.length})`}
+              </Button>
+            )}
+          </div>
+          {/* Desktop: always render the full list. */}
+          <div className="hidden md:block space-y-1">
+            {sortedTodos.map(renderRow)}
+          </div>
+        </>
       )}
     </div>
   );

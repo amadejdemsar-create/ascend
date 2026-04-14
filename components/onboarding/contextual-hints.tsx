@@ -38,8 +38,8 @@ export function ContextualHints() {
   if (dismissed) return null;
 
   return (
-    <div className="mb-4 space-y-2">
-      <div className="flex items-center justify-between">
+    <div className="mb-4 rounded-xl border border-primary/20 bg-primary/5 p-6">
+      <div className="mb-3 flex items-center justify-between">
         <p className="text-xs font-medium text-muted-foreground">
           Quick tips to get started
         </p>
@@ -56,7 +56,7 @@ export function ContextualHints() {
         {hints.map(({ icon: Icon, text }) => (
           <div
             key={text}
-            className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-xs text-muted-foreground ring-1 ring-foreground/5"
+            className="flex items-center gap-2 rounded-lg bg-background/60 px-3 py-2 text-xs text-muted-foreground ring-1 ring-foreground/5"
           >
             <Icon className="h-4 w-4 shrink-0 text-primary/70" />
             <span>{text}</span>

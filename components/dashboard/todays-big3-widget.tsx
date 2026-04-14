@@ -20,7 +20,7 @@ export function TodaysBig3Widget() {
 
   if (isLoading) {
     return (
-      <Card>
+      <Card className="hover-lift">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Star className="size-4 fill-amber-400 text-amber-400" />
@@ -44,7 +44,7 @@ export function TodaysBig3Widget() {
 
   if (big3.length === 0) {
     return (
-      <Card>
+      <Card className="hover-lift">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Star className="size-4 fill-amber-400 text-amber-400" />
@@ -69,7 +69,7 @@ export function TodaysBig3Widget() {
   }
 
   return (
-    <Card>
+    <Card className="hover-lift">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Star className="size-4 fill-amber-400 text-amber-400" />

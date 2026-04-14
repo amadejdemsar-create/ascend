@@ -36,6 +36,10 @@ import { ProgressIncrement } from "@/components/goals/progress-increment";
 import { ProgressHistorySheet } from "@/components/goals/progress-history-sheet";
 import { GoalLinkedTodos } from "@/components/goals/goal-linked-todos";
 
+// How many children to show before collapsing behind a "Show all" toggle
+// on mobile. Desktop (md+) always shows every child.
+const MOBILE_CHILD_PREVIEW = 3;
+
 const HORIZON_LABELS: Record<string, string> = {
   YEARLY: "Yearly",
   QUARTERLY: "Quarterly",
@@ -79,6 +83,9 @@ export function GoalDetail({ goalId, onClose, isMobileOverlay }: GoalDetailProps
   const [showTargetInputs, setShowTargetInputs] = useState(false);
   const [targetValueInput, setTargetValueInput] = useState("");
   const [unitInput, setUnitInput] = useState("");
+  // Mobile overflow collapse for long children lists. On md+ every child
+  // renders regardless (the class ChildrenList wrapper hides this toggle).
+  const [showAllChildrenMobile, setShowAllChildrenMobile] = useState(false);
 
   if (isLoading) {
     return (
@@ -234,7 +241,7 @@ export function GoalDetail({ goalId, onClose, isMobileOverlay }: GoalDetailProps
             <button
               type="button"
               onClick={() => startEditing("title", goal.title)}
-              className="text-left text-lg font-serif font-semibold hover:text-primary transition-colors leading-tight"
+              className="block w-full text-left text-lg font-serif font-semibold hover:text-primary transition-colors leading-tight py-2 md:py-0"
             >
               {goal.title}
             </button>
@@ -276,7 +283,7 @@ export function GoalDetail({ goalId, onClose, isMobileOverlay }: GoalDetailProps
 
       <div className="flex-1 space-y-5 p-4">
         {/* Status and Priority */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="space-y-1">
             <Label className="text-xs text-muted-foreground">Status</Label>
             <GoalStatusSelect
@@ -360,7 +367,7 @@ export function GoalDetail({ goalId, onClose, isMobileOverlay }: GoalDetailProps
                   <button
                     type="button"
                     onClick={() => startEditing(sf.key, goal[sf.key] ?? "")}
-                    className="w-full text-left text-sm rounded-md px-2 py-1.5 hover:bg-muted transition-colors"
+                    className="w-full text-left text-sm rounded-md px-2 py-3 md:py-1.5 hover:bg-muted transition-colors min-h-[2.75rem] md:min-h-0"
                   >
                     {goal[sf.key] ? (
                       <span>{goal[sf.key]}</span>
@@ -490,7 +497,7 @@ export function GoalDetail({ goalId, onClose, isMobileOverlay }: GoalDetailProps
             <button
               type="button"
               onClick={() => startEditing("notes", goal.notes ?? "")}
-              className="w-full text-left text-sm rounded-md px-2 py-1.5 hover:bg-muted transition-colors min-h-[2rem]"
+              className="w-full text-left text-sm rounded-md px-2 py-3 md:py-1.5 hover:bg-muted transition-colors min-h-[2.75rem] md:min-h-[2rem]"
             >
               {goal.notes ? (
                 <span className="whitespace-pre-wrap">{goal.notes}</span>
@@ -503,16 +510,43 @@ export function GoalDetail({ goalId, onClose, isMobileOverlay }: GoalDetailProps
 
         <Separator />
 
-        {/* Children */}
+        {/* Children. On mobile, long lists collapse behind a "Show all"
+            toggle so the panel does not turn into an endless scroll. On
+            md+ we always render every child. */}
         <div className="space-y-2">
           <Label className="text-xs text-muted-foreground">
             Sub-goals ({children.length})
           </Label>
-          <ChildrenList
-            goals={children}
-            parentHorizon={goal.horizon}
-            onSelectGoal={(id) => selectGoal(id)}
-          />
+          <div className="md:hidden">
+            <ChildrenList
+              goals={
+                showAllChildrenMobile || children.length <= MOBILE_CHILD_PREVIEW
+                  ? children
+                  : children.slice(0, MOBILE_CHILD_PREVIEW)
+              }
+              parentHorizon={goal.horizon}
+              onSelectGoal={(id) => selectGoal(id)}
+            />
+            {children.length > MOBILE_CHILD_PREVIEW && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAllChildrenMobile((v) => !v)}
+                className="mt-1 w-full text-muted-foreground"
+              >
+                {showAllChildrenMobile
+                  ? "Show fewer"
+                  : `Show all (${children.length})`}
+              </Button>
+            )}
+          </div>
+          <div className="hidden md:block">
+            <ChildrenList
+              goals={children}
+              parentHorizon={goal.horizon}
+              onSelectGoal={(id) => selectGoal(id)}
+            />
+          </div>
         </div>
 
         <Separator />

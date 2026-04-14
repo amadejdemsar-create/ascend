@@ -29,6 +29,7 @@
   --chart-3: oklch(0.577 0.245 27.325);
   --chart-4: oklch(0.87 0 0);
   --chart-5: oklch(0.439 0 0);
+  --chart-6: oklch(0.62 0.15 150);       /* emerald green for goal progress */
   --sidebar: oklch(0.975 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.453 0.185 264);
@@ -63,6 +64,7 @@
   --chart-3: oklch(0.577 0.245 27.325);
   --chart-4: oklch(0.6 0 0);
   --chart-5: oklch(0.371 0 0);
+  --chart-6: oklch(0.68 0.15 150);       /* emerald green for goal progress (dark) */
   --sidebar: oklch(0.12 0.005 270);
   --sidebar-foreground: oklch(0.93 0 0);
   --sidebar-primary: oklch(0.553 0.191 293);
@@ -97,6 +99,7 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);

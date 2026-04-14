@@ -246,14 +246,14 @@ export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps
               className="text-lg font-serif font-semibold"
             />
           ) : (
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 min-w-0">
               {todo.isBig3 && (
                 <Star className="size-4 shrink-0 fill-amber-400 text-amber-400" />
               )}
               <button
                 type="button"
                 onClick={() => startEditing("title", todo.title)}
-                className="text-left text-lg font-serif font-semibold hover:text-primary transition-colors leading-tight truncate"
+                className="flex-1 min-w-0 text-left text-lg font-serif font-semibold hover:text-primary transition-colors leading-tight truncate py-2 md:py-0"
               >
                 {todo.title}
               </button>
@@ -290,7 +290,7 @@ export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps
 
       <div className="flex-1 space-y-5 p-4">
         {/* Status and Priority */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="space-y-1">
             <Label className="text-xs text-muted-foreground">Status</Label>
             <div className="flex flex-wrap items-center gap-2">
@@ -378,7 +378,7 @@ export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps
         {/* Details section */}
         <div className="space-y-3 rounded-lg border border-border p-3">
           {/* Due date */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-1.5">
               <CalendarDays className="size-3.5 text-muted-foreground" />
               <span className="text-xs text-muted-foreground">Due date</span>
@@ -395,7 +395,7 @@ export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps
           </div>
 
           {/* Category */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="text-xs text-muted-foreground">Category</span>
             <Select
               value={todo.category?.id ?? "__none__"}
@@ -434,7 +434,7 @@ export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps
           </div>
 
           {/* Linked goal */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-1.5">
               <Link2 className="size-3.5 text-muted-foreground" />
               <span className="text-xs text-muted-foreground">Linked goal</span>
@@ -467,7 +467,7 @@ export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps
 
           {/* Recurring info */}
           {todo.isRecurring && (
-            <div className="flex items-center gap-4 mt-2 pt-2 border-t">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-2 pt-2 border-t">
               <div className="flex items-center gap-1.5">
                 <Flame className="size-3.5 text-orange-500" />
                 <span className="text-sm font-medium">{todo.currentStreak ?? 0}</span>
@@ -509,7 +509,7 @@ export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps
             <button
               type="button"
               onClick={() => startEditing("description", todo.description ?? "")}
-              className="w-full text-left text-sm rounded-md px-2 py-1.5 hover:bg-muted transition-colors min-h-[2rem]"
+              className="w-full text-left text-sm rounded-md px-2 py-3 md:py-1.5 hover:bg-muted transition-colors min-h-[2.75rem] md:min-h-[2rem]"
             >
               {todo.description ? (
                 <span className="whitespace-pre-wrap">{todo.description}</span>

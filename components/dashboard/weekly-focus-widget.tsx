@@ -27,7 +27,7 @@ export function WeeklyFocusWidget({ goals }: WeeklyFocusWidgetProps) {
   const openGoalModal = useUIStore((s) => s.openGoalModal);
 
   return (
-    <Card>
+    <Card className="hover-lift">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Target className="size-4 text-muted-foreground" />

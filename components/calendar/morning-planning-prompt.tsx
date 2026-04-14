@@ -37,10 +37,24 @@ export function MorningPlanningPrompt({
   const filledCount = slots.filter((s) => s !== null).length;
 
   function handleRemoveFromSlot(index: number) {
+    const removed = slots[index];
+    if (!removed) return;
     setSlots((prev) => {
       const next = [...prev] as Slots;
       next[index] = null;
       return next;
+    });
+    toast(`Removed "${removed.title}" from slot #${index + 1}`, {
+      action: {
+        label: "Undo",
+        onClick: () => {
+          setSlots((prev) => {
+            const next = [...prev] as Slots;
+            next[index] = removed;
+            return next;
+          });
+        },
+      },
     });
   }
 

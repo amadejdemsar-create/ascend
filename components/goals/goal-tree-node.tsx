@@ -55,13 +55,19 @@ export const GoalTreeNode = React.memo(function GoalTreeNode({
 
   const hasChildren = goal.children.length > 0;
   const isSelected = selectedGoalId === goal.id;
+  const isCompleted = goal.status === "COMPLETED";
+  // Show the inline progress bar unless the goal is completely untouched
+  // (0% progress + NOT_STARTED). This keeps the tree scannable without
+  // cluttering fresh rows that have no signal to communicate yet.
+  const showProgressBar =
+    isCompleted || goal.progress > 0 || goal.status !== "NOT_STARTED";
 
   return (
     <div ref={sortableRef} className={cn(isDragging && "opacity-30 bg-muted/30 rounded-md")}>
       <Collapsible open={expanded} onOpenChange={setExpanded}>
         <div
           className={cn(
-            "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+            "rounded-md px-2 py-1.5 transition-colors",
             isSelected
               ? "bg-primary/10 ring-1 ring-primary/30"
               : "hover:bg-muted/60",
@@ -69,6 +75,7 @@ export const GoalTreeNode = React.memo(function GoalTreeNode({
           )}
           style={{ paddingLeft: `${depth * 1.25 + 0.5}rem` }}
         >
+        <div className="flex items-center gap-2 text-sm">
           {/* Drag handle */}
           <span
             ref={handleRef}
@@ -130,16 +137,25 @@ export const GoalTreeNode = React.memo(function GoalTreeNode({
             </span>
 
             <GoalPriorityBadge priority={goal.priority} />
-
-            {goal.progress > 0 && (
-              <div className="h-1.5 w-12 overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full bg-primary transition-all duration-500 ease-in-out"
-                  style={{ width: `${Math.min(goal.progress, 100)}%` }}
-                />
-              </div>
-            )}
           </div>
+        </div>
+
+        {/* Inline progress bar. Renders below the title row so the bar has
+            room to breathe without crowding the status label or priority
+            badge. Hidden for goals that are both 0% and NOT_STARTED since
+            there is no signal worth showing. Completed goals render green
+            (see goal-detail.tsx for the same convention). */}
+        {showProgressBar && (
+          <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className={cn(
+                "h-full rounded-full transition-all duration-500 ease-in-out",
+                isCompleted ? "bg-green-500" : "bg-primary",
+              )}
+              style={{ width: `${Math.min(goal.progress, 100)}%` }}
+            />
+          </div>
+        )}
         </div>
 
         {/* Children (animated collapse) */}
