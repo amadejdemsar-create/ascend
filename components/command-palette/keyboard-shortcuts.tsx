@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 
 interface ShortcutItem {
-  key: string;
+  keys: string[];
   description: string;
 }
 
@@ -17,40 +17,46 @@ interface ShortcutGroup {
   shortcuts: ShortcutItem[];
 }
 
+// Keep this list in sync with `lib/hooks/use-keyboard-shortcuts.ts` and
+// `lib/hooks/use-list-navigation.ts`. If you register a new key, mirror it
+// here AND in `components/settings/shortcuts-section.tsx`.
 const shortcutGroups: ShortcutGroup[] = [
   {
-    title: "In-list",
+    title: "In-list navigation",
     shortcuts: [
-      { key: "j", description: "Move down" },
-      { key: "k", description: "Move up" },
-      { key: "Enter", description: "Open detail" },
-      { key: "x", description: "Toggle complete (todos)" },
+      { keys: ["j"], description: "Move focus down" },
+      { keys: ["↓"], description: "Move focus down" },
+      { keys: ["k"], description: "Move focus up" },
+      { keys: ["↑"], description: "Move focus up" },
+      { keys: ["Enter"], description: "Open detail" },
+      { keys: ["x"], description: "Toggle complete (todos)" },
     ],
   },
   {
     title: "Navigation",
     shortcuts: [
-      { key: "1", description: "List view" },
-      { key: "2", description: "Tree view" },
-      { key: "3", description: "Timeline view" },
-      { key: "d", description: "Dashboard" },
-      { key: "s", description: "Settings" },
+      { keys: ["d"], description: "Go to Dashboard" },
+      { keys: ["s"], description: "Go to Settings" },
+      { keys: ["1"], description: "Goals — list view" },
+      { keys: ["2"], description: "Goals — tree view" },
+      { keys: ["3"], description: "Goals — timeline view" },
     ],
   },
   {
     title: "Actions",
     shortcuts: [
-      { key: "n", description: "New Goal" },
-      { key: "b", description: "Toggle Sidebar" },
-      { key: "t", description: "Toggle Theme" },
+      { keys: ["n"], description: "New goal" },
+      { keys: ["b"], description: "Toggle sidebar" },
+      { keys: ["t"], description: "Toggle theme" },
     ],
   },
   {
     title: "Global",
     shortcuts: [
-      { key: "Cmd+K", description: "Command Palette" },
-      { key: "Esc", description: "Close detail / dialog" },
-      { key: "?", description: "This Reference" },
+      { keys: ["⌘", "K"], description: "Command palette" },
+      { keys: ["⌘", "B"], description: "Toggle sidebar" },
+      { keys: ["?"], description: "Keyboard shortcuts (this dialog)" },
+      { keys: ["Esc"], description: "Close detail or dialog" },
     ],
   },
 ];
@@ -72,23 +78,28 @@ export function KeyboardShortcuts({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Keyboard Shortcuts</DialogTitle>
         </DialogHeader>
-        <div className="space-y-6">
+        <div className="space-y-5">
           {shortcutGroups.map((group) => (
             <div key={group.title}>
-              <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 {group.title}
               </h3>
-              <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2">
-                {group.shortcuts.map((shortcut) => (
-                  <div key={shortcut.key} className="contents">
-                    <div className="flex justify-end">
-                      <Kbd>{shortcut.key}</Kbd>
+              <div className="space-y-1.5">
+                {group.shortcuts.map((shortcut, i) => (
+                  <div
+                    key={`${group.title}-${i}`}
+                    className="flex items-center justify-between text-sm"
+                  >
+                    <span>{shortcut.description}</span>
+                    <div className="flex items-center gap-1">
+                      {shortcut.keys.map((key) => (
+                        <Kbd key={key}>{key}</Kbd>
+                      ))}
                     </div>
-                    <span className="text-sm">{shortcut.description}</span>
                   </div>
                 ))}
               </div>

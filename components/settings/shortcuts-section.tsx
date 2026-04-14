@@ -3,12 +3,17 @@
 import { Keyboard } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+// Keep this list in sync with `lib/hooks/use-keyboard-shortcuts.ts` and
+// `lib/hooks/use-list-navigation.ts`. If you register a new key, mirror it
+// here AND in `components/command-palette/keyboard-shortcuts.tsx`.
 const SHORTCUT_GROUPS = [
   {
-    label: "In-list",
+    label: "In-list navigation",
     shortcuts: [
-      { keys: ["j"], description: "Move down" },
-      { keys: ["k"], description: "Move up" },
+      { keys: ["j"], description: "Move focus down" },
+      { keys: ["↓"], description: "Move focus down" },
+      { keys: ["k"], description: "Move focus up" },
+      { keys: ["↑"], description: "Move focus up" },
       { keys: ["Enter"], description: "Open detail" },
       { keys: ["x"], description: "Toggle complete (todos)" },
     ],
@@ -16,27 +21,28 @@ const SHORTCUT_GROUPS = [
   {
     label: "Navigation",
     shortcuts: [
-      { keys: ["1"], description: "Go to Dashboard" },
-      { keys: ["2"], description: "Go to Goals" },
-      { keys: ["3"], description: "Go to Todos" },
       { keys: ["d"], description: "Go to Dashboard" },
       { keys: ["s"], description: "Go to Settings" },
+      { keys: ["1"], description: "Goals — list view" },
+      { keys: ["2"], description: "Goals — tree view" },
+      { keys: ["3"], description: "Goals — timeline view" },
     ],
   },
   {
     label: "Actions",
     shortcuts: [
       { keys: ["n"], description: "New goal" },
-      { keys: ["b"], description: "Set Big 3" },
-      { keys: ["t"], description: "New todo" },
+      { keys: ["b"], description: "Toggle sidebar" },
+      { keys: ["t"], description: "Toggle theme" },
     ],
   },
   {
     label: "Global",
     shortcuts: [
-      { keys: ["Cmd", "K"], description: "Command palette" },
-      { keys: ["?"], description: "Keyboard shortcuts" },
-      { keys: ["Esc"], description: "Close panel / dialog" },
+      { keys: ["⌘", "K"], description: "Command palette" },
+      { keys: ["⌘", "B"], description: "Toggle sidebar" },
+      { keys: ["?"], description: "Keyboard shortcuts dialog" },
+      { keys: ["Esc"], description: "Close detail or dialog" },
     ],
   },
 ];
@@ -57,9 +63,9 @@ export function ShortcutsSection() {
               {group.label}
             </p>
             <div className="space-y-1.5">
-              {group.shortcuts.map((s) => (
+              {group.shortcuts.map((s, i) => (
                 <div
-                  key={s.description}
+                  key={`${group.label}-${i}`}
                   className="flex items-center justify-between text-sm"
                 >
                   <span>{s.description}</span>
