@@ -266,3 +266,22 @@ export const analyticsQuerySchema = z.object({
   weeks: z.coerce.number().min(4).max(52).default(12),
 });
 export type AnalyticsQuery = z.infer<typeof analyticsQuerySchema>;
+
+// --- Focus Sessions ---
+
+export const createFocusSessionSchema = z.object({
+  todoId: z.string().optional(),
+  durationSeconds: z.number().int().positive(),
+  mode: z.enum(["focus", "break"]),
+  startedAt: z.string().datetime(),
+  endedAt: z.string().datetime(),
+});
+export type CreateFocusSessionInput = z.infer<typeof createFocusSessionSchema>;
+
+export const focusSessionFiltersSchema = z.object({
+  todoId: z.string().optional(),
+  goalId: z.string().optional(),
+  dateFrom: z.string().datetime().optional(),
+  dateTo: z.string().datetime().optional(),
+});
+export type FocusSessionFilters = z.infer<typeof focusSessionFiltersSchema>;

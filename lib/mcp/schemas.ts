@@ -741,4 +741,29 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       required: ["date"],
     },
   },
+
+  // ── Focus Sessions ────────────────────────────────────────────────
+
+  {
+    name: "get_focus_sessions",
+    description:
+      "List focus/Pomodoro sessions with optional filters by todo, goal, or date range.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        todoId: { type: "string", description: "Filter by todo ID" },
+        goalId: { type: "string", description: "Filter by goal ID" },
+        dateFrom: {
+          type: "string",
+          format: "date-time",
+          description: "ISO datetime lower bound",
+        },
+        dateTo: {
+          type: "string",
+          format: "date-time",
+          description: "ISO datetime upper bound",
+        },
+      },
+    },
+  },
 ];

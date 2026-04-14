@@ -8,6 +8,7 @@ import { useKeyboardShortcuts } from "@/lib/hooks/use-keyboard-shortcuts";
 import { KeyboardShortcuts } from "@/components/command-palette/keyboard-shortcuts";
 import { CommandPalette } from "@/components/command-palette/command-palette";
 import { GoalModal } from "@/components/goals/goal-modal";
+import { FocusTimerWidget } from "@/components/focus/focus-timer-widget";
 
 export default function AppLayout({
   children,
@@ -30,7 +31,10 @@ export default function AppLayout({
           <ViewTransition>{children}</ViewTransition>
         </main>
         <footer className="hidden border-t px-4 py-2 text-xs text-muted-foreground md:flex items-center justify-between">
-          <span>Ascend</span>
+          <div className="flex items-center gap-3">
+            <span>Ascend</span>
+            <FocusTimerWidget />
+          </div>
           <span>
             Press{" "}
             <kbd className="rounded border border-border bg-muted px-1 py-0.5 font-mono text-[0.65rem]">

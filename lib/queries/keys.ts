@@ -36,5 +36,12 @@ export const queryKeys = {
     all: () => ["analytics"] as const,
     trends: (weeks?: number) => ["analytics", "trends", weeks] as const,
   },
+  focus: {
+    all: () => ["focus"] as const,
+    list: (filters?: unknown) => ["focus", "list", filters] as const,
+    summaryWeek: () => ["focus", "summary", "week"] as const,
+    summaryTodo: (todoId: string) => ["focus", "summary", "todo", todoId] as const,
+    summaryGoal: (goalId: string) => ["focus", "summary", "goal", goalId] as const,
+  },
   dashboard: () => ["dashboard"] as const,
 };

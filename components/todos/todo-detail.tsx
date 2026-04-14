@@ -45,9 +45,13 @@ import {
   AlertCircle,
   RotateCcw,
   PencilIcon,
+  Clock,
+  Play,
 } from "lucide-react";
 import { isOverdue } from "@/lib/todo-utils";
 import { StreakHeatmap } from "./streak-heatmap";
+import { useTodoFocusSummary } from "@/lib/hooks/use-focus";
+import { useFocusStore } from "@/lib/stores/focus-store";
 
 const STATUS_CONFIG: Record<
   string,
@@ -57,6 +61,13 @@ const STATUS_CONFIG: Record<
   DONE: { label: "Done", variant: "default" },
   SKIPPED: { label: "Skipped", variant: "secondary" },
 };
+
+function formatDuration(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type TodoData = Record<string, any>;
@@ -78,6 +89,7 @@ export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps
   const updateTodo = useUpdateTodo();
   const { data: rawCategories } = useCategories();
   const { data: rawGoals } = useGoals();
+  const { data: focusSummary } = useTodoFocusSummary(todoId);
   const categories = (rawCategories ?? []) as Array<{ id: string; name: string; color: string }>;
   const goals = (rawGoals ?? []) as Array<{ id: string; title: string }>;
 
@@ -265,6 +277,16 @@ export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps
                 Recurring
               </Badge>
             )}
+            {focusSummary && focusSummary.totalSeconds > 0 && (
+              <Badge
+                variant="ghost"
+                className="text-[0.65rem] px-1.5 py-0 gap-1"
+                title={`${focusSummary.sessionCount} focus session${focusSummary.sessionCount === 1 ? "" : "s"}`}
+              >
+                <Clock className="size-2.5" />
+                {formatDuration(focusSummary.totalSeconds)}
+              </Badge>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -304,6 +326,20 @@ export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps
                   >
                     <SkipForward className="size-3.5" />
                     {skipTodo.isPending ? "..." : "Skip"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() =>
+                      useFocusStore
+                        .getState()
+                        .startFocus(todoId, todo.title ?? null)
+                    }
+                    className="gap-1.5"
+                    title="Start a focus session for this todo"
+                  >
+                    <Play className="size-3.5" />
+                    Focus
                   </Button>
                 </>
               )}

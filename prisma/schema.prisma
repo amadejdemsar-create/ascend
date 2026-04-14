@@ -61,6 +61,7 @@ model User {
   contextEntries ContextEntry[]
   stats          UserStats?
   xpEvents       XpEvent[]
+  focusSessions  FocusSession[]
 }
 
 model Goal {
@@ -117,9 +118,10 @@ model Goal {
   lastCompletedInstance DateTime?
 
   // Relations
-  progressLogs ProgressLog[]
-  todos        Todo[]
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  progressLogs  ProgressLog[]
+  todos         Todo[]
+  focusSessions FocusSession[]
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -213,6 +215,27 @@ model XpEvent {
   @@index([todoId])
 }
 
+model FocusSession {
+  id              String   @id @default(cuid())
+  userId          String
+  todoId          String?
+  goalId          String?
+  durationSeconds Int
+  mode            String   // "focus" or "break"
+  startedAt       DateTime
+  endedAt         DateTime
+  createdAt       DateTime @default(now())
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  todo Todo? @relation(fields: [todoId], references: [id], onDelete: SetNull)
+  goal Goal? @relation(fields: [goalId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([todoId])
+  @@index([goalId])
+  @@index([startedAt])
+}
+
 model Todo {
   id          String     @id @default(cuid())
   userId      String
@@ -261,8 +284,9 @@ model Todo {
   updatedAt DateTime @updatedAt
 
   // Relations
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  xpEvents XpEvent[]
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  xpEvents      XpEvent[]
+  focusSessions FocusSession[]
 
   // Indexes
   @@index([userId])

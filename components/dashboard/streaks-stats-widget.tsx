@@ -7,11 +7,20 @@ import {
   CheckCircle2,
   Trophy,
   Zap,
+  Clock,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { XpProgressBar } from "@/components/ui/xp-progress-bar";
 import { useAnimatedCounter } from "@/lib/hooks/use-animated-counter";
+import { useWeekFocusSummary } from "@/lib/hooks/use-focus";
 import type { StatsData } from "@/lib/services/dashboard-service";
+
+function formatFocusTime(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
 
 interface StreaksStatsWidgetProps {
   stats: StatsData;
@@ -22,11 +31,22 @@ export function StreaksStatsWidget({ stats }: StreaksStatsWidgetProps) {
   const animatedActiveStreaks = useAnimatedCounter(stats.activeStreaks);
   const animatedCompletedThisMonth = useAnimatedCounter(stats.completedThisMonth);
   const animatedTotalCompleted = useAnimatedCounter(stats.totalCompleted);
+  const { data: weekFocus } = useWeekFocusSummary();
 
-  const statItems = [
+  const statItems: Array<{
+    label: string;
+    icon: typeof Zap;
+    value: string | number;
+    suffix?: string;
+  }> = [
     // This week
     { label: "Weekly score", icon: Zap, value: animatedWeeklyScore, suffix: "pts" },
     { label: "Active streaks", icon: Flame, value: animatedActiveStreaks },
+    {
+      label: "Focus time",
+      icon: Clock,
+      value: formatFocusTime(weekFocus?.totalSeconds ?? 0),
+    },
     // All-time
     { label: "Total completed", icon: CheckCircle2, value: animatedTotalCompleted },
     { label: "Completion rate", icon: Percent, value: stats.completionRate, suffix: "%" },
