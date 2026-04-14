@@ -5,6 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const SHORTCUT_GROUPS = [
   {
+    label: "In-list",
+    shortcuts: [
+      { keys: ["j"], description: "Move down" },
+      { keys: ["k"], description: "Move up" },
+      { keys: ["Enter"], description: "Open detail" },
+      { keys: ["x"], description: "Toggle complete (todos)" },
+    ],
+  },
+  {
     label: "Navigation",
     shortcuts: [
       { keys: ["1"], description: "Go to Dashboard" },

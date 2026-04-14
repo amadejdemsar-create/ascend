@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/table";
 import { columns, type TodoListItem, type TodoTableMeta } from "@/components/todos/todo-list-columns";
 import { isOverdue } from "@/lib/todo-utils";
+import { useListNavigation } from "@/lib/hooks/use-list-navigation";
 import { cn } from "@/lib/utils";
 
 interface TodoListViewProps {
@@ -65,6 +66,17 @@ export function TodoListView({
     meta,
   });
 
+  const visibleTodos = table.getRowModel().rows.map((r) => r.original);
+  const { focusedId } = useListNavigation({
+    items: visibleTodos,
+    getId: (t) => t.id,
+    onOpen: (t) => onSelect(t.id),
+    onComplete: (t) => {
+      if (t.status === "PENDING") onCompleteTodo(t.id);
+      else if (t.status === "DONE") onUncompleteTodo(t.id);
+    },
+  });
+
   return (
     <Table>
       <TableHeader>
@@ -93,10 +105,12 @@ export function TodoListView({
             return (
               <TableRow
                 key={row.id}
+                data-list-item-id={row.original.id}
                 className={cn(
                   "cursor-pointer hover:bg-muted/50 transition-colors",
                   selectedId === row.original.id && "bg-primary/5",
                   overdue && "bg-destructive/5 border-l-2 border-l-destructive",
+                  focusedId === row.original.id && "ring-2 ring-primary ring-inset",
                 )}
                 onClick={() => onSelect(row.original.id)}
               >

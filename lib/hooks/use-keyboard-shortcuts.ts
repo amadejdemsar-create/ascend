@@ -75,6 +75,14 @@ export function useKeyboardShortcuts(onToggleShortcutRef: () => void) {
           e.preventDefault();
           router.push("/settings");
           break;
+        case "Escape": {
+          const state = useUIStore.getState();
+          if (state.selectedGoalId) {
+            e.preventDefault();
+            state.selectGoal(null);
+          }
+          break;
+        }
       }
     }
 

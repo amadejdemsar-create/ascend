@@ -3,6 +3,7 @@
 import { FileText, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useListNavigation } from "@/lib/hooks/use-list-navigation";
 import { cn } from "@/lib/utils";
 
 interface ContextEntryItem {
@@ -62,6 +63,13 @@ export function ContextEntryList({
   currentPrioritiesSelected,
   onSelectCurrentPriorities,
 }: ContextEntryListProps) {
+  const { focusedId } = useListNavigation({
+    items: entries,
+    getId: (e) => e.id,
+    onOpen: (e) => onSelect(e.id),
+    enabled: !isLoading,
+  });
+
   if (isLoading) {
     return (
       <div className="space-y-2 p-4">
@@ -116,12 +124,14 @@ export function ContextEntryList({
         return (
           <button
             key={entry.id}
+            data-list-item-id={entry.id}
             onClick={() => onSelect(entry.id)}
             className={cn(
               "flex w-full flex-col items-start gap-1 rounded-lg border px-3 py-2.5 text-left transition-colors",
               selectedId === entry.id
                 ? "border-primary/30 bg-primary/5"
                 : "border-transparent hover:bg-muted/50",
+              focusedId === entry.id && "ring-2 ring-primary ring-inset",
             )}
           >
             <div className="flex items-center gap-2 w-full">

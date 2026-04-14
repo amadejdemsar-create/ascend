@@ -19,6 +19,15 @@ interface ShortcutGroup {
 
 const shortcutGroups: ShortcutGroup[] = [
   {
+    title: "In-list",
+    shortcuts: [
+      { key: "j", description: "Move down" },
+      { key: "k", description: "Move up" },
+      { key: "Enter", description: "Open detail" },
+      { key: "x", description: "Toggle complete (todos)" },
+    ],
+  },
+  {
     title: "Navigation",
     shortcuts: [
       { key: "1", description: "List view" },
@@ -40,7 +49,7 @@ const shortcutGroups: ShortcutGroup[] = [
     title: "Global",
     shortcuts: [
       { key: "Cmd+K", description: "Command Palette" },
-      { key: "Esc", description: "Close Dialogs" },
+      { key: "Esc", description: "Close detail / dialog" },
       { key: "?", description: "This Reference" },
     ],
   },

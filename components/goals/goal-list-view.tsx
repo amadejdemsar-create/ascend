@@ -18,15 +18,18 @@ import {
 } from "@/components/ui/table";
 import { columns, type GoalListItem } from "@/components/goals/goal-list-columns";
 import { useUIStore } from "@/lib/stores/ui-store";
+import { useListNavigation } from "@/lib/hooks/use-list-navigation";
 import { cn } from "@/lib/utils";
 
 function SortableGoalRow({
   goalId,
   index,
+  isFocused,
   children,
 }: {
   goalId: string;
   index: number;
+  isFocused: boolean;
   children: React.ReactNode;
 }) {
   const { ref, handleRef, isDragging, isDropTarget } = useSortable({
@@ -39,10 +42,12 @@ function SortableGoalRow({
   return (
     <TableRow
       ref={ref}
+      data-list-item-id={goalId}
       className={cn(
         "hover:bg-muted/50 transition-colors",
         isDragging && "opacity-30 bg-muted/30",
-        isDropTarget && !isDragging && "bg-primary/5 border-t-2 border-t-primary"
+        isDropTarget && !isDragging && "bg-primary/5 border-t-2 border-t-primary",
+        isFocused && "ring-2 ring-primary ring-inset"
       )}
     >
       <TableCell className="w-10 px-2">
@@ -68,6 +73,7 @@ interface GoalListViewProps {
 export function GoalListView({ goals }: GoalListViewProps) {
   const activeSorting = useUIStore((s) => s.activeSorting);
   const setActiveSorting = useUIStore((s) => s.setActiveSorting);
+  const selectGoal = useUIStore((s) => s.selectGoal);
 
   const table = useReactTable({
     data: goals,
@@ -81,6 +87,13 @@ export function GoalListView({ goals }: GoalListViewProps) {
     },
     enableSortingRemoval: true,
     manualSorting: true,
+  });
+
+  const visibleGoals = table.getRowModel().rows.map((r) => r.original);
+  const { focusedId } = useListNavigation({
+    items: visibleGoals,
+    getId: (g) => g.id,
+    onOpen: (g) => selectGoal(g.id),
   });
 
   return (
@@ -105,7 +118,12 @@ export function GoalListView({ goals }: GoalListViewProps) {
       <TableBody>
         {table.getRowModel().rows.length > 0 ? (
           table.getRowModel().rows.map((row, index) => (
-            <SortableGoalRow key={row.id} goalId={row.original.id} index={index}>
+            <SortableGoalRow
+              key={row.id}
+              goalId={row.original.id}
+              index={index}
+              isFocused={focusedId === row.original.id}
+            >
               {row.getVisibleCells().map((cell) => (
                 <TableCell key={cell.id}>
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
