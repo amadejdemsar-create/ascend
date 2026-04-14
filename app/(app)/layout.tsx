@@ -9,6 +9,7 @@ import { KeyboardShortcuts } from "@/components/command-palette/keyboard-shortcu
 import { CommandPalette } from "@/components/command-palette/command-palette";
 import { GoalModal } from "@/components/goals/goal-modal";
 import { FocusTimerWidget } from "@/components/focus/focus-timer-widget";
+import { SyncIndicator } from "@/components/layout/sync-indicator";
 
 export default function AppLayout({
   children,
@@ -34,6 +35,7 @@ export default function AppLayout({
           <div className="flex items-center gap-3">
             <span>Ascend</span>
             <FocusTimerWidget />
+            <SyncIndicator />
           </div>
           <span>
             Press{" "}
