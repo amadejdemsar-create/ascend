@@ -235,7 +235,10 @@ export function parseNaturalLanguage(
 
   // 4. Priority — check high, medium, low in that order. Match !!! before
   // !! to avoid double-capture. `!` alone is deliberately unsupported
-  // because it's ambiguous.
+  // because it's ambiguous. The word-form patterns use (^|\s) instead of
+  // \b at the start so the optional `!` is actually consumed: \b does
+  // not match between a space and `!` (both non-word), leaving the `!`
+  // stranded in the title.
   {
     let priMatch: RegExpMatchArray | null = null;
     let pri: "LOW" | "MEDIUM" | "HIGH" | null = null;
@@ -244,7 +247,7 @@ export function parseNaturalLanguage(
     if (priMatch) {
       pri = "HIGH";
     } else {
-      priMatch = strip(/\b!?high\b/i);
+      priMatch = strip(/(^|\s)!?high\b/i);
       if (priMatch) {
         pri = "HIGH";
       } else {
@@ -260,7 +263,7 @@ export function parseNaturalLanguage(
       if (priMatch) {
         pri = "MEDIUM";
       } else {
-        priMatch = strip(/\b!?medium\b/i);
+        priMatch = strip(/(^|\s)!?medium\b/i);
         if (priMatch) {
           pri = "MEDIUM";
         }
@@ -268,7 +271,7 @@ export function parseNaturalLanguage(
     }
 
     if (!pri) {
-      priMatch = strip(/\b!?low\b/i);
+      priMatch = strip(/(^|\s)!?low\b/i);
       if (priMatch) {
         pri = "LOW";
       }

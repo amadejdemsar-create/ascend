@@ -1,3 +1,6 @@
+// Chart colors use Tailwind v4's var(--color-*) tokens (exposed by the
+// @theme inline block in app/globals.css). XP uses chart-2 (violet) to
+// distinguish it from the primary/indigo todo-completion chart.
 "use client";
 
 import {
@@ -20,8 +23,16 @@ export function XpEarnedChart({ data }: Props) {
       <AreaChart data={data}>
         <defs>
           <linearGradient id="xpGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="hsl(270, 70%, 60%)" stopOpacity={0.3} />
-            <stop offset="95%" stopColor="hsl(270, 70%, 60%)" stopOpacity={0} />
+            <stop
+              offset="5%"
+              stopColor="var(--color-chart-2)"
+              stopOpacity={0.3}
+            />
+            <stop
+              offset="95%"
+              stopColor="var(--color-chart-2)"
+              stopOpacity={0}
+            />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -31,7 +42,7 @@ export function XpEarnedChart({ data }: Props) {
         <Area
           type="monotone"
           dataKey="amount"
-          stroke="hsl(270, 70%, 60%)"
+          stroke="var(--color-chart-2)"
           strokeWidth={2}
           fill="url(#xpGradient)"
         />

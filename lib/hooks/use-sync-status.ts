@@ -16,6 +16,13 @@ export interface SyncStatus {
   isOnline: boolean;
   activeMutations: number;
   lastSynced: Record<SyncDomain, number | null>;
+  /**
+   * True only after the component has mounted on the client. Consumers
+   * should render a neutral placeholder while this is false so SSR and
+   * the first client render match (navigator.onLine is not available
+   * server-side).
+   */
+  hasMounted: boolean;
 }
 
 const DOMAINS: SyncDomain[] = [
@@ -54,13 +61,23 @@ export function useSyncStatus(): SyncStatus {
   const queryClient = useQueryClient();
   const activeMutations = useIsMutating();
 
-  const [isOnline, setIsOnline] = useState(() =>
-    typeof navigator !== "undefined" ? navigator.onLine : true,
-  );
+  // SSR-safe defaults. navigator.onLine is unavailable on the server, so
+  // we initialize to true and correct it in an effect after mount. This
+  // guarantees the first server and client renders match.
+  const [isOnline, setIsOnline] = useState(true);
+  const [hasMounted, setHasMounted] = useState(false);
 
   const [lastSynced, setLastSynced] = useState<
     Record<SyncDomain, number | null>
   >(() => computeLastSynced(queryClient));
+
+  // Mark mounted and read navigator.onLine once on the client.
+  useEffect(() => {
+    setHasMounted(true);
+    if (typeof navigator !== "undefined") {
+      setIsOnline(navigator.onLine);
+    }
+  }, []);
 
   // Online/offline listeners
   useEffect(() => {
@@ -75,11 +92,17 @@ export function useSyncStatus(): SyncStatus {
     };
   }, []);
 
-  // React to query cache changes
+  // React to query cache changes. cache.subscribe() fires synchronously
+  // during other components' renders (e.g. a mutation's onSuccess call
+  // to queryClient.setQueryData), which would trigger a setState here
+  // mid-render and produce a "Cannot update a component while rendering"
+  // warning. queueMicrotask defers the setState past the current render.
   useEffect(() => {
     const cache = queryClient.getQueryCache();
     const unsubscribe = cache.subscribe(() => {
-      setLastSynced(computeLastSynced(queryClient));
+      queueMicrotask(() => {
+        setLastSynced(computeLastSynced(queryClient));
+      });
     });
     return unsubscribe;
   }, [queryClient]);
@@ -92,5 +115,5 @@ export function useSyncStatus(): SyncStatus {
     return () => clearInterval(id);
   }, [queryClient]);
 
-  return { isOnline, activeMutations, lastSynced };
+  return { isOnline, activeMutations, lastSynced, hasMounted };
 }

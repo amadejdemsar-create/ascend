@@ -39,7 +39,30 @@ export const createGoalSchema = z.object({
   recurringInterval: z.number().int().min(1).optional(),
 });
 
-export const updateGoalSchema = createGoalSchema.partial().extend({
+// Hand-rolled (not createGoalSchema.partial()) so Zod 4's .partial() does
+// not preserve the .default("MEDIUM") on priority. A PATCH that omits
+// priority would otherwise inject "MEDIUM" and overwrite the stored value.
+// Same reasoning applies to updateCategorySchema, updateTodoSchema, and
+// updateContextSchema below.
+export const updateGoalSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().optional(),
+  horizon: horizonEnum.optional(),
+  categoryId: z.string().optional(),
+  priority: priorityEnum.optional(),
+  startDate: z.string().datetime().optional(),
+  deadline: z.string().datetime().optional(),
+  specific: z.string().optional(),
+  measurable: z.string().optional(),
+  attainable: z.string().optional(),
+  relevant: z.string().optional(),
+  timely: z.string().optional(),
+  targetValue: z.number().optional(),
+  unit: z.string().optional(),
+  notes: z.string().optional(),
+  isRecurring: z.boolean().optional(),
+  recurringFrequency: recurringFrequencyEnum.optional(),
+  recurringInterval: z.number().int().min(1).optional(),
   status: statusEnum.optional(),
   progress: z.number().min(0).max(100).optional(),
   currentValue: z.number().optional(),
@@ -63,7 +86,11 @@ export const createCategorySchema = z.object({
   parentId: z.string().optional(),
 });
 
-export const updateCategorySchema = createCategorySchema.partial().extend({
+export const updateCategorySchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+  icon: z.string().optional(),
+  parentId: z.string().optional(),
   sortOrder: z.number().optional(),
 });
 
@@ -98,7 +125,14 @@ export const createTodoSchema = z.object({
   recurrenceRule: z.string().optional(),
 });
 
-export const updateTodoSchema = createTodoSchema.partial().extend({
+export const updateTodoSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().optional(),
+  priority: priorityEnum.optional(),
+  dueDate: z.string().datetime().optional(),
+  scheduledDate: z.string().datetime().optional(),
+  isRecurring: z.boolean().optional(),
+  recurrenceRule: z.string().optional(),
   status: todoStatusEnum.optional(),
   sortOrder: z.number().optional(),
   isBig3: z.boolean().optional(),
@@ -159,7 +193,12 @@ export const createContextSchema = z.object({
   tags: z.array(z.string().min(1).max(50)).max(20).default([]),
 });
 
-export const updateContextSchema = createContextSchema.partial();
+export const updateContextSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  content: z.string().min(1).optional(),
+  categoryId: z.string().optional(),
+  tags: z.array(z.string().min(1).max(50)).max(20).optional(),
+});
 
 export const contextFiltersSchema = z.object({
   categoryId: z.string().optional(),

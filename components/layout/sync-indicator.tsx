@@ -31,7 +31,17 @@ export function SyncIndicator() {
   );
 
   let label: React.ReactNode;
-  if (!status.isOnline) {
+  if (!status.hasMounted) {
+    // Neutral placeholder before hydration. Rendering online/offline
+    // branches here would mismatch the server HTML because navigator.onLine
+    // is not available on the server.
+    label = (
+      <span className="flex items-center gap-1">
+        <Wifi className="size-3" />
+        Online
+      </span>
+    );
+  } else if (!status.isOnline) {
     label = (
       <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
         <WifiOff className="size-3.5" />
