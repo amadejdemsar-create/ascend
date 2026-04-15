@@ -158,6 +158,7 @@ export function MorningPlanningPrompt({
           size="icon-sm"
           onClick={onDismiss}
           className="text-muted-foreground"
+          aria-label="Dismiss morning planning prompt"
         >
           <X className="size-4" />
         </Button>

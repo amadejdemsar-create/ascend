@@ -26,9 +26,21 @@ export default function AppLayout({
 
   return (
     <SidebarProvider>
+      {/* Skip link for keyboard users: hidden until focused, then jumps past
+          the sidebar straight into the main content region. */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:shadow-md focus:outline focus:outline-2 focus:outline-primary"
+      >
+        Skip to main content
+      </a>
       <AppSidebar />
       <SidebarInset>
-        <main className="flex-1 p-4 md:p-6 pb-20 md:pb-6">
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="flex-1 p-4 md:p-6 pb-20 md:pb-6"
+        >
           <ViewTransition>{children}</ViewTransition>
         </main>
         <footer className="sticky bottom-0 z-10 hidden border-t bg-background px-4 py-2 text-xs text-muted-foreground md:flex items-center justify-between">

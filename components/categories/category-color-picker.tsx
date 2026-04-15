@@ -22,9 +22,11 @@ export function CategoryColorPicker({
             key={color.value}
             type="button"
             title={color.label}
+            aria-label={`Color: ${color.label}`}
+            aria-pressed={isSelected}
             onClick={() => onChange(color.value)}
             className={cn(
-              "flex h-8 w-8 items-center justify-center rounded-full transition-all",
+              "flex h-8 w-8 items-center justify-center rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
               isSelected && "ring-2 ring-offset-2 ring-offset-background",
             )}
             style={{

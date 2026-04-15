@@ -160,7 +160,7 @@ export function ContextEntryEditor({
     >
       {/* Header */}
       <div className="flex items-center gap-2 border-b p-4">
-        <Button type="button" variant="ghost" size="icon-sm" onClick={onCancel}>
+        <Button type="button" variant="ghost" size="icon-sm" onClick={onCancel} aria-label="Cancel and go back">
           <ArrowLeftIcon className="size-4" />
         </Button>
         <h2 className="text-lg font-serif font-semibold flex-1">

@@ -78,7 +78,13 @@ export function ProgressIncrement({
       </Button>
       <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
         <PopoverTrigger
-          render={<Button variant="outline" size="icon-sm" />}
+          render={
+            <Button
+              variant="outline"
+              size="icon-sm"
+              aria-label="Log custom progress amount"
+            />
+          }
         >
           <ChevronDownIcon className="size-3.5" />
         </PopoverTrigger>

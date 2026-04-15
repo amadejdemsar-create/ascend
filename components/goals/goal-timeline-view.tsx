@@ -152,6 +152,7 @@ export function GoalTimelineView() {
             variant="ghost"
             size="icon"
             className="size-8"
+            aria-label={timelineZoom === "month" ? "Previous month" : "Previous year"}
             onClick={() => {
               if (timelineZoom === "month") {
                 if (timelineMonth === 0) {
@@ -179,6 +180,7 @@ export function GoalTimelineView() {
             variant="ghost"
             size="icon"
             className="size-8"
+            aria-label={timelineZoom === "month" ? "Next month" : "Next year"}
             onClick={() => {
               if (timelineZoom === "month") {
                 if (timelineMonth === 11) {

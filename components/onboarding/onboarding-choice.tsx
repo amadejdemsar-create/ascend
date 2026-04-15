@@ -41,7 +41,12 @@ export function OnboardingChoice({ onSelect }: OnboardingChoiceProps) {
 
       <div className="mt-8 grid w-full max-w-2xl grid-cols-1 gap-4 sm:grid-cols-3">
         {choices.map(({ path, icon: Icon, title, description }) => (
-          <button key={path} type="button" onClick={() => onSelect(path)}>
+          <button
+            key={path}
+            type="button"
+            onClick={() => onSelect(path)}
+            className="rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          >
             <Card className="h-full cursor-pointer transition-colors hover:ring-2 hover:ring-primary/50">
               <CardContent className="flex flex-col items-center gap-3 pt-6 pb-6 text-center">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">

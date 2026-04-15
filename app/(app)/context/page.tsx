@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { useContextEntries, useTogglePin } from "@/lib/hooks/use-context";
@@ -127,6 +127,38 @@ export default function ContextPage() {
 
   const showDetail = selectedEntryId || showCurrentPriorities;
   const showEditor = isCreating || editingEntryId;
+
+  // Escape closes the open detail/editor panel. Scoped to this page because
+  // the global handler only owns selectedGoalId. Skips when focus is in a
+  // text field so users can dismiss autocomplete/clear values as expected.
+  useEffect(() => {
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key !== "Escape") return;
+      const target = e.target;
+      if (target instanceof HTMLElement) {
+        const tag = target.tagName;
+        if (
+          tag === "INPUT" ||
+          tag === "TEXTAREA" ||
+          tag === "SELECT" ||
+          target.isContentEditable
+        ) {
+          return;
+        }
+      }
+      if (showEditor) {
+        e.preventDefault();
+        handleCancelEdit();
+        return;
+      }
+      if (showDetail) {
+        e.preventDefault();
+        handleDetailClose();
+      }
+    }
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [showDetail, showEditor]);
 
   return (
     <div className="flex h-full">

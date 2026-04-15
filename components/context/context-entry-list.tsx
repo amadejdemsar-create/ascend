@@ -94,7 +94,10 @@ function ContextRow({
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
           {entry.isPinned && (
-            <Pin className="size-3.5 shrink-0 text-amber-500 fill-amber-500" />
+            <>
+              <Pin aria-hidden="true" className="size-3.5 shrink-0 text-amber-500 fill-amber-500" />
+              <span className="sr-only">Pinned</span>
+            </>
           )}
           <span className="text-sm font-medium truncate">{entry.title}</span>
         </div>

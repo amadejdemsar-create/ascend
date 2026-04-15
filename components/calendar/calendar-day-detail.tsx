@@ -121,7 +121,7 @@ export function CalendarDayDetail({
       {/* Header */}
       <div className="flex items-center gap-2 border-b p-4">
         {isMobileOverlay && onClose && (
-          <Button variant="ghost" size="icon-sm" onClick={onClose}>
+          <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Back to calendar">
             <ArrowLeftIcon className="size-4" />
           </Button>
         )}
@@ -281,7 +281,10 @@ export function CalendarDayDetail({
                   </button>
                   <div className="flex items-center gap-1.5 flex-1 min-w-0">
                     {todo.isRecurring && (
-                      <Repeat className="size-3 shrink-0 text-muted-foreground" />
+                      <>
+                        <Repeat aria-hidden="true" className="size-3 shrink-0 text-muted-foreground" />
+                        <span className="sr-only">Recurring</span>
+                      </>
                     )}
                     <span
                       className={`text-sm truncate ${

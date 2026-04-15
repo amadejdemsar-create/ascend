@@ -228,7 +228,7 @@ export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps
       {/* Header */}
       <div className="flex items-start gap-2 border-b p-4">
         {isMobileOverlay && (
-          <Button variant="ghost" size="icon-sm" onClick={onClose}>
+          <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Back to to-dos list">
             <ArrowLeftIcon className="size-4" />
           </Button>
         )}
@@ -248,7 +248,10 @@ export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps
           ) : (
             <div className="flex items-center gap-1.5 min-w-0">
               {todo.isBig3 && (
-                <Star className="size-4 shrink-0 fill-amber-400 text-amber-400" />
+                <>
+                  <Star aria-hidden="true" className="size-4 shrink-0 fill-amber-400 text-amber-400" />
+                  <span className="sr-only">Big 3</span>
+                </>
               )}
               <button
                 type="button"
@@ -281,7 +284,7 @@ export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps
         </div>
         <div className="flex items-center gap-1">
           {!isMobileOverlay && (
-            <Button variant="ghost" size="icon-sm" onClick={onClose} title="Close">
+            <Button variant="ghost" size="icon-sm" onClick={onClose} title="Close" aria-label="Close to-do detail">
               <XIcon className="size-4" />
             </Button>
           )}
@@ -384,7 +387,12 @@ export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps
               <span className="text-xs text-muted-foreground">Due date</span>
             </div>
             <div className="flex items-center gap-1.5">
-              {overdue && <AlertCircle className="size-3.5 text-destructive" />}
+              {overdue && (
+                <>
+                  <AlertCircle aria-hidden="true" className="size-3.5 text-destructive" />
+                  <span className="sr-only">Overdue</span>
+                </>
+              )}
               <Input
                 type="date"
                 value={todo.dueDate ? format(new Date(todo.dueDate), "yyyy-MM-dd") : ""}

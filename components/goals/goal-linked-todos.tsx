@@ -95,7 +95,10 @@ export function GoalLinkedTodos({ goalId }: GoalLinkedTodosProps) {
 
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
           {todo.isBig3 && (
-            <Star className="size-3.5 shrink-0 fill-amber-400 text-amber-400" />
+            <>
+              <Star aria-hidden="true" className="size-3.5 shrink-0 fill-amber-400 text-amber-400" />
+              <span className="sr-only">Big 3</span>
+            </>
           )}
           <span
             className={`truncate text-sm ${
@@ -105,7 +108,10 @@ export function GoalLinkedTodos({ goalId }: GoalLinkedTodosProps) {
             {todo.title}
           </span>
           {todo.isRecurring && (
-            <Repeat className="size-3 shrink-0 text-muted-foreground" />
+            <>
+              <Repeat aria-hidden="true" className="size-3 shrink-0 text-muted-foreground" />
+              <span className="sr-only">Recurring</span>
+            </>
           )}
         </div>
 

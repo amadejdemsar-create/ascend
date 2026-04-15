@@ -26,10 +26,16 @@ export function Big3DraggableTodo({ todo }: DraggableTodoProps) {
       )}
     >
       {todo.isBig3 && (
-        <Star className="size-3.5 shrink-0 fill-amber-400 text-amber-400" />
+        <>
+          <Star aria-hidden="true" className="size-3.5 shrink-0 fill-amber-400 text-amber-400" />
+          <span className="sr-only">Big 3</span>
+        </>
       )}
       {todo.isRecurring && (
-        <Repeat className="size-3 shrink-0 text-muted-foreground" />
+        <>
+          <Repeat aria-hidden="true" className="size-3 shrink-0 text-muted-foreground" />
+          <span className="sr-only">Recurring</span>
+        </>
       )}
       <span className="flex-1 text-sm truncate">{todo.title}</span>
       <GoalPriorityBadge priority={todo.priority} />

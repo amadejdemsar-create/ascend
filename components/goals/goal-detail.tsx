@@ -220,7 +220,7 @@ export function GoalDetail({ goalId, onClose, isMobileOverlay }: GoalDetailProps
       {/* Header */}
       <div className="flex items-start gap-2 border-b p-4">
         {isMobileOverlay && (
-          <Button variant="ghost" size="icon-sm" onClick={onClose}>
+          <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Back to goals list">
             <ArrowLeftIcon className="size-4" />
           </Button>
         )}
@@ -270,11 +270,11 @@ export function GoalDetail({ goalId, onClose, isMobileOverlay }: GoalDetailProps
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon-sm" onClick={handleEditAll} title="Edit all fields">
+          <Button variant="ghost" size="icon-sm" onClick={handleEditAll} title="Edit all fields" aria-label="Edit all fields">
             <PencilIcon className="size-3.5" />
           </Button>
           {!isMobileOverlay && (
-            <Button variant="ghost" size="icon-sm" onClick={onClose} title="Close">
+            <Button variant="ghost" size="icon-sm" onClick={onClose} title="Close" aria-label="Close goal detail">
               <XIcon className="size-4" />
             </Button>
           )}

@@ -141,7 +141,10 @@ export function ContextEntryDetail({
       const id = titleToId.get(title);
       const safeTitle = escapeHtmlAttr(title);
       if (id) {
-        return `<a data-wikilink-id="${escapeHtmlAttr(id)}" class="text-primary underline hover:text-primary/80 cursor-pointer">${safeTitle}</a>`;
+        // tabindex=0 + role=button makes wikilinks keyboard-reachable despite
+        // having no href (the click is handled by handleContentClick via
+        // event delegation).
+        return `<a data-wikilink-id="${escapeHtmlAttr(id)}" role="button" tabindex="0" class="text-primary underline hover:text-primary/80 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 rounded-sm">${safeTitle}</a>`;
       }
       return `<span class="text-muted-foreground line-through" title="Unresolved wikilink">${safeTitle}</span>`;
     });
@@ -207,6 +210,17 @@ export function ContextEntryDetail({
   }
 
   function handleContentKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    // If focus is on a wikilink anchor, Enter/Space should navigate to it
+    // instead of entering edit mode.
+    const target = e.target as HTMLElement;
+    const link = target.closest?.("[data-wikilink-id]") as HTMLElement | null;
+    if (link && (e.key === "Enter" || e.key === " ")) {
+      e.preventDefault();
+      const id = link.dataset.wikilinkId;
+      if (id) onNavigate?.(id);
+      return;
+    }
+
     if (isCurrentPriorities) return;
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -266,7 +280,7 @@ export function ContextEntryDetail({
         {/* Header */}
         <div className="flex items-start gap-2 border-b p-4">
           {isMobileOverlay && (
-            <Button variant="ghost" size="icon-sm" onClick={onClose}>
+            <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Back to document list">
               <ArrowLeftIcon className="size-4" />
             </Button>
           )}
@@ -288,18 +302,21 @@ export function ContextEntryDetail({
             </div>
           </div>
           {!isMobileOverlay && (
-            <Button variant="ghost" size="icon-sm" onClick={onClose}>
+            <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close document detail">
               <XIcon className="size-4" />
             </Button>
           )}
         </div>
 
-        {/* Content (read-only for the dynamic doc) */}
+        {/* Content (read-only for the dynamic doc). Wikilinks inside the
+            rendered HTML are focusable anchors (role=button, tabindex=0);
+            handleContentKeyDown delegates their Enter/Space to navigation. */}
         <div className="flex-1 p-4">
           <div
             className="context-prose"
             dangerouslySetInnerHTML={{ __html: renderedHtml }}
             onClick={handleContentClick}
+            onKeyDown={handleContentKeyDown}
           />
         </div>
       </div>
@@ -324,14 +341,17 @@ export function ContextEntryDetail({
       {/* Header */}
       <div className="flex items-start gap-2 border-b p-4">
         {isMobileOverlay && (
-          <Button variant="ghost" size="icon-sm" onClick={onClose}>
+          <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Back to document list">
             <ArrowLeftIcon className="size-4" />
           </Button>
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             {isPinned && (
-              <Pin className="size-3.5 shrink-0 text-amber-500 fill-amber-500" />
+              <>
+                <Pin aria-hidden="true" className="size-3.5 shrink-0 text-amber-500 fill-amber-500" />
+                <span className="sr-only">Pinned</span>
+              </>
             )}
             <h2 className="text-lg font-serif font-semibold leading-tight truncate">
               {entry.title}
@@ -354,8 +374,9 @@ export function ContextEntryDetail({
                 key={tag}
                 type="button"
                 onClick={() => setContextTagFilter(tag)}
-                className="hover:underline"
+                className="hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
                 title={`Filter by #${tag}`}
+                aria-label={`Filter by tag ${tag}`}
               >
                 <Badge
                   variant="secondary"
@@ -373,6 +394,7 @@ export function ContextEntryDetail({
             size="icon-sm"
             onClick={handleTogglePin}
             title={isPinned ? "Unpin" : "Pin"}
+            aria-label={isPinned ? "Unpin document" : "Pin document"}
             disabled={togglePin.isPending}
           >
             <Pin
@@ -383,7 +405,7 @@ export function ContextEntryDetail({
               }
             />
           </Button>
-          <Button variant="ghost" size="icon-sm" onClick={onEdit} title="Edit">
+          <Button variant="ghost" size="icon-sm" onClick={onEdit} title="Edit" aria-label="Edit document">
             <PencilIcon className="size-4" />
           </Button>
           <Button
@@ -391,6 +413,7 @@ export function ContextEntryDetail({
             size="icon-sm"
             onClick={() => setDeleteDialogOpen(true)}
             title="Delete"
+            aria-label="Delete document"
           >
             <Trash2Icon className="size-4 text-destructive" />
           </Button>
@@ -400,6 +423,7 @@ export function ContextEntryDetail({
               size="icon-sm"
               onClick={onClose}
               title="Close"
+              aria-label="Close document detail"
             >
               <XIcon className="size-4" />
             </Button>

@@ -66,6 +66,7 @@ export function TodoBulkBar({
           variant="ghost"
           onClick={onClearSelection}
           title="Clear selection"
+          aria-label="Clear selection"
         >
           <X className="size-3.5" />
         </Button>

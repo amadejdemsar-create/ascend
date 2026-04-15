@@ -37,16 +37,28 @@ function GoalTimelineNodeComponent({
 
   return (
     <React.Fragment>
-      {/* Cell 1: Tree label (sticky left) */}
+      {/* Cell 1: Tree label (sticky left). role+tabIndex+onKeyDown required
+          because this div is really a button (cannot use a <button> here: the
+          nested expand/collapse button would be an invalid HTML descendant). */}
       <div
         data-tree-cell=""
+        role="button"
+        tabIndex={0}
+        aria-pressed={isSelected}
+        aria-label={`Select goal ${goal.title}`}
         className={cn(
-          "sticky left-0 z-10 bg-background border-b border-r flex items-center gap-1.5 py-1 text-sm cursor-pointer hover:bg-muted/60 transition-colors",
+          "sticky left-0 z-10 bg-background border-b border-r flex items-center gap-1.5 py-1 text-sm cursor-pointer hover:bg-muted/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary",
           isSelected && "bg-accent",
           isAbandoned && "opacity-50",
         )}
         style={{ paddingLeft: `${depth * 1.25 + 0.75}rem`, paddingRight: "0.5rem" }}
         onClick={() => onSelect(goal.id)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onSelect(goal.id);
+          }
+        }}
       >
         {/* Expand/collapse chevron */}
         {hasChildren ? (

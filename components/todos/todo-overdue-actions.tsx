@@ -61,6 +61,7 @@ export function TodoOverdueActions({ todoId, dueDate }: TodoOverdueActionsProps)
             size="icon-sm"
             className="size-6 text-destructive hover:text-destructive"
             title="Overdue actions"
+            aria-label="Overdue actions"
           />
         }
       >

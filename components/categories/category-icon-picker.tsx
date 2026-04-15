@@ -97,9 +97,11 @@ export function CategoryIconPicker({
               key={name}
               type="button"
               title={name}
+              aria-label={`Icon: ${name}`}
+              aria-pressed={value === name}
               onClick={() => handleSelect(name)}
               className={cn(
-                "flex h-9 w-full items-center justify-center rounded-md transition-colors hover:bg-accent",
+                "flex h-9 w-full items-center justify-center rounded-md transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
                 value === name &&
                   "bg-primary/10 ring-1 ring-primary",
               )}

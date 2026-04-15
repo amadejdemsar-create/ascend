@@ -50,6 +50,33 @@ export default function TodosPage() {
     setSelectedIds(new Set());
   }, [filters, todoDateTab, todoHideCompleted]);
 
+  // Escape closes the todo detail panel if one is open. The global Escape
+  // handler in use-keyboard-shortcuts.ts only clears selectedGoalId, so this
+  // page owns its own scoped handler for selectedTodoId (local state).
+  useEffect(() => {
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key !== "Escape") return;
+      const target = e.target;
+      if (target instanceof HTMLElement) {
+        const tag = target.tagName;
+        if (
+          tag === "INPUT" ||
+          tag === "TEXTAREA" ||
+          tag === "SELECT" ||
+          target.isContentEditable
+        ) {
+          return;
+        }
+      }
+      if (selectedTodoId) {
+        e.preventDefault();
+        setSelectedTodoId(null);
+      }
+    }
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [selectedTodoId]);
+
   // Filter by date tab + hide completed, then sort: Big 3 first, due date asc, priority desc
   const todos: TodoListItem[] = useMemo(() => {
     let items = (rawTodos ?? []) as TodoListItem[];
