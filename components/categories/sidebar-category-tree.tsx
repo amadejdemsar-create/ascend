@@ -140,13 +140,22 @@ function FlatCategoryNode({
             onDoubleClick={() => onEditClick(category)}
             tooltip={category.name}
             className="flex-1"
-            style={{ paddingLeft: depth > 0 ? `${depth * 16 + 8}px` : undefined }}
+            // Cap the visible indent at 3 levels so deep trees do not
+            // overflow the sidebar horizontally. Depths beyond 3 render at
+            // the level-3 indent with an ellipsis prefix to signal the
+            // truncated nesting. (L13)
+            style={{ paddingLeft: depth > 0 ? `${Math.min(depth, 3) * 12 + 8}px` : undefined }}
           >
             {canExpand && (
               <ChevronRight className={`size-3.5 shrink-0 text-muted-foreground transition-transform duration-150 ${expanded ? "rotate-90" : ""}`} />
             )}
             {depth > 0 && !canExpand && (
               <span className="text-[10px] text-muted-foreground/40 mr-0.5">&#x2514;</span>
+            )}
+            {depth > 3 && (
+              <span className="text-[10px] text-muted-foreground/60 mr-0.5" aria-label={`Nested ${depth} levels deep`}>
+                &#x22EF;
+              </span>
             )}
             <span
               className="inline-block size-2 shrink-0 rounded-full"
@@ -166,7 +175,7 @@ function FlatCategoryNode({
               className="absolute top-0 bottom-2 w-px opacity-15"
               style={{
                 backgroundColor: category.color,
-                left: `${depth * 16 + 19}px`,
+                left: `${Math.min(depth, 3) * 12 + 15}px`,
               }}
             />
           )}
@@ -185,7 +194,7 @@ function FlatCategoryNode({
             <SidebarMenuButton
               onClick={() => onAddSubcategory(category.id)}
               className="text-muted-foreground/60 hover:text-muted-foreground"
-              style={{ paddingLeft: `${(depth + 1) * 16 + 20}px` }}
+              style={{ paddingLeft: `${Math.min(depth + 1, 3) * 12 + 20}px` }}
             >
               <Plus className="size-3" />
               <span className="text-xs">Add subcategory</span>

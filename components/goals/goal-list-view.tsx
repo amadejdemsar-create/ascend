@@ -56,7 +56,7 @@ function SortableGoalRow({
         <span
           ref={handleRef}
           className={cn(
-            "inline-flex text-muted-foreground hover:text-foreground transition-opacity",
+            "inline-flex text-muted-foreground hover:text-muted-foreground/80 transition-opacity",
             // Hide by default, reveal on row hover (or while dragging,
             // so the handle stays visible during the drag operation).
             isDragging

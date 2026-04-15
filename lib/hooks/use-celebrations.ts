@@ -8,6 +8,19 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+// Module-level debounce guard. Prevents double-firing when a user toggles a
+// goal complete -> reopen -> complete in quick succession; the second burst
+// would stack on top of the first and look like a runaway effect.
+const CONFETTI_COOLDOWN_MS = 2000;
+let lastConfettiAt = 0;
+
+function canFireConfetti(): boolean {
+  const now = Date.now();
+  if (now - lastConfettiAt < CONFETTI_COOLDOWN_MS) return false;
+  lastConfettiAt = now;
+  return true;
+}
+
 export function useCelebrations() {
   const celebrateGoalComplete = useCallback(
     (horizon: string): { showCheckmark: boolean } => {
@@ -18,6 +31,9 @@ export function useCelebrations() {
       const upper = horizon.toUpperCase();
 
       if (upper === "YEARLY" || upper === "QUARTERLY") {
+        if (!canFireConfetti()) {
+          return { showCheckmark: false };
+        }
         // Big confetti burst for milestone horizons
         confetti({
           particleCount: 150,
@@ -48,6 +64,7 @@ export function useCelebrations() {
 
   const celebrateLevelUp = useCallback(() => {
     if (prefersReducedMotion()) return;
+    if (!canFireConfetti()) return;
 
     let tick = 0;
     const interval = setInterval(() => {

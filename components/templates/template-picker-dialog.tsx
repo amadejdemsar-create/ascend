@@ -50,7 +50,7 @@ export function TemplatePickerDialog<T extends Template>({
                 onPick(t);
                 onOpenChange(false);
               }}
-              className="flex items-start gap-3 rounded-lg border border-border p-3 text-left hover:border-primary hover:bg-muted/50 transition-colors"
+              className="flex items-start gap-3 rounded-lg border border-border bg-primary/5 p-3 text-left hover:border-primary hover:bg-muted/50 transition-colors"
             >
               <div className="shrink-0 rounded-md bg-primary/10 p-2">
                 <DynamicIcon

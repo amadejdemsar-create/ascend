@@ -29,10 +29,16 @@ export function BottomTabBar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex flex-1 flex-col items-center justify-center gap-1 py-2 text-xs transition-colors",
+                  "relative flex flex-1 flex-col items-center justify-center gap-1 py-2 text-xs transition-colors",
                   active ? "text-primary" : "text-muted-foreground"
                 )}
               >
+                {active && (
+                  <span
+                    aria-hidden
+                    className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-8 rounded-full bg-primary"
+                  />
+                )}
                 <item.icon className="size-5" />
                 <span>{item.label}</span>
               </Link>

@@ -153,6 +153,12 @@ export function TodoQuickAdd() {
     setTitle((t) => t.replace(match.token, " ").replace(/\s+/g, " ").trim());
   }
 
+  // Zod caps todo titles at 200 chars. Surface a counter once the user
+  // crosses the 90% threshold so they aren't surprised by a rejected submit. (L14)
+  const titleLength = title.length;
+  const showCounter = titleLength > 180;
+  const atLimit = titleLength >= 200;
+
   return (
     <div className="flex flex-col rounded-lg border border-border p-1.5 min-w-0">
       <div className="flex items-center gap-1.5 min-w-0">
@@ -163,6 +169,7 @@ export function TodoQuickAdd() {
           placeholder="Quick add a to-do..."
           className="flex-1 border-0 shadow-none focus-visible:ring-0"
           disabled={createTodo.isPending}
+          maxLength={200}
         />
         <Select
           value={priority}
@@ -200,6 +207,11 @@ export function TodoQuickAdd() {
           <PlusIcon />
         </Button>
       </div>
+      {showCounter && (
+        <div className={`px-2 pt-1 text-xs tabular-nums ${atLimit ? "text-destructive" : "text-muted-foreground"}`}>
+          {titleLength}/200
+        </div>
+      )}
       <ParsedPreview parsed={parsed} onRemove={handleRemoveToken} />
       <TemplatePickerDialog
         open={templatePickerOpen}

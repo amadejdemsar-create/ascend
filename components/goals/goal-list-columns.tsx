@@ -126,7 +126,7 @@ export const columns: ColumnDef<GoalListItem>[] = [
       }
       return (
         <span className="text-sm">
-          {format(new Date(deadline), "MMM d, yyyy")}
+          {format(new Date(deadline), "d MMM yyyy")}
         </span>
       );
     },

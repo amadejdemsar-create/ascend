@@ -39,7 +39,7 @@ export default function AppLayout({
           </div>
           <span>
             Press{" "}
-            <kbd className="rounded border border-border bg-muted px-1 py-0.5 font-mono text-[0.65rem]">
+            <kbd className="rounded border border-border bg-muted px-1 py-0.5 font-mono text-xs">
               ?
             </kbd>{" "}
             for shortcuts

@@ -420,6 +420,7 @@ export function WeeklyReviewPage({
                   value={wentWell}
                   onChange={(e) => setWentWell(e.target.value)}
                   rows={4}
+                  className="min-h-[160px]"
                 />
               </div>
 
@@ -436,6 +437,7 @@ export function WeeklyReviewPage({
                   value={toImprove}
                   onChange={(e) => setToImprove(e.target.value)}
                   rows={4}
+                  className="min-h-[160px]"
                 />
               </div>
 

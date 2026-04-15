@@ -144,57 +144,59 @@ export function StreakHeatmap({ todoId }: StreakHeatmapProps) {
       </div>
 
       {/* Heatmap grid */}
-      <div className="flex gap-1">
-        {/* Day-of-week labels column */}
-        <div
-          className="grid shrink-0"
-          style={{
-            gridTemplateRows: "repeat(7, 12px)",
-            gap: "2px",
-          }}
-        >
-          {DOW_LABELS.map((item, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-end pr-1 text-[10px] text-muted-foreground leading-none"
-              style={{ height: "12px" }}
-            >
-              {item.show ? item.label : ""}
-            </div>
-          ))}
-        </div>
+      <div className="overflow-x-auto">
+        <div className="flex gap-1 min-w-max">
+          {/* Day-of-week labels column */}
+          <div
+            className="grid shrink-0"
+            style={{
+              gridTemplateRows: "repeat(7, 14px)",
+              gap: "2px",
+            }}
+          >
+            {DOW_LABELS.map((item, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-end pr-1 text-[10px] text-muted-foreground leading-none"
+                style={{ height: "14px" }}
+              >
+                {item.show ? item.label : ""}
+              </div>
+            ))}
+          </div>
 
-        {/* Grid cells */}
-        <div
-          className="grid overflow-x-auto"
-          style={{
-            gridTemplateRows: "repeat(7, 12px)",
-            gridAutoFlow: "column",
-            gridAutoColumns: "12px",
-            gap: "2px",
-          }}
-        >
-          {/* Fill leading empty cells for partial first week */}
-          {grid.length > 0 &&
-            grid[0].dow > 0 &&
-            Array.from({ length: grid[0].dow }).map((_, i) => (
-              <div key={`pad-${i}`} className="size-3" />
+          {/* Grid cells */}
+          <div
+            className="grid"
+            style={{
+              gridTemplateRows: "repeat(7, 14px)",
+              gridAutoFlow: "column",
+              gridAutoColumns: "14px",
+              gap: "2px",
+            }}
+          >
+            {/* Fill leading empty cells for partial first week */}
+            {grid.length > 0 &&
+              grid[0].dow > 0 &&
+              Array.from({ length: grid[0].dow }).map((_, i) => (
+                <div key={`pad-${i}`} className="size-3.5" />
+              ))}
+
+            {grid.map((cell) => (
+              <div
+                key={cell.dateStr}
+                className={`size-3.5 rounded-sm ${STATUS_COLORS[cell.status]}`}
+                title={`${format(cell.date, "d. M. yyyy")}: ${STATUS_LABELS[cell.status]}`}
+              />
             ))}
 
-          {grid.map((cell) => (
-            <div
-              key={cell.dateStr}
-              className={`size-3 rounded-sm ${STATUS_COLORS[cell.status]}`}
-              title={`${format(cell.date, "d. M. yyyy")}: ${STATUS_LABELS[cell.status]}`}
-            />
-          ))}
-
-          {/* Fill trailing empty cells for partial last week */}
-          {grid.length > 0 &&
-            grid[grid.length - 1].dow < 6 &&
-            Array.from({ length: 6 - grid[grid.length - 1].dow }).map(
-              (_, i) => <div key={`trail-${i}`} className="size-3" />,
-            )}
+            {/* Fill trailing empty cells for partial last week */}
+            {grid.length > 0 &&
+              grid[grid.length - 1].dow < 6 &&
+              Array.from({ length: 6 - grid[grid.length - 1].dow }).map(
+                (_, i) => <div key={`trail-${i}`} className="size-3.5" />,
+              )}
+          </div>
         </div>
       </div>
 

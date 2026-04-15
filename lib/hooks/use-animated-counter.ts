@@ -32,6 +32,16 @@ export function useAnimatedCounter(
 
     const from = prevTarget.current;
     const delta = target - from;
+
+    // Skip the animation entirely when there is no delta. Without this the
+    // counter would re-run a 600ms ease on every re-render that produces the
+    // same target (e.g. the XP bar on dashboard refetch with unchanged XP).
+    if (delta === 0) {
+      setCurrent(target);
+      prevTarget.current = target;
+      return;
+    }
+
     const start = performance.now();
     let rafId: number;
 

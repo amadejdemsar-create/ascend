@@ -43,17 +43,32 @@ export function DashboardPage() {
       />
 
       {isLoading && (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i}>
-              <CardContent className="space-y-3 pt-4">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-24 w-full" />
-                <Skeleton className="h-4 w-48" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <>
+          {/* Big 3 skeleton (full-width, taller, sits above the grid) */}
+          <Card className="mb-4">
+            <CardContent className="space-y-3 pt-4 min-h-[240px]">
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </CardContent>
+          </Card>
+
+          {/* 2x2 widget grid skeleton matching WeeklyFocus / ProgressOverview /
+              StreaksStats / UpcomingDeadlines heights. Uniform min-height
+              keeps the page from jumping during swap-in. */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i}>
+                <CardContent className="space-y-3 pt-4 min-h-[220px]">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-24 w-full" />
+                  <Skeleton className="h-4 w-48" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </>
       )}
 
       {isError && (
