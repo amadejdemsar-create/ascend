@@ -55,7 +55,11 @@ Every feature or fix must pass ALL of these before you may say "done":
 - [ ] Every touched mutation invalidates the correct query keys, including cross-domain invalidations
 - [ ] No new direct imports of `@/lib/db` or `@prisma/client` outside `lib/services/`
 - [ ] For UI-adjacent changes (`components/**`, `app/(app)/**`, `lib/hooks/**`, `lib/stores/**`, `lib/validations.ts`, `lib/api-client.ts`, `lib/queries/keys.ts`), `ax:verify-ui` returns PASS or PASS WITH NOTES with zero blocking scenarios. The verifier clicks through the app via Playwright, writes a report to `.ascendflow/verification/`, and surfaces runtime regressions, console errors, stale cache, and broken navigation that type-checks cannot catch. `ascend-ux` (visual design audits via chrome-devtools in Dia) and `ax:verify-ui` (behavioral verification via Playwright) are complementary: run `ax:verify-ui` for any behavioral change, `ascend-ux` for any visual polish.
-- [ ] All relevant patterns from `.claude/rules/` followed (service-patterns, api-route-patterns, component-patterns, mcp-tool-patterns)
+- [ ] All relevant patterns from `.claude/rules/` followed (service-patterns, api-route-patterns, component-patterns, mcp-tool-patterns, accessibility)
+- [ ] For any Prisma migration, run `ax:migrate` and delegate the SQL review to `ascend-migration-auditor`
+- [ ] For any change to `packages/*`, run `ax:cross-platform-check` and delegate the audit to `ascend-architect`
+- [ ] For any change to auth, file handling, or multi-tenant boundaries, delegate to `ascend-security`
+- [ ] Before declaring a wave done, run `ax:critique` and require `ascend-critic` verdict at GOOD or WORLD-CLASS. NEEDS WORK or NOT READY blocks close.
 
 ### Forbidden Phrases When Any Check Fails
 
@@ -81,9 +85,13 @@ Before declaring any feature or fix complete, re-list every task from the `TASKS
 | Agent | When to use | Tools |
 |-------|-------------|-------|
 | `ascend-dev` | Any code implementation: services, API routes, hooks, components, MCP tools, Prisma schema | Read, Write, Edit, Glob, Grep, Bash, WebFetch |
-| `ascend-ux` | Visual design audits, layout reviews, design system checks (uses chrome-devtools in Dia) | Read, Glob, Grep, Write, Edit, Bash |
-| `ascend-reviewer` | Code review against safety rules, pattern compliance, danger zone checks | Read, Glob, Grep, Bash |
+| `ascend-ux` | Visual design audits, layout reviews, design system checks, CSS/layout fixes (uses chrome-devtools in Dia) | Read, Glob, Grep, Write, Edit, Bash |
+| `ascend-reviewer` | Code review against safety rules, pattern compliance, danger zone checks (DZ-1 through DZ-7) | Read, Glob, Grep, Bash |
 | `ascend-ui-verifier` | End-to-end browser verification via Playwright after any UI change | Read, Bash, Grep, Glob, Write, Playwright MCP |
+| `ascend-architect` | Cross-platform monorepo audits, `packages/*` boundaries, workspace config, platform-agnostic enforcement | Read, Glob, Grep, Bash |
+| `ascend-migration-auditor` | Prisma migration safety: SQL review, search_vector verification, backfill plans, rollback paths | Read, Glob, Grep, Bash |
+| `ascend-security` | Auth, multi-tenancy, userId scoping, secrets, file uploads, token handling audits | Read, Glob, Grep, Bash |
+| `ascend-critic` | Product quality critique at wave close: UX friction, competitive parity, interaction coherence | Read, Glob, Grep |
 
 ### Required Workflow Steps
 
@@ -103,8 +111,16 @@ Before declaring any feature or fix complete, re-list every task from the `TASKS
 | `/ax:verify-ui` | Browser verification via Playwright | After any UI-adjacent change |
 | `/ax:deploy-check` | Pre-deploy validation | Before pushing to main |
 | `/ax:save` | Save session state | When context is running low or pausing work |
+| `/ax:migrate` | Safe Prisma migration orchestrator | Any time `prisma/schema.prisma` is modified (replaces direct `prisma migrate dev`) |
+| `/ax:package` | Scaffold a new monorepo package | When adding a new shared package under `packages/*` |
+| `/ax:cross-platform-check` | Grep audit for banned imports in `packages/*` | After extracting code into or modifying a shared package |
+| `/ax:wave-start` | Pre-flight check before starting a wave | At the beginning of every Context v2 wave |
+| `/ax:wave-close` | Strict completion ritual for closing a wave | At the end of every wave, before starting the next |
+| `/ax:critique` | Launch `ascend-critic` for product quality verdict | After `ax:verify-ui` passes, at wave close, before demos |
 
 ## Architecture
+
+**Current scope:** single Next.js codebase. The 10-wave Context v2 roadmap (see `.ascendflow/features/context-v2/VISION.md`) includes a Wave 0 monorepo conversion that will split the codebase into `apps/web`, `apps/mobile` (Expo), `apps/desktop` (Tauri), and shared packages under `packages/*` (core, api-client, storage, ui-tokens, graph, editor, llm, sync). Until that conversion is done, all file paths below reference the current flat structure.
 
 ### Service Layer (`lib/services/`)
 All business logic. Const objects with async methods. `userId` is always the first parameter. Services call Prisma directly. 12 service modules: goal, todo, context, category, dashboard, gamification, export, import, recurring, todo-recurring, hierarchy-helpers, export-helpers.
@@ -169,15 +185,19 @@ Board/Kanban view components exist (`goal-board-*.tsx`) but are dead code; remov
 
 ## Danger Zones
 
-**No transaction wrapping in todo completion.** `lib/services/todo-service.ts` and `lib/services/gamification-service.ts` perform status update, goal progress recalc, XP event creation, and stats update as separate Prisma calls. A mid-flow failure leaves data inconsistent.
+**DZ-1: No transaction wrapping in todo completion.** `lib/services/todo-service.ts` and `lib/services/gamification-service.ts` perform status update, goal progress recalc, XP event creation, and stats update as separate Prisma calls. A mid-flow failure leaves data inconsistent.
 
-**Context search_vector not in Prisma schema.** Added via raw SQL migration. Prisma does not know about it. See safety rule 6.
+**DZ-2: Context search_vector not in Prisma schema.** Added via raw SQL migration. Prisma does not know about it. See safety rule 6.
 
-**Two separate recurring systems.** `lib/services/recurring-service.ts` (goals) and `lib/services/todo-recurring-service.ts` (todos) handle recurrence independently. Naming is confusing and there may be shared logic.
+**DZ-3: Two separate recurring systems.** `lib/services/recurring-service.ts` (goals) and `lib/services/todo-recurring-service.ts` (todos) handle recurrence independently. Naming is confusing and there may be shared logic.
 
-**Recurring instance generation is visit-triggered.** `todo-recurring-service.ts` only generates instances when the calendar page loads. If the user does not visit the calendar, recurring todos will not appear.
+**DZ-4: Recurring instance generation is visit-triggered.** `todo-recurring-service.ts` only generates instances when the calendar page loads. If the user does not visit the calendar, recurring todos will not appear.
 
-**fetchJson duplicated.** The `fetchJson` helper with API key headers is copy-pasted in `use-goals.ts`, `use-todos.ts`, `use-context.ts`, `use-categories.ts`, and `use-dashboard.ts`. Extract to a shared module when modifying any of these.
+**DZ-5: fetchJson duplicated.** The `fetchJson` helper with API key headers is copy-pasted in `use-goals.ts`, `use-todos.ts`, `use-context.ts`, `use-categories.ts`, and `use-dashboard.ts`. Extract to a shared module when modifying any of these.
+
+**DZ-6: Board view components are dead code.** `components/goals/goal-board-card.tsx`, `goal-board-column.tsx`, `goal-board-view.tsx` were removed from the view switcher. Do not treat these as active components.
+
+**DZ-7: No error boundaries.** A render error in any widget crashes the entire page. If adding a risky component or a new top-level page, wrap it in an error boundary.
 
 ## Deployment
 
@@ -188,3 +208,4 @@ Deployed via Dokploy (dokploy-personal) to `ascend.nativeai.agency`. Auto-deploy
 @import rules/api-route-patterns.md
 @import rules/component-patterns.md
 @import rules/mcp-tool-patterns.md
+@import rules/accessibility.md

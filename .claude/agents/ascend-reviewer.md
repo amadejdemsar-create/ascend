@@ -262,35 +262,6 @@ If the change adds a new top-level page component or a risky widget, note that A
 - Zod validation inside the handler even though the JSON Schema exists at the MCP level.
 - Tool name is snake_case action_entity format.
 
-## Verdict Format
-
-At the end, return a structured verdict:
-
-```
-ASCEND REVIEW VERDICT
-
-Status: PASS | PASS WITH NOTES | FAIL
-Files reviewed: <list>
-TypeScript: pass | fail
-Build: pass | fail | skipped
-
-Issues:
-1. [FAIL | NOTE] <file>:<line>
-   Rule: <which rule>
-   Problem: <description>
-   Fix: <exact code change or action>
-
-2. ...
-
-Danger zone touches:
-- DZ-N: <file> - <what the change does to the zone>
-
-Recommendations:
-- <non-blocking suggestions>
-
-Summary: <one paragraph>
-```
-
 ## Communication Style
 
 Be direct and precise. Do not soften failures. Do not pad passes. If something is wrong, say so and give the exact fix. If something is fine, say so and move on.

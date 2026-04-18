@@ -67,7 +67,7 @@ Use the Task tool with `subagent_type: "ascend-reviewer"` and pass it:
 The agent will:
 1. Read each changed file end to end.
 2. Run the six safety rule checks (userId, Zod, service layer, cache invalidation, build, no forbidden Prisma commands).
-3. Check for danger zone touches (todo transactionality, context search_vector, two recurring systems, visit-triggered recurrence, fetchJson duplication, board view dead code, missing error boundaries).
+3. Check for danger zone touches (DZ-1 through DZ-7: todo transactionality, context search_vector, two recurring systems, visit-triggered recurrence, fetchJson duplication, board view dead code, missing error boundaries).
 4. Check pattern compliance from `.claude/rules/` (service patterns, API route patterns, component patterns, MCP tool patterns).
 5. Run `npx tsc --noEmit` and, if routes changed, `npm run build`.
 6. Return a structured verdict.

@@ -170,13 +170,13 @@ Copy these into your head before every change:
 
 ## Danger Zones (know them, respect them)
 
-- **Todo completion is not transactional.** `lib/services/todo-service.ts` + `lib/services/gamification-service.ts` perform four separate Prisma calls (status update, goal progress recalc, XP event creation, stats update). A mid-flow failure leaves data inconsistent. If you touch this path, consider wrapping in `prisma.$transaction()` or add clear compensation logic.
-- **Context search_vector column is invisible to Prisma.** Added via raw SQL migration. Treat the schema as read-only for this column. Never regenerate the schema.
-- **Two recurring systems.** `recurring-service.ts` (goals) vs `todo-recurring-service.ts` (todos, uses rrule). Same concept, different code. When extending recurrence, figure out which one owns the logic you want.
-- **Recurring todo generation is visit-triggered.** Only runs when the calendar page loads. A user who never opens the calendar will not see recurring todos. If fixing this, add a cron endpoint or generate on dashboard load.
-- **fetchJson is duplicated.** Across `use-goals.ts`, `use-todos.ts`, `use-context.ts`, `use-categories.ts`, `use-dashboard.ts`. Extract on your first touch.
-- **Board view components are dead code.** `components/goals/goal-board-card.tsx`, `goal-board-column.tsx`, `goal-board-view.tsx`. The view option was removed from `goal-view-switcher.tsx`. Do not treat these as active components.
-- **No error boundaries.** A render error in any widget crashes the entire page. If adding a risky component, wrap it in an error boundary.
+- **DZ-1: Todo completion is not transactional.** `lib/services/todo-service.ts` + `lib/services/gamification-service.ts` perform four separate Prisma calls (status update, goal progress recalc, XP event creation, stats update). A mid-flow failure leaves data inconsistent. If you touch this path, consider wrapping in `prisma.$transaction()` or add clear compensation logic.
+- **DZ-2: Context search_vector column is invisible to Prisma.** Added via raw SQL migration. Treat the schema as read-only for this column. Never regenerate the schema.
+- **DZ-3: Two recurring systems.** `recurring-service.ts` (goals) vs `todo-recurring-service.ts` (todos, uses rrule). Same concept, different code. When extending recurrence, figure out which one owns the logic you want.
+- **DZ-4: Recurring todo generation is visit-triggered.** Only runs when the calendar page loads. A user who never opens the calendar will not see recurring todos. If fixing this, add a cron endpoint or generate on dashboard load.
+- **DZ-5: fetchJson is duplicated.** Across `use-goals.ts`, `use-todos.ts`, `use-context.ts`, `use-categories.ts`, `use-dashboard.ts`. Extract on your first touch.
+- **DZ-6: Board view components are dead code.** `components/goals/goal-board-card.tsx`, `goal-board-column.tsx`, `goal-board-view.tsx`. The view option was removed from `goal-view-switcher.tsx`. Do not treat these as active components.
+- **DZ-7: No error boundaries.** A render error in any widget crashes the entire page. If adding a risky component, wrap it in an error boundary.
 
 ## Workflow for a New Feature
 
@@ -197,7 +197,7 @@ Copy these into your head before every change:
 | Prisma schema | `prisma/schema.prisma` |
 | Validation schemas | `lib/validations.ts` |
 | Query keys | `lib/queries/keys.ts` |
-| Cache timing | `lib/queries/cache-config.ts` (may not exist yet; check before importing) |
+| Cache timing | `lib/offline/cache-config.ts` |
 | UI state | `lib/stores/ui-store.ts` |
 | Nav items | `components/layout/nav-config.ts` |
 | MCP schemas | `lib/mcp/schemas.ts` |

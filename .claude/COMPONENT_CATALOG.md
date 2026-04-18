@@ -1,5 +1,7 @@
 # Ascend Component Catalog
 
+> **Monorepo note:** Components currently live in `components/`. After Wave 0 (monorepo conversion), they will live under `apps/web/components/`. Shared UI primitives (raw design tokens only) will live in `packages/ui-tokens/` and are NOT listed here. This catalog covers application-level components, not token definitions.
+
 **Total**: 86 reusable components across 13 directories.
 
 Use this catalog before creating any new component. Duplicating existing components is the most common UI mistake in Ascend. Check here first, then grep for similar implementations.

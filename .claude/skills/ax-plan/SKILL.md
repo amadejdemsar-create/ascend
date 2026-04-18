@@ -49,7 +49,7 @@ Ask these in sequence. Stop asking when you have enough to write the PRD.
 5. **API surface**: Which API routes? (new, modified) Which MCP tools? (new, modified)
 6. **UI surface**: Which pages? Which components? Does it need a new view mode, filter, detail panel section, or widget?
 7. **Cache invalidation**: After a mutation, which query keys need invalidation? Cross-domain? (goals, todos, dashboard, gamification, categories, context)
-8. **Danger zones**: Does this touch any known danger zone from CLAUDE.md? (todo completion transactionality, context search_vector, two recurring systems, visit-triggered todo recurrence, duplicated fetchJson, board view dead code)
+8. **Danger zones**: Does this touch any known danger zone from CLAUDE.md? (DZ-1 todo completion transactionality, DZ-2 context search_vector, DZ-3 two recurring systems, DZ-4 visit-triggered todo recurrence, DZ-5 duplicated fetchJson, DZ-6 board view dead code, DZ-7 no error boundaries)
 9. **Out of scope**: What is explicitly NOT part of this feature?
 
 ### Step 3: Create the feature directory
