@@ -12,11 +12,11 @@ name: DB safety checks
 on:
   pull_request:
     paths:
-      - "prisma/**"
+      - "apps/web/prisma/**"
   push:
     branches: [main]
     paths:
-      - "prisma/**"
+      - "apps/web/prisma/**"
 
 jobs:
   search-vector-guard:
@@ -41,7 +41,7 @@ jobs:
               echo "::error file=$file::migration drops search_vector trigger/function"
               found=1
             fi
-          done < <(find prisma/migrations -name "migration.sql" -type f)
+          done < <(find apps/web/prisma/migrations -name "migration.sql" -type f)
 
           if [ "$found" -ne 0 ]; then
             echo ""
@@ -56,8 +56,8 @@ jobs:
       - name: ContextEntry schema still has warning comment
         run: |
           set -euo pipefail
-          if ! grep -q "search_vector tsvector column" prisma/schema.prisma; then
-            echo "::error file=prisma/schema.prisma::warning comment about search_vector is missing"
+          if ! grep -q "search_vector tsvector column" apps/web/prisma/schema.prisma; then
+            echo "::error file=apps/web/prisma/schema.prisma::warning comment about search_vector is missing"
             echo ""
             echo "The warning block above \`model ContextEntry\` was removed or altered."
             echo "Restore it so future developers see the danger zone at read time."

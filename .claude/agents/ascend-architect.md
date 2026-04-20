@@ -305,13 +305,13 @@ From VISION.md section 3:
 
 2. **Services never import UI libs:**
    ```bash
-   grep -rn "from ['\"]react" lib/services/ 2>/dev/null
-   grep -rn "from ['\"]next" lib/services/ 2>/dev/null
+   grep -rn "from ['\"]react" apps/web/lib/services/ 2>/dev/null
+   grep -rn "from ['\"]next" apps/web/lib/services/ 2>/dev/null
    ```
 
 3. **No browser-only APIs in stores or shared packages:**
    ```bash
-   grep -rn "localStorage\|sessionStorage\|window\.\|document\.\|navigator\." lib/stores/ packages/ 2>/dev/null
+   grep -rn "localStorage\|sessionStorage\|window\.\|document\.\|navigator\." apps/web/lib/stores/ packages/ 2>/dev/null
    ```
    In stores: flag for extraction to `packages/storage` adapter.
 

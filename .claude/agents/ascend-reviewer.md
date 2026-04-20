@@ -165,7 +165,7 @@ A mutation that invalidates only its own domain when it affects others is a bug.
 
 ### Rule 5: npm run build passes
 
-Run `cd /Users/Shared/Domain/Code/Personal/ascend && npm run build` and capture the output. If it fails, the review fails. Report the first 5 errors verbatim.
+Run `cd /Users/Shared/Domain/Code/Personal/ascend && pnpm build` and capture the output. If it fails, the review fails. Report the first 5 errors verbatim.
 
 If the changes don't touch routes, you can skip the full build and just run `npx tsc --noEmit`.
 

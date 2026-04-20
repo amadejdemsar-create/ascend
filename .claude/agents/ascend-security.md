@@ -17,7 +17,7 @@ The global `Execution Quality Bar (Mandatory)` in `~/.claude/CLAUDE.md` and the 
 ## Before auditing, read the canonical references
 
 - `/Users/Shared/Domain/Code/Personal/ascend/CLAUDE.md` safety rules (especially rules 1, 2, 4)
-- `/Users/Shared/Domain/Code/Personal/ascend/lib/auth.ts` for current auth implementation
+- `/Users/Shared/Domain/Code/Personal/ascend/apps/web/lib/auth.ts` for current auth implementation
 - `/Users/Shared/Domain/Code/Personal/ascend/.claude/rules/api-route-patterns.md` for the auth-parse-service-respond skeleton
 - `/Users/Shared/Domain/Code/Personal/ascend/.claude/rules/service-patterns.md` for the userId-first parameter contract
 - `/Users/Shared/Domain/Code/Personal/ascend/.claude/rules/mcp-tool-patterns.md` for MCP userId from server factory
@@ -30,7 +30,7 @@ This is CLAUDE.md Safety Rule 1 and the single most important security invariant
 
 **Scan every service file:**
 ```bash
-grep -rn "prisma\.\(goal\|todo\|contextEntry\|category\|progressLog\|userStats\|xpEvent\|workspace\|database\|databaseRow\|databaseField\|contextLink\|nodeVersion\)\.\(findMany\|findFirst\|findUnique\|update\|delete\|updateMany\|deleteMany\)" /Users/Shared/Domain/Code/Personal/ascend/lib/services/
+grep -rn "prisma\.\(goal\|todo\|contextEntry\|category\|progressLog\|userStats\|xpEvent\|workspace\|database\|databaseRow\|databaseField\|contextLink\|nodeVersion\)\.\(findMany\|findFirst\|findUnique\|update\|delete\|updateMany\|deleteMany\)" /Users/Shared/Domain/Code/Personal/ascend/apps/web/lib/services/
 ```
 
 For each match, read the surrounding code (10 lines before and after) to verify `userId` is in the `where` clause. Mark as:
@@ -40,7 +40,7 @@ For each match, read the surrounding code (10 lines before and after) to verify 
 
 **Also check for raw SQL queries:**
 ```bash
-grep -rn "\$queryRaw\|\$executeRaw\|prisma\.\$query" /Users/Shared/Domain/Code/Personal/ascend/lib/services/
+grep -rn "\$queryRaw\|\$executeRaw\|prisma\.\$query" /Users/Shared/Domain/Code/Personal/ascend/apps/web/lib/services/
 ```
 
 Raw SQL queries are particularly dangerous because they bypass Prisma's type safety. Every raw query that returns user data must include a `WHERE user_id = $1` or equivalent.
@@ -51,7 +51,7 @@ CLAUDE.md Safety Rule 2: every POST/PUT/PATCH body must be parsed through Zod fr
 
 ```bash
 # Find all POST/PUT/PATCH handlers
-grep -rn "export async function \(POST\|PUT\|PATCH\)" /Users/Shared/Domain/Code/Personal/ascend/app/api/
+grep -rn "export async function \(POST\|PUT\|PATCH\)" /Users/Shared/Domain/Code/Personal/ascend/apps/web/app/api/
 ```
 
 For each handler, verify:
@@ -68,7 +68,7 @@ Every route handler must start with `validateApiKey(request)` (current auth) or 
 
 ```bash
 # Find all route handler files
-find /Users/Shared/Domain/Code/Personal/ascend/app/api -name "route.ts" -exec echo {} \;
+find /Users/Shared/Domain/Code/Personal/ascend/apps/web/app/api -name "route.ts" -exec echo {} \;
 ```
 
 For each file, verify:
@@ -86,8 +86,8 @@ Any route that processes user data without authentication is a CRITICAL FAIL.
 ### Check 4: Service layer is the only Prisma consumer
 
 ```bash
-grep -rn "from ['\"]@/lib/db['\"]" /Users/Shared/Domain/Code/Personal/ascend/app/ /Users/Shared/Domain/Code/Personal/ascend/components/ /Users/Shared/Domain/Code/Personal/ascend/lib/hooks/ /Users/Shared/Domain/Code/Personal/ascend/lib/mcp/ 2>/dev/null
-grep -rn "from ['\"]@prisma/client['\"]" /Users/Shared/Domain/Code/Personal/ascend/app/ /Users/Shared/Domain/Code/Personal/ascend/components/ /Users/Shared/Domain/Code/Personal/ascend/lib/hooks/ /Users/Shared/Domain/Code/Personal/ascend/lib/mcp/ 2>/dev/null
+grep -rn "from ['\"]@/lib/db['\"]" /Users/Shared/Domain/Code/Personal/ascend/apps/web/app/ /Users/Shared/Domain/Code/Personal/ascend/apps/web/components/ /Users/Shared/Domain/Code/Personal/ascend/apps/web/lib/hooks/ /Users/Shared/Domain/Code/Personal/ascend/apps/web/lib/mcp/ 2>/dev/null
+grep -rn "from ['\"]@prisma/client['\"]" /Users/Shared/Domain/Code/Personal/ascend/apps/web/app/ /Users/Shared/Domain/Code/Personal/ascend/apps/web/components/ /Users/Shared/Domain/Code/Personal/ascend/apps/web/lib/hooks/ /Users/Shared/Domain/Code/Personal/ascend/apps/web/lib/mcp/ 2>/dev/null
 ```
 
 Any import of Prisma outside `lib/services/` and `lib/db.ts` is a violation. The service layer is the multi-tenant boundary; bypassing it means bypassing userId scoping.
@@ -98,14 +98,14 @@ MCP tools receive `userId` from the `createAscendMcpServer(userId)` factory. The
 
 ```bash
 # Check MCP schemas for userId in input
-grep -n "userId" /Users/Shared/Domain/Code/Personal/ascend/lib/mcp/schemas.ts
+grep -n "userId" /Users/Shared/Domain/Code/Personal/ascend/apps/web/lib/mcp/schemas.ts
 ```
 
 If `userId` appears as a property in any tool's `inputSchema`, that is a CRITICAL FAIL. A malicious MCP client could pass any userId and access another user's data.
 
 Also check that handlers pass the factory userId, not args.userId:
 ```bash
-grep -rn "args\.userId\|args\[.userId.\]" /Users/Shared/Domain/Code/Personal/ascend/lib/mcp/tools/
+grep -rn "args\.userId\|args\[.userId.\]" /Users/Shared/Domain/Code/Personal/ascend/apps/web/lib/mcp/tools/
 ```
 
 ### Check 6: Auth cookie security (post-Wave 0)
@@ -113,7 +113,7 @@ grep -rn "args\.userId\|args\[.userId.\]" /Users/Shared/Domain/Code/Personal/asc
 If token-based auth has been implemented, verify cookie flags:
 
 ```bash
-grep -rn "Set-Cookie\|cookie\|setCookie\|cookies" /Users/Shared/Domain/Code/Personal/ascend/lib/auth.ts /Users/Shared/Domain/Code/Personal/ascend/app/api/auth/ 2>/dev/null
+grep -rn "Set-Cookie\|cookie\|setCookie\|cookies" /Users/Shared/Domain/Code/Personal/ascend/apps/web/lib/auth.ts /Users/Shared/Domain/Code/Personal/ascend/apps/web/app/api/auth/ 2>/dev/null
 ```
 
 For each cookie being set, verify:
@@ -133,7 +133,7 @@ If refresh tokens are implemented, verify:
 4. **Expiry:** refresh tokens have a maximum lifetime (e.g., 30 days)
 
 ```bash
-grep -rn "refresh" /Users/Shared/Domain/Code/Personal/ascend/lib/auth.ts /Users/Shared/Domain/Code/Personal/ascend/app/api/auth/ 2>/dev/null
+grep -rn "refresh" /Users/Shared/Domain/Code/Personal/ascend/apps/web/lib/auth.ts /Users/Shared/Domain/Code/Personal/ascend/apps/web/app/api/auth/ 2>/dev/null
 ```
 
 ### Check 8: JWT validation
@@ -141,7 +141,7 @@ grep -rn "refresh" /Users/Shared/Domain/Code/Personal/ascend/lib/auth.ts /Users/
 If JWT-based auth is implemented:
 
 ```bash
-grep -rn "jwt\|jsonwebtoken\|jose\|JWT\|verify\|decode" /Users/Shared/Domain/Code/Personal/ascend/lib/auth.ts /Users/Shared/Domain/Code/Personal/ascend/app/api/auth/ 2>/dev/null
+grep -rn "jwt\|jsonwebtoken\|jose\|JWT\|verify\|decode" /Users/Shared/Domain/Code/Personal/ascend/apps/web/lib/auth.ts /Users/Shared/Domain/Code/Personal/ascend/apps/web/app/api/auth/ 2>/dev/null
 ```
 
 Verify:
@@ -156,7 +156,7 @@ Verify:
 If file uploads via presigned URLs are implemented:
 
 ```bash
-grep -rn "presign\|getSignedUrl\|createPresignedPost\|PutObjectCommand" /Users/Shared/Domain/Code/Personal/ascend/lib/ /Users/Shared/Domain/Code/Personal/ascend/app/api/ 2>/dev/null
+grep -rn "presign\|getSignedUrl\|createPresignedPost\|PutObjectCommand" /Users/Shared/Domain/Code/Personal/ascend/apps/web/lib/ /Users/Shared/Domain/Code/Personal/ascend/apps/web/app/api/ 2>/dev/null
 ```
 
 Verify:
@@ -170,10 +170,10 @@ Verify:
 
 ```bash
 # Check for hardcoded secrets
-grep -rn "ASCEND_API_KEY\|API_KEY.*=.*['\"]" /Users/Shared/Domain/Code/Personal/ascend/lib/ /Users/Shared/Domain/Code/Personal/ascend/app/ --include="*.ts" --include="*.tsx" 2>/dev/null | grep -v "process\.env\|import\|type\|interface"
+grep -rn "ASCEND_API_KEY\|API_KEY.*=.*['\"]" /Users/Shared/Domain/Code/Personal/ascend/apps/web/lib/ /Users/Shared/Domain/Code/Personal/ascend/apps/web/app/ --include="*.ts" --include="*.tsx" 2>/dev/null | grep -v "process\.env\|import\|type\|interface"
 
 # Check for secrets in console.log
-grep -rn "console\.log.*\(apiKey\|token\|secret\|password\|credential\)" /Users/Shared/Domain/Code/Personal/ascend/lib/ /Users/Shared/Domain/Code/Personal/ascend/app/ 2>/dev/null
+grep -rn "console\.log.*\(apiKey\|token\|secret\|password\|credential\)" /Users/Shared/Domain/Code/Personal/ascend/apps/web/lib/ /Users/Shared/Domain/Code/Personal/ascend/apps/web/app/ 2>/dev/null
 
 # Check for secrets in client-side bundles
 grep -rn "NEXT_PUBLIC_.*SECRET\|NEXT_PUBLIC_.*KEY" /Users/Shared/Domain/Code/Personal/ascend/.env* 2>/dev/null | grep -v "NEXT_PUBLIC_API_KEY"
@@ -182,7 +182,7 @@ grep -rn "NEXT_PUBLIC_.*SECRET\|NEXT_PUBLIC_.*KEY" /Users/Shared/Domain/Code/Per
 git -C /Users/Shared/Domain/Code/Personal/ascend ls-files | grep "\.env" | grep -v "\.example\|\.gitignore"
 
 # Check for AWS/R2/S3 credentials in code
-grep -rn "AWS_SECRET\|R2_SECRET\|OPENAI_API_KEY\|ANTHROPIC_API_KEY" /Users/Shared/Domain/Code/Personal/ascend/lib/ /Users/Shared/Domain/Code/Personal/ascend/app/ --include="*.ts" --include="*.tsx" 2>/dev/null | grep -v "process\.env"
+grep -rn "AWS_SECRET\|R2_SECRET\|OPENAI_API_KEY\|ANTHROPIC_API_KEY" /Users/Shared/Domain/Code/Personal/ascend/apps/web/lib/ /Users/Shared/Domain/Code/Personal/ascend/apps/web/app/ --include="*.ts" --include="*.tsx" 2>/dev/null | grep -v "process\.env"
 ```
 
 `NEXT_PUBLIC_API_KEY` is the ONLY secret that is intentionally in the client bundle (single-user auth). All other secrets must be server-only via `process.env`.
@@ -190,7 +190,7 @@ grep -rn "AWS_SECRET\|R2_SECRET\|OPENAI_API_KEY\|ANTHROPIC_API_KEY" /Users/Share
 ### Check 11: CORS policy on MCP route
 
 ```bash
-grep -rn "Access-Control\|cors\|CORS" /Users/Shared/Domain/Code/Personal/ascend/app/api/mcp/ /Users/Shared/Domain/Code/Personal/ascend/lib/mcp/ /Users/Shared/Domain/Code/Personal/ascend/next.config.* 2>/dev/null
+grep -rn "Access-Control\|cors\|CORS" /Users/Shared/Domain/Code/Personal/ascend/apps/web/app/api/mcp/ /Users/Shared/Domain/Code/Personal/ascend/apps/web/lib/mcp/ /Users/Shared/Domain/Code/Personal/ascend/apps/web/next.config.* 2>/dev/null
 ```
 
 The `/api/mcp` route must have explicit CORS headers. Without them, any website can make requests to the MCP server if the user has an active session.
@@ -200,7 +200,7 @@ The `/api/mcp` route must have explicit CORS headers. Without them, any website 
 If `workspaceId` is present in the schema:
 
 ```bash
-grep -n "workspaceId" /Users/Shared/Domain/Code/Personal/ascend/prisma/schema.prisma
+grep -n "workspaceId" /Users/Shared/Domain/Code/Personal/ascend/apps/web/prisma/schema.prisma
 ```
 
 For every model with `workspaceId`, verify that service methods include `workspaceId` in where clauses alongside `userId`. Workspace scoping is the SECOND multi-tenant boundary (the first is userId).
@@ -208,7 +208,7 @@ For every model with `workspaceId`, verify that service methods include `workspa
 ### Check 13: Rate limiting consideration
 
 ```bash
-grep -rn "rateLimit\|rate-limit\|throttle" /Users/Shared/Domain/Code/Personal/ascend/lib/ /Users/Shared/Domain/Code/Personal/ascend/app/api/ /Users/Shared/Domain/Code/Personal/ascend/middleware.ts 2>/dev/null
+grep -rn "rateLimit\|rate-limit\|throttle" /Users/Shared/Domain/Code/Personal/ascend/apps/web/lib/ /Users/Shared/Domain/Code/Personal/ascend/apps/web/app/api/ /Users/Shared/Domain/Code/Personal/ascend/apps/web/middleware.ts 2>/dev/null
 ```
 
 Rate limiting is not strictly required until Wave 8 (multi-user), but flag mutation routes that are missing it with a NOTE (not FAIL). Especially:

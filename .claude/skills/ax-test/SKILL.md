@@ -1,6 +1,6 @@
 ---
 name: ax:test
-description: Smart test runner for Ascend. Since there is no test suite yet, this runs `npx tsc --noEmit` for a type check and `npm run build` for a full production build verification. Also checks for console errors in dev mode if requested. Reports what's broken with actionable fixes.
+description: Smart test runner for Ascend. Since there is no test suite yet, this runs `npx tsc --noEmit` for a type check and `pnpm build` for a full production build verification. Also checks for console errors in dev mode if requested. Reports what's broken with actionable fixes.
 user_invocable: true
 ---
 
@@ -31,7 +31,7 @@ Default: run type check first, then build.
 ### Step 2: Run the type check
 
 ```bash
-cd /Users/Shared/Domain/Code/Personal/ascend && npx tsc --noEmit --pretty
+cd /Users/Shared/Domain/Code/Personal/ascend && pnpm typecheck
 ```
 
 Capture exit code and stderr. Parse the output to extract:
@@ -43,7 +43,7 @@ If type check passes, proceed. If it fails, stop and report the errors. Do not r
 ### Step 3: Run the build
 
 ```bash
-cd /Users/Shared/Domain/Code/Personal/ascend && npm run build
+cd /Users/Shared/Domain/Code/Personal/ascend && pnpm build
 ```
 
 The build takes 30 to 90 seconds depending on the machine. Use a long timeout (at least 180000ms).
@@ -57,7 +57,7 @@ Capture exit code and output. Parse for:
 ### Step 4: Optionally run dev mode sanity check
 
 If the user asked for `ax:test dev`:
-1. Start the dev server in background: `npm run dev &` (via `run_in_background: true`).
+1. Start the dev server in background: `pnpm dev &` (via `run_in_background: true`).
 2. Wait a reasonable time for it to start listening.
 3. Read the console output.
 4. Look for: Prisma client errors, webpack errors, React errors, 500 responses in logs.
@@ -102,7 +102,7 @@ Fix the type errors first, then re-run ax:test.
 - **Always run the build before considering any change done.** Dev server does not catch all App Router errors. CLAUDE.md safety rule 5 exists because of this.
 - **Never skip the build to save time.** The difference between a working deploy and a broken deploy is usually a build-only error.
 - **Extract actionable errors.** Do not dump the full stderr. Parse the first 10 errors with file, line, and a suggested fix where obvious.
-- **Kill background processes.** If you started `npm run dev`, kill it before returning.
+- **Kill background processes.** If you started `pnpm dev`, kill it before returning.
 
 ## Known False Negatives
 
@@ -129,7 +129,7 @@ This skill has explicit pass/fail criteria. There is no middle ground.
 
 **PASS** requires ALL of:
 - `npx tsc --noEmit` exit code 0, zero errors
-- `npm run build` exit code 0, zero errors (when run, which is the default)
+- `pnpm build` exit code 0, zero errors (when run, which is the default)
 - If `ax:test dev` was requested: no Prisma client errors, no webpack errors, no React errors, no 500 responses in the dev server logs during the 15-second watch window
 
 **FAIL** means any of:
@@ -171,7 +171,7 @@ A single type error is a FAIL, not a warning. The whole point of this skill is t
 ## Future
 
 When Ascend adds a real test suite, this skill should:
-- Run `npm test` first.
+- Run `pnpm test` first.
 - Then tsc.
 - Then build.
 - Report coverage if available.

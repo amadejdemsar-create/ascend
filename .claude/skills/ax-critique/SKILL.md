@@ -79,31 +79,31 @@ Based on scope, read the components that render the UI being critiqued:
 
 **For goals page:**
 ```bash
-ls /Users/Shared/Domain/Code/Personal/ascend/components/goals/
+ls /Users/Shared/Domain/Code/Personal/ascend/apps/web/components/goals/
 ```
 Read `goal-list-view.tsx`, `goal-detail.tsx`, `goal-filter-bar.tsx`, `quick-add.tsx`, `goal-view-switcher.tsx`.
 
 **For todos page:**
 ```bash
-ls /Users/Shared/Domain/Code/Personal/ascend/components/todos/
+ls /Users/Shared/Domain/Code/Personal/ascend/apps/web/components/todos/
 ```
 Read `todo-list-view.tsx` (or equivalent), `todo-detail.tsx`, `todo-quick-add.tsx`, `todo-filter-bar.tsx`.
 
 **For calendar:**
 ```bash
-ls /Users/Shared/Domain/Code/Personal/ascend/components/calendar/
+ls /Users/Shared/Domain/Code/Personal/ascend/apps/web/components/calendar/
 ```
 Read `calendar-month-grid.tsx`, `calendar-day-detail.tsx`.
 
 **For context:**
 ```bash
-ls /Users/Shared/Domain/Code/Personal/ascend/components/context/
+ls /Users/Shared/Domain/Code/Personal/ascend/apps/web/components/context/
 ```
 Read `context-entry-detail.tsx`, `context-entry-editor.tsx`, and any graph/map view components.
 
 **For dashboard:**
 ```bash
-ls /Users/Shared/Domain/Code/Personal/ascend/components/dashboard/
+ls /Users/Shared/Domain/Code/Personal/ascend/apps/web/components/dashboard/
 ```
 Read `dashboard-page.tsx` and widget components.
 

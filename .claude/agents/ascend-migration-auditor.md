@@ -19,17 +19,17 @@ The global `Execution Quality Bar (Mandatory)` in `~/.claude/CLAUDE.md` and the 
 Read these files to understand the migration landscape:
 
 - `/Users/Shared/Domain/Code/Personal/ascend/CLAUDE.md` safety rule 6 and the "Context search_vector not in Prisma schema" danger zone
-- `/Users/Shared/Domain/Code/Personal/ascend/prisma/schema.prisma` for the current schema state
+- `/Users/Shared/Domain/Code/Personal/ascend/apps/web/prisma/schema.prisma` for the current schema state
 - `/Users/Shared/Domain/Code/Personal/ascend/.claude/rules/service-patterns.md` for the service layer contract (services are the only place Prisma is called)
 
 List existing migrations to understand the migration history:
 ```bash
-ls -la /Users/Shared/Domain/Code/Personal/ascend/prisma/migrations/
+ls -la /Users/Shared/Domain/Code/Personal/ascend/apps/web/prisma/migrations/
 ```
 
 Find the raw SQL migration that added `search_vector`:
 ```bash
-grep -rl "search_vector\|tsvector" /Users/Shared/Domain/Code/Personal/ascend/prisma/migrations/
+grep -rl "search_vector\|tsvector" /Users/Shared/Domain/Code/Personal/ascend/apps/web/prisma/migrations/
 ```
 
 Read that migration file end to end. This is the migration you are protecting.
@@ -130,7 +130,7 @@ Flag non-idempotent patterns:
 ### Invariant 6: No onDelete: Cascade without review
 
 ```bash
-grep -n "onDelete.*Cascade" /Users/Shared/Domain/Code/Personal/ascend/prisma/schema.prisma
+grep -n "onDelete.*Cascade" /Users/Shared/Domain/Code/Personal/ascend/apps/web/prisma/schema.prisma
 ```
 
 Every `onDelete: Cascade` must be reviewed for data retention. In Ascend, the current cascade rules are:
@@ -156,7 +156,7 @@ Parse the output:
 ### Step 2: Read the Prisma schema
 
 ```bash
-cat /Users/Shared/Domain/Code/Personal/ascend/prisma/schema.prisma
+cat /Users/Shared/Domain/Code/Personal/ascend/apps/web/prisma/schema.prisma
 ```
 
 Identify what changed compared to the last audit (if you have context) or compared to what the migrations describe.
@@ -166,7 +166,7 @@ Identify what changed compared to the last audit (if you have context) or compar
 For each pending or recently created migration, read the SQL file:
 
 ```bash
-for f in /Users/Shared/Domain/Code/Personal/ascend/prisma/migrations/*/migration.sql; do
+for f in /Users/Shared/Domain/Code/Personal/ascend/apps/web/prisma/migrations/*/migration.sql; do
   echo "=== $f ==="
   cat "$f"
   echo ""

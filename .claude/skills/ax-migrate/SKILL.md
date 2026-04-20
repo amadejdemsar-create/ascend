@@ -48,16 +48,16 @@ Run these in parallel:
 cd /Users/Shared/Domain/Code/Personal/ascend && git status --porcelain
 
 # Check current migration status
-cd /Users/Shared/Domain/Code/Personal/ascend && npx prisma migrate status 2>&1
+cd /Users/Shared/Domain/Code/Personal/ascend/apps/web && npx prisma migrate status 2>&1
 
 # Verify search_vector column exists (baseline)
-cd /Users/Shared/Domain/Code/Personal/ascend && npx prisma db execute --stdin <<'SQL' 2>&1
+cd /Users/Shared/Domain/Code/Personal/ascend/apps/web && npx prisma db execute --stdin <<'SQL' 2>&1
 SELECT column_name, data_type FROM information_schema.columns
 WHERE table_name = 'ContextEntry' AND column_name = 'search_vector';
 SQL
 
 # Record row counts for comparison
-cd /Users/Shared/Domain/Code/Personal/ascend && npx prisma db execute --stdin <<'SQL' 2>&1
+cd /Users/Shared/Domain/Code/Personal/ascend/apps/web && npx prisma db execute --stdin <<'SQL' 2>&1
 SELECT
   (SELECT COUNT(*) FROM "Goal") as goals,
   (SELECT COUNT(*) FROM "Todo") as todos,
@@ -93,7 +93,7 @@ If the diff touches `ContextEntry`, warn: "This migration touches ContextEntry. 
 ### Step 3: Generate the migration (do NOT apply yet)
 
 ```bash
-cd /Users/Shared/Domain/Code/Personal/ascend && npx prisma migrate dev --name <name> --create-only 2>&1
+cd /Users/Shared/Domain/Code/Personal/ascend/apps/web && npx prisma migrate dev --name <name> --create-only 2>&1
 ```
 
 The `--create-only` flag generates the SQL file without applying it. This lets us review the SQL before execution.
@@ -102,7 +102,7 @@ The `--create-only` flag generates the SQL file without applying it. This lets u
 
 ```bash
 # Find the just-created migration
-LATEST_MIGRATION=$(ls -td /Users/Shared/Domain/Code/Personal/ascend/prisma/migrations/*/ | head -1)
+LATEST_MIGRATION=$(ls -td /Users/Shared/Domain/Code/Personal/ascend/apps/web/prisma/migrations/*/ | head -1)
 cat "${LATEST_MIGRATION}migration.sql"
 ```
 
@@ -132,7 +132,7 @@ If the auditor returns BLOCKED, stop. Present the issues and ask the user how to
 If the auditor returns SAFE TO APPLY (or the user explicitly approves a REQUIRES REVIEW verdict):
 
 ```bash
-cd /Users/Shared/Domain/Code/Personal/ascend && npx prisma migrate dev 2>&1
+cd /Users/Shared/Domain/Code/Personal/ascend/apps/web && npx prisma migrate dev 2>&1
 ```
 
 Note: `prisma migrate dev` will detect the already-created migration from Step 3 and apply it.
@@ -145,19 +145,19 @@ Run these in sequence:
 
 ```bash
 # Verify search_vector survived
-cd /Users/Shared/Domain/Code/Personal/ascend && npx prisma db execute --stdin <<'SQL' 2>&1
+cd /Users/Shared/Domain/Code/Personal/ascend/apps/web && npx prisma db execute --stdin <<'SQL' 2>&1
 SELECT column_name, data_type FROM information_schema.columns
 WHERE table_name = 'ContextEntry' AND column_name = 'search_vector';
 SQL
 
 # Verify GIN index
-cd /Users/Shared/Domain/Code/Personal/ascend && npx prisma db execute --stdin <<'SQL' 2>&1
+cd /Users/Shared/Domain/Code/Personal/ascend/apps/web && npx prisma db execute --stdin <<'SQL' 2>&1
 SELECT indexname FROM pg_indexes
 WHERE tablename = 'ContextEntry' AND indexdef LIKE '%search_vector%';
 SQL
 
 # Row count comparison
-cd /Users/Shared/Domain/Code/Personal/ascend && npx prisma db execute --stdin <<'SQL' 2>&1
+cd /Users/Shared/Domain/Code/Personal/ascend/apps/web && npx prisma db execute --stdin <<'SQL' 2>&1
 SELECT
   (SELECT COUNT(*) FROM "Goal") as goals,
   (SELECT COUNT(*) FROM "Todo") as todos,
@@ -177,7 +177,7 @@ If search_vector is MISSING after the migration:
 ### Step 8: Regenerate Prisma client
 
 ```bash
-cd /Users/Shared/Domain/Code/Personal/ascend && npx prisma generate 2>&1
+cd /Users/Shared/Domain/Code/Personal/ascend/apps/web && npx prisma generate 2>&1
 ```
 
 ### Step 9: Type check

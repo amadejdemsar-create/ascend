@@ -1,6 +1,7 @@
 {
   "permissions": {
     "allow": [
+      "Bash(pnpm *)",
       "Bash(npm run dev)",
       "Bash(npm run build)",
       "Bash(npm run lint)",
@@ -9,6 +10,7 @@
       "Bash(npx prisma studio)",
       "Bash(npx prisma format)",
       "Bash(npx tsc --noEmit*)",
+      "Bash(corepack *)",
       "Bash(git status*)",
       "Bash(git diff*)",
       "Bash(git log*)",
@@ -18,13 +20,16 @@
       "Bash(git checkout*)",
       "Bash(git branch*)",
       "Bash(git pull*)",
+      "Bash(git mv *)",
       "Bash(gh *)"
     ],
     "deny": [
       "Bash(npx prisma migrate reset*)",
       "Bash(npx prisma db push*)",
       "Bash(prisma migrate reset*)",
-      "Bash(prisma db push*)"
+      "Bash(prisma db push*)",
+      "Bash(pnpm *prisma migrate reset*)",
+      "Bash(pnpm *prisma db push*)"
     ]
   },
   "hooks": {

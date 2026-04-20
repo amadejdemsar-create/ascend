@@ -70,7 +70,7 @@ Every list, grid, table, and panel has three states: loading, populated, and emp
 
 **Read the component source** and search for empty state rendering:
 ```bash
-grep -rn "empty\|no items\|nothing\|get started\|No " /Users/Shared/Domain/Code/Personal/ascend/components/ --include="*.tsx" | head -30
+grep -rn "empty\|no items\|nothing\|get started\|No " /Users/Shared/Domain/Code/Personal/ascend/apps/web/components/ --include="*.tsx" | head -30
 ```
 
 **FAIL criteria:** empty state is a blank div, a raw "No items" string, or missing entirely (the component renders nothing when the list is empty).
@@ -94,7 +94,7 @@ Every mutation can fail. The error state must be human, not technical.
 
 **Search for error handling in components:**
 ```bash
-grep -rn "toast\.error\|error.*message\|Error\|catch" /Users/Shared/Domain/Code/Personal/ascend/components/ --include="*.tsx" | head -30
+grep -rn "toast\.error\|error.*message\|Error\|catch" /Users/Shared/Domain/Code/Personal/ascend/apps/web/components/ --include="*.tsx" | head -30
 ```
 
 **FAIL criteria:** error messages are technical ("An error occurred", "Request failed with status 400", Zod error objects rendered as `[object Object]`, or no error handling at all (mutation fails silently).
@@ -113,10 +113,10 @@ World-class apps are keyboard-first. Check:
 
 **Where to check:**
 ```bash
-grep -rn "useKeyboardShortcut\|onKeyDown\|keydown\|hotkey\|shortcut" /Users/Shared/Domain/Code/Personal/ascend/components/ /Users/Shared/Domain/Code/Personal/ascend/lib/hooks/ --include="*.ts" --include="*.tsx" | head -20
+grep -rn "useKeyboardShortcut\|onKeyDown\|keydown\|hotkey\|shortcut" /Users/Shared/Domain/Code/Personal/ascend/apps/web/components/ /Users/Shared/Domain/Code/Personal/ascend/apps/web/lib/hooks/ --include="*.ts" --include="*.tsx" | head -20
 ```
 
-Read `/Users/Shared/Domain/Code/Personal/ascend/lib/hooks/use-keyboard-shortcuts.ts` (if it exists) for the shortcut definitions.
+Read `/Users/Shared/Domain/Code/Personal/ascend/apps/web/lib/hooks/use-keyboard-shortcuts.ts` (if it exists) for the shortcut definitions.
 
 **FAIL criteria:** no keyboard shortcuts beyond browser defaults, or shortcuts are defined but broken (documented in a previous `ax:verify-ui` report as FAIL).
 
@@ -126,7 +126,7 @@ Skeletons must match the final dimensions of the content they replace. When data
 
 **Check for skeleton usage:**
 ```bash
-grep -rn "Skeleton" /Users/Shared/Domain/Code/Personal/ascend/components/ --include="*.tsx" | head -20
+grep -rn "Skeleton" /Users/Shared/Domain/Code/Personal/ascend/apps/web/components/ --include="*.tsx" | head -20
 ```
 
 **FAIL criteria:** spinners instead of skeletons, or skeletons with different dimensions than the final content (e.g., a 20px skeleton replacing a 200px widget causes a jump when data loads).
@@ -150,7 +150,7 @@ Local actions (toggle, select, filter, sort) must feel instant. Mutations should
 
 **Check for optimistic update patterns:**
 ```bash
-grep -rn "onMutate\|optimistic" /Users/Shared/Domain/Code/Personal/ascend/lib/hooks/ --include="*.ts" | head -10
+grep -rn "onMutate\|optimistic" /Users/Shared/Domain/Code/Personal/ascend/apps/web/lib/hooks/ --include="*.ts" | head -10
 ```
 
 **Check for perceived slowness:**
@@ -168,7 +168,7 @@ Achievement moments (completing a goal, leveling up, hitting a streak milestone)
 
 **Check for delight elements:**
 ```bash
-grep -rn "confetti\|celebrate\|achievement\|level.*up\|streak\|animation\|motion" /Users/Shared/Domain/Code/Personal/ascend/components/ /Users/Shared/Domain/Code/Personal/ascend/lib/ --include="*.ts" --include="*.tsx" | head -15
+grep -rn "confetti\|celebrate\|achievement\|level.*up\|streak\|animation\|motion" /Users/Shared/Domain/Code/Personal/ascend/apps/web/components/ /Users/Shared/Domain/Code/Personal/ascend/apps/web/lib/ --include="*.ts" --include="*.tsx" | head -15
 ```
 
 **FAIL criteria:** completing a yearly goal shows the same toast as creating a quick note. No differentiation of significance.
@@ -181,7 +181,7 @@ Read every user-facing string in the app. Does it sound like a person talking, o
 
 **Bad copy patterns to grep for:**
 ```bash
-grep -rn "An error occurred\|Something went wrong\|Please try again\|Failed to\|Unable to\|Invalid input\|Operation completed\|Successfully" /Users/Shared/Domain/Code/Personal/ascend/components/ --include="*.tsx" | head -20
+grep -rn "An error occurred\|Something went wrong\|Please try again\|Failed to\|Unable to\|Invalid input\|Operation completed\|Successfully" /Users/Shared/Domain/Code/Personal/ascend/apps/web/components/ --include="*.tsx" | head -20
 ```
 
 **FAIL criteria:** generic error messages ("An error occurred"), passive voice ("The item was deleted"), or technical jargon in user-facing text ("Mutation failed", "Query invalidated").
@@ -207,7 +207,7 @@ The user must always be able to recover, undo, escape, or navigate away.
 - Error state with no retry or dismiss
 
 ```bash
-grep -rn "AlertDialog\|confirm\|undo\|Undo" /Users/Shared/Domain/Code/Personal/ascend/components/ --include="*.tsx" | head -15
+grep -rn "AlertDialog\|confirm\|undo\|Undo" /Users/Shared/Domain/Code/Personal/ascend/apps/web/components/ --include="*.tsx" | head -15
 ```
 
 **FAIL criteria:** any one-way trap. Example: deleting a goal with no confirmation dialog. Or: completing a todo with no way to uncomplete.

@@ -50,7 +50,7 @@ cd /Users/Shared/Domain/Code/Personal/ascend && git fetch origin main && git sta
 ### Check 4: Production build passes
 
 ```bash
-cd /Users/Shared/Domain/Code/Personal/ascend && npm run build
+cd /Users/Shared/Domain/Code/Personal/ascend && pnpm build
 ```
 
 Use a long timeout (at least 180000ms). This is the same build Dokploy runs on the VPS. If it fails locally, it will fail in production.
@@ -80,7 +80,7 @@ Parse the output. If there are drift or pending migrations, STOP. Tell the user 
 b) Is the `search_vector` tsvector migration present?
 
 ```bash
-cd /Users/Shared/Domain/Code/Personal/ascend && ls prisma/migrations/ | grep -i search
+cd /Users/Shared/Domain/Code/Personal/ascend && ls apps/web/prisma/migrations/ | grep -i search
 ```
 
 Should exist. If missing, flag as a critical warning (the full-text search on context entries depends on it).

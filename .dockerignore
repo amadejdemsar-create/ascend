@@ -2,6 +2,8 @@
 .next
 node_modules
 .planning
+.ascendflow
+.claude
 .env
 .env.local
 .env.production

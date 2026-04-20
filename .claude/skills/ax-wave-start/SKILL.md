@@ -141,7 +141,7 @@ cat "${WAVE_DIR}TASKS.md"
 
 ```bash
 cd /Users/Shared/Domain/Code/Personal/ascend && npx tsc --noEmit 2>&1 | tail -5
-cd /Users/Shared/Domain/Code/Personal/ascend && npm run build 2>&1 | tail -10
+cd /Users/Shared/Domain/Code/Personal/ascend && pnpm build 2>&1 | tail -10
 ```
 
 **If TypeScript fails:** STOP. "Baseline TypeScript check has errors. Fix before starting Wave N."

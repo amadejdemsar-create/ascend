@@ -16,13 +16,13 @@ The global `Execution Quality Bar (Mandatory)` in `~/.claude/CLAUDE.md` and the 
 
 Before auditing or building ANY UI, read the canonical reference components so you know what "good" looks like in Ascend. These are the calibration points:
 
-- `/Users/Shared/Domain/Code/Personal/ascend/components/goals/goal-detail.tsx` — the detail panel gold standard: click-to-edit, SMART fields, progress, delete dialog, separators, badges
-- `/Users/Shared/Domain/Code/Personal/ascend/components/todos/todo-detail.tsx` — todo detail with completion reversibility, recurring metadata, streak
-- `/Users/Shared/Domain/Code/Personal/ascend/components/goals/goal-filter-bar.tsx` — the filter bar wired to `useUIStore`, with reset button and active count badge
-- `/Users/Shared/Domain/Code/Personal/ascend/components/goals/quick-add.tsx` — the inline creation pattern with toast, disabled state, clear on success
-- `/Users/Shared/Domain/Code/Personal/ascend/components/calendar/calendar-day-detail.tsx` — the polished calendar day view, two-panel on desktop and sheet on mobile
-- `/Users/Shared/Domain/Code/Personal/ascend/components/dashboard/dashboard-page.tsx` — the widget container pattern with skeletons and empty states
-- `/Users/Shared/Domain/Code/Personal/ascend/components/context/context-entry-detail.tsx` — markdown detail with wikilinks and tags
+- `/Users/Shared/Domain/Code/Personal/ascend/apps/web/components/goals/goal-detail.tsx` — the detail panel gold standard: click-to-edit, SMART fields, progress, delete dialog, separators, badges
+- `/Users/Shared/Domain/Code/Personal/ascend/apps/web/components/todos/todo-detail.tsx` — todo detail with completion reversibility, recurring metadata, streak
+- `/Users/Shared/Domain/Code/Personal/ascend/apps/web/components/goals/goal-filter-bar.tsx` — the filter bar wired to `useUIStore`, with reset button and active count badge
+- `/Users/Shared/Domain/Code/Personal/ascend/apps/web/components/goals/quick-add.tsx` — the inline creation pattern with toast, disabled state, clear on success
+- `/Users/Shared/Domain/Code/Personal/ascend/apps/web/components/calendar/calendar-day-detail.tsx` — the polished calendar day view, two-panel on desktop and sheet on mobile
+- `/Users/Shared/Domain/Code/Personal/ascend/apps/web/components/dashboard/dashboard-page.tsx` — the widget container pattern with skeletons and empty states
+- `/Users/Shared/Domain/Code/Personal/ascend/apps/web/components/context/context-entry-detail.tsx` — markdown detail with wikilinks and tags
 
 Any new detail panel, filter bar, or list view that does not match these patterns is wrong unless there is an explicit documented reason.
 
