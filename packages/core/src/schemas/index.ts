@@ -1,19 +1,9 @@
-/**
- * Barrel re-export from @ascend/core.
- *
- * All Zod schemas, enum schemas, and inferred types now live in the
- * platform-agnostic @ascend/core package. This file preserves the
- * existing import surface (`from "@/lib/validations"`) so that no
- * consumers need to be rewritten.
- */
+// Goal schemas and types
 export {
-  // Enum schemas
   horizonEnum,
   statusEnum,
   priorityEnum,
   recurringFrequencyEnum,
-  todoStatusEnum,
-  // Goal schemas and types
   createGoalSchema,
   updateGoalSchema,
   goalFiltersSchema,
@@ -24,7 +14,11 @@ export {
   type GoalFilters,
   type AddProgressInput,
   type ReorderGoalsInput,
-  // Todo schemas and types
+} from "./goal-schemas";
+
+// Todo schemas and types
+export {
+  todoStatusEnum,
   createTodoSchema,
   updateTodoSchema,
   todoFiltersSchema,
@@ -37,12 +31,10 @@ export {
   type BulkCompleteTodosInput,
   type SetBig3Input,
   type ReorderTodosInput,
-  // Category schemas and types
-  createCategorySchema,
-  updateCategorySchema,
-  type CreateCategoryInput,
-  type UpdateCategoryInput,
-  // Context schemas and types
+} from "./todo-schemas";
+
+// Context schemas and types
+export {
   createContextSchema,
   updateContextSchema,
   contextFiltersSchema,
@@ -50,7 +42,18 @@ export {
   type CreateContextInput,
   type UpdateContextInput,
   type ContextFilters,
-  // Shared schemas and types
+} from "./context-schemas";
+
+// Category schemas and types
+export {
+  createCategorySchema,
+  updateCategorySchema,
+  type CreateCategoryInput,
+  type UpdateCategoryInput,
+} from "./category-schemas";
+
+// Shared schemas and types
+export {
   dateQuerySchema,
   dateRangeQuerySchema,
   importDataSchema,
@@ -69,4 +72,4 @@ export {
   type CreateFocusSessionInput,
   focusSessionFiltersSchema,
   type FocusSessionFilters,
-} from "@ascend/core";
+} from "./shared-schemas";

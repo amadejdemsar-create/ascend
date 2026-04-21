@@ -8,11 +8,11 @@
  */
 
 import {
-  GoalStatus,
-  Horizon,
-  Priority,
-  TodoStatus,
-} from "../../generated/prisma/enums";
+  HORIZON_ENUM,
+  STATUS_ENUM,
+  PRIORITY_ENUM,
+  TODO_STATUS_ENUM,
+} from "@ascend/core";
 
 export interface ToolDefinition {
   name: string;
@@ -23,16 +23,6 @@ export interface ToolDefinition {
     required?: string[];
   };
 }
-
-// Plain string arrays derived from the Prisma-generated enums. The MCP
-// SDK wants raw JSON Schema, not Zod, so we can't import horizonEnum
-// from lib/validations.ts directly — but both files draw from the same
-// generated/prisma/enums source of truth, so schema.prisma is the
-// single place to add a new enum value.
-const HORIZON_ENUM = Object.values(Horizon);
-const STATUS_ENUM = Object.values(GoalStatus);
-const PRIORITY_ENUM = Object.values(Priority);
-const TODO_STATUS_ENUM = Object.values(TodoStatus);
 
 export const TOOL_DEFINITIONS: ToolDefinition[] = [
   // ── Goal CRUD ──────────────────────────────────────────────────────

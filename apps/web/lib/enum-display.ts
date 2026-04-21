@@ -22,7 +22,7 @@ import {
   Priority,
   RecurringFrequency,
   TodoStatus,
-} from "../generated/prisma/enums";
+} from "@ascend/core";
 
 // ---- Labels ------------------------------------------------------
 
