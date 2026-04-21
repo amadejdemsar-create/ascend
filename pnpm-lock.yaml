@@ -10,6 +10,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@ascend/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
       '@ascend/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -167,6 +170,12 @@ importers:
       vitest:
         specifier: ^4.1.4
         version: 4.1.4(@types/node@20.19.39)(@vitest/ui@4.1.4)(msw@2.13.4(@types/node@20.19.39)(typescript@5.9.3))(vite@8.0.9(@types/node@20.19.39)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0))
+
+  packages/api-client:
+    devDependencies:
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/core:
     dependencies:
