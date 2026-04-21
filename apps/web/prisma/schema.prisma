@@ -44,6 +44,12 @@ enum TodoStatus {
   SKIPPED
 }
 
+enum FileStatus {
+  PENDING
+  UPLOADED
+  FAILED
+}
+
 // Models
 
 model User {
@@ -55,6 +61,9 @@ model User {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
+  // Wave 0: workspace scaffolding (nullable until Wave 8 backfill)
+  workspaceId String?
+
   goals          Goal[]
   categories     Category[]
   todos          Todo[]
@@ -62,6 +71,8 @@ model User {
   stats          UserStats?
   xpEvents       XpEvent[]
   focusSessions  FocusSession[]
+  files          File[]
+  sessions       Session[]
 }
 
 model Goal {
@@ -117,6 +128,9 @@ model Goal {
   longestStreak         Int                 @default(0)
   lastCompletedInstance DateTime?
 
+  // Wave 0: workspace scaffolding (nullable until Wave 8 backfill)
+  workspaceId String?
+
   // Relations
   progressLogs  ProgressLog[]
   todos         Todo[]
@@ -151,6 +165,9 @@ model Category {
 
   // Ordering
   sortOrder Int @default(0)
+
+  // Wave 0: workspace scaffolding (nullable until Wave 8 backfill)
+  workspaceId String?
 
   // Relations
   goals          Goal[]
@@ -283,6 +300,9 @@ model Todo {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Wave 0: workspace scaffolding (nullable until Wave 8 backfill)
+  workspaceId String?
+
   // Relations
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   xpEvents      XpEvent[]
@@ -338,6 +358,9 @@ model ContextEntry {
   // Bidirectional resolution happens at query time (find entries linking to me)
   linkedEntryIds String[] @default([])
 
+  // Wave 0: workspace scaffolding (nullable until Wave 8 backfill)
+  workspaceId String?
+
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -350,4 +373,56 @@ model ContextEntry {
   @@index([categoryId])
   @@index([userId, title])
   @@index([userId, isPinned])
+}
+
+model File {
+  id         String     @id @default(cuid())
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Storage
+  storageKey String     // S3/R2 key, e.g., "users/<userId>/<uuid>.pdf"
+  bucket     String     @default("ascend-files")
+  mimeType   String
+  sizeBytes  BigInt
+
+  // Identity
+  filename   String
+  sha256     String?    // Content hash for deduplication (v1+)
+
+  // Lifecycle
+  uploadedAt DateTime?
+  status     FileStatus @default(PENDING)
+
+  // Wave 0: workspace scaffolding (nullable until Wave 8 backfill)
+  workspaceId String?
+
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([userId, status])
+  @@index([sha256])
+}
+
+model Session {
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Refresh token family (for rotation + reuse detection)
+  familyId         String
+  refreshTokenHash String    @unique  // SHA-256 of current refresh token
+  expiresAt        DateTime
+  revokedAt        DateTime?
+
+  // Client metadata
+  userAgent        String?
+  ipAddress        String?
+  deviceName       String?
+
+  createdAt        DateTime  @default(now())
+  lastUsedAt       DateTime  @default(now())
+
+  @@index([userId])
+  @@index([familyId])
 }
