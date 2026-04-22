@@ -2,7 +2,25 @@
 
 Deferred features and initiatives that have been explicitly scoped but not yet implemented. When you want to pick one up, run `/ax:plan <slug>` to create a full PRD + TASKS.md.
 
-Last updated: 15. 4. 2026
+Last updated: 22. 4. 2026
+
+---
+
+## Wave 0 (Platform Foundation) — SHIPPED 22. 4. 2026
+
+The monorepo conversion + shared packages + token auth + presigned upload scaffolding + Lexical spike shipped as 10 commits (3339d4e → 3bda502 → close commit). PRD at `.ascendflow/features/context-v2/wave-0-platform-foundation/PRD.md`. Close-out at `.ascendflow/features/context-v2/wave-0-platform-foundation/CLOSE-OUT.md`.
+
+**DZ-5 resolved.** The duplicated `fetchJson` helper that lived in `use-goals.ts`, `use-todos.ts`, `use-context.ts`, `use-categories.ts`, and `use-dashboard.ts` is collapsed into `@ascend/api-client`. The danger zone is retired from the active list; it is retained in `CLAUDE.md` as historical context only.
+
+## Wave 0 → Wave 8+ carry-overs (tracked here until picked up)
+
+- **Orphan file upload rows.** `apps/web/lib/services/file-service.ts` creates a PENDING `File` row on every `/api/files/presign` call. If the client never uploads, the row persists forever. Wave 8 should add a cron job that deletes PENDING rows older than 24 hours and reconciles R2 objects against the DB.
+- **Per-user file storage quota.** Phase 7 enforces per-file size (100 MiB) and MIME allowlist, but no aggregate quota per user. Wave 8 multi-tenant should add a quota.
+- **Rate limiting on `/api/files/*` and other write routes.** Phase 6 added login rate limiting only. Wave 8 should add broader rate limiting per authenticated user.
+- **SVG XSS gating for file-serving endpoint.** Phase 7 kept `image/svg+xml` in the upload allowlist with a documented gating requirement: when a file-serving endpoint is built, it MUST either drop SVG, sanitize server-side, or serve with `Content-Disposition: attachment` + `X-Content-Type-Options: nosniff`. See comment in `packages/core/src/schemas/files.ts`.
+- **Distributed login rate limiter (Redis).** The in-process `Map` in `authService` works for single-node. Multi-node deployments need Redis. Interface is already Redis-ready; swap when the deployment topology changes.
+- **Cookie options shared constant.** `apps/web/middleware.ts` duplicates `buildClearCookieOptions()` because the edge runtime can't import Node's `crypto`. Extract to a shared edge-safe constant in `@ascend/core` in a future cleanup pass so the two locations can't drift.
+- **Migrate remaining bare `fetch()` in `apps/web/lib/hooks/use-dashboard.ts`.** Two fire-and-forget recurring-generation triggers still bypass the 401 interceptor. Low risk, but worth migrating to `apiFetch` in a future cleanup pass.
 
 ---
 

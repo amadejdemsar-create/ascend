@@ -19,12 +19,12 @@ npx prisma studio    # Visual database browser
 
 ## Safety Rules
 
-1. **NEVER modify data without userId check.** Every Prisma query in services MUST include `userId` in the `where` clause. The schema is multi-tenant; skipping this leaks data across users.
-2. **NEVER skip Zod validation in API routes.** Every POST/PUT/PATCH body MUST be parsed through a schema from `lib/validations.ts` before reaching the service layer.
+1. **NEVER modify data without userId check.** Every Prisma query in services MUST include `userId` in the `where` clause (or be scoped by an unguessable internal secret like `refreshTokenHash` / `familyId` UUID, with justification in a code comment). The schema is multi-tenant; skipping this leaks data across users.
+2. **NEVER skip Zod validation in API routes.** Every POST/PUT/PATCH body MUST be parsed through a schema from `apps/web/lib/validations.ts` (which re-exports from `@ascend/core`) before reaching the service layer.
 3. **ALWAYS invalidate React Query cache after mutations.** Use `queryClient.invalidateQueries({ queryKey: queryKeys.<domain>.all() })`. Cross-domain invalidation is required when one mutation affects another domain (todo completion must invalidate `queryKeys.goals.all()` and `queryKeys.dashboard()`).
-4. **ALWAYS use the service layer.** Never import `prisma` directly in API routes or components. All database access goes through `lib/services/`.
-5. **ALWAYS run `npm run build` before pushing.** The build catches TypeScript errors that `npm run dev` does not surface.
-6. **NEVER run `prisma db push` or `prisma migrate reset`.** The `search_vector` tsvector column on ContextEntry was added via raw SQL migration and is invisible to Prisma. Schema-first operations will drop it and break full-text search.
+4. **ALWAYS use the service layer.** Never import `@/lib/db` or `@prisma/client` directly in API routes, middleware, components, hooks, or scripts. All database access goes through `apps/web/lib/services/`.
+5. **ALWAYS run `pnpm --filter @ascend/web build` before pushing.** The build catches TypeScript errors that `pnpm dev` does not surface.
+6. **NEVER run `prisma db push` or `prisma migrate reset`.** The `search_vector` tsvector column on ContextEntry was added via raw SQL migration and is invisible to Prisma. Schema-first operations will drop it and break full-text search. Wave 0 Phase 6 hand-wrote a migration and applied via `prisma migrate deploy` because `prisma migrate dev --create-only` attempted to DROP `search_vector`. When adding any future migration, either hand-write it or verify the generated SQL does not reference `search_vector` before applying.
 
 ## Execution Quality Bar (Ascend)
 
@@ -120,26 +120,43 @@ Before declaring any feature or fix complete, re-list every task from the `TASKS
 
 ## Architecture
 
-**Current scope:** single Next.js codebase. The 10-wave Context v2 roadmap (see `.ascendflow/features/context-v2/VISION.md`) includes a Wave 0 monorepo conversion that will split the codebase into `apps/web`, `apps/mobile` (Expo), `apps/desktop` (Tauri), and shared packages under `packages/*` (core, api-client, storage, ui-tokens, graph, editor, llm, sync). Until that conversion is done, all file paths below reference the current flat structure.
+**Current scope:** pnpm monorepo shipped in Wave 0. The web app lives at `apps/web/`; shared packages live under `packages/*`. Future waves add `apps/mobile` (Expo) in Wave 6 and `apps/desktop` (Tauri) in Wave 9+. The 10-wave Context v2 roadmap is at `.ascendflow/features/context-v2/VISION.md`.
 
-### Service Layer (`lib/services/`)
-All business logic. Const objects with async methods. `userId` is always the first parameter. Services call Prisma directly. 12 service modules: goal, todo, context, category, dashboard, gamification, export, import, recurring, todo-recurring, hierarchy-helpers, export-helpers.
+### Shared packages (`packages/*`)
 
-### API Routes (`app/api/`)
-Thin wrappers: authenticate via `validateApiKey()`, parse input with Zod, call service, return `NextResponse.json()`. Error handling via `handleApiError()` from `lib/auth.ts`.
+- **`@ascend/core`**: Zod schemas, enums, constants. Pure TypeScript + Zod, platform-agnostic. Re-exported to `apps/web/lib/validations.ts` for web consumption.
+- **`@ascend/api-client`**: platform-agnostic HTTP client with `createApiClient({ baseUrl, getAuthHeaders, fetch? })` factory. Uses `globalThis.fetch`. Throws `ApiError` on non-2xx. The web wrapper at `apps/web/lib/api-client.ts` adds cookie-based auth + offline guard + 401 refresh-and-retry interceptor.
+- **`@ascend/storage`**: `StorageAdapter` interface + `webStorageAdapter` (localStorage-backed, SSR-safe). Used by Zustand stores so native and desktop apps can swap implementations.
+- **`@ascend/ui-tokens`**: raw colors, spacing, typography, and radii tokens. No Tailwind dependency. `apps/web/tailwind.config.ts` imports from here.
 
-### React Query Hooks (`lib/hooks/`)
-One hook file per domain. `useQuery` for reads, `useMutation` for writes with `onSuccess` cache invalidation. Query key factory in `lib/queries/keys.ts`. Cache config in `lib/offline/cache-config.ts`.
+### Service Layer (`apps/web/lib/services/`)
+All business logic. Const objects with async methods. `userId` is always the first parameter. Services call Prisma directly. Modules: goal, todo, context, category, dashboard, gamification, export, import, recurring, todo-recurring, hierarchy-helpers, export-helpers, **auth (Phase 6)**, **file (Phase 7)**, user.
 
-### MCP Server (`lib/mcp/`)
-37 tools across 8 handler files. Schemas in `lib/mcp/schemas.ts` as raw JSON Schema (not Zod) for SDK compatibility. Handlers in `lib/mcp/tools/` call the service layer. Routing in `lib/mcp/server.ts` uses Set-based name matching to dispatch to handlers. Transport: Streamable HTTP at `/api/mcp`.
+### API Routes (`apps/web/app/api/`)
+Thin wrappers: authenticate via `authenticate()` (3-path resolver: cookie JWT, Bearer JWT, Bearer API key; `validateApiKey` is a backward-compat alias), parse input with Zod, call service, return `NextResponse.json()`. Error handling via `handleApiError()` from `apps/web/lib/auth.ts`.
+
+### React Query Hooks (`apps/web/lib/hooks/`)
+One hook file per domain. `useQuery` for reads, `useMutation` for writes with `onSuccess` cache invalidation. Query key factory in `apps/web/lib/queries/keys.ts`. Cache config in `apps/web/lib/offline/cache-config.ts`. All fetches go through `apiFetch` from `apps/web/lib/api-client.ts`.
+
+### MCP Server (`apps/web/lib/mcp/`)
+37+ tools across handler files. Schemas in `apps/web/lib/mcp/schemas.ts` as raw JSON Schema (not Zod) for SDK compatibility. Handlers in `apps/web/lib/mcp/tools/` call the service layer. Routing in `apps/web/lib/mcp/server.ts` uses Set-based name matching to dispatch to handlers. Transport: Streamable HTTP at `/api/mcp`. Authenticated via API key through `authenticate()` — the API key path of the three.
+
+### Auth (Phase 6 shipped in Wave 0)
+- `apps/web/lib/services/auth-service.ts` owns scrypt password hashing, JWT signing/verification via `jose`, 256-bit opaque refresh tokens, `Session` rotation with reuse detection, in-process login rate limiter, cookie builders.
+- `apps/web/app/api/auth/login`, `/refresh`, `/logout`, `/me` are the HTTP surface.
+- `apps/web/middleware.ts` gates HTML page requests with edge `jose.jwtVerify`, redirects to `/login?redirect=<path>` on missing or invalid cookie.
+- `apps/web/app/(auth)/login/page.tsx` is the minimal login form.
+- Seed script `apps/web/scripts/set-password.ts` sets the password for a user by email (CLI only, no HTTP route).
+
+### File storage (Phase 7 shipped in Wave 0)
+- `apps/web/lib/services/file-service.ts` + `apps/web/app/api/files/presign` and `/confirm` provide presigned-URL uploads to R2. Env: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`. 100 MiB size cap, MIME allowlist, 15-min URL expiry. No UI consumer yet (scaffolding only).
 
 ### State Management
 Server state: React Query (all data fetching and caching).
-UI state: Zustand store at `lib/stores/ui-store.ts` (sidebar, active view, filters, sorting, timeline zoom, modal state). Persisted to localStorage with version migration.
+UI state: Zustand store at `apps/web/lib/stores/ui-store.ts` (sidebar, active view, filters, sorting, timeline zoom, modal state). Persisted via `@ascend/storage` adapter (never direct localStorage in Wave 0+).
 
 ### Two-Panel Layout
-`app/(app)/layout.tsx` wraps all authenticated pages with sidebar + main content. `components/layout/app-sidebar.tsx` renders nav links and category tree. Mobile: bottom tab bar + drawer.
+`apps/web/app/(app)/layout.tsx` wraps all authenticated pages with sidebar + main content. `apps/web/components/layout/app-sidebar.tsx` renders nav links, category tree, and the logout button. Mobile: bottom tab bar + drawer. `SessionExpiredListener` mounted inside the layout clears React Query cache when the 401 interceptor fires `ascend:session-expired`.
 
 ## Entity Model
 
@@ -170,18 +187,27 @@ Board/Kanban view components exist (`goal-board-*.tsx`) but are dead code; remov
 
 | Need to... | File |
 |------------|------|
-| Change auth | `lib/auth.ts` |
-| Add/modify Prisma model | `prisma/schema.prisma` |
-| Add validation schema | `lib/validations.ts` |
-| Add React Query key | `lib/queries/keys.ts` |
-| Change cache timing | `lib/offline/cache-config.ts` |
-| Modify UI state | `lib/stores/ui-store.ts` |
-| Add nav item | `components/layout/nav-config.ts` |
-| Add MCP tool schema | `lib/mcp/schemas.ts` |
-| Route MCP tool | `lib/mcp/server.ts` |
-| Change XP/level constants | `lib/constants.ts` |
-| Filter goal trees | `lib/tree-filter.ts` |
-| Timeline date math | `lib/timeline-utils.ts` |
+| Change auth (3-path `authenticate`) | `apps/web/lib/auth.ts` |
+| Auth service internals (scrypt, JWT, sessions) | `apps/web/lib/services/auth-service.ts` |
+| Add/modify Prisma model | `apps/web/prisma/schema.prisma` |
+| Add validation schema (re-export) | `apps/web/lib/validations.ts` |
+| Add shared Zod schema (authoritative) | `packages/core/src/schemas/<domain>.ts` |
+| Add React Query key | `apps/web/lib/queries/keys.ts` |
+| Change cache timing | `apps/web/lib/offline/cache-config.ts` |
+| Modify UI state | `apps/web/lib/stores/ui-store.ts` |
+| Change middleware (auth redirect gate) | `apps/web/middleware.ts` |
+| Change web HTTP client | `apps/web/lib/api-client.ts` |
+| Change shared HTTP client primitive | `packages/api-client/src/client.ts` |
+| Change storage adapter | `packages/storage/src/web.ts` (web impl) |
+| Change design tokens | `packages/ui-tokens/src/{colors,spacing,typography,radii}.ts` |
+| Add nav item | `apps/web/components/layout/nav-config.ts` |
+| Add MCP tool schema | `apps/web/lib/mcp/schemas.ts` |
+| Route MCP tool | `apps/web/lib/mcp/server.ts` |
+| Change XP/level constants | `apps/web/lib/constants.ts` |
+| Filter goal trees | `apps/web/lib/tree-filter.ts` |
+| Timeline date math | `apps/web/lib/timeline-utils.ts` |
+| Seed or reset a user's password | `apps/web/scripts/set-password.ts` (CLI only) |
+| Add/change file upload routes | `apps/web/app/api/files/{presign,confirm}/route.ts` + `apps/web/lib/services/file-service.ts` |
 
 ## Cross-Platform Rules (Wave 0+)
 
