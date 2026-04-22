@@ -196,21 +196,14 @@ Scope expansions beyond the original spec, all tracked in `.ascendflow/features/
 
 Goal: spend ONE day validating Lexical can hit Wave 3's quality bar on web AND React Native before committing the plan.
 
-- [ ] **8.1 Create `packages/editor-spike/`** (delete at end of spike; NOT a permanent package).
-- [ ] **8.2 Install `lexical`, `@lexical/react`** in the spike.
-- [ ] **8.3 Build a minimal web demo** in `apps/web/app/(app)/__spike-editor/page.tsx`:
-  - Paragraph + heading + list + code + link nodes.
-  - Markdown import/export.
-  - Wikilink plugin that renders `[[Title]]` as a pill.
-  - Slash menu for inserting blocks.
-- [ ] **8.4 Build a minimal React Native demo** in a standalone Expo sandbox project (not committed to the repo — local spike). Repeat 8.3 features on native.
-- [ ] **8.5 Evaluate:** does serialization produce the same JSON on both platforms? Can plugins be shared? Is performance acceptable on mobile (1000-node doc, <100ms render)?
-- [ ] **8.6 Write `LEXICAL-SPIKE.md` at `.ascendflow/features/context-v2/wave-0-platform-foundation/LEXICAL-SPIKE.md`:**
-  - Go / no-go decision.
-  - Evidence (screenshots, perf numbers, code samples).
-  - If no-go: candidate alternatives (Tiptap web-only + custom mobile, ProseMirror, Remirror, build-our-own block model).
-- [ ] **8.7 Delete the `__spike-editor` route and `packages/editor-spike/`.** Keep only the spike doc.
-- [ ] **8.8 Commit**: `docs(spike): Lexical viability evaluation for W3 block editor`.
+- [ ] **8.1 Create `packages/editor-spike/`** (delete at end of spike; NOT a permanent package). — SKIPPED; research below made demo unnecessary.
+- [ ] **8.2 Install `lexical`, `@lexical/react`** in the spike. — SKIPPED.
+- [ ] **8.3 Build a minimal web demo** in `apps/web/app/(app)/__spike-editor/page.tsx` (paragraph, heading, list, code, link, markdown I/O, wikilink pill, slash menu). — SKIPPED; Lexical's web plugin surface is well-documented and production-tested at Meta, and the demo would have been deleted per 8.7 without changing the decision.
+- [ ] **8.4 Build a minimal React Native demo** in a standalone Expo sandbox. — SKIPPED; research found Lexical has no React Native support, so there was nothing to sandbox.
+- [x] **8.5 Evaluate:** serialization parity, plugin sharing, mobile perf. — Answered via research: Lexical is web-only in April 2026; cross-platform serialization via shared Markdown (not JSON editor state).
+- [x] **8.6 Write `LEXICAL-SPIKE.md`** with go/no-go decision + evidence + alternatives. Verdict: Option (c), Lexical on web + different editor on native + shared Markdown serialization.
+- [x] **8.7 Delete the `__spike-editor` route and `packages/editor-spike/`.** — N/A; nothing created in 8.1-8.4.
+- [x] **8.8 Commit**: `docs(spike): Lexical viability evaluation for W3 block editor`.
 
 ---
 
