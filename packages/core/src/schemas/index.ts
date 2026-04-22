@@ -83,3 +83,16 @@ export {
   focusSessionFiltersSchema,
   type FocusSessionFilters,
 } from "./shared-schemas";
+
+// File schemas and types
+export {
+  ALLOWED_MIME_TYPES_ARRAY,
+  ALLOWED_MIME_TYPES,
+  UPLOAD_MAX_BYTES,
+  PRESIGN_EXPIRES_SECONDS,
+  presignUploadSchema,
+  confirmUploadSchema,
+  type AllowedMimeType,
+  type PresignUploadInput,
+  type ConfirmUploadInput,
+} from "./files";

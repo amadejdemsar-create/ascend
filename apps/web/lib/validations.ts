@@ -76,4 +76,14 @@ export {
   type CreateFocusSessionInput,
   focusSessionFiltersSchema,
   type FocusSessionFilters,
+  // File schemas and types
+  ALLOWED_MIME_TYPES_ARRAY,
+  ALLOWED_MIME_TYPES,
+  UPLOAD_MAX_BYTES,
+  PRESIGN_EXPIRES_SECONDS,
+  presignUploadSchema,
+  confirmUploadSchema,
+  type AllowedMimeType,
+  type PresignUploadInput,
+  type ConfirmUploadInput,
 } from "@ascend/core";

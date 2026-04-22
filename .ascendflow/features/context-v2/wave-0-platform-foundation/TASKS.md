@@ -179,20 +179,16 @@ Scope expansions beyond the original spec, all tracked in `.ascendflow/features/
 
 ## Phase 7: Presigned-URL file upload scaffolding (Day 8)
 
-- [ ] **7.1 Choose R2 (Cloudflare) as initial backend.** Create bucket `ascend-files-dev` in Cloudflare dashboard. Generate S3-compatible access key + secret.
-- [ ] **7.2 Add env vars:** `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_URL`. Document in `.env.example`.
-- [ ] **7.3 Install AWS SDK v3:** `pnpm --filter @ascend/web add @aws-sdk/client-s3 @aws-sdk/s3-request-presigner`.
-- [ ] **7.4 Create `fileService` at `apps/web/lib/services/file-service.ts`:**
-  - `createPresignedUpload(userId, { filename, mimeType, sizeBytes })` → creates PENDING `File` row, returns `{ fileId, uploadUrl, storageKey, expiresAt }`. Uploads limited to 100MB and an allowed MIME set.
-  - `confirmUpload(userId, fileId, sha256)` → updates status to UPLOADED.
-  - `getFile(userId, id)` (for later waves).
-  - `deleteFile(userId, id)` (for later waves).
-- [ ] **7.5 Add Zod schemas:** `presignUploadSchema`, `confirmUploadSchema` to `@ascend/core`.
-- [ ] **7.6 Create `POST /api/files/presign`** following the api-route-patterns.md template (auth → parse → service → respond).
-- [ ] **7.7 Create `POST /api/files/confirm`** similarly.
-- [ ] **7.8 Manual test:** `curl` presign → get upload URL → `curl -X PUT --upload-file test.pdf "$URL"` → `curl` confirm → verify File row status=UPLOADED via Prisma Studio.
-- [ ] **7.9 `ax:review`** full pass on the new service + routes.
-- [ ] **7.10 Commit**: `feat(files): presigned-URL upload scaffolding with R2`.
+- [ ] **7.1 Choose R2 (Cloudflare) as initial backend.** Create bucket `ascend-files-dev` in Cloudflare dashboard. Generate S3-compatible access key + secret. — OPERATIONAL, user-side. Must run before 7.8 manual test can execute.
+- [x] **7.2 Add env vars:** `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_URL`. Document in `.env.example`.
+- [x] **7.3 Install AWS SDK v3:** `@aws-sdk/client-s3@^3.1034.0` + `@aws-sdk/s3-request-presigner@^3.1034.0`.
+- [x] **7.4 Create `fileService` at `apps/web/lib/services/file-service.ts`** — `createPresignedUpload`, `confirmUpload`, `getFile`, `deleteFile`, plus `serializeFile` helper (BigInt → number for JSON transport). Cap 100 MiB, MIME allowlist, `users/<userId>/<yyyy>/<mm>/<uuid>-<safe>` key format. R2 delete ordered before Prisma delete (documented).
+- [x] **7.5 Add Zod schemas:** `presignUploadSchema`, `confirmUploadSchema` plus `ALLOWED_MIME_TYPES_ARRAY` / `ALLOWED_MIME_TYPES` / `UPLOAD_MAX_BYTES` / `PRESIGN_EXPIRES_SECONDS` constants to `packages/core/src/schemas/files.ts`. SVG XSS risk documented with gating requirements for future serving endpoint.
+- [x] **7.6 Create `POST /api/files/presign`** — returns 201 on successful row creation.
+- [x] **7.7 Create `POST /api/files/confirm`** — returns 200 with serialized file (BigInt sizeBytes → number).
+- [ ] **7.8 Manual test:** `curl` presign → get upload URL → `curl -X PUT --upload-file test.pdf "$URL"` → `curl` confirm → verify File row status=UPLOADED via Prisma Studio. — DEFERRED until 7.1 is done (R2 bucket provisioned).
+- [x] **7.9 `ax:review`** full pass on the new service + routes. — Reviewer PASS after 201-status + BigInt fixes. Security PASS WITH NOTES (SVG XSS deferred gating; orphan cleanup, rate limiting, per-user quota flagged as Wave 8+ backlog).
+- [x] **7.10 Commit**: `feat(files): presigned-URL upload scaffolding with R2`.
 
 ---
 
