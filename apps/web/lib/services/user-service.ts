@@ -1,12 +1,14 @@
 import { prisma } from "@/lib/db";
 
 /**
- * User-level operations: API key lookup, onboarding, and admin counts.
+ * User-level operations: API key lookup, email lookup, password management,
+ * onboarding, and admin counts.
  *
- * Three of the methods here deliberately skip the userId-in-where-clause
- * rule because they either ARE the auth mechanism (findByApiKey) or they
- * already scope by userId as the primary key (markOnboardingComplete),
- * or they are admin-level counts for the health endpoint (countUsers).
+ * Several methods here deliberately skip the userId-in-where-clause rule
+ * because they either ARE the auth mechanism (findByApiKey, findByEmail,
+ * findById) or they already scope by userId as the primary key
+ * (markOnboardingComplete, setPassword), or they are admin-level counts
+ * for the health endpoint (countUsers).
  */
 export const userService = {
   /**
@@ -16,6 +18,35 @@ export const userService = {
    */
   async findByApiKey(apiKey: string) {
     return prisma.user.findUnique({ where: { apiKey } });
+  },
+
+  /**
+   * Look up a user by email. Used by the login flow; the email is the
+   * query input (already normalized by Zod), so there is no cross-tenant
+   * concern.
+   */
+  async findByEmail(email: string) {
+    return prisma.user.findUnique({ where: { email } });
+  },
+
+  /**
+   * Look up a user by primary key. Used by auth rotation (to fetch
+   * user.email for the new access token) and the /api/auth/me route.
+   */
+  async findById(userId: string) {
+    return prisma.user.findUnique({ where: { id: userId } });
+  },
+
+  /**
+   * Update the user's password hash. Used exclusively by the CLI seed
+   * script (scripts/set-password.ts). The userId is the primary key,
+   * so no additional scoping is needed.
+   */
+  async setPassword(userId: string, passwordHash: string) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
   },
 
   /**

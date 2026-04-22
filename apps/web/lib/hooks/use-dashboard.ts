@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queries/keys";
-import { apiFetch as fetchJson, apiHeaders as headers } from "@/lib/api-client";
+import { apiFetch as fetchJson } from "@/lib/api-client";
 import type { DashboardData } from "@/lib/services/dashboard-service";
 import type { AddProgressInput } from "@/lib/validations";
 
@@ -25,14 +25,17 @@ export function useDashboard() {
       recurringGenerated = true;
       // Fire and forget: generate recurring instances in the background.
       // Errors are swallowed so a missing endpoint does not disrupt
-      // the dashboard render.
+      // the dashboard render. Uses bare fetch with credentials: "include"
+      // so cookies handle auth (no API key needed in browser).
       fetch("/api/goals/recurring/generate", {
         method: "POST",
-        headers,
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
       }).catch(() => {});
       fetch("/api/todos/recurring/generate", {
         method: "POST",
-        headers,
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
       }).catch(() => {});
     }
   }, [query.data]);

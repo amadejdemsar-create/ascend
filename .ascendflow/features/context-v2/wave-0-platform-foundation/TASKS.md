@@ -148,33 +148,32 @@ Verification after Phase 1: `/ax:verify-ui` full pass. If any scenario fails, fi
 
 ### Decision spike
 
-- [ ] **6.1 Write 1-page decision doc at `.ascendflow/features/context-v2/wave-0-platform-foundation/AUTH-SPIKE.md`:** evaluate Better-Auth vs NextAuth v5 + custom JWT refresh on these criteria: ease of integration with Next.js 16 App Router, support for httpOnly cookies + refresh token rotation + reuse detection, support for React Native / Expo (must handle Bearer tokens from native clients in W6), community + docs, license.
-- [ ] **6.2 Pick one. Commit decision doc.**
+- [x] **6.1 Write 1-page decision doc at `.ascendflow/features/context-v2/wave-0-platform-foundation/AUTH-SPIKE.md`:** evaluate Better-Auth vs NextAuth v5 + custom JWT refresh on these criteria: ease of integration with Next.js 16 App Router, support for httpOnly cookies + refresh token rotation + reuse detection, support for React Native / Expo (must handle Bearer tokens from native clients in W6), community + docs, license.
+- [x] **6.2 Pick one. Commit decision doc.** — Neither library chosen; custom auth service selected. Closed at `8782bfc`.
 
-### Implementation (assumes NextAuth v5 + custom JWT path; adjust if spike chose Better-Auth)
+### Implementation (per AUTH-SPIKE verdict: custom auth service; detailed plan at `.ascendflow/features/wave-0-phase-6-auth/`)
 
-- [ ] **6.3 Add `authService` at `apps/web/lib/services/auth-service.ts`:** methods `createSession(userId, deviceName?)`, `rotateSession(currentRefreshTokenHash)`, `revokeSession(sessionId)`, `revokeFamily(familyId)`, `verifyAccessToken(token)`, `hashRefreshToken(rawToken)`. Uses Prisma `Session` model.
-- [ ] **6.4 Add password column to `User`:** migration `20260420_user_password` adds `passwordHash String?` (nullable for existing rows; backfill later when user first sets password). Add `email String @unique` constraint if not already unique.
-- [ ] **6.5 Add Zod schemas to `@ascend/core`:** `loginSchema`, `registerSchema`, `refreshSchema` (currently empty body — cookie-based).
-- [ ] **6.6 Implement `POST /api/auth/login` at `apps/web/app/api/auth/login/route.ts`:**
-  - Parse body with `loginSchema`.
-  - Verify password with `bcrypt.compare`.
-  - Call `authService.createSession`.
-  - Set `access_token` (JWT, 15 min) and `refresh_token` (random 256-bit hex, 30 days) as httpOnly Secure SameSite=Lax cookies.
-  - Return `{ user: { id, email, name } }` (200).
-- [ ] **6.7 Implement `POST /api/auth/refresh`:** reads `refresh_token` cookie, calls `authService.rotateSession`, sets new cookies. 401 on reuse detection (revokes family).
-- [ ] **6.8 Implement `POST /api/auth/logout`:** reads refresh cookie, calls `authService.revokeSession`, clears cookies.
-- [ ] **6.9 Upgrade `apps/web/lib/auth.ts` `validateApiKey`** to `authenticate(request)`:
-  - If `Authorization: Bearer <token>` header present → treat as API key (existing flow). Returns `{ success, userId }`.
-  - If `access_token` cookie present → verify JWT, return `{ success, userId }`.
-  - Neither present → `{ success: false }`.
-  - Keep `validateApiKey` as a thin alias exported for backward compatibility.
-- [ ] **6.10 Confirm MCP endpoint still works with API key:** `curl -H "Authorization: Bearer $ASCEND_API_KEY" https://localhost:3000/api/mcp ...` returns tool list.
-- [ ] **6.11 Add a minimal login page at `apps/web/app/(auth)/login/page.tsx`** — email + password + submit. Calls `/api/auth/login` via `@ascend/api-client`. Redirects to `/` on success. No design polish — Wave 8 covers the polish pass.
-- [ ] **6.12 Update middleware** (`apps/web/middleware.ts`): protected routes require either valid access token cookie OR valid API key header. Unauthenticated requests to `/` redirect to `/login`.
-- [ ] **6.13 Manual test:** log out → redirected to `/login` → submit credentials → redirected to `/` → reload, still signed in → wait 15 min (or force) → refresh succeeds silently → log out → redirected to `/login`.
-- [ ] **6.14 `ax:verify-ui` + `ax:review`** full pass.
-- [ ] **6.15 Commit**: `feat(auth): token-based auth with JWT access + rotating refresh tokens`.
+- [x] **6.3 Add `authService` at `apps/web/lib/services/auth-service.ts`:** methods `createSession`, `rotateSession`, `revokeSession`, `revokeFamily`, `verifyAccessToken`, `hashRefreshToken`, plus `hashPassword`/`verifyPassword` (scrypt), `signAccessToken` (jose/HS256), `checkLoginRateLimit`, cookie builders, `runDummyScryptForTimingSafety`. Uses Prisma `Session` model.
+- [x] **6.4 Add password column to `User`:** migration `20260422101222_add_user_password` adds `passwordHash String?` (nullable). `email @unique` was already present (no change needed).
+- [x] **6.5 Add Zod schemas to `@ascend/core`:** `loginSchema`, `registerSchema`, `refreshSchema`.
+- [x] **6.6 Implement `POST /api/auth/login`:** Parse body with `loginSchema`, scrypt-verify password (not bcrypt per AUTH-SPIKE), create session, set cookies, return user. Also: rate limit + timing-safe dummy scrypt on unknown email.
+- [x] **6.7 Implement `POST /api/auth/refresh`:** cookie-only; rotates via `authService.rotateSession`; 401 on reuse (family revoked).
+- [x] **6.8 Implement `POST /api/auth/logout`:** idempotent; clears cookies regardless of session state.
+- [x] **6.9 Upgrade `apps/web/lib/auth.ts`:** `authenticate(request)` with THREE auth paths (per AUTH-SPIKE Wave 6 Bearer disambiguation): (1) `access_token` cookie JWT, (2) `Authorization: Bearer` JWT verify, (3) `Authorization: Bearer` API key fallback. `validateApiKey` stays as backward-compat alias.
+- [x] **6.10 Confirm MCP endpoint still works with API key:** verified in ax:verify-ui R10 — 38 tools returned via `/api/mcp` with `Authorization: Bearer ascend-dev-key-change-me`.
+- [x] **6.11 Add a minimal login page at `apps/web/app/(auth)/login/page.tsx`** — server component wrapping `LoginForm` in Suspense (Next.js 16 requirement for `useSearchParams`). Accessible form: labels, role="alert" error, autoComplete, disabled-during-submit, autoFocus.
+- [x] **6.12 Update middleware** (`apps/web/middleware.ts`): edge-safe `jose.jwtVerify` on `access_token` cookie. Redirects unauthenticated HTML page requests to `/login?redirect=<path>`. Excludes `/api/*`, `/_next/*`, `/login`, static assets.
+- [x] **6.13 Manual test:** covered by ax:verify-ui 10-scenario Phase 6 plan — R1 through R10 all PASS (`.ascendflow/verification/2026-04-22-wave0-phase6-auth-verification.md`).
+- [x] **6.14 `ax:verify-ui` + `ax:review`** full pass. Three BLOCKING `ascend-security` checkpoints PASSED. `ascend-reviewer` PASS WITH NOTES (4 non-blocking). `ax:verify-ui` 10/10 scenarios PASS.
+- [x] **6.15 Commit**: `feat(auth): token-based auth with JWT access + rotating refresh tokens`.
+
+Scope expansions beyond the original spec, all tracked in `.ascendflow/features/wave-0-phase-6-auth/PRD.md`:
+- Added `GET /api/auth/me` (needed by web client to render auth state on mount).
+- Added `apps/web/scripts/set-password.ts` CLI seed script (self-serve password-set route would be a takeover vector on NULL `passwordHash` rows).
+- Added `SessionExpiredListener` component in `(app)/layout.tsx` to clear React Query cache on `ascend:session-expired` event.
+- Rewrote `apps/web/lib/api-client.ts` to drop `NEXT_PUBLIC_API_KEY` from browser auth headers and add deduplicated 401 refresh-and-retry interceptor.
+- Migrated 3 bare-fetch call sites (use-dashboard.ts, export-section.tsx, onboarding-mcp-guide.tsx) to use `credentials: "include"` cookies instead of `Authorization: Bearer <API_KEY>`.
+- Fixed a pre-existing scrypt bug at implementation time: Node's default scrypt maxmem (32 MiB) is too low for our params (N=2^17, r=8 needs 128 MiB). Added `SCRYPT_MAXMEM = 256 MiB` constant and passed to all three scrypt call sites. Without this, every login/password-hash would have thrown "memory limit exceeded" in production.
 
 ---
 

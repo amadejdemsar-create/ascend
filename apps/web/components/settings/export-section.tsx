@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Download } from "lucide-react";
-import { apiHeaders } from "@/lib/api-client";
 import {
   Card,
   CardHeader,
@@ -39,9 +38,10 @@ export function ExportSection() {
 
     try {
       // Bare fetch (not apiFetch) because the response is a binary blob
-      // for download, not JSON. Reuse the shared headers for auth.
+      // for download, not JSON. Auth is handled by cookies via
+      // credentials: "include".
       const res = await fetch(`/api/export?format=${selectedFormat}`, {
-        headers: apiHeaders,
+        credentials: "include",
       });
 
       if (!res.ok) {

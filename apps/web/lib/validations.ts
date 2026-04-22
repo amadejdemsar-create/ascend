@@ -50,6 +50,13 @@ export {
   type CreateContextInput,
   type UpdateContextInput,
   type ContextFilters,
+  // Auth schemas and types
+  loginSchema,
+  registerSchema,
+  refreshSchema,
+  type LoginInput,
+  type RegisterInput,
+  type RefreshInput,
   // Shared schemas and types
   dateQuerySchema,
   dateRangeQuerySchema,

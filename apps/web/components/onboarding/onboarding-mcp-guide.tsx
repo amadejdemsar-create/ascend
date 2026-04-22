@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Bot, Check, Loader2, Copy } from "lucide-react";
-import { apiHeaders as headers } from "@/lib/api-client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { DashboardData } from "@/lib/services/dashboard-service";
@@ -11,6 +10,10 @@ interface OnboardingMcpGuideProps {
   onComplete: () => void;
 }
 
+// Display the API key placeholder to the user for copy/paste into their MCP
+// client config. This is NOT used for authenticating this page's requests
+// (cookies do that). MCP clients authenticate via the Authorization header
+// with the user's API key.
 const MCP_CONFIG = `{
   "mcpServers": {
     "ascend": {
@@ -32,7 +35,7 @@ export function OnboardingMcpGuide({ onComplete }: OnboardingMcpGuideProps) {
     // Poll the dashboard every 5 seconds to check if goals have been created
     pollingRef.current = setInterval(async () => {
       try {
-        const res = await fetch("/api/dashboard", { headers });
+        const res = await fetch("/api/dashboard", { credentials: "include" });
         if (res.ok) {
           const data: DashboardData = await res.json();
           if (data.streaksStats.totalGoals > 0) {

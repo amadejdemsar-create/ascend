@@ -52,6 +52,16 @@ export {
   type UpdateCategoryInput,
 } from "./category-schemas";
 
+// Auth schemas and types
+export {
+  loginSchema,
+  registerSchema,
+  refreshSchema,
+  type LoginInput,
+  type RegisterInput,
+  type RefreshInput,
+} from "./auth";
+
 // Shared schemas and types
 export {
   dateQuerySchema,

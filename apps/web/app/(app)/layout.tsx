@@ -10,6 +10,7 @@ import { CommandPalette } from "@/components/command-palette/command-palette";
 import { GoalModal } from "@/components/goals/goal-modal";
 import { FocusTimerWidget } from "@/components/focus/focus-timer-widget";
 import { SyncIndicator } from "@/components/layout/sync-indicator";
+import { SessionExpiredListener } from "@/components/auth/session-expired-listener";
 
 export default function AppLayout({
   children,
@@ -26,6 +27,7 @@ export default function AppLayout({
 
   return (
     <SidebarProvider>
+      <SessionExpiredListener />
       {/* Skip link for keyboard users: hidden until focused, then jumps past
           the sidebar straight into the main content region. */}
       <a

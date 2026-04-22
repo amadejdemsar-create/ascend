@@ -17,6 +17,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { LogoutButton } from "@/components/auth/logout-button";
 import { SidebarCategoryTree } from "@/components/categories/sidebar-category-tree";
 import { navGroups, secondaryNavItems } from "@/components/layout/nav-config";
 
@@ -96,7 +97,10 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        <ThemeToggle />
+        <div className="flex items-center justify-between gap-2">
+          <ThemeToggle />
+          <LogoutButton />
+        </div>
       </SidebarFooter>
 
       <SidebarRail />
