@@ -1,7 +1,31 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { PersistStorage, StorageValue } from "zustand/middleware";
 import type { SortingState } from "@tanstack/react-table";
 import type { TimelineZoom } from "@/lib/timeline-utils";
+import { webStorageAdapter } from "@ascend/storage/web";
+
+/**
+ * Bridge @ascend/storage's StorageAdapter to Zustand's PersistStorage interface.
+ *
+ * The adapter already handles JSON serialization, so we implement PersistStorage
+ * directly instead of going through createJSONStorage (which would double-serialize).
+ * StorageValue<S> = { state: S, version?: number } is stored and retrieved as-is
+ * through the adapter's JSON serialize/deserialize.
+ */
+function createAdapterStorage<S>(): PersistStorage<S> {
+  return {
+    getItem: async (name: string): Promise<StorageValue<S> | null> => {
+      return webStorageAdapter.get<StorageValue<S>>(name);
+    },
+    setItem: async (name: string, value: StorageValue<S>): Promise<void> => {
+      await webStorageAdapter.set(name, value);
+    },
+    removeItem: async (name: string): Promise<void> => {
+      await webStorageAdapter.remove(name);
+    },
+  };
+}
 
 export type ViewType = "list" | "tree" | "timeline";
 export type TodoDateTab = "today" | "week" | "all";
@@ -116,6 +140,7 @@ export const useUIStore = create<UIStore>()(
     {
       name: "ascend-ui",
       version: 8,
+      storage: createAdapterStorage(),
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as Record<string, unknown>;
         if (version < 4) {

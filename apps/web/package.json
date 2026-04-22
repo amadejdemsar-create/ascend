@@ -13,6 +13,8 @@
   "dependencies": {
     "@ascend/api-client": "workspace:*",
     "@ascend/core": "workspace:*",
+    "@ascend/storage": "workspace:*",
+    "@ascend/ui-tokens": "workspace:*",
     "@base-ui/react": "^1.3.0",
     "@dnd-kit/dom": "^0.3.2",
     "@dnd-kit/helpers": "^0.3.2",

@@ -183,6 +183,51 @@ Board/Kanban view components exist (`goal-board-*.tsx`) but are dead code; remov
 | Filter goal trees | `lib/tree-filter.ts` |
 | Timeline date math | `lib/timeline-utils.ts` |
 
+## Cross-Platform Rules (Wave 0+)
+
+The monorepo splits code into shared packages (`packages/*`) and platform-specific apps (`apps/*`). These rules enforce the boundary so shared code stays platform-agnostic.
+
+### What may live in `packages/*`
+
+Pure TypeScript, Zod schemas, date-fns utilities, platform-agnostic business logic, shared types, and workspace cross-package imports. Nothing in a shared package may assume a specific runtime (browser, Node, React Native).
+
+### What may NOT live in `packages/*`
+
+The following imports are **banned** in any file under `packages/`:
+
+| Banned import | Reason |
+|---------------|--------|
+| `next/*`, `next-themes` | Next.js is web-only |
+| `react`, `react-dom` | React is a UI framework; shared packages contain logic, not UI |
+| `react-native` | Platform-specific |
+| `@prisma/client`, `@/lib/db` | Database access belongs in the service layer inside `apps/web` |
+| `zustand` | State management is app-level |
+| `localStorage`, `sessionStorage` (direct access in shared APIs) | Use `@ascend/storage` adapter instead |
+| `window`, `document` (unguarded) | Not available in non-browser runtimes |
+| Tailwind class strings, shadcn component imports | CSS framework is web-specific |
+
+**Exception:** `packages/storage/src/web.ts` may reference `localStorage` and `window` because the entire purpose of that module is to provide the web implementation of the storage adapter. It guards access with `typeof window !== "undefined"`.
+
+### What may live in `apps/web/*`
+
+Any web library: Next.js, React, React DOM, Prisma, Zustand, Tailwind, shadcn, sonner, recharts, lucide-react, etc. All imports that are banned in `packages/*` are allowed here.
+
+### Placement rules
+
+| Code type | Where it lives |
+|-----------|---------------|
+| API route handlers | `apps/web/app/api/`, never in packages |
+| Zustand store | `apps/web/lib/stores/`, using `@ascend/storage` adapter (never `localStorage` directly) |
+| React Query hooks | `apps/web/lib/hooks/`, using `@ascend/api-client` (never raw `fetch` or `fetchJson`) |
+| Shared types and enums | `@ascend/core` |
+| Client-server contract (typed API client) | `@ascend/api-client` |
+| Design tokens (colors, spacing, typography, radii) | `@ascend/ui-tokens` |
+| Storage adapter interface and implementations | `@ascend/storage` |
+
+### Enforcement
+
+Run `ax:cross-platform-check` after any change to `packages/*`. The check greps for banned imports and fails if any are found. The `ascend-architect` agent verifies boundary compliance during code review.
+
 ## Danger Zones
 
 **DZ-1: No transaction wrapping in todo completion.** `lib/services/todo-service.ts` and `lib/services/gamification-service.ts` perform status update, goal progress recalc, XP event creation, and stats update as separate Prisma calls. A mid-flow failure leaves data inconsistent.

@@ -4,6 +4,16 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Design tokens: CSS custom properties below are the web-platform source of truth.
+ * They are mirrored as TypeScript objects in packages/ui-tokens/src/ (colors.ts,
+ * radii.ts, typography.ts). When updating any value here, update the corresponding
+ * TS export in @ascend/ui-tokens as well, and vice versa.
+ *
+ * Non-web platforms (mobile, desktop) consume the TS exports directly.
+ * The web app consumes these CSS variables via the Tailwind v4 @theme block below.
+ */
+
 :root {
   --radius: 0.625rem;
   --background: oklch(0.985 0 0);

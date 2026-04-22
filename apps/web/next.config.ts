@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   serverExternalPackages: ["@modelcontextprotocol/sdk", "pdfkit"],
-  transpilePackages: ["@ascend/core", "@ascend/api-client"],
+  transpilePackages: ["@ascend/core", "@ascend/api-client", "@ascend/storage", "@ascend/ui-tokens"],
   experimental: {
     viewTransition: true,
   },

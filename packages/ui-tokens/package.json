@@ -1,0 +1,31 @@
+{
+  "name": "@ascend/ui-tokens",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./colors": {
+      "types": "./src/colors.ts",
+      "default": "./src/colors.ts"
+    },
+    "./spacing": {
+      "types": "./src/spacing.ts",
+      "default": "./src/spacing.ts"
+    },
+    "./typography": {
+      "types": "./src/typography.ts",
+      "default": "./src/typography.ts"
+    },
+    "./radii": {
+      "types": "./src/radii.ts",
+      "default": "./src/radii.ts"
+    }
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
