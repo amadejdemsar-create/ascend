@@ -7,6 +7,10 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY apps/web/package.json ./apps/web/
+COPY packages/core/package.json ./packages/core/
+COPY packages/api-client/package.json ./packages/api-client/
+COPY packages/storage/package.json ./packages/storage/
+COPY packages/ui-tokens/package.json ./packages/ui-tokens/
 RUN pnpm install --frozen-lockfile
 
 # Stage 2: Build the application
@@ -14,6 +18,14 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
+# Each workspace package has its own node_modules under strict pnpm mode;
+# Turbopack resolves imports per-file, so `zod` must be available under
+# each package that imports it (e.g. packages/core resolves zod from
+# packages/core/node_modules before falling back up the tree).
+COPY --from=deps /app/packages/core/node_modules ./packages/core/node_modules
+COPY --from=deps /app/packages/api-client/node_modules ./packages/api-client/node_modules
+COPY --from=deps /app/packages/storage/node_modules ./packages/storage/node_modules
+COPY --from=deps /app/packages/ui-tokens/node_modules ./packages/ui-tokens/node_modules
 COPY . .
 ENV DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
 ARG NEXT_PUBLIC_API_KEY
@@ -27,6 +39,10 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY apps/web/package.json ./apps/web/
+COPY packages/core/package.json ./packages/core/
+COPY packages/api-client/package.json ./packages/api-client/
+COPY packages/storage/package.json ./packages/storage/
+COPY packages/ui-tokens/package.json ./packages/ui-tokens/
 RUN pnpm install --frozen-lockfile --prod
 
 # Stage 4: Production runner
