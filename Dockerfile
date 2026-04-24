@@ -77,6 +77,15 @@ COPY --from=builder /app/apps/web/generated ./apps/web/generated
 COPY --from=builder /app/apps/web/prisma ./apps/web/prisma
 COPY --from=builder /app/apps/web/prisma.config.ts ./apps/web/prisma.config.ts
 
+# Copy operational scripts + the lib/ directory they need at runtime.
+# scripts/set-password.ts is tsx-run from Dokploy container exec to seed
+# or reset the primary user's password. It imports from ../lib/services/
+# auth-service + user-service; those only depend on generated/prisma,
+# jose (in apps/web/node_modules), and Node crypto. No @ascend/core needed
+# in this path. The Next.js standalone bundle covers everything else.
+COPY --from=builder /app/apps/web/scripts ./apps/web/scripts
+COPY --from=builder /app/apps/web/lib ./apps/web/lib
+
 USER nextjs
 
 EXPOSE 3000
