@@ -26,8 +26,20 @@ const JWT_SECRET = new TextEncoder().encode(JWT_SECRET_RAW);
  *   3. Every other /api/* route uses validateApiKey which supports both
  *      the cookie path AND the legacy API key path.
  */
+// Public routes served unauthenticated. The landing page at / is the
+// marketing surface; /docs is the public MCP integration reference
+// linked from landing. The authenticated app lives under /dashboard,
+// /goals, /todos, etc.
+const PUBLIC_PATHS = new Set<string>(["/", "/docs"]);
+
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+
+  // Public paths skip the auth gate entirely.
+  if (PUBLIC_PATHS.has(pathname)) {
+    return NextResponse.next();
+  }
+
   const accessToken = request.cookies.get("access_token")?.value;
 
   // No cookie: redirect to login with the intended destination preserved.

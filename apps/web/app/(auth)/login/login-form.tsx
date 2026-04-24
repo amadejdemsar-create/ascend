@@ -17,7 +17,11 @@ import { Label } from "@/components/ui/label";
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirect") ?? "/";
+  // Default to /dashboard, not /. The root "/" is the public marketing
+  // landing page. Authenticated users who log in want to land in the
+  // authenticated app. Middleware redirects preserve the original path
+  // in ?redirect=, so deep-linked redirects (e.g. /goals) still work.
+  const redirectTo = searchParams.get("redirect") ?? "/dashboard";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
