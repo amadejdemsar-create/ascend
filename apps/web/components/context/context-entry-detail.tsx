@@ -8,7 +8,6 @@ import {
   PencilIcon,
   Trash2Icon,
   XIcon,
-  Link2,
   Zap,
   Pin,
 } from "lucide-react";
@@ -21,11 +20,13 @@ import {
 } from "@/lib/hooks/use-context";
 import { useUIStore } from "@/lib/stores/ui-store";
 import { apiFetch } from "@/lib/api-client";
+import type { ContextEntryType } from "@ascend/core";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { Label } from "@/components/ui/label";
+import { ContextEdgesPanel } from "@/components/context/context-edges-panel";
+import { ContextTypeSelect } from "@/components/context/context-type-select";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -332,19 +333,6 @@ export function ContextEntryDetail({
     );
   }
 
-  // Wave 1 Phase 3: contextService.getById now returns incomingLinks as full
-  // ContextLink rows with a nested fromEntry { id, title, type } object, not
-  // the old shape of { id, title }[] computed from legacy linkedEntryIds
-  // array scans. Map to the minimal shape this component needs so "Referenced
-  // in N entries" keeps showing the source entry title + navigates to the
-  // source entry (not the link edge id).
-  type RawIncomingLink = { id: string; fromEntry?: { id: string; title: string } };
-  const incomingLinks = ((entry.incomingLinks as RawIncomingLink[] | undefined) ?? [])
-    .filter((link) => link.fromEntry)
-    .map((link) => ({
-      id: link.fromEntry!.id,
-      title: link.fromEntry!.title,
-    }));
   const isPinned = !!entry.isPinned;
 
   return (
@@ -369,6 +357,10 @@ export function ContextEntryDetail({
             </h2>
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            <ContextTypeSelect
+              entryId={entryId}
+              currentType={(entry.type as ContextEntryType) ?? "NOTE"}
+            />
             {entry.category && (
               <div className="flex items-center gap-1.5">
                 <span
@@ -464,30 +456,8 @@ export function ContextEntryDetail({
           />
         )}
 
-        {incomingLinks.length > 0 && (
-          <>
-            <Separator />
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">
-                Referenced in {incomingLinks.length}{" "}
-                {incomingLinks.length === 1 ? "entry" : "entries"}
-              </Label>
-              <div className="space-y-1">
-                {incomingLinks.map((link: { id: string; title: string }) => (
-                  <button
-                    key={link.id}
-                    type="button"
-                    onClick={() => onNavigate?.(link.id)}
-                    className="flex items-center gap-1.5 text-sm text-primary hover:underline w-full text-left"
-                  >
-                    <Link2 className="size-3.5 shrink-0" />
-                    <span className="truncate">{link.title}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
+        <Separator />
+        <ContextEdgesPanel entryId={entryId} />
       </div>
 
       <AlertDialog

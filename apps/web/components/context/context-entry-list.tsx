@@ -12,6 +12,12 @@ import {
   CollapsibleContent,
 } from "@/components/ui/collapsible";
 import { useListNavigation } from "@/lib/hooks/use-list-navigation";
+import { nodeColor } from "@ascend/graph";
+import type { ContextEntryType } from "@ascend/core";
+import {
+  ENTRY_TYPE_LABELS,
+  ENTRY_TYPE_ICONS,
+} from "@/components/context/context-type-select";
 import { cn } from "@/lib/utils";
 
 export interface ContextEntryItem {
@@ -21,6 +27,7 @@ export interface ContextEntryItem {
   tags: string[];
   updatedAt: string;
   isPinned: boolean;
+  type?: ContextEntryType;
   category?: { id: string; name: string; color: string } | null;
 }
 
@@ -114,6 +121,21 @@ function ContextRow({
         </p>
       )}
       <div className="flex items-center gap-1.5 flex-wrap">
+        {entry.type && (() => {
+          const entryType = entry.type;
+          const TypeIcon = ENTRY_TYPE_ICONS[entryType] ?? ENTRY_TYPE_ICONS.NOTE;
+          const color = nodeColor(entryType);
+          return (
+            <Badge
+              variant="secondary"
+              className="text-[0.6rem] px-1.5 py-0 gap-0.5"
+              style={{ borderColor: `${color}40` }}
+            >
+              <TypeIcon className="size-2.5" style={{ color }} aria-hidden="true" />
+              {ENTRY_TYPE_LABELS[entryType]}
+            </Badge>
+          );
+        })()}
         {entry.tags.map((t) => (
           <button
             key={t}
@@ -128,7 +150,7 @@ function ContextRow({
           </button>
         ))}
         <span className="text-[0.65rem] text-muted-foreground">
-          {entry.tags.length > 0 ? "·" : ""} {wc} words · {rt} min
+          {entry.tags.length > 0 || entry.type ? "·" : ""} {wc} words · {rt} min
         </span>
       </div>
     </button>

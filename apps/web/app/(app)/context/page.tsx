@@ -11,7 +11,9 @@ import { ContextEntryList } from "@/components/context/context-entry-list";
 import { ContextEntryDetail } from "@/components/context/context-entry-detail";
 import { ContextEntryEditor } from "@/components/context/context-entry-editor";
 import { ContextViewSwitcher } from "@/components/context/context-view-switcher";
+import type { ContextEntryType } from "@ascend/core";
 import { ContextGraphView } from "@/components/context/context-graph-view";
+import { ContextBacklinksView } from "@/components/context/context-backlinks-view";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import {
@@ -27,6 +29,7 @@ interface ContextEntry {
   tags: string[];
   updatedAt: string;
   isPinned: boolean;
+  type?: ContextEntryType;
   category?: { id: string; name: string; color: string } | null;
 }
 
@@ -251,13 +254,10 @@ export default function ContextPage() {
                 }
               />
             </div>
-            <div className="flex flex-1 items-center justify-center p-8 text-muted-foreground">
-              <p className="text-sm">
-                Backlinks view is coming in Phase 6.15. All entries will be
-                sorted by incoming link count, showing which entries are the
-                most connected hubs in your knowledge graph.
-              </p>
-            </div>
+            <ContextBacklinksView
+              selectedId={selectedEntryId}
+              onSelect={handleSelectEntry}
+            />
           </>
         );
 
