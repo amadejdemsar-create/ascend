@@ -103,7 +103,17 @@ describe("MCP handlers", () => {
       });
       expect(referrer.isError).toBeUndefined();
       const refPayload = JSON.parse(referrer.content[0].text);
-      expect(refPayload.linkedEntryIds).toEqual([targetPayload.id]);
+      // Wave 1 Phase 3: linkedEntryIds[] is no longer written by set_context.
+      // Typed edges now live in the ContextLink table and are visible via
+      // incomingLinks / outgoingLinks on get_context. The legacy array
+      // column still exists for the backfilled rows and is removed in
+      // Wave 1 Phase 8. Verify the new-shape link instead.
+      const outgoing = refPayload.outgoingLinks ?? [];
+      expect(outgoing.length).toBe(1);
+      expect(outgoing[0].toEntry?.id ?? outgoing[0].toEntryId).toBe(
+        targetPayload.id,
+      );
+      expect(outgoing[0].type).toBe("REFERENCES");
     });
 
     it("get_context returns isError for a non-existent id", async () => {

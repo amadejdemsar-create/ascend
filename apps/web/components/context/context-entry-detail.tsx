@@ -332,8 +332,19 @@ export function ContextEntryDetail({
     );
   }
 
-  const incomingLinks =
-    (entry.incomingLinks as { id: string; title: string }[]) ?? [];
+  // Wave 1 Phase 3: contextService.getById now returns incomingLinks as full
+  // ContextLink rows with a nested fromEntry { id, title, type } object, not
+  // the old shape of { id, title }[] computed from legacy linkedEntryIds
+  // array scans. Map to the minimal shape this component needs so "Referenced
+  // in N entries" keeps showing the source entry title + navigates to the
+  // source entry (not the link edge id).
+  type RawIncomingLink = { id: string; fromEntry?: { id: string; title: string } };
+  const incomingLinks = ((entry.incomingLinks as RawIncomingLink[] | undefined) ?? [])
+    .filter((link) => link.fromEntry)
+    .map((link) => ({
+      id: link.fromEntry!.id,
+      title: link.fromEntry!.title,
+    }));
   const isPinned = !!entry.isPinned;
 
   return (
