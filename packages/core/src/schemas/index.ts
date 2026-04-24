@@ -109,3 +109,20 @@ export {
   type PresignUploadInput,
   type ConfirmUploadInput,
 } from "./files";
+
+// LLM schemas and types
+export {
+  chatProviderKindSchema,
+  usageWindowSchema,
+  contextMapContentSchema,
+  contextMapSchema,
+  llmUsageSchema,
+  updateAiSettingsSchema,
+  llmUsageQuerySchema,
+  type ContextMapItem,
+  type ContextMapContent,
+  type ContextMap,
+  type LlmUsage,
+  type UpdateAiSettingsInput,
+  type LlmUsageQuery,
+} from "./llm";

@@ -54,3 +54,15 @@ export {
   CONTEXT_LINK_SOURCE_ENUM,
   type ContextLinkSource as ContextLinkSourceType,
 } from "./context-types";
+
+export {
+  // Chat provider kind
+  ChatProviderKind,
+  CHAT_PROVIDER_KIND_VALUES,
+  CHAT_PROVIDER_KIND_ENUM,
+  type ChatProviderKind as ChatProviderKindType,
+  // Usage window
+  UsageWindow,
+  USAGE_WINDOW_VALUES,
+  type UsageWindow as UsageWindowType,
+} from "./llm-types";

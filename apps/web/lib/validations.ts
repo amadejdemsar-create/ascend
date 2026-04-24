@@ -100,4 +100,18 @@ export {
   type AllowedMimeType,
   type PresignUploadInput,
   type ConfirmUploadInput,
+  // LLM schemas and types
+  chatProviderKindSchema,
+  usageWindowSchema,
+  contextMapContentSchema,
+  contextMapSchema,
+  llmUsageSchema,
+  updateAiSettingsSchema,
+  llmUsageQuerySchema,
+  type ContextMapItem,
+  type ContextMapContent,
+  type ContextMap,
+  type LlmUsage,
+  type UpdateAiSettingsInput,
+  type LlmUsageQuery,
 } from "@ascend/core";

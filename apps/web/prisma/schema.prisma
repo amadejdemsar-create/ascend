@@ -77,6 +77,12 @@ enum ContextLinkSource {
   MANUAL
 }
 
+enum ChatProviderKind {
+  GEMINI
+  OPENAI
+  ANTHROPIC
+}
+
 // Models
 
 model User {
@@ -102,6 +108,9 @@ model User {
   files          File[]
   sessions       Session[]
   contextLinks   ContextLink[]
+  settings       UserSettings?
+  contextMaps    ContextMap?
+  llmUsage       LlmUsage[]
 }
 
 model Goal {
@@ -386,6 +395,11 @@ model ContextEntry {
   // Entry type for typed knowledge graph
   type ContextEntryType @default(NOTE)
 
+  // Wave 2: pgvector embedding for semantic search (1536-dim, Gemini Embedding 2)
+  // Populated asynchronously by embeddingService after create/update.
+  // Queried via raw SQL ($queryRaw) since Prisma does not natively support pgvector.
+  embedding Unsupported("vector(1536)")?
+
   // Wave 0: workspace scaffolding (nullable until Wave 8 backfill)
   workspaceId String?
 
@@ -478,4 +492,58 @@ model Session {
 
   @@index([userId])
   @@index([familyId])
+}
+
+// =====================================================================
+//  Wave 2: AI-native tables
+// =====================================================================
+
+model UserSettings {
+  id           String           @id @default(cuid())
+  userId       String           @unique
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // AI preferences
+  chatProvider ChatProviderKind @default(GEMINI)
+  chatModel    String?          // null = resolve to provider's default model at runtime
+
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
+
+model ContextMap {
+  id           String           @id @default(cuid())
+  userId       String           @unique
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Synthesized map content: { themes, principles, projects, tensions, orphans }
+  content      Json
+
+  // LLM metadata for the generation that produced this map
+  provider     ChatProviderKind
+  model        String
+  inputTokens  Int
+  outputTokens Int
+  costCents    Int
+
+  generatedAt  DateTime         @default(now())
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
+
+model LlmUsage {
+  id                 String           @id @default(cuid())
+  userId             String
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  provider           ChatProviderKind
+  model              String
+  purpose            String           // "map_refresh", "embedding", "suggest_connections", etc.
+  promptTokens       Int
+  completionTokens   Int
+  estimatedCostCents Int
+
+  createdAt          DateTime         @default(now())
+
+  @@index([userId, createdAt])
 }
