@@ -28,6 +28,13 @@ COPY --from=deps /app/packages/storage/node_modules ./packages/storage/node_modu
 COPY --from=deps /app/packages/ui-tokens/node_modules ./packages/ui-tokens/node_modules
 COPY . .
 ENV DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
+# auth-service.ts has a module-init guard that throws if AUTH_JWT_SECRET is
+# missing or <32 chars. Next.js App Router's `Collecting page data` phase
+# evaluates route modules' top-level code, which triggers the guard at
+# build time. Inject a build-only placeholder so the build succeeds;
+# Dokploy's runtime AUTH_JWT_SECRET takes precedence when the container
+# starts (this env is not copied into the runner stage).
+ENV AUTH_JWT_SECRET="build-time-placeholder-not-used-at-runtime-min-32-chars"
 ARG NEXT_PUBLIC_API_KEY
 ENV NEXT_PUBLIC_API_KEY=${NEXT_PUBLIC_API_KEY}
 RUN pnpm --filter @ascend/web exec prisma generate

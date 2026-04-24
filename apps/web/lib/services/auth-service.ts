@@ -12,9 +12,13 @@ import { userService } from "@/lib/services/user-service";
 // with a clear error in the deploy logs rather than silently serving
 // requests that cannot be signed or verified.
 //
-// During `next build`, API route modules are compiled but their top-level
-// side effects do NOT execute (they only run at server start or first
-// request). The guard is therefore build-safe.
+// IMPORTANT: the guard is NOT build-safe. Next.js App Router's
+// `Collecting page data` phase evaluates route-module top-level code to
+// determine dynamic/static behavior, which triggers this throw at build
+// time. The Dockerfile injects a build-only placeholder AUTH_JWT_SECRET
+// in the builder stage (not copied into the runner) so the build
+// succeeds; Dokploy's runtime env then provides the real secret when
+// the container starts.
 // ---------------------------------------------------------------------------
 const JWT_SECRET_RAW = process.env.AUTH_JWT_SECRET;
 if (!JWT_SECRET_RAW || JWT_SECRET_RAW.length < 32) {
