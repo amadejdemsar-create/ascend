@@ -15,6 +15,7 @@ import { handleDataTool } from "./tools/data-tools";
 import { handleContextTool } from "./tools/context-tools";
 import { handleTodoTool } from "./tools/todo-tools";
 import { handleFocusTool } from "./tools/focus-tools";
+import { handleContextGraphTool } from "./tools/context-graph-tools";
 import { contextService } from "@/lib/services/context-service";
 import { categoryService } from "@/lib/services/category-service";
 
@@ -38,6 +39,15 @@ const CONTEXT_TOOLS = new Set([
 const TODO_TOOLS = new Set([
   "create_todo", "get_todo", "update_todo", "delete_todo", "list_todos",
   "complete_todo", "search_todos", "get_daily_big3", "set_daily_big3", "get_todos_for_date",
+]);
+const CONTEXT_GRAPH_TOOLS = new Set([
+  "get_context_graph",
+  "get_node_neighbors",
+  "get_related_context",
+  "list_nodes_by_type",
+  "create_typed_link",
+  "remove_typed_link",
+  "update_context_type",
 ]);
 const FOCUS_TOOLS = new Set(["get_focus_sessions"]);
 
@@ -91,6 +101,10 @@ export function createAscendMcpServer(userId: string): Server {
       return handleContextTool(userId, name, args ?? {});
     }
 
+    if (CONTEXT_GRAPH_TOOLS.has(name)) {
+      return handleContextGraphTool(userId, name, args ?? {});
+    }
+
     if (TODO_TOOLS.has(name)) {
       return handleTodoTool(userId, name, args ?? {});
     }
@@ -99,7 +113,7 @@ export function createAscendMcpServer(userId: string): Server {
       return handleFocusTool(userId, name, args ?? {});
     }
 
-    // All 38 tool definitions are now routed. This fallback should never be reached.
+    // All 45 tool definitions are now routed. This fallback should never be reached.
     return {
       content: [{ type: "text" as const, text: `Unknown tool: ${name}` }],
       isError: true,

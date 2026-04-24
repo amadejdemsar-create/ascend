@@ -12,6 +12,8 @@ import {
   STATUS_ENUM,
   PRIORITY_ENUM,
   TODO_STATUS_ENUM,
+  CONTEXT_ENTRY_TYPE_ENUM,
+  CONTEXT_LINK_TYPE_ENUM,
 } from "@ascend/core";
 
 export interface ToolDefinition {
@@ -461,7 +463,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: "get_context",
     description:
-      "Get a context document by ID. Returns the full document including markdown content, tags, category, and incoming backlinks (other documents that reference this one).",
+      "Get a context document by ID. Returns the full document including markdown content, tags, category, entry type, and typed outgoing/incoming links (ContextLink edges).",
     inputSchema: {
       type: "object",
       properties: {
@@ -474,7 +476,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: "list_context",
     description:
-      "List context documents, optionally filtered by category or tag. Returns title, tags, category, and updated date for each entry (content truncated to 200 chars for overview).",
+      "List context documents, optionally filtered by category or tag. Returns title, type, tags, category, and updated date for each entry (content truncated to 200 chars for overview).",
     inputSchema: {
       type: "object",
       properties: {
@@ -729,6 +731,147 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         },
       },
       required: ["date"],
+    },
+  },
+
+  // ── Context Graph ──────────────────────────────────────────────────
+
+  {
+    name: "get_context_graph",
+    description:
+      "Return the typed-edge knowledge graph as { nodes, edges }. Each node is a context entry; each edge is a typed ContextLink. Caps at 1000 nodes by total degree. Filter by entry types (array), categoryId, or tag.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        types: {
+          type: "array",
+          items: { type: "string", enum: CONTEXT_ENTRY_TYPE_ENUM },
+          description: "Optional filter: only include nodes of these types.",
+        },
+        categoryId: {
+          type: "string",
+          description: "Optional filter: only entries in this category.",
+        },
+        tag: {
+          type: "string",
+          description: "Optional filter: only entries with this tag.",
+        },
+        cap: {
+          type: "integer",
+          minimum: 1,
+          maximum: 5000,
+          description: "Maximum number of nodes to return (default 1000).",
+        },
+      },
+    },
+  },
+
+  {
+    name: "get_node_neighbors",
+    description:
+      "Return the N-hop neighborhood of a context entry as { nodes, edges }. Depth 1 returns direct neighbors; depth 3 is the practical maximum for visualization.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: {
+          type: "string",
+          description: "The id of the center context entry.",
+        },
+        depth: {
+          type: "integer",
+          minimum: 1,
+          maximum: 3,
+          description: "How many hops to expand. Default 1.",
+        },
+      },
+      required: ["id"],
+    },
+  },
+
+  {
+    name: "get_related_context",
+    description:
+      "Return up to 20 related entries for a given context entry, ranked by a weighted heuristic: direct typed edge 1.0; 2-hop 0.5; shared tag 0.3 per tag; same category 0.2.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: {
+          type: "string",
+          description: "The id of the entry to find related entries for.",
+        },
+      },
+      required: ["id"],
+    },
+  },
+
+  {
+    name: "list_nodes_by_type",
+    description:
+      "List all context entries of a given type (NOTE, SOURCE, PROJECT, PERSON, DECISION, QUESTION, AREA).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        type: {
+          type: "string",
+          enum: CONTEXT_ENTRY_TYPE_ENUM,
+          description: "The entry type to filter by.",
+        },
+      },
+      required: ["type"],
+    },
+  },
+
+  {
+    name: "create_typed_link",
+    description:
+      "Create a typed directed edge from one context entry to another. Idempotent on (fromEntryId, toEntryId, type); duplicate calls return the existing link.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        fromEntryId: { type: "string", description: "Source entry ID." },
+        toEntryId: { type: "string", description: "Target entry ID." },
+        type: {
+          type: "string",
+          enum: CONTEXT_LINK_TYPE_ENUM,
+          description: "The relation type (REFERENCES default).",
+        },
+      },
+      required: ["fromEntryId", "toEntryId"],
+    },
+  },
+
+  {
+    name: "remove_typed_link",
+    description:
+      "Delete a typed link by its id. Links with source=CONTENT (derived from wikilinks in entry content) cannot be deleted unless force=true; the right action is to edit the source entry's content.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "Context link ID to delete." },
+        force: {
+          type: "boolean",
+          description: "If true, delete CONTENT-source links too.",
+        },
+      },
+      required: ["id"],
+    },
+  },
+
+  {
+    name: "update_context_type",
+    description:
+      "Change the type of a context entry (NOTE, SOURCE, PROJECT, PERSON, DECISION, QUESTION, AREA).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "Context entry ID." },
+        type: {
+          type: "string",
+          enum: CONTEXT_ENTRY_TYPE_ENUM,
+          description: "The new entry type.",
+        },
+      },
+      required: ["id", "type"],
     },
   },
 
