@@ -1,6 +1,6 @@
 # Ascend
 
-Personal operating system built on the inputs/outputs framework. Goals are outputs (results you want), todos are inputs (actions that drive results), context is your AI knowledge base, and the calendar ties it all into daily planning. The entire system is exposed via 37 MCP tools.
+Personal operating system built on the inputs/outputs framework. Goals are outputs (results you want), todos are inputs (actions that drive results), context is your AI knowledge base as a typed-edge graph, and the calendar ties it all into daily planning. The entire system is exposed via 47 MCP tools.
 
 ## Tech Stack
 
@@ -139,7 +139,7 @@ Thin wrappers: authenticate via `authenticate()` (3-path resolver: cookie JWT, B
 One hook file per domain. `useQuery` for reads, `useMutation` for writes with `onSuccess` cache invalidation. Query key factory in `apps/web/lib/queries/keys.ts`. Cache config in `apps/web/lib/offline/cache-config.ts`. All fetches go through `apiFetch` from `apps/web/lib/api-client.ts`.
 
 ### MCP Server (`apps/web/lib/mcp/`)
-37+ tools across handler files. Schemas in `apps/web/lib/mcp/schemas.ts` as raw JSON Schema (not Zod) for SDK compatibility. Handlers in `apps/web/lib/mcp/tools/` call the service layer. Routing in `apps/web/lib/mcp/server.ts` uses Set-based name matching to dispatch to handlers. Transport: Streamable HTTP at `/api/mcp`. Authenticated via API key through `authenticate()` — the API key path of the three.
+47 tools across handler files (40 CRUD/dashboard + 7 Wave 1 graph tools: `get_context_graph`, `get_node_neighbors`, `get_related_context`, `list_nodes_by_type`, `create_typed_link`, `remove_typed_link`, `update_context_type`). Schemas in `apps/web/lib/mcp/schemas.ts` as raw JSON Schema (not Zod) for SDK compatibility. Handlers in `apps/web/lib/mcp/tools/` call the service layer. Routing in `apps/web/lib/mcp/server.ts` uses Set-based name matching to dispatch to handlers. Transport: Streamable HTTP at `/api/mcp`. Authenticated via API key through `authenticate()` — the API key path of the three.
 
 ### Auth (Phase 6 shipped in Wave 0)
 - `apps/web/lib/services/auth-service.ts` owns scrypt password hashing, JWT signing/verification via `jose`, 256-bit opaque refresh tokens, `Session` rotation with reuse detection, in-process login rate limiter, cookie builders.
@@ -165,7 +165,8 @@ UI state: Zustand store at `apps/web/lib/stores/ui-store.ts` (sidebar, active vi
 | User | Single-user, API key auth | Has goals, todos, context, categories, stats |
 | Goal | Hierarchical objectives (yearly > quarterly > monthly > weekly) | Self-ref parentId, has children, todos, progressLogs, category |
 | Todo | Flat tasks, Big 3, streaks, recurrence | Links to one goal (goalId), category, self-ref recurringSourceId |
-| ContextEntry | Markdown docs, tags, wikilinks, full-text search | Category, linkedEntryIds array |
+| ContextEntry | Markdown docs, tags, typed wikilinks, full-text search. Typed via `ContextEntryType` (NOTE default, SOURCE, PROJECT, PERSON, DECISION, QUESTION, AREA). | Category, outgoingLinks / incomingLinks (ContextLink) |
+| ContextLink | Typed directed edge between two ContextEntries (9 `ContextLinkType` values). Source: CONTENT (parsed from wikilinks) or MANUAL (added via Quick Link dialog). | fromEntry, toEntry, denormalized userId |
 | Category | Shared taxonomy, hierarchical (self-ref parentId) | Used by goals, todos, context |
 | ProgressLog | Time-series progress per goal | Belongs to goal |
 | UserStats | Aggregated XP, level, streaks | Belongs to user |
@@ -175,9 +176,12 @@ UI state: Zustand store at `apps/web/lib/stores/ui-store.ts` (sidebar, active vi
 
 | View | Entity | Component |
 |------|--------|-----------|
-| List | Goals, Todos | `goal-list-view.tsx`, `todo-list-view.tsx` |
+| List | Goals, Todos, Context | `goal-list-view.tsx`, `todo-list-view.tsx`, `context-entry-list.tsx` |
 | Tree | Goals | `goal-tree-view.tsx` |
 | Timeline (Gantt) | Goals | `goal-timeline-view.tsx` |
+| Graph | Context (Wave 1) | `context-graph-view.tsx` + `context-graph-node.tsx` (ReactFlow + d3-force via `@ascend/graph`) |
+| Pinned | Context | Filtered list view (`isPinned = true`) |
+| Backlinks | Context (Wave 1) | `context-backlinks-view.tsx` (entries sorted by incoming link count) |
 | Calendar | Todos, Goals | `calendar-month-grid.tsx`, `calendar-day-detail.tsx` |
 | Dashboard | All | `dashboard-page.tsx` (5 widgets) |
 
@@ -200,6 +204,16 @@ Board/Kanban view components exist (`goal-board-*.tsx`) but are dead code; remov
 | Change shared HTTP client primitive | `packages/api-client/src/client.ts` |
 | Change storage adapter | `packages/storage/src/web.ts` (web impl) |
 | Change design tokens | `packages/ui-tokens/src/{colors,spacing,typography,radii}.ts` |
+| Change graph layout / node + edge colors | `packages/graph/src/{layout,colors}.ts` |
+| Wikilink parser | `packages/core/src/wikilink.ts` |
+| Context link CRUD + content-sync | `apps/web/lib/services/context-link-service.ts` |
+| Graph + neighbors + related heuristic | `apps/web/lib/services/context-service.ts` (`getGraph`, `getNeighbors`, `getRelated`) |
+| Graph MCP tools | `apps/web/lib/mcp/tools/context-graph-tools.ts` |
+| Graph view UI | `apps/web/components/context/context-graph-view.tsx` + `context-graph-node.tsx` |
+| Edges panel in detail | `apps/web/components/context/context-edges-panel.tsx` |
+| Quick link dialog | `apps/web/components/context/context-quick-link-dialog.tsx` |
+| Entry type selector | `apps/web/components/context/context-type-select.tsx` |
+| Backlinks view | `apps/web/components/context/context-backlinks-view.tsx` |
 | Add nav item | `apps/web/components/layout/nav-config.ts` |
 | Add MCP tool schema | `apps/web/lib/mcp/schemas.ts` |
 | Route MCP tool | `apps/web/lib/mcp/server.ts` |
@@ -264,11 +278,13 @@ Run `ax:cross-platform-check` after any change to `packages/*`. The check greps 
 
 **DZ-4: Recurring instance generation is visit-triggered.** `todo-recurring-service.ts` only generates instances when the calendar page loads. If the user does not visit the calendar, recurring todos will not appear.
 
-**DZ-5: fetchJson duplicated.** The `fetchJson` helper with API key headers is copy-pasted in `use-goals.ts`, `use-todos.ts`, `use-context.ts`, `use-categories.ts`, and `use-dashboard.ts`. Extract to a shared module when modifying any of these.
+**DZ-5: fetchJson duplicated.** RESOLVED in Wave 0 Phase 4. Retained here as historical context only; no longer active. The hooks now import from `@ascend/api-client`.
 
 **DZ-6: Board view components are dead code.** `components/goals/goal-board-card.tsx`, `goal-board-column.tsx`, `goal-board-view.tsx` were removed from the view switcher. Do not treat these as active components.
 
-**DZ-7: No error boundaries.** A render error in any widget crashes the entire page. If adding a risky component or a new top-level page, wrap it in an error boundary.
+**DZ-7: No error boundaries.** A render error in any widget crashes the entire page. If adding a risky component or a new top-level page, wrap it in an error boundary. Mitigated for the `(auth)` route group via `apps/web/app/(auth)/error.tsx`.
+
+**DZ-8: ContextLink.userId is denormalized.** Every query touching the ContextLink table MUST filter by userId (either directly in the where clause or via a preceding ownership check on the endpoint entries). The denormalized column exists specifically so Safety Rule 1 can be enforced on join-table queries without needing to traverse fromEntry/toEntry. See `apps/web/lib/services/context-link-service.ts` — every method verifies ownership before touching ContextLink. This was added in Wave 1 Phase 1.
 
 ## Deployment
 

@@ -2,7 +2,24 @@
 
 Deferred features and initiatives that have been explicitly scoped but not yet implemented. When you want to pick one up, run `/ax:plan <slug>` to create a full PRD + TASKS.md.
 
-Last updated: 22. 4. 2026
+Last updated: 24. 4. 2026
+
+---
+
+## Wave 1 (Graph Foundation) — SHIPPED 24. 4. 2026
+
+The 15-day plan collapsed into a single focused session: monorepo package `@ascend/graph`, typed `ContextLink` edges, 7 entry types, extended wikilink syntax, graph view (ReactFlow + d3-force), detail panel edges section, Quick Link dialog, entry type selector, Backlinks view, 7 new MCP graph tools. Production now reports 47 MCP tools (40 existing + 7 new). Commits `f36d8a2`, `f684ef5`, `22c9929`, `d86b53c`, `29bf523`, `fa21884`, `2970512`, `fb60017`, `21302ad`. Close-out at `.ascendflow/features/context-v2/wave-1-graph-foundation/CLOSE-OUT.md`.
+
+## Wave 1 → Wave 2+ carry-overs (tracked here until picked up)
+
+- **Performance benchmark on 500-node graphs.** Phase 8.9 was not formally executed; `computeLayout` was verified only with a synthetic 500-node graph during Phase 2 (637ms layout). The graph view (`context-graph-view.tsx`) target is <2s cold / <200ms warm on a 500-entry real database. Seed a 500-entry fixture in a future session and measure.
+- **ax:verify-ui on the graph view.** Phase 8.8 listed a UI scenario plan (graph rendering, focus mode, filter chips, inline type change, Quick Link dialog, edit [[relation:X]] → new edge). Deferred to a follow-up ax:verify-ui pass because the session is already long.
+- **Optional composite unique `(fromEntryId, toEntryId, type, userId)` on ContextLink.** Today the composite unique is `(fromEntryId, toEntryId, type)`; `userId` enforcement lives in the application layer. Schema-level multi-tenant enforcement would require a migration. Non-blocking.
+- **Defense-in-depth userId in the ContextLink upsert where.** The upsert in `contextLinkService.create` and `syncContentLinks` uses the composite unique as its where target; userId scoping is the preceding ownership check rather than part of the constraint. Safe by construction today.
+- **Persisted graph layouts.** Current graph layout is computed on every mount via d3-force. For large graphs, caching positions on the server (or in IndexedDB on the client) would give instant re-open. Nice-to-have for Wave 3+.
+- **Mobile graph renderer.** `@ascend/graph` is platform-agnostic but ReactFlow is web-only. Wave 6 Expo needs a native renderer (react-native-skia + custom edge/node components) consuming the same `computeLayout` output. Deferred as planned.
+- **`getGraph` node cap "degree" currently uses cross-user degree for defense-in-depth `_count` filter.** The `_count.select.outgoingLinks.where: { userId }` was added in Wave 1 Phase 3. Revisit for efficiency if count queries get slow on large graphs.
+- **Reporting accuracy: `syncContentLinks.created` overcounts on no-op upserts.** The counter increments unconditionally; when the parser re-encounters an unchanged CONTENT link, the upsert is a no-op but the counter ticks. Not a correctness issue, only observability.
 
 ---
 
