@@ -1,4 +1,4 @@
-import type { GoalFilters, TodoFilters, ContextFilters } from "@/lib/validations";
+import type { GoalFilters, TodoFilters, ContextFilters, ContextGraphFilters } from "@/lib/validations";
 
 export const queryKeys = {
   goals: {
@@ -24,6 +24,14 @@ export const queryKeys = {
     list: (filters?: ContextFilters) => ["context", "list", filters] as const,
     detail: (id: string) => ["context", "detail", id] as const,
     search: (q: string) => ["context", "search", q] as const,
+    graph: (filters?: ContextGraphFilters) => ["context", "graph", filters ?? {}] as const,
+    neighbors: (id: string, depth: number) => ["context", "neighbors", id, depth] as const,
+    related: (id: string) => ["context", "related", id] as const,
+    byType: (type: string) => ["context", "byType", type] as const,
+    links: {
+      all: () => ["context", "links"] as const,
+      forEntry: (entryId: string) => ["context", "links", "forEntry", entryId] as const,
+    },
   },
   categories: {
     all: () => ["categories"] as const,
