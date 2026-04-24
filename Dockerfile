@@ -77,9 +77,6 @@ COPY --from=builder /app/apps/web/generated ./apps/web/generated
 COPY --from=builder /app/apps/web/prisma ./apps/web/prisma
 COPY --from=builder /app/apps/web/prisma.config.ts ./apps/web/prisma.config.ts
 
-# Copy lib files needed by seed script at runtime
-COPY --from=builder /app/apps/web/lib/constants.ts ./apps/web/lib/constants.ts
-
 USER nextjs
 
 EXPOSE 3000
@@ -87,4 +84,18 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["sh", "-c", "cd apps/web && if [ -d prisma/migrations ]; then ./node_modules/.bin/prisma migrate deploy && ./node_modules/.bin/tsx prisma/seed.ts; fi && node server.js"]
+# Boot order:
+#   1. Apply any pending Prisma migrations via `migrate deploy` (safe: no
+#      --create-only, no diff against introspected schema, so the
+#      ContextEntry.search_vector tsvector column is preserved).
+#   2. Start the Next.js standalone server.
+#
+# prisma/seed.ts is NOT run at container start. That seed creates a
+# hardcoded dev user and writes API_KEY into the user row; it is a
+# dev-only bootstrap. Production users are seeded on first deploy and
+# then managed via the app + scripts/set-password.ts. Running it every
+# container start was the cause of the 2026-04-24 crash-loop: the seed
+# imports @ascend/core via lib/constants.ts, but @ascend/core is not
+# available in the runner stage (Next.js standalone bundles server.js
+# but tsx-run scripts resolve modules at runtime and cannot find it).
+CMD ["sh", "-c", "cd apps/web && if [ -d prisma/migrations ]; then ./node_modules/.bin/prisma migrate deploy; fi && node server.js"]
