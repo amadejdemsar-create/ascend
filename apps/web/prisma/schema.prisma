@@ -386,10 +386,6 @@ model ContextEntry {
   // Entry type for typed knowledge graph
   type ContextEntryType @default(NOTE)
 
-  // Backlinks: store IDs of documents this entry links TO via [[Title]] syntax
-  // Bidirectional resolution happens at query time (find entries linking to me)
-  linkedEntryIds String[] @default([])
-
   // Wave 0: workspace scaffolding (nullable until Wave 8 backfill)
   workspaceId String?
 

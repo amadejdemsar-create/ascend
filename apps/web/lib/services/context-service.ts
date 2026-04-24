@@ -34,8 +34,7 @@ export const contextService = {
 
   /**
    * Create a new context entry. Parses [[wikilinks]] from content via the
-   * @ascend/core parser and syncs typed CONTENT-source links. Does NOT
-   * write to the legacy linkedEntryIds array (dead write path as of Phase 3).
+   * @ascend/core parser and syncs typed CONTENT-source links.
    */
   async create(userId: string, data: CreateContextInput) {
     if (data.categoryId) {
@@ -102,8 +101,7 @@ export const contextService = {
 
   /**
    * Update a context entry. Re-parses [[wikilinks]] if content changed
-   * and syncs typed CONTENT-source links via contextLinkService. Does NOT
-   * write to the legacy linkedEntryIds array.
+   * and syncs typed CONTENT-source links via contextLinkService.
    */
   async update(userId: string, id: string, data: UpdateContextInput) {
     const existing = await prisma.contextEntry.findFirst({
@@ -118,7 +116,7 @@ export const contextService = {
       if (!category) throw new Error("Category not found");
     }
 
-    // Build update payload without linkedEntryIds (dead write path)
+    // Build update payload
     const updateData: Record<string, unknown> = {};
     if (data.title !== undefined) updateData.title = data.title;
     if (data.content !== undefined) updateData.content = data.content;
@@ -148,24 +146,14 @@ export const contextService = {
   },
 
   /**
-   * Delete a context entry. Also removes this ID from
-   * linkedEntryIds arrays of other entries that reference it.
-   * ContextLinks are cascade-deleted by Prisma (onDelete: Cascade on both
-   * fromEntry and toEntry relations).
+   * Delete a context entry. ContextLinks are cascade-deleted by Prisma
+   * (onDelete: Cascade on both fromEntry and toEntry relations).
    */
   async delete(userId: string, id: string) {
     const existing = await prisma.contextEntry.findFirst({
       where: { id, userId },
     });
     if (!existing) throw new Error("Context entry not found");
-
-    // Remove this ID from any of THIS user's entries that link to it
-    // via the legacy linkedEntryIds array. Scoped by userId.
-    await prisma.$executeRaw`
-      UPDATE "ContextEntry"
-      SET "linkedEntryIds" = array_remove("linkedEntryIds", ${id})
-      WHERE "userId" = ${userId} AND ${id} = ANY("linkedEntryIds")
-    `;
 
     return prisma.contextEntry.delete({ where: { id } });
   },

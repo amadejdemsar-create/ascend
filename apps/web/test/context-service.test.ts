@@ -1,13 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { contextService } from "@/lib/services/context-service";
-import { prisma } from "@/lib/db";
 import { createTestUser, deleteTestUser } from "./helpers";
 
 describe("contextService", () => {
   // Two users to verify cross-tenant boundaries (C1 analog for context
-  // entries, plus C2 regression for the raw SQL backlink cleanup in
-  // delete() that used to rewrite linkedEntryIds without a userId
-  // filter).
+  // entries, plus C2 regression for cascade-delete of ContextLinks).
   let userA: { id: string; apiKey: string };
   let userB: { id: string; apiKey: string };
 
@@ -92,8 +89,8 @@ describe("contextService", () => {
     });
   });
 
-  describe("backlink resolution via [[Title]] parsing", () => {
-    it("populates linkedEntryIds from [[Title]] references on create", async () => {
+  describe("wikilink resolution via ContextLink (typed edges)", () => {
+    it("creates ContextLink rows from [[Title]] references on create", async () => {
       const target1 = await contextService.create(userA.id, {
         title: "Strategy",
         content: "A strategy doc.",
@@ -111,12 +108,13 @@ describe("contextService", () => {
         tags: [],
       });
 
-      expect(source.linkedEntryIds.sort()).toEqual(
-        [target1.id, target2.id].sort(),
-      );
+      // Verify via getById which joins outgoingLinks
+      const full = await contextService.getById(userA.id, source.id);
+      const linkedIds = (full?.outgoingLinks ?? []).map((l) => l.toEntry.id).sort();
+      expect(linkedIds).toEqual([target1.id, target2.id].sort());
     });
 
-    it("re-parses linkedEntryIds when content changes on update", async () => {
+    it("re-syncs ContextLinks when content changes on update", async () => {
       const t1 = await contextService.create(userA.id, {
         title: "Note One",
         content: "body",
@@ -132,18 +130,22 @@ describe("contextService", () => {
         content: "See [[Note One]].",
         tags: [],
       });
-      expect(source.linkedEntryIds).toEqual([t1.id]);
 
-      const updated = await contextService.update(userA.id, source.id, {
+      const fullBefore = await contextService.getById(userA.id, source.id);
+      expect((fullBefore?.outgoingLinks ?? []).map((l) => l.toEntry.id)).toEqual([t1.id]);
+
+      await contextService.update(userA.id, source.id, {
         content: "Now see [[Note Two]] instead.",
       });
-      expect(updated.linkedEntryIds).toEqual([t2.id]);
+
+      const fullAfter = await contextService.getById(userA.id, source.id);
+      expect((fullAfter?.outgoingLinks ?? []).map((l) => l.toEntry.id)).toEqual([t2.id]);
     });
 
     it("does not resolve [[Title]] across user boundaries", async () => {
       // A has an entry titled "Shared Name"; B writes a doc that
-      // references [[Shared Name]]. The backlink must NOT resolve to
-      // A's entry id because parseBacklinks is scoped by userId.
+      // references [[Shared Name]]. The link must NOT resolve to
+      // A's entry id because syncContentLinks is scoped by userId.
       await contextService.create(userA.id, {
         title: "Shared Name",
         content: "A's secret",
@@ -156,12 +158,13 @@ describe("contextService", () => {
         tags: [],
       });
 
-      expect(bEntry.linkedEntryIds).toEqual([]);
+      const fullB = await contextService.getById(userB.id, bEntry.id);
+      expect(fullB?.outgoingLinks ?? []).toEqual([]);
     });
   });
 
-  describe("delete backlink cleanup (C2 regression)", () => {
-    it("removes the deleted id from linkedEntryIds on the caller's other entries", async () => {
+  describe("delete cascade cleanup", () => {
+    it("cascade-deletes ContextLinks when an entry is deleted", async () => {
       const target = await contextService.create(userA.id, {
         title: "To Be Deleted",
         content: "will die",
@@ -172,43 +175,47 @@ describe("contextService", () => {
         content: "See [[To Be Deleted]].",
         tags: [],
       });
-      expect(referrer.linkedEntryIds).toEqual([target.id]);
+
+      // Confirm the link exists before delete
+      const fullBefore = await contextService.getById(userA.id, referrer.id);
+      expect((fullBefore?.outgoingLinks ?? []).length).toBe(1);
 
       await contextService.delete(userA.id, target.id);
 
-      const rereadReferrer = await contextService.getById(userA.id, referrer.id);
-      expect(rereadReferrer?.linkedEntryIds).toEqual([]);
+      // After deleting the target, the referrer's outgoing link should be gone
+      // because ContextLink has onDelete: Cascade on the toEntry relation.
+      const fullAfter = await contextService.getById(userA.id, referrer.id);
+      expect(fullAfter?.outgoingLinks ?? []).toEqual([]);
     });
 
-    it("does NOT touch another user's linkedEntryIds even on id collisions", async () => {
-      // Simulate the worst case: user B has an entry whose
-      // linkedEntryIds array contains a string that happens to equal
-      // user A's target id. When A deletes their own target, the raw
-      // UPDATE must NOT strip that value from B's row.
+    it("does NOT cascade-delete another user's ContextLinks", async () => {
       const aTarget = await contextService.create(userA.id, {
-        title: "A target",
+        title: "A target for cascade",
         content: "body",
         tags: [],
       });
 
-      // B creates an entry, then we surgically put aTarget.id into B's
-      // linkedEntryIds to simulate a cross-user collision.
-      const bEntry = await contextService.create(userB.id, {
-        title: "B entry",
+      // B creates entries with their own internal links
+      const bTarget = await contextService.create(userB.id, {
+        title: "B target",
         content: "body",
         tags: [],
       });
-      await prisma.contextEntry.update({
-        where: { id: bEntry.id },
-        data: { linkedEntryIds: { set: [aTarget.id, "other"] } },
+      const bSource = await contextService.create(userB.id, {
+        title: "B source",
+        content: "See [[B target]].",
+        tags: [],
       });
 
+      // Verify B's link exists
+      const fullBBefore = await contextService.getById(userB.id, bSource.id);
+      expect((fullBBefore?.outgoingLinks ?? []).length).toBe(1);
+
+      // Delete A's entry; B's links must be untouched
       await contextService.delete(userA.id, aTarget.id);
 
-      const bReread = await prisma.contextEntry.findUnique({
-        where: { id: bEntry.id },
-      });
-      expect(bReread?.linkedEntryIds.sort()).toEqual([aTarget.id, "other"].sort());
+      const fullBAfter = await contextService.getById(userB.id, bSource.id);
+      expect((fullBAfter?.outgoingLinks ?? []).length).toBe(1);
     });
   });
 });
