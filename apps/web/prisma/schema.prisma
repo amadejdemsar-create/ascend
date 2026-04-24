@@ -50,6 +50,33 @@ enum FileStatus {
   FAILED
 }
 
+enum ContextEntryType {
+  NOTE
+  SOURCE
+  PROJECT
+  PERSON
+  DECISION
+  QUESTION
+  AREA
+}
+
+enum ContextLinkType {
+  REFERENCES
+  EXTENDS
+  CONTRADICTS
+  SUPPORTS
+  EXAMPLE_OF
+  DERIVED_FROM
+  SUPERSEDES
+  APPLIES_TO
+  PART_OF
+}
+
+enum ContextLinkSource {
+  CONTENT
+  MANUAL
+}
+
 // Models
 
 model User {
@@ -74,6 +101,7 @@ model User {
   focusSessions  FocusSession[]
   files          File[]
   sessions       Session[]
+  contextLinks   ContextLink[]
 }
 
 model Goal {
@@ -355,6 +383,9 @@ model ContextEntry {
   // Pinned entries surface at the top of the context list
   isPinned Boolean @default(false)
 
+  // Entry type for typed knowledge graph
+  type ContextEntryType @default(NOTE)
+
   // Backlinks: store IDs of documents this entry links TO via [[Title]] syntax
   // Bidirectional resolution happens at query time (find entries linking to me)
   linkedEntryIds String[] @default([])
@@ -365,6 +396,10 @@ model ContextEntry {
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // Graph edges
+  outgoingLinks ContextLink[] @relation("ContextLinkFrom")
+  incomingLinks ContextLink[] @relation("ContextLinkTo")
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -374,6 +409,27 @@ model ContextEntry {
   @@index([categoryId])
   @@index([userId, title])
   @@index([userId, isPinned])
+}
+
+model ContextLink {
+  id          String            @id @default(cuid())
+  userId      String
+  fromEntryId String
+  toEntryId   String
+  type        ContextLinkType   @default(REFERENCES)
+  source      ContextLinkSource @default(CONTENT)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  fromEntry ContextEntry @relation("ContextLinkFrom", fields: [fromEntryId], references: [id], onDelete: Cascade)
+  toEntry   ContextEntry @relation("ContextLinkTo", fields: [toEntryId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([fromEntryId, toEntryId, type])
+  @@index([userId])
+  @@index([fromEntryId])
+  @@index([toEntryId])
+  @@index([type])
 }
 
 model File {
