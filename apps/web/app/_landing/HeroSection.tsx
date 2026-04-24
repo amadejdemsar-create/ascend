@@ -1,7 +1,13 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { ArrowRight, Layers, Eye, Keyboard } from "lucide-react";
 
-export function HeroSection() {
+export async function HeroSection() {
+  const cookieStore = await cookies();
+  const isAuthed = cookieStore.has("access_token");
+  const ctaHref = isAuthed ? "/dashboard" : "/login";
+  const ctaLabel = isAuthed ? "Open Ascend" : "Log in";
+
   return (
     <section className="relative flex min-h-[90vh] flex-col items-center justify-center px-6 pt-24 pb-20 text-center">
       {/* Eyebrow */}
@@ -29,10 +35,10 @@ export function HeroSection() {
       {/* CTA */}
       <div className="landing-fade-in landing-fade-in-delay-3 mt-10 flex flex-col items-center gap-4 sm:flex-row">
         <Link
-          href="/dashboard"
+          href={ctaHref}
           className="landing-shimmer group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-8 py-3.5 text-base font-semibold text-white transition-all hover:from-violet-500 hover:to-indigo-500 hover:shadow-xl hover:shadow-violet-500/25"
         >
-          Open Ascend
+          {ctaLabel}
           <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
         </Link>
       </div>

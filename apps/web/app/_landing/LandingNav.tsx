@@ -1,6 +1,18 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 
-export function LandingNav() {
+// Async server component: reads the access_token cookie on the server so
+// the primary CTA renders the right label + href for signed-out vs
+// signed-in visitors. The check is presence-only (no JWT verify) because
+// middleware will clear a stale cookie on the next protected-page hit;
+// if an expired cookie sends a signed-out user to /dashboard, middleware
+// redirects them back to /login with ?redirect=/dashboard preserved.
+export async function LandingNav() {
+  const cookieStore = await cookies();
+  const isAuthed = cookieStore.has("access_token");
+  const ctaHref = isAuthed ? "/dashboard" : "/login";
+  const ctaLabel = isAuthed ? "Open App" : "Log in";
+
   return (
     <nav className="landing-glass-nav fixed top-0 left-0 right-0 z-50">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
@@ -33,10 +45,10 @@ export function LandingNav() {
         </div>
 
         <Link
-          href="/dashboard"
+          href={ctaHref}
           className="landing-shimmer rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-2 text-sm font-medium text-white transition-all hover:from-violet-500 hover:to-indigo-500 hover:shadow-lg hover:shadow-violet-500/20"
         >
-          Open App
+          {ctaLabel}
         </Link>
       </div>
     </nav>

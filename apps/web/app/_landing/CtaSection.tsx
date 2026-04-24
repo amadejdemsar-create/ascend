@@ -1,7 +1,13 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { ArrowRight } from "lucide-react";
 
-export function CtaSection() {
+export async function CtaSection() {
+  const cookieStore = await cookies();
+  const isAuthed = cookieStore.has("access_token");
+  const ctaHref = isAuthed ? "/dashboard" : "/login";
+  const ctaLabel = isAuthed ? "Open Ascend" : "Log in";
+
   return (
     <section className="relative px-6 py-24">
       <div className="mx-auto max-w-3xl text-center">
@@ -15,10 +21,10 @@ export function CtaSection() {
 
         <div className="mt-10">
           <Link
-            href="/dashboard"
+            href={ctaHref}
             className="landing-shimmer group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-10 py-4 text-lg font-semibold text-white transition-all hover:from-violet-500 hover:to-indigo-500 hover:shadow-xl hover:shadow-violet-500/25"
           >
-            Open Ascend
+            {ctaLabel}
             <ArrowRight className="size-5 transition-transform group-hover:translate-x-0.5" />
           </Link>
         </div>
