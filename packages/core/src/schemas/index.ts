@@ -42,9 +42,19 @@ export {
   updateContextSchema,
   contextFiltersSchema,
   contextSearchSchema,
+  createContextLinkSchema,
+  updateContextLinkSchema,
+  deleteContextLinkQuerySchema,
+  contextGraphFiltersSchema,
+  contextNeighborsQuerySchema,
   type CreateContextInput,
   type UpdateContextInput,
   type ContextFilters,
+  type CreateContextLinkInput,
+  type UpdateContextLinkInput,
+  type DeleteContextLinkQuery,
+  type ContextGraphFilters,
+  type ContextNeighborsQuery,
 } from "./context-schemas";
 
 // Category schemas and types

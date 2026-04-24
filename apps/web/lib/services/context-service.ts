@@ -124,6 +124,7 @@ export const contextService = {
     if (data.content !== undefined) updateData.content = data.content;
     if (data.categoryId !== undefined) updateData.categoryId = data.categoryId;
     if (data.tags !== undefined) updateData.tags = data.tags;
+    if (data.type !== undefined) updateData.type = data.type;
 
     const updated = await prisma.contextEntry.update({
       where: { id },
