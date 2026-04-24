@@ -1,4 +1,17 @@
 import { z } from "zod";
+import {
+  CONTEXT_ENTRY_TYPE_VALUES,
+  CONTEXT_LINK_TYPE_VALUES,
+  CONTEXT_LINK_SOURCE_VALUES,
+} from "../constants/context-types";
+
+// ── Context type enum schemas ──────────────────────────────────────
+
+export const contextEntryTypeSchema = z.enum(CONTEXT_ENTRY_TYPE_VALUES);
+export const contextLinkTypeSchema = z.enum(CONTEXT_LINK_TYPE_VALUES);
+export const contextLinkSourceSchema = z.enum(CONTEXT_LINK_SOURCE_VALUES);
+
+// ── Context entry schemas ──────────────────────────────────────────
 
 // Context schemas
 export const createContextSchema = z.object({

@@ -36,3 +36,21 @@ export {
   CATEGORY_COLORS,
   DEFAULT_CATEGORIES,
 } from "./gamification";
+
+export {
+  // Context entry types
+  ContextEntryType,
+  CONTEXT_ENTRY_TYPE_VALUES,
+  CONTEXT_ENTRY_TYPE_ENUM,
+  type ContextEntryType as ContextEntryTypeType,
+  // Context link types
+  ContextLinkType,
+  CONTEXT_LINK_TYPE_VALUES,
+  CONTEXT_LINK_TYPE_ENUM,
+  type ContextLinkType as ContextLinkTypeType,
+  // Context link source
+  ContextLinkSource,
+  CONTEXT_LINK_SOURCE_VALUES,
+  CONTEXT_LINK_SOURCE_ENUM,
+  type ContextLinkSource as ContextLinkSourceType,
+} from "./context-types";

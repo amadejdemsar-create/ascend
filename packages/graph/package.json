@@ -1,0 +1,23 @@
+{
+  "name": "@ascend/graph",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "dependencies": {
+    "d3-force": "^3.0.0"
+  },
+  "devDependencies": {
+    "@ascend/core": "workspace:*",
+    "@types/d3-force": "^3.0.10",
+    "typescript": "^5.9.3"
+  }
+}

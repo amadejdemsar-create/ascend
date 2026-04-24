@@ -42,6 +42,10 @@ export {
   updateCategorySchema,
   type CreateCategoryInput,
   type UpdateCategoryInput,
+  // Context enum schemas
+  contextEntryTypeSchema,
+  contextLinkTypeSchema,
+  contextLinkSourceSchema,
   // Context schemas and types
   createContextSchema,
   updateContextSchema,

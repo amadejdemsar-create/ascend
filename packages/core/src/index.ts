@@ -7,3 +7,5 @@
 
 export * from "./schemas/index";
 export * from "./constants/index";
+export { parseWikilinks } from "./wikilink";
+export type { ParsedWikilink } from "./wikilink";

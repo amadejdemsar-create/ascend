@@ -35,6 +35,9 @@ export {
 
 // Context schemas and types
 export {
+  contextEntryTypeSchema,
+  contextLinkTypeSchema,
+  contextLinkSourceSchema,
   createContextSchema,
   updateContextSchema,
   contextFiltersSchema,

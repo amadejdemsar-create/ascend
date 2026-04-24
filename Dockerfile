@@ -11,6 +11,7 @@ COPY packages/core/package.json ./packages/core/
 COPY packages/api-client/package.json ./packages/api-client/
 COPY packages/storage/package.json ./packages/storage/
 COPY packages/ui-tokens/package.json ./packages/ui-tokens/
+COPY packages/graph/package.json ./packages/graph/
 RUN pnpm install --frozen-lockfile
 
 # Stage 2: Build the application
@@ -26,6 +27,7 @@ COPY --from=deps /app/packages/core/node_modules ./packages/core/node_modules
 COPY --from=deps /app/packages/api-client/node_modules ./packages/api-client/node_modules
 COPY --from=deps /app/packages/storage/node_modules ./packages/storage/node_modules
 COPY --from=deps /app/packages/ui-tokens/node_modules ./packages/ui-tokens/node_modules
+COPY --from=deps /app/packages/graph/node_modules ./packages/graph/node_modules
 COPY . .
 ENV DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
 # auth-service.ts has a module-init guard that throws if AUTH_JWT_SECRET is
@@ -50,6 +52,7 @@ COPY packages/core/package.json ./packages/core/
 COPY packages/api-client/package.json ./packages/api-client/
 COPY packages/storage/package.json ./packages/storage/
 COPY packages/ui-tokens/package.json ./packages/ui-tokens/
+COPY packages/graph/package.json ./packages/graph/
 RUN pnpm install --frozen-lockfile --prod
 
 # Stage 4: Production runner
