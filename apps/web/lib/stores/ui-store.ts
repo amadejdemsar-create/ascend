@@ -28,6 +28,7 @@ function createAdapterStorage<S>(): PersistStorage<S> {
 }
 
 export type ViewType = "list" | "tree" | "timeline";
+export type ContextViewType = "list" | "graph" | "pinned" | "backlinks";
 export type TodoDateTab = "today" | "week" | "all";
 
 export interface ActiveFilters {
@@ -75,6 +76,7 @@ interface UIStore {
   todoDateTab: TodoDateTab;
   todoHideCompleted: boolean;
   contextFilters: ContextFilters;
+  contextActiveView: ContextViewType;
   setTodoDateTab: (tab: TodoDateTab) => void;
   setTodoHideCompleted: (hide: boolean) => void;
   setContextTagFilter: (tag: string | null) => void;
@@ -85,6 +87,7 @@ interface UIStore {
   setGoalEditData: (data: GoalEditData) => void;
   setActiveView: (view: ViewType) => void;
   setActiveFilters: (filters: ActiveFilters) => void;
+  setContextActiveView: (view: ContextViewType) => void;
   setActiveSorting: (sorting: SortingState) => void;
   setTimelineZoom: (zoom: TimelineZoom) => void;
   setTimelineYear: (year: number) => void;
@@ -110,6 +113,7 @@ export const useUIStore = create<UIStore>()(
       todoDateTab: "today",
       todoHideCompleted: true,
       contextFilters: {},
+      contextActiveView: "list",
       setTodoDateTab: (tab) => set({ todoDateTab: tab }),
       setTodoHideCompleted: (hide) => set({ todoHideCompleted: hide }),
       setContextTagFilter: (tag) =>
@@ -131,6 +135,7 @@ export const useUIStore = create<UIStore>()(
       setGoalEditData: (data) => set({ goalEditData: data }),
       setActiveView: (view) => set({ activeView: view }),
       setActiveFilters: (filters) => set({ activeFilters: filters }),
+      setContextActiveView: (view) => set({ contextActiveView: view }),
       setActiveSorting: (sorting) => set({ activeSorting: sorting }),
       setTimelineZoom: (zoom) => set({ timelineZoom: zoom }),
       setTimelineYear: (year) => set({ timelineYear: year }),
@@ -139,7 +144,7 @@ export const useUIStore = create<UIStore>()(
     }),
     {
       name: "ascend-ui",
-      version: 8,
+      version: 9,
       storage: createAdapterStorage(),
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as Record<string, unknown>;
@@ -182,6 +187,17 @@ export const useUIStore = create<UIStore>()(
             contextFilters: {},
           };
         }
+        if (version === 8) {
+          const validContextViews = new Set(["list", "graph", "pinned", "backlinks"]);
+          const ctxView = state.contextActiveView;
+          return {
+            ...state,
+            contextActiveView:
+              typeof ctxView === "string" && validContextViews.has(ctxView)
+                ? ctxView
+                : "list",
+          };
+        }
         return state;
       },
       partialize: (state) => ({
@@ -195,6 +211,7 @@ export const useUIStore = create<UIStore>()(
         todoDateTab: state.todoDateTab,
         todoHideCompleted: state.todoHideCompleted,
         contextFilters: state.contextFilters,
+        contextActiveView: state.contextActiveView,
       }),
     }
   )

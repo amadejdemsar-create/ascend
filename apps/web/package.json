@@ -14,6 +14,7 @@
   "dependencies": {
     "@ascend/api-client": "workspace:*",
     "@ascend/core": "workspace:*",
+    "@ascend/graph": "workspace:*",
     "@ascend/storage": "workspace:*",
     "@ascend/ui-tokens": "workspace:*",
     "@aws-sdk/client-s3": "^3.1034.0",
@@ -28,6 +29,7 @@
     "@tanstack/react-query": "^5.95.2",
     "@tanstack/react-query-devtools": "^5.95.2",
     "@tanstack/react-table": "^8.21.3",
+    "@xyflow/react": "^12.10.2",
     "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

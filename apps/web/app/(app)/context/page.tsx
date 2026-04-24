@@ -10,6 +10,8 @@ import { ContextCategoryTree } from "@/components/context/context-category-tree"
 import { ContextEntryList } from "@/components/context/context-entry-list";
 import { ContextEntryDetail } from "@/components/context/context-entry-detail";
 import { ContextEntryEditor } from "@/components/context/context-entry-editor";
+import { ContextViewSwitcher } from "@/components/context/context-view-switcher";
+import { ContextGraphView } from "@/components/context/context-graph-view";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import {
@@ -39,6 +41,7 @@ export default function ContextPage() {
 
   const contextFilters = useUIStore((s) => s.contextFilters);
   const setContextTagFilter = useUIStore((s) => s.setContextTagFilter);
+  const contextActiveView = useUIStore((s) => s.contextActiveView);
   const tagFilter = contextFilters.tag ?? null;
 
   const { data: entries, isLoading } = useContextEntries(
@@ -51,6 +54,10 @@ export default function ContextPage() {
     if (!tagFilter) return entryList;
     return entryList.filter((entry) => entry.tags.includes(tagFilter));
   }, [entryList, tagFilter]);
+
+  const pinnedEntries = useMemo(() => {
+    return filteredEntries.filter((entry) => entry.isPinned);
+  }, [filteredEntries]);
 
   const hasCategoryFilter = selectedCategoryId !== null;
 
@@ -125,8 +132,32 @@ export default function ContextPage() {
     handleSelectEntry(id);
   }
 
+  // Listen for graph node selections (dispatched from ContextGraphView)
+  useEffect(() => {
+    function handleGraphNodeSelect(e: Event) {
+      const detail = (e as CustomEvent<{ id: string }>).detail;
+      if (detail?.id) {
+        handleSelectEntry(detail.id);
+      }
+    }
+    window.addEventListener(
+      "ascend:context-node-select",
+      handleGraphNodeSelect,
+    );
+    return () =>
+      window.removeEventListener(
+        "ascend:context-node-select",
+        handleGraphNodeSelect,
+      );
+  }, []);
+
   const showDetail = selectedEntryId || showCurrentPriorities;
   const showEditor = isCreating || editingEntryId;
+
+  // For graph view, the left panel is replaced by the graph canvas.
+  // For pinned view, the left panel shows only pinned entries.
+  // For backlinks view, placeholder for now.
+  const isGraphView = contextActiveView === "graph";
 
   // Escape closes the open detail/editor panel. Scoped to this page because
   // the global handler only owns selectedGoalId. Skips when focus is in a
@@ -160,61 +191,162 @@ export default function ContextPage() {
     return () => document.removeEventListener("keydown", handleEscape);
   }, [showDetail, showEditor]);
 
+  // ── Render the left panel content based on active view ─────────
+
+  function renderLeftPanelContent() {
+    switch (contextActiveView) {
+      case "graph":
+        return <ContextGraphView />;
+
+      case "pinned":
+        return (
+          <>
+            {/* Header for pinned view */}
+            <div className="sticky top-0 z-10 border-b bg-background p-4 space-y-3">
+              <PageHeader
+                title="Context"
+                className="mb-0"
+                actions={
+                  <>
+                    <ContextViewSwitcher />
+                    <Button size="sm" onClick={handleNewDocument} className="gap-1.5">
+                      <Plus className="size-3.5" />
+                      New
+                    </Button>
+                  </>
+                }
+              />
+              <ContextSearch onSelect={handleSearchSelect} />
+            </div>
+            <ContextEntryList
+              entries={pinnedEntries}
+              selectedId={selectedEntryId}
+              onSelect={handleSelectEntry}
+              isLoading={isLoading}
+              hasCategoryFilter={hasCategoryFilter}
+              tagFilter={tagFilter}
+              onClearTagFilter={handleClearTagFilter}
+              onTagClick={setContextTagFilter}
+              onTogglePin={handleTogglePin}
+            />
+          </>
+        );
+
+      case "backlinks":
+        return (
+          <>
+            {/* Header for backlinks view */}
+            <div className="sticky top-0 z-10 border-b bg-background p-4 space-y-3">
+              <PageHeader
+                title="Context"
+                className="mb-0"
+                actions={
+                  <>
+                    <ContextViewSwitcher />
+                    <Button size="sm" onClick={handleNewDocument} className="gap-1.5">
+                      <Plus className="size-3.5" />
+                      New
+                    </Button>
+                  </>
+                }
+              />
+            </div>
+            <div className="flex flex-1 items-center justify-center p-8 text-muted-foreground">
+              <p className="text-sm">
+                Backlinks view is coming in Phase 6.15. All entries will be
+                sorted by incoming link count, showing which entries are the
+                most connected hubs in your knowledge graph.
+              </p>
+            </div>
+          </>
+        );
+
+      case "list":
+      default:
+        return (
+          <>
+            {/* Header */}
+            <div className="sticky top-0 z-10 border-b bg-background p-4 space-y-3">
+              {/* Row 1: Title + View Switcher + New button */}
+              <PageHeader
+                title="Context"
+                className="mb-0"
+                actions={
+                  <>
+                    <ContextViewSwitcher />
+                    <Button size="sm" onClick={handleNewDocument} className="gap-1.5">
+                      <Plus className="size-3.5" />
+                      New
+                    </Button>
+                  </>
+                }
+              />
+
+              {/* Row 2: Search */}
+              <ContextSearch onSelect={handleSearchSelect} />
+
+              {/* Row 3: Category tree (collapsible) */}
+              <Collapsible defaultOpen>
+                <CollapsibleTrigger className="flex w-full items-center justify-between text-xs font-medium text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors py-1">
+                  Categories
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="mt-1">
+                    <ContextCategoryTree
+                      selectedCategoryId={selectedCategoryId}
+                      onSelectCategory={setSelectedCategoryId}
+                    />
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            </div>
+
+            {/* Entry list */}
+            <ContextEntryList
+              entries={filteredEntries}
+              selectedId={selectedEntryId}
+              onSelect={handleSelectEntry}
+              isLoading={isLoading}
+              currentPrioritiesSelected={showCurrentPriorities}
+              onSelectCurrentPriorities={handleSelectCurrentPriorities}
+              hasCategoryFilter={hasCategoryFilter}
+              tagFilter={tagFilter}
+              onClearTagFilter={handleClearTagFilter}
+              onTagClick={setContextTagFilter}
+              onTogglePin={handleTogglePin}
+            />
+          </>
+        );
+    }
+  }
+
   return (
     <div className="flex h-full">
-      {/* Left panel: Entry list */}
+      {/* Left panel: view content */}
       <div
-        className={`flex-1 flex flex-col border-r overflow-y-auto ${
-          showDetail || showEditor ? "hidden md:flex" : "flex"
+        className={`flex-1 flex flex-col ${isGraphView ? "" : "border-r overflow-y-auto"} ${
+          !isGraphView && (showDetail || showEditor) ? "hidden md:flex" : "flex"
         }`}
       >
-        {/* Header */}
-        <div className="sticky top-0 z-10 border-b bg-background p-4 space-y-3">
-          {/* Row 1: Title + New button */}
-          <PageHeader
-            title="Context"
-            className="mb-0"
-            actions={
-              <Button size="sm" onClick={handleNewDocument} className="gap-1.5">
-                <Plus className="size-3.5" />
-                New
-              </Button>
-            }
-          />
-
-          {/* Row 2: Search */}
-          <ContextSearch onSelect={handleSearchSelect} />
-
-          {/* Row 3: Category tree (collapsible) */}
-          <Collapsible defaultOpen>
-            <CollapsibleTrigger className="flex w-full items-center justify-between text-xs font-medium text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors py-1">
-              Categories
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="mt-1">
-                <ContextCategoryTree
-                  selectedCategoryId={selectedCategoryId}
-                  onSelectCategory={setSelectedCategoryId}
-                />
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-        </div>
-
-        {/* Entry list */}
-        <ContextEntryList
-          entries={filteredEntries}
-          selectedId={selectedEntryId}
-          onSelect={handleSelectEntry}
-          isLoading={isLoading}
-          currentPrioritiesSelected={showCurrentPriorities}
-          onSelectCurrentPriorities={handleSelectCurrentPriorities}
-          hasCategoryFilter={hasCategoryFilter}
-          tagFilter={tagFilter}
-          onClearTagFilter={handleClearTagFilter}
-          onTagClick={setContextTagFilter}
-          onTogglePin={handleTogglePin}
-        />
+        {/* Graph view gets its own header inline */}
+        {isGraphView && (
+          <div className="sticky top-0 z-10 border-b bg-background p-4 space-y-3">
+            <PageHeader
+              title="Context"
+              className="mb-0"
+              actions={
+                <>
+                  <ContextViewSwitcher />
+                  <Button size="sm" onClick={handleNewDocument} className="gap-1.5">
+                    <Plus className="size-3.5" />
+                    New
+                  </Button>
+                </>
+              }
+            />
+          </div>
+        )}
+        {renderLeftPanelContent()}
       </div>
 
       {/* Right panel: Detail / Editor / Empty */}
