@@ -15,6 +15,7 @@
     "@ascend/api-client": "workspace:*",
     "@ascend/core": "workspace:*",
     "@ascend/graph": "workspace:*",
+    "@ascend/llm": "workspace:*",
     "@ascend/storage": "workspace:*",
     "@ascend/ui-tokens": "workspace:*",
     "@aws-sdk/client-s3": "^3.1034.0",

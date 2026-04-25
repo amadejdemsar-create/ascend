@@ -11,6 +11,7 @@ import type {
 } from "@/lib/validations";
 import { parseWikilinks } from "@ascend/core";
 import { contextLinkService } from "@/lib/services/context-link-service";
+import { embeddingService } from "@/lib/services/embedding-service";
 
 export const contextService = {
   /**
@@ -66,6 +67,20 @@ export const contextService = {
         parsed.map((p) => ({ relation: p.relation, title: p.title })),
       );
     }
+
+    // Fire-and-forget: generate embedding asynchronously.
+    // The CRUD response must remain fast (the Gemini embed call adds 200-500ms
+    // latency). Embedding failures are logged but do NOT fail the create.
+    // The Phase 4 backfill script handles historical entries that were created
+    // before this hook was added or where the embed call failed.
+    void embeddingService
+      .upsertEmbeddingForEntry(userId, entry.id)
+      .catch((err) =>
+        console.warn(
+          `[contextService.create] Embedding generation failed for entry ${entry.id}:`,
+          err instanceof Error ? err.message : err,
+        ),
+      );
 
     return entry;
   },
@@ -140,6 +155,26 @@ export const contextService = {
         id,
         parsed.map((p) => ({ relation: p.relation, title: p.title })),
       );
+    }
+
+    // Fire-and-forget: re-generate embedding if content or title actually changed.
+    // Only re-embeds when the text that feeds the embedding vector is different
+    // from what was stored before the update. The Phase 4 backfill script handles
+    // historical entries; failures here are logged but do NOT fail the update.
+    const contentChanged =
+      data.content !== undefined && data.content !== existing.content;
+    const titleChanged =
+      data.title !== undefined && data.title !== existing.title;
+
+    if (contentChanged || titleChanged) {
+      void embeddingService
+        .upsertEmbeddingForEntry(userId, id)
+        .catch((err) =>
+          console.warn(
+            `[contextService.update] Embedding regeneration failed for entry ${id}:`,
+            err instanceof Error ? err.message : err,
+          ),
+        );
     }
 
     return updated;

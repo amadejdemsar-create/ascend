@@ -19,6 +19,9 @@ importers:
       '@ascend/graph':
         specifier: workspace:*
         version: link:../../packages/graph
+      '@ascend/llm':
+        specifier: workspace:*
+        version: link:../../packages/llm
       '@ascend/storage':
         specifier: workspace:*
         version: link:../../packages/storage
