@@ -91,6 +91,11 @@ COPY --from=builder /app/apps/web/prisma.config.ts ./apps/web/prisma.config.ts
 # Both are tsx-run from Dokploy container exec.
 COPY --from=builder /app/apps/web/scripts ./apps/web/scripts
 COPY --from=builder /app/apps/web/lib ./apps/web/lib
+# tsconfig.json carries the @/* path alias map. Without it, tsx-run scripts
+# (e.g. backfill-embeddings.ts, set-password.ts) fail with "Cannot find
+# module '@/lib/db'". The Next.js standalone bundle resolves these at build
+# time, but tsx resolves at runtime and needs the tsconfig present.
+COPY --from=builder /app/apps/web/tsconfig.json ./apps/web/tsconfig.json
 
 # Copy workspace package sources + node_modules needed by tsx-run scripts.
 # The Next.js standalone bundle inlines these at build time for server.js,
