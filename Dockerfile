@@ -84,13 +84,21 @@ COPY --from=builder /app/apps/web/prisma ./apps/web/prisma
 COPY --from=builder /app/apps/web/prisma.config.ts ./apps/web/prisma.config.ts
 
 # Copy operational scripts + the lib/ directory they need at runtime.
-# scripts/set-password.ts is tsx-run from Dokploy container exec to seed
-# or reset the primary user's password. It imports from ../lib/services/
-# auth-service + user-service; those only depend on generated/prisma,
-# jose (in apps/web/node_modules), and Node crypto. No @ascend/core needed
-# in this path. The Next.js standalone bundle covers everything else.
+# scripts/set-password.ts imports from lib/services/{auth,user}-service
+# (depends on generated/prisma, jose, Node crypto).
+# scripts/backfill-embeddings.ts imports from lib/services/embedding-service
+# which depends on @ascend/llm -> @ascend/core (workspace packages).
+# Both are tsx-run from Dokploy container exec.
 COPY --from=builder /app/apps/web/scripts ./apps/web/scripts
 COPY --from=builder /app/apps/web/lib ./apps/web/lib
+
+# Copy workspace package sources + node_modules needed by tsx-run scripts.
+# The Next.js standalone bundle inlines these at build time for server.js,
+# but tsx resolves imports at runtime and needs the actual source files.
+COPY --from=builder /app/packages/llm ./packages/llm
+COPY --from=builder /app/packages/core ./packages/core
+COPY --from=prod-deps /app/packages/llm/node_modules ./packages/llm/node_modules
+COPY --from=prod-deps /app/packages/core/node_modules ./packages/core/node_modules
 
 USER nextjs
 
