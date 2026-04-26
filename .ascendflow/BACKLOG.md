@@ -2,7 +2,46 @@
 
 Deferred features and initiatives that have been explicitly scoped but not yet implemented. When you want to pick one up, run `/ax:plan <slug>` to create a full PRD + TASKS.md.
 
-Last updated: 24. 4. 2026
+Last updated: 26. 4. 2026
+
+---
+
+## Wave 3 (Block Editor) — SHIPPED 26. 4. 2026
+
+`@ascend/editor` package with 8 custom Lexical nodes (WikiLink, Mention, AIBlock, Embed, Callout, Toggle, File, Image) + built-in re-exports, theme tokens, Markdown round-trip (12/12 fixtures pass), extractText. `BlockDocument` schema + search_vector trigger extension. `blockDocumentService` + `blockMigrationService` (userId-scoped, size-capped). 6 block-level API routes + AI chat route. 4 React Query hooks (useBlockDocument + sync + migrate + ops). Lexical web binding: `ContextBlockEditor` + 8 plugins (autosave, slash menu, inline toolbar, wikilink + mention autocomplete, keyboard shortcuts, decorator, error boundary). 5 new MCP block tools (50 to 55). AI block integration with Wave 2 `llmService.chat`. Phase 6a simplification: snapshot-only autosave (Yjs CRDT delta path deferred to Wave 8). Production reports 55 MCP tools. Commits: `abee882`, `29aa26a`, `7c8e706`, `1fb9d80`, `c6219b2`, `73bc8b3`, `8872d4b`, `1ace5aa`, `c0a2e5a`. Close-out at `.ascendflow/features/context-v2/wave-3-block-editor/CLOSE-OUT.md`.
+
+## Wave 3 carry-overs (tracked here until picked up)
+
+- **Full Yjs CRDT delta sync.** Wave 3 is snapshot-only autosave. The Yjs binary format is preserved so Wave 8 collaboration can layer `@lexical/yjs` V2 binding on top without migration.
+- **Real-time WebSocket sync.** Deferred to Wave 8 collaboration.
+- **Streaming AIBlock tokens.** Current implementation returns full result from `llmService.chat`. Streaming via SSE is a Wave 4 polish item.
+- **Image / File node rich UIs.** Wave 3 ships placeholder stubs. Wave 4 fills them with real upload + preview UIs via the R2 presigned-URL scaffolding from Wave 0.
+- **Database row inline-edit blocks.** Deferred to Wave 5.
+- **Block comments.** Deferred to Wave 8 collaboration.
+- **Revision history.** Deferred to Wave 7+.
+- **Mention scope expansion.** Currently only context entries. @goal/@todo/@user deferred.
+- **Embed/Image/File URL sanitization (DZ-11).** No user-facing input produces these nodes with arbitrary URLs in Wave 3. Full sanitization (scheme allowlist, CSP sandbox) ships with Wave 4 file UI.
+- **`@ascend/editor` includes DOM types in tsconfig.** Minor cross-platform compromise documented; Lexical's `createDOM()` requires DOM types. Mobile (Wave 6) does not import this package per LEXICAL-SPIKE.md.
+- **Rate limiting on block routes.** None in Wave 3. Deferred to a future polish pass alongside the broader rate limiting item (Wave 0 carry-over).
+- **`/blocks/reset` admin route.** For recovering from broken Yjs state. Not implemented; current workaround is DB-level deletion of the BlockDocument row.
+- **Formal `ax:verify-ui` on the block editor UI.** Playwright run not executed on the block editor, slash menu, inline toolbar, autocomplete, AI block, or error boundary. Deferred.
+- **Performance benchmarks (autosave latency, cold-load, slash menu).** Not formally measured. Expected to be within targets based on architecture.
+
+## Older carry-overs (Wave 2, still open)
+
+- **Streaming responses for map refresh.** Current refresh returns the full JSON blob synchronously. Deferred to Wave 4+.
+- **Per-purpose / per-tool cost caps.** Wave 8 item.
+- **Provider-specific JSON-mode tuning.** Deferred.
+- **Map versioning / history.** Wave 8.
+- **HNSW index tuning (m, ef_construction).** If context graph grows past 1k entries.
+- **ANTHROPIC_API_KEY provisioning.** Built but not runtime-exercised.
+- **GitHub Actions cron first execution.** Pending verification.
+- **Formal `ax:verify-ui` on Wave 2 UI surfaces.** Deferred.
+
+## Older carry-overs (Wave 1, still open)
+
+- **Performance benchmark on 500-node graphs.** Deferred from Wave 1.
+- **Formal `ax:verify-ui` on the graph view.** Wave 1 Phase 8.8 scenario plan was not executed.
 
 ---
 

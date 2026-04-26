@@ -1,10 +1,10 @@
 # Ascend
 
-Personal operating system built on the inputs/outputs framework. Goals are outputs (results you want), todos are inputs (actions that drive results), context is your AI knowledge base as a typed-edge graph, and the calendar ties it all into daily planning. The entire system is exposed via 50 MCP tools.
+Personal operating system built on the inputs/outputs framework. Goals are outputs (results you want), todos are inputs (actions that drive results), context is your AI knowledge base as a typed-edge graph, and the calendar ties it all into daily planning. The entire system is exposed via 55 MCP tools.
 
 ## Tech Stack
 
-Next.js 16 (App Router), Prisma 7, PostgreSQL + pgvector, Zod 4, React 19, TanStack Query v5, Zustand 5, MCP SDK, rrule, date-fns, shadcn/ui, Tailwind CSS 4, lucide-react, canvas-confetti, marked, `@ascend/llm` (Gemini/OpenAI/Anthropic provider abstraction)
+Next.js 16 (App Router), Prisma 7, PostgreSQL + pgvector, Zod 4, React 19, TanStack Query v5, Zustand 5, MCP SDK, rrule, date-fns, shadcn/ui, Tailwind CSS 4, lucide-react, canvas-confetti, marked, `@ascend/llm` (Gemini/OpenAI/Anthropic provider abstraction), `@ascend/editor` (Lexical nodes + Markdown round-trip), Yjs (CRDT document state)
 
 ## Commands
 
@@ -129,9 +129,10 @@ Before declaring any feature or fix complete, re-list every task from the `TASKS
 - **`@ascend/storage`**: `StorageAdapter` interface + `webStorageAdapter` (localStorage-backed, SSR-safe). Used by Zustand stores so native and desktop apps can swap implementations.
 - **`@ascend/ui-tokens`**: raw colors, spacing, typography, and radii tokens. No Tailwind dependency. `apps/web/tailwind.config.ts` imports from here.
 - **`@ascend/llm`**: LLM provider abstraction. Exports `EmbeddingProvider` and `ChatProvider` interfaces, Gemini/OpenAI/Anthropic implementations, pricing tables, cost estimator, retry helper, and model catalog. Pure TypeScript + `globalThis.fetch`. Platform-agnostic (no Next/React/Prisma).
+- **`@ascend/editor`**: Lexical node definitions (8 custom + built-in re-exports), CSS class-name theme, extended Markdown transformers (wikilinks, mentions, callouts, toggles), Markdown round-trip serializers (`markdownToBlocks`, `blocksToMarkdown`), and plain-text extraction (`extractText`). Pure TypeScript + Lexical. **Exception to cross-platform rule:** tsconfig includes `"lib": ["ES2022", "DOM"]` because Lexical's `DecoratorNode.createDOM()` and other node methods require DOM types at compile time. These types are never accessed at runtime in server/headless contexts. Mobile (Wave 6) consumes only the Markdown serialization layer, not the node classes, per `LEXICAL-SPIKE.md`.
 
 ### Service Layer (`apps/web/lib/services/`)
-All business logic. Const objects with async methods. `userId` is always the first parameter. Services call Prisma directly. Modules: goal, todo, context, category, dashboard, gamification, export, import, recurring, todo-recurring, hierarchy-helpers, export-helpers, **auth (Phase 6)**, **file (Phase 7)**, user, **llm (Wave 2)**, **embedding (Wave 2)**, **context-map (Wave 2)**.
+All business logic. Const objects with async methods. `userId` is always the first parameter. Services call Prisma directly. Modules: goal, todo, context, category, dashboard, gamification, export, import, recurring, todo-recurring, hierarchy-helpers, export-helpers, **auth (Phase 6)**, **file (Phase 7)**, user, **llm (Wave 2)**, **embedding (Wave 2)**, **context-map (Wave 2)**, **block-document (Wave 3)**, **block-migration (Wave 3)**.
 
 ### API Routes (`apps/web/app/api/`)
 Thin wrappers: authenticate via `authenticate()` (3-path resolver: cookie JWT, Bearer JWT, Bearer API key; `validateApiKey` is a backward-compat alias), parse input with Zod, call service, return `NextResponse.json()`. Error handling via `handleApiError()` from `apps/web/lib/auth.ts`.
@@ -140,7 +141,7 @@ Thin wrappers: authenticate via `authenticate()` (3-path resolver: cookie JWT, B
 One hook file per domain. `useQuery` for reads, `useMutation` for writes with `onSuccess` cache invalidation. Query key factory in `apps/web/lib/queries/keys.ts`. Cache config in `apps/web/lib/offline/cache-config.ts`. All fetches go through `apiFetch` from `apps/web/lib/api-client.ts`.
 
 ### MCP Server (`apps/web/lib/mcp/`)
-50 tools across handler files (40 CRUD/dashboard + 7 Wave 1 graph tools: `get_context_graph`, `get_node_neighbors`, `get_related_context`, `list_nodes_by_type`, `create_typed_link`, `remove_typed_link`, `update_context_type` + 3 Wave 2 AI tools: `get_context_map`, `refresh_context_map`, `suggest_connections`). Note: `detect_contradictions` and `summarize_subgraph` are defined in schemas but route to the same `llm-tools.ts` handler, bringing the total to 50. Schemas in `apps/web/lib/mcp/schemas.ts` as raw JSON Schema (not Zod) for SDK compatibility. Handlers in `apps/web/lib/mcp/tools/` call the service layer. Routing in `apps/web/lib/mcp/server.ts` uses Set-based name matching to dispatch to handlers. Transport: Streamable HTTP at `/api/mcp`. Authenticated via API key through `authenticate()` — the API key path of the three.
+55 tools across handler files (40 CRUD/dashboard + 7 Wave 1 graph tools: `get_context_graph`, `get_node_neighbors`, `get_related_context`, `list_nodes_by_type`, `create_typed_link`, `remove_typed_link`, `update_context_type` + 3 Wave 2 AI tools: `get_context_map`, `refresh_context_map`, `suggest_connections` + `detect_contradictions` and `summarize_subgraph` routed to `llm-tools.ts` = 50, + 5 Wave 3 block tools: `get_blocks`, `add_block`, `update_block`, `move_block`, `delete_block` = 55). Schemas in `apps/web/lib/mcp/schemas.ts` as raw JSON Schema (not Zod) for SDK compatibility. Handlers in `apps/web/lib/mcp/tools/` call the service layer. Routing in `apps/web/lib/mcp/server.ts` uses Set-based name matching to dispatch to handlers. Transport: Streamable HTTP at `/api/mcp`. Authenticated via API key through `authenticate()` — the API key path of the three.
 
 ### AI Layer (Wave 2)
 - **`@ascend/llm`** (`packages/llm/`): platform-agnostic provider abstraction. Exports `EmbeddingProvider` (Gemini-only) and `ChatProvider` (Gemini, OpenAI, Anthropic) interfaces, a pricing table (`pricing.ts`), a cost estimator (`cost.ts`), a retry helper (`retry.ts`, capped exponential backoff, never retries 4xx), and a model catalog (`listModels(provider)`). No Next.js, React, or Prisma imports.
@@ -150,6 +151,14 @@ One hook file per domain. `useQuery` for reads, `useMutation` for writes with `o
 - **Cron:** nightly map refresh via GitHub Actions (`.github/workflows/nightly-map-refresh.yml`) hitting `POST /api/context/map/refresh` with `x-cron-secret` header (timing-safe compare). `CRON_SECRET` env in both Dokploy and GitHub Actions secrets.
 - **Provider selection:** `UserSettings.chatProvider` (enum `GEMINI | OPENAI | ANTHROPIC`, default `GEMINI`) + `UserSettings.chatModel` (optional override). Settings UI at `/settings` with provider picker (green/amber availability dots) and model tier dropdown (Cheap / Balanced / Best).
 - **Cost tracking:** every LLM call logged to `LlmUsage` table. Soft cap $2/day (warning toast), hard cap $10/day (refuses new calls). Usage panel at `/settings`.
+
+### Block Editor (Wave 3)
+- **`@ascend/editor`** (`packages/editor/`): platform-agnostic Lexical configuration. Exports 8 custom node classes (`WikiLinkNode`, `MentionNode`, `AIBlockNode`, `EmbedNode`, `CalloutNode`, `ToggleNode`, `FileNode`, `ImageNode`), re-exports built-in Lexical nodes, a CSS class-name theme, extended Markdown transformers (wikilinks, mentions, callouts, toggles), and `markdownToBlocks` / `blocksToMarkdown` round-trip serializers. `extractText(snapshot)` flattens a Lexical state to plain text for search indexing. 12/12 round-trip fixtures pass. Tsconfig includes `"lib": ["ES2022", "DOM"]` as the one exception in shared packages (Lexical's `createDOM()` interface requires DOM types at compile time; never accessed at runtime in server contexts).
+- **`blockDocumentService`** (`apps/web/lib/services/block-document-service.ts`): CRUD on `BlockDocument`, Yjs state persistence, snapshot replacement, and LLM-friendly block tree manipulation (add, update, move, delete). Size-capped: 1 MiB on full state (DB CHECK constraint backstop), 256 KiB per update payload. Every method userId-scoped. Uses `prisma.$transaction` for atomic writes (BlockDocument + ContextEntry.extractedText).
+- **`blockMigrationService`** (`apps/web/lib/services/block-migration-service.ts`): one-shot lazy migration of legacy `ContextEntry.content` markdown to a `BlockDocument`. Idempotent. Also handles external content rewrites (MCP `set_context` changing markdown regenerates the block doc).
+- **Autosave (Phase 6a simplification):** snapshot-only sync. The client sends the full Lexical serialized editor state JSON alongside a minimal Yjs update. The server persists both. This is NOT full Yjs CRDT delta sync; Wave 8 collaboration will upgrade to `@lexical/yjs` V2 binding with real binary deltas. The Yjs binary format is preserved so the upgrade path is forward-compatible.
+- **Web binding:** `apps/web/components/context/context-block-editor.tsx` mounts a `<LexicalComposer>` with 8 plugins (autosave, slash menu, inline toolbar, wikilink autocomplete, mention autocomplete, keyboard shortcuts, decorator, error boundary). The editor replaces the legacy markdown textarea on the `/context` entry detail panel.
+- **Error boundary:** wraps `<ContextBlockEditor>`. On Lexical render failure, falls back to the legacy markdown textarea reading from `ContextEntry.content`. This is the first surface-level error boundary in the codebase.
 
 ### Auth (Phase 6 shipped in Wave 0)
 - `apps/web/lib/services/auth-service.ts` owns scrypt password hashing, JWT signing/verification via `jose`, 256-bit opaque refresh tokens, `Session` rotation with reuse detection, in-process login rate limiter, cookie builders.
@@ -175,10 +184,11 @@ UI state: Zustand store at `apps/web/lib/stores/ui-store.ts` (sidebar, active vi
 | User | Single-user, API key auth | Has goals, todos, context, categories, stats |
 | Goal | Hierarchical objectives (yearly > quarterly > monthly > weekly) | Self-ref parentId, has children, todos, progressLogs, category |
 | Todo | Flat tasks, Big 3, streaks, recurrence | Links to one goal (goalId), category, self-ref recurringSourceId |
-| ContextEntry | Markdown docs, tags, typed wikilinks, full-text search. Typed via `ContextEntryType` (NOTE default, SOURCE, PROJECT, PERSON, DECISION, QUESTION, AREA). | Category, outgoingLinks / incomingLinks (ContextLink) |
+| ContextEntry | Markdown docs, tags, typed wikilinks, full-text search. Typed via `ContextEntryType` (NOTE default, SOURCE, PROJECT, PERSON, DECISION, QUESTION, AREA). `extractedText` denormalized column (plain text from block editor state; feeds `search_vector` trigger). `blockDocumentId` nullable FK to `BlockDocument`. | Category, outgoingLinks / incomingLinks (ContextLink), optional BlockDocument |
 | ContextLink | Typed directed edge between two ContextEntries (9 `ContextLinkType` values). Source: CONTENT (parsed from wikilinks) or MANUAL (added via Quick Link dialog). | fromEntry, toEntry, denormalized userId |
 | ContextMap | Per-user AI-synthesized map of the context graph (`content` jsonb with themes/principles/projects/tensions/orphans). One row per user (userId @unique), overwritten on each refresh. Tracks provider, model, token usage, and cost. | Belongs to user |
 | LlmUsage | Audit log of every LLM call (embedding or chat). Records provider, model, purpose, token counts, estimated cost in cents. Indexed on `(userId, createdAt)`. Used for daily cost cap enforcement and the settings usage panel. | Belongs to user |
+| BlockDocument | Per-entry Yjs binary state + JSON snapshot + version counter for the block editor. One per ContextEntry (entryId @unique). Size-capped at 1 MiB. | Belongs to user, belongs to entry (FK CASCADE). ContextEntry.blockDocumentId nullable FK. |
 | Category | Shared taxonomy, hierarchical (self-ref parentId) | Used by goals, todos, context |
 | ProgressLog | Time-series progress per goal | Belongs to goal |
 | UserStats | Aggregated XP, level, streaks | Belongs to user |
@@ -195,6 +205,7 @@ UI state: Zustand store at `apps/web/lib/stores/ui-store.ts` (sidebar, active vi
 | Pinned | Context | Filtered list view (`isPinned = true`) |
 | Backlinks | Context (Wave 1) | `context-backlinks-view.tsx` (entries sorted by incoming link count) |
 | Context Map (card) | Context (Wave 2) | `context-map-card.tsx` (top-of-page card on `/context` with 5 sections: themes, principles, projects, tensions, orphans; not a separate view, mounted above the view switcher) |
+| Block Editor (detail) | Context (Wave 3) | `context-block-editor.tsx` replaces the markdown textarea on the entry detail panel. Lexical-based with slash menu, inline toolbar, wikilink + mention autocomplete, AI block, error boundary fallback to legacy markdown. |
 | Calendar | Todos, Goals | `calendar-month-grid.tsx`, `calendar-day-detail.tsx` |
 | Dashboard | All | `dashboard-page.tsx` (5 widgets) |
 
@@ -238,6 +249,15 @@ Board/Kanban view components exist (`goal-board-*.tsx`) but are dead code; remov
 | LLM usage panel (settings) | `apps/web/components/settings/llm-usage-panel.tsx` |
 | Embedding backfill script | `apps/web/scripts/backfill-embeddings.ts` |
 | Nightly cron workflow | `.github/workflows/nightly-map-refresh.yml` |
+| Editor package (nodes, theme, Markdown round-trip) | `packages/editor/src/index.ts` |
+| Block document service (CRUD, sync, block ops) | `apps/web/lib/services/block-document-service.ts` |
+| Block migration service (markdown to blocks) | `apps/web/lib/services/block-migration-service.ts` |
+| Block editor component (Lexical web binding) | `apps/web/components/context/context-block-editor.tsx` |
+| Editor plugins (slash menu, toolbar, autocomplete) | `apps/web/components/editor/*.tsx` (8 plugin files) |
+| Editor styles | `apps/web/app/globals.css` (editor-specific classes at bottom) |
+| Block-level API routes | `apps/web/app/api/context/[id]/blocks/**/route.ts` |
+| Block-level MCP tools | `apps/web/lib/mcp/tools/block-tools.ts` |
+| Block document React Query hooks | `apps/web/lib/hooks/use-block-document.ts` |
 | Add nav item | `apps/web/components/layout/nav-config.ts` |
 | Add MCP tool schema | `apps/web/lib/mcp/schemas.ts` |
 | Route MCP tool | `apps/web/lib/mcp/server.ts` |
@@ -288,6 +308,7 @@ Any web library: Next.js, React, React DOM, Prisma, Zustand, Tailwind, shadcn, s
 | Design tokens (colors, spacing, typography, radii) | `@ascend/ui-tokens` |
 | Storage adapter interface and implementations | `@ascend/storage` |
 | LLM provider abstraction (embedding + chat) | `@ascend/llm` |
+| Editor node definitions, Markdown round-trip | `@ascend/editor` |
 
 ### Enforcement
 
@@ -312,6 +333,10 @@ Run `ax:cross-platform-check` after any change to `packages/*`. The check greps 
 **DZ-8: ContextLink.userId is denormalized.** Every query touching the ContextLink table MUST filter by userId (either directly in the where clause or via a preceding ownership check on the endpoint entries). The denormalized column exists specifically so Safety Rule 1 can be enforced on join-table queries without needing to traverse fromEntry/toEntry. See `apps/web/lib/services/context-link-service.ts` — every method verifies ownership before touching ContextLink. This was added in Wave 1 Phase 1.
 
 **DZ-9: LLM cost runaway.** A bug in the cost-cap check, a retry storm on 5xx, or an infinite-loop cron could produce unexpected billing. Four mitigations: (1) Single `requestBudget` gate in `llmService` called synchronously BEFORE every provider invocation, no bypass path; (2) Retry helper caps at 3 retries and never retries 4xx client errors; (3) Cron route (`/api/context/map/refresh`) requires `x-cron-secret` header (timing-safe compare) OR user JWT, no unauthenticated path; (4) Provider-side monthly hard limits set in each provider's billing dashboard serve as the ultimate backstop. Added in Wave 2.
+
+**DZ-10: Yjs state size cap.** A pathological block document could grow the `BlockDocument.state` column large enough to impact database performance. Four mitigations: (1) Database CHECK constraint `octet_length("state") <= 1048576` (1 MiB); (2) Service layer pre-flight in `blockDocumentService` checks `mergedState.length > MAX_STATE_BYTES` before the Prisma call; (3) Per-update cap: individual Yjs binary payloads on `/api/context/[id]/blocks/sync` capped at 256 KiB decoded (route also does pre-parse Content-Length check at 512 KiB); (4) Client-side autosave debounces to 1.5s. Added in Wave 3.
+
+**DZ-11: Block tree XSS (Embed/Image/File URL sanitization).** Embed, Image, and File nodes accept user-supplied URLs that could carry `javascript:`, `data:`, or other dangerous schemes. Wave 3 partial mitigation: WikiLink pills render only trusted internal entry IDs; Embed is a minimal placeholder with no user-facing URL input; Image/File are stubs. Full URL sanitization (scheme allowlist, CSP sandbox for iframes) deferred to Wave 4 when these nodes get real upload/preview UIs. Until then, the attack surface is limited because no Wave 3 user flow produces these nodes with arbitrary URLs. Added in Wave 3.
 
 ## Deployment
 
