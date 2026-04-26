@@ -6,6 +6,28 @@ Last updated: 24. 4. 2026
 
 ---
 
+## Wave 2 (AI-native MCP round 1) — SHIPPED 26. 4. 2026
+
+Provider abstraction (`@ascend/llm`) with Gemini/OpenAI/Anthropic implementations, pgvector embedding pipeline on `ContextEntry` (1536 dims), HNSW index, hybrid search (tsvector + pgvector with UI toggle), Context Map synthesizer with nightly cron (GitHub Actions), 5 new MCP tools (`get_context_map`, `refresh_context_map`, `suggest_connections`, `detect_contradictions`, `summarize_subgraph`), LLM usage tracking with cost caps, provider picker + usage panel in `/settings`, Context Map card on `/context`. Production now reports 50 MCP tools (47 pre-Wave-2 + 3 routed + 2 defined). Commits: `b225ac5`, `f0e67a2`, `c4d5d2e`, `c0e7298`, `71c260f`, `54752cb`, `23c5676`, `cba7d70`, `4a652ac`, `2b0d77e`. Close-out at `.ascendflow/features/context-v2/wave-2-ai-native-mcp-round-1/CLOSE-OUT.md`.
+
+## Wave 2 → Wave 3+ carry-overs (tracked here until picked up)
+
+- **Streaming responses for map refresh.** Current refresh returns the full JSON blob synchronously. Streaming would improve perceived latency for large graphs. Deferred to Wave 3+.
+- **Per-purpose / per-tool cost caps.** Today the cost cap is global per user per day. Finer-grained caps (per-tool, per-purpose) are a Wave 8 item.
+- **Provider-specific JSON-mode tuning.** Wave 2 uses a prompt-level JSON contract for all providers. Each provider has its own structured output mode (Gemini `response_mime_type`, OpenAI `response_format`, Anthropic tool-use). Tuning per provider would improve reliability. Deferred.
+- **Map versioning / history.** Today the map is overwritten on each refresh. Wave 8 should add a history table or version field so users can compare maps over time.
+- **HNSW index tuning (m, ef_construction).** Current HNSW index uses pgvector defaults. If the context graph grows past 1k entries, tuning these parameters may improve search quality and build time.
+- **ANTHROPIC_API_KEY provisioning.** The Anthropic provider code path is built and type-safe but has not been exercised at runtime because the API key has not been provisioned in Dokploy. Soft-deferred; safe to ship without.
+- **GitHub Actions cron first execution.** The nightly map refresh cron (`.github/workflows/nightly-map-refresh.yml`) is configured for 03:00 UTC daily. First execution should be verified after its first run.
+- **Formal `ax:verify-ui` on Wave 2 UI surfaces.** The Context Map card, provider picker, and usage panel have not been verified via Playwright. Visual smoke passed via curl + build green. The `ascend-ui-verifier` should run a full scenario plan in a follow-up session.
+
+## Older carry-overs (Wave 1, still open)
+
+- **Performance benchmark on 500-node graphs.** Deferred from Wave 1. Seed a 500-entry fixture and measure `computeLayout` + graph view render perf.
+- **Formal `ax:verify-ui` on the graph view.** Wave 1 Phase 8.8 scenario plan was not executed. Still pending.
+
+---
+
 ## Wave 1 (Graph Foundation) — SHIPPED 24. 4. 2026
 
 The 15-day plan collapsed into a single focused session: monorepo package `@ascend/graph`, typed `ContextLink` edges, 7 entry types, extended wikilink syntax, graph view (ReactFlow + d3-force), detail panel edges section, Quick Link dialog, entry type selector, Backlinks view, 7 new MCP graph tools. Production now reports 47 MCP tools (40 existing + 7 new). Commits `f36d8a2`, `f684ef5`, `22c9929`, `d86b53c`, `29bf523`, `fa21884`, `2970512`, `fb60017`, `21302ad`. Close-out at `.ascendflow/features/context-v2/wave-1-graph-foundation/CLOSE-OUT.md`.

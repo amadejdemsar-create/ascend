@@ -1,10 +1,10 @@
 # Ascend
 
-Personal operating system built on the inputs/outputs framework. Goals are outputs (results you want), todos are inputs (actions that drive results), context is your AI knowledge base as a typed-edge graph, and the calendar ties it all into daily planning. The entire system is exposed via 47 MCP tools.
+Personal operating system built on the inputs/outputs framework. Goals are outputs (results you want), todos are inputs (actions that drive results), context is your AI knowledge base as a typed-edge graph, and the calendar ties it all into daily planning. The entire system is exposed via 50 MCP tools.
 
 ## Tech Stack
 
-Next.js 16 (App Router), Prisma 7, PostgreSQL, Zod 4, React 19, TanStack Query v5, Zustand 5, MCP SDK, rrule, date-fns, shadcn/ui, Tailwind CSS 4, lucide-react, canvas-confetti, marked
+Next.js 16 (App Router), Prisma 7, PostgreSQL + pgvector, Zod 4, React 19, TanStack Query v5, Zustand 5, MCP SDK, rrule, date-fns, shadcn/ui, Tailwind CSS 4, lucide-react, canvas-confetti, marked, `@ascend/llm` (Gemini/OpenAI/Anthropic provider abstraction)
 
 ## Commands
 
@@ -128,9 +128,10 @@ Before declaring any feature or fix complete, re-list every task from the `TASKS
 - **`@ascend/api-client`**: platform-agnostic HTTP client with `createApiClient({ baseUrl, getAuthHeaders, fetch? })` factory. Uses `globalThis.fetch`. Throws `ApiError` on non-2xx. The web wrapper at `apps/web/lib/api-client.ts` adds cookie-based auth + offline guard + 401 refresh-and-retry interceptor.
 - **`@ascend/storage`**: `StorageAdapter` interface + `webStorageAdapter` (localStorage-backed, SSR-safe). Used by Zustand stores so native and desktop apps can swap implementations.
 - **`@ascend/ui-tokens`**: raw colors, spacing, typography, and radii tokens. No Tailwind dependency. `apps/web/tailwind.config.ts` imports from here.
+- **`@ascend/llm`**: LLM provider abstraction. Exports `EmbeddingProvider` and `ChatProvider` interfaces, Gemini/OpenAI/Anthropic implementations, pricing tables, cost estimator, retry helper, and model catalog. Pure TypeScript + `globalThis.fetch`. Platform-agnostic (no Next/React/Prisma).
 
 ### Service Layer (`apps/web/lib/services/`)
-All business logic. Const objects with async methods. `userId` is always the first parameter. Services call Prisma directly. Modules: goal, todo, context, category, dashboard, gamification, export, import, recurring, todo-recurring, hierarchy-helpers, export-helpers, **auth (Phase 6)**, **file (Phase 7)**, user.
+All business logic. Const objects with async methods. `userId` is always the first parameter. Services call Prisma directly. Modules: goal, todo, context, category, dashboard, gamification, export, import, recurring, todo-recurring, hierarchy-helpers, export-helpers, **auth (Phase 6)**, **file (Phase 7)**, user, **llm (Wave 2)**, **embedding (Wave 2)**, **context-map (Wave 2)**.
 
 ### API Routes (`apps/web/app/api/`)
 Thin wrappers: authenticate via `authenticate()` (3-path resolver: cookie JWT, Bearer JWT, Bearer API key; `validateApiKey` is a backward-compat alias), parse input with Zod, call service, return `NextResponse.json()`. Error handling via `handleApiError()` from `apps/web/lib/auth.ts`.
@@ -139,7 +140,16 @@ Thin wrappers: authenticate via `authenticate()` (3-path resolver: cookie JWT, B
 One hook file per domain. `useQuery` for reads, `useMutation` for writes with `onSuccess` cache invalidation. Query key factory in `apps/web/lib/queries/keys.ts`. Cache config in `apps/web/lib/offline/cache-config.ts`. All fetches go through `apiFetch` from `apps/web/lib/api-client.ts`.
 
 ### MCP Server (`apps/web/lib/mcp/`)
-47 tools across handler files (40 CRUD/dashboard + 7 Wave 1 graph tools: `get_context_graph`, `get_node_neighbors`, `get_related_context`, `list_nodes_by_type`, `create_typed_link`, `remove_typed_link`, `update_context_type`). Schemas in `apps/web/lib/mcp/schemas.ts` as raw JSON Schema (not Zod) for SDK compatibility. Handlers in `apps/web/lib/mcp/tools/` call the service layer. Routing in `apps/web/lib/mcp/server.ts` uses Set-based name matching to dispatch to handlers. Transport: Streamable HTTP at `/api/mcp`. Authenticated via API key through `authenticate()` — the API key path of the three.
+50 tools across handler files (40 CRUD/dashboard + 7 Wave 1 graph tools: `get_context_graph`, `get_node_neighbors`, `get_related_context`, `list_nodes_by_type`, `create_typed_link`, `remove_typed_link`, `update_context_type` + 3 Wave 2 AI tools: `get_context_map`, `refresh_context_map`, `suggest_connections`). Note: `detect_contradictions` and `summarize_subgraph` are defined in schemas but route to the same `llm-tools.ts` handler, bringing the total to 50. Schemas in `apps/web/lib/mcp/schemas.ts` as raw JSON Schema (not Zod) for SDK compatibility. Handlers in `apps/web/lib/mcp/tools/` call the service layer. Routing in `apps/web/lib/mcp/server.ts` uses Set-based name matching to dispatch to handlers. Transport: Streamable HTTP at `/api/mcp`. Authenticated via API key through `authenticate()` — the API key path of the three.
+
+### AI Layer (Wave 2)
+- **`@ascend/llm`** (`packages/llm/`): platform-agnostic provider abstraction. Exports `EmbeddingProvider` (Gemini-only) and `ChatProvider` (Gemini, OpenAI, Anthropic) interfaces, a pricing table (`pricing.ts`), a cost estimator (`cost.ts`), a retry helper (`retry.ts`, capped exponential backoff, never retries 4xx), and a model catalog (`listModels(provider)`). No Next.js, React, or Prisma imports.
+- **`llmService`** (`apps/web/lib/services/llm-service.ts`): resolves the user's selected provider + model from `UserSettings`, enforces the daily cost cap via `requestBudget()` (DZ-9 single gate), calls the provider, logs every call to `LlmUsage`.
+- **`embeddingService`** (`apps/web/lib/services/embedding-service.ts`): wraps `GeminiEmbeddingProvider`. Generates 1536-dim vectors for `ContextEntry` rows via raw SQL (`Unsupported("vector(1536)")` in Prisma schema). Hooked into `contextService.create` and `contextService.update` for auto-embedding on content change. Provides `searchSemantic()` for pgvector cosine similarity search.
+- **`contextMapService`** (`apps/web/lib/services/context-map-service.ts`): synthesizes a `{themes, principles, projects, tensions, orphans}` JSON payload from the user's entire context graph via the selected chat provider. Stored as a single `ContextMap` row per user (userId @unique, upsert on refresh). Chunked synthesis for graphs >200 nodes.
+- **Cron:** nightly map refresh via GitHub Actions (`.github/workflows/nightly-map-refresh.yml`) hitting `POST /api/context/map/refresh` with `x-cron-secret` header (timing-safe compare). `CRON_SECRET` env in both Dokploy and GitHub Actions secrets.
+- **Provider selection:** `UserSettings.chatProvider` (enum `GEMINI | OPENAI | ANTHROPIC`, default `GEMINI`) + `UserSettings.chatModel` (optional override). Settings UI at `/settings` with provider picker (green/amber availability dots) and model tier dropdown (Cheap / Balanced / Best).
+- **Cost tracking:** every LLM call logged to `LlmUsage` table. Soft cap $2/day (warning toast), hard cap $10/day (refuses new calls). Usage panel at `/settings`.
 
 ### Auth (Phase 6 shipped in Wave 0)
 - `apps/web/lib/services/auth-service.ts` owns scrypt password hashing, JWT signing/verification via `jose`, 256-bit opaque refresh tokens, `Session` rotation with reuse detection, in-process login rate limiter, cookie builders.
@@ -167,6 +177,8 @@ UI state: Zustand store at `apps/web/lib/stores/ui-store.ts` (sidebar, active vi
 | Todo | Flat tasks, Big 3, streaks, recurrence | Links to one goal (goalId), category, self-ref recurringSourceId |
 | ContextEntry | Markdown docs, tags, typed wikilinks, full-text search. Typed via `ContextEntryType` (NOTE default, SOURCE, PROJECT, PERSON, DECISION, QUESTION, AREA). | Category, outgoingLinks / incomingLinks (ContextLink) |
 | ContextLink | Typed directed edge between two ContextEntries (9 `ContextLinkType` values). Source: CONTENT (parsed from wikilinks) or MANUAL (added via Quick Link dialog). | fromEntry, toEntry, denormalized userId |
+| ContextMap | Per-user AI-synthesized map of the context graph (`content` jsonb with themes/principles/projects/tensions/orphans). One row per user (userId @unique), overwritten on each refresh. Tracks provider, model, token usage, and cost. | Belongs to user |
+| LlmUsage | Audit log of every LLM call (embedding or chat). Records provider, model, purpose, token counts, estimated cost in cents. Indexed on `(userId, createdAt)`. Used for daily cost cap enforcement and the settings usage panel. | Belongs to user |
 | Category | Shared taxonomy, hierarchical (self-ref parentId) | Used by goals, todos, context |
 | ProgressLog | Time-series progress per goal | Belongs to goal |
 | UserStats | Aggregated XP, level, streaks | Belongs to user |
@@ -182,6 +194,7 @@ UI state: Zustand store at `apps/web/lib/stores/ui-store.ts` (sidebar, active vi
 | Graph | Context (Wave 1) | `context-graph-view.tsx` + `context-graph-node.tsx` (ReactFlow + d3-force via `@ascend/graph`) |
 | Pinned | Context | Filtered list view (`isPinned = true`) |
 | Backlinks | Context (Wave 1) | `context-backlinks-view.tsx` (entries sorted by incoming link count) |
+| Context Map (card) | Context (Wave 2) | `context-map-card.tsx` (top-of-page card on `/context` with 5 sections: themes, principles, projects, tensions, orphans; not a separate view, mounted above the view switcher) |
 | Calendar | Todos, Goals | `calendar-month-grid.tsx`, `calendar-day-detail.tsx` |
 | Dashboard | All | `dashboard-page.tsx` (5 widgets) |
 
@@ -214,6 +227,17 @@ Board/Kanban view components exist (`goal-board-*.tsx`) but are dead code; remov
 | Quick link dialog | `apps/web/components/context/context-quick-link-dialog.tsx` |
 | Entry type selector | `apps/web/components/context/context-type-select.tsx` |
 | Backlinks view | `apps/web/components/context/context-backlinks-view.tsx` |
+| LLM provider interfaces + types | `packages/llm/src/types.ts` |
+| LLM pricing table | `packages/llm/src/pricing.ts` |
+| LLM service (provider resolution, cost cap, chat) | `apps/web/lib/services/llm-service.ts` |
+| Embedding service (embed, upsert, semantic search) | `apps/web/lib/services/embedding-service.ts` |
+| Context Map service (synthesis, refresh, cooldown) | `apps/web/lib/services/context-map-service.ts` |
+| Context Map synthesis prompt | `apps/web/lib/services/context-map-prompt.ts` |
+| Context Map card UI | `apps/web/components/context/context-map-card.tsx` |
+| LLM provider picker (settings) | `apps/web/components/settings/llm-provider-picker.tsx` |
+| LLM usage panel (settings) | `apps/web/components/settings/llm-usage-panel.tsx` |
+| Embedding backfill script | `apps/web/scripts/backfill-embeddings.ts` |
+| Nightly cron workflow | `.github/workflows/nightly-map-refresh.yml` |
 | Add nav item | `apps/web/components/layout/nav-config.ts` |
 | Add MCP tool schema | `apps/web/lib/mcp/schemas.ts` |
 | Route MCP tool | `apps/web/lib/mcp/server.ts` |
@@ -263,6 +287,7 @@ Any web library: Next.js, React, React DOM, Prisma, Zustand, Tailwind, shadcn, s
 | Client-server contract (typed API client) | `@ascend/api-client` |
 | Design tokens (colors, spacing, typography, radii) | `@ascend/ui-tokens` |
 | Storage adapter interface and implementations | `@ascend/storage` |
+| LLM provider abstraction (embedding + chat) | `@ascend/llm` |
 
 ### Enforcement
 
@@ -285,6 +310,8 @@ Run `ax:cross-platform-check` after any change to `packages/*`. The check greps 
 **DZ-7: No error boundaries.** A render error in any widget crashes the entire page. If adding a risky component or a new top-level page, wrap it in an error boundary. Mitigated for the `(auth)` route group via `apps/web/app/(auth)/error.tsx`.
 
 **DZ-8: ContextLink.userId is denormalized.** Every query touching the ContextLink table MUST filter by userId (either directly in the where clause or via a preceding ownership check on the endpoint entries). The denormalized column exists specifically so Safety Rule 1 can be enforced on join-table queries without needing to traverse fromEntry/toEntry. See `apps/web/lib/services/context-link-service.ts` — every method verifies ownership before touching ContextLink. This was added in Wave 1 Phase 1.
+
+**DZ-9: LLM cost runaway.** A bug in the cost-cap check, a retry storm on 5xx, or an infinite-loop cron could produce unexpected billing. Four mitigations: (1) Single `requestBudget` gate in `llmService` called synchronously BEFORE every provider invocation, no bypass path; (2) Retry helper caps at 3 retries and never retries 4xx client errors; (3) Cron route (`/api/context/map/refresh`) requires `x-cron-secret` header (timing-safe compare) OR user JWT, no unauthenticated path; (4) Provider-side monthly hard limits set in each provider's billing dashboard serve as the ultimate backstop. Added in Wave 2.
 
 ## Deployment
 
