@@ -113,6 +113,22 @@ export {
   type ConfirmUploadInput,
 } from "./files";
 
+// Block editor schemas and types
+export {
+  serializedEditorStateSchema,
+  syncBlockUpdateSchema,
+  blockOpAddSchema,
+  blockOpUpdateSchema,
+  blockOpMoveSchema,
+  blockDocumentSnapshotSchema,
+  type SerializedEditorStateInput,
+  type SyncBlockUpdateInput,
+  type BlockOpAddInput,
+  type BlockOpUpdateInput,
+  type BlockOpMoveInput,
+  type BlockDocumentSnapshot,
+} from "./blocks";
+
 // LLM schemas and types
 export {
   chatProviderKindSchema,

@@ -111,6 +111,7 @@ model User {
   settings       UserSettings?
   contextMaps    ContextMap?
   llmUsage       LlmUsage[]
+  blockDocuments BlockDocument[]
 }
 
 model Goal {
@@ -400,6 +401,14 @@ model ContextEntry {
   // Queried via raw SQL ($queryRaw) since Prisma does not natively support pgvector.
   embedding Unsupported("vector(1536)")?
 
+  // Wave 3: Block editor (Lexical + Yjs)
+  // Nullable FK to BlockDocument; populated on first edit in the block editor.
+  blockDocumentId String?         @unique
+  blockDocument   BlockDocument?  @relation(fields: [blockDocumentId], references: [id])
+  // Denormalized plain text extracted from the block doc; feeds the
+  // search_vector trigger so full-text search indexes block content.
+  extractedText   String?
+
   // Wave 0: workspace scaffolding (nullable until Wave 8 backfill)
   workspaceId String?
 
@@ -440,6 +449,34 @@ model ContextLink {
   @@index([fromEntryId])
   @@index([toEntryId])
   @@index([type])
+}
+
+// =====================================================================
+//  Wave 3: BlockDocument stores the Yjs binary state and a JSON snapshot
+//  of the Lexical editor state for each context entry that has been
+//  edited in the block editor. One BlockDocument per ContextEntry (1:1).
+//
+//  The `state` column holds the full Yjs document state as BYTEA (capped
+//  at 1 MiB via a CHECK constraint in the migration). The `snapshot`
+//  column holds the Lexical SerializedEditorState as JSONB for fast SSR
+//  reads and API responses without needing to decode the Yjs binary.
+//
+//  The `version` int is incremented on each save and used for optimistic
+//  concurrency control in the sync endpoint.
+// =====================================================================
+model BlockDocument {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entryId   String   @unique
+  entry     ContextEntry?
+  state     Bytes    // Yjs binary state vector (full doc, not deltas)
+  snapshot  Json     // Lexical SerializedEditorState for read-side queries
+  version   Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, entryId])
 }
 
 model File {
