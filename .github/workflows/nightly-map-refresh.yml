@@ -1,0 +1,17 @@
+name: Nightly Context Map Refresh
+on:
+  schedule:
+    # 03:00 UTC daily (04:00 or 05:00 CET/CEST)
+    - cron: "0 3 * * *"
+  workflow_dispatch: # manual trigger from Actions UI
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger map refresh
+        run: |
+          curl -fsS -X POST \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            https://ascend.nativeai.agency/api/context/map/refresh

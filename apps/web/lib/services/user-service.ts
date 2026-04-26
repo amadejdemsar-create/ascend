@@ -60,6 +60,22 @@ export const userService = {
   },
 
   /**
+   * Find the first user who has at least one context entry.
+   * Used by the cron path of /api/context/map/refresh to determine which
+   * user to generate a map for in a single-user deployment.
+   *
+   * No userId parameter because this runs in an unauthenticated (cron-secret)
+   * context. The query does not expose user data beyond the ID.
+   */
+  async findFirstWithContextEntries() {
+    return prisma.user.findFirst({
+      where: { contextEntries: { some: {} } },
+      select: { id: true },
+      orderBy: { createdAt: "asc" },
+    });
+  },
+
+  /**
    * Total user count. For the public health endpoint.
    */
   async countUsers() {

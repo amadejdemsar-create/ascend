@@ -32,6 +32,7 @@ export const queryKeys = {
       all: () => ["context", "links"] as const,
       forEntry: (entryId: string) => ["context", "links", "forEntry", entryId] as const,
     },
+    map: () => ["context", "map"] as const,
   },
   categories: {
     all: () => ["categories"] as const,
@@ -50,6 +51,11 @@ export const queryKeys = {
     summaryWeek: () => ["focus", "summary", "week"] as const,
     summaryTodo: (todoId: string) => ["focus", "summary", "todo", todoId] as const,
     summaryGoal: (goalId: string) => ["focus", "summary", "goal", goalId] as const,
+  },
+  llm: {
+    all: () => ["llm"] as const,
+    usage: (window?: string) => ["llm", "usage", window ?? "day"] as const,
+    providers: () => ["llm", "providers"] as const,
   },
   dashboard: () => ["dashboard"] as const,
 };
