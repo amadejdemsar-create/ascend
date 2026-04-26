@@ -95,6 +95,30 @@ export const updateAiSettingsSchema = z.object({
 
 export type UpdateAiSettingsInput = z.infer<typeof updateAiSettingsSchema>;
 
+// ── Chat request schema (AI block, in-editor generation) ────────
+
+/**
+ * Schema for POST /api/llm/chat. Used by the AI block in the Lexical
+ * editor to request LLM completions. The `purpose` field drives cost
+ * attribution in the usage log; `messages` are the chat turns.
+ */
+export const llmChatRequestSchema = z.object({
+  purpose: z.string().min(1).max(100),
+  system: z.string().max(10000).optional(),
+  messages: z
+    .array(
+      z.object({
+        role: z.enum(["user", "assistant"]),
+        content: z.string().max(50000),
+      }),
+    )
+    .min(1)
+    .max(20),
+  maxTokens: z.number().int().min(1).max(16384).optional(),
+});
+
+export type LlmChatRequestInput = z.infer<typeof llmChatRequestSchema>;
+
 // ── Usage query schema ───────────────────────────────────────────
 
 /**

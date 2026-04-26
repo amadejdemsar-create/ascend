@@ -137,17 +137,23 @@ export const blockDocumentService = {
     conflict: boolean;
     latest?: { snapshot: unknown; version: number };
   }> {
-    // 1. Decode + size cap on the update payload
-    let updateBytes: Uint8Array;
-    try {
-      const buf = Buffer.from(base64Update, "base64");
-      if (buf.length > MAX_UPDATE_BYTES) {
-        throw new BlockDocumentSizeError(buf.length, MAX_UPDATE_BYTES);
+    // Phase 6a: empty update string means snapshot-only sync (no Yjs binary).
+    // Wave 3 single-user sends snapshot only; Wave 8 will send real Yjs updates.
+    const isSnapshotOnly = base64Update === "" || base64Update.length === 0;
+
+    // 1. Decode + size cap on the update payload (skip for snapshot-only)
+    let updateBytes: Uint8Array | null = null;
+    if (!isSnapshotOnly) {
+      try {
+        const buf = Buffer.from(base64Update, "base64");
+        if (buf.length > MAX_UPDATE_BYTES) {
+          throw new BlockDocumentSizeError(buf.length, MAX_UPDATE_BYTES);
+        }
+        updateBytes = new Uint8Array(buf);
+      } catch (e) {
+        if (e instanceof BlockDocumentSizeError) throw e;
+        throw new BlockDocumentDecodeError(e);
       }
-      updateBytes = new Uint8Array(buf);
-    } catch (e) {
-      if (e instanceof BlockDocumentSizeError) throw e;
-      throw new BlockDocumentDecodeError(e);
     }
 
     // 2. Verify entry ownership (safety rule 1)
@@ -180,26 +186,38 @@ export const blockDocumentService = {
       };
     }
 
-    // 5. Apply Yjs update to the existing state
-    const ydoc = new Y.Doc();
-    Y.applyUpdate(ydoc, new Uint8Array(existing.state));
-    Y.applyUpdate(ydoc, updateBytes);
+    // 5. Compute merged state
+    let mergedState: Uint8Array;
 
-    // 6. Encode the merged doc back to bytes
-    const merged = Y.encodeStateAsUpdate(ydoc);
-    if (merged.length > MAX_STATE_BYTES) {
-      throw new BlockDocumentSizeError(merged.length, MAX_STATE_BYTES);
+    if (isSnapshotOnly) {
+      // Snapshot-only path: rebuild a minimal Yjs doc from the snapshot
+      // metadata. The actual content is in the snapshot JSON column;
+      // the Yjs state serves as the CRDT container for Wave 8.
+      const ydoc = new Y.Doc();
+      const meta = ydoc.getMap("meta");
+      meta.set("snapshotVersion", existing.version + 1);
+      mergedState = Y.encodeStateAsUpdate(ydoc);
+    } else {
+      // Full Yjs update path (Wave 8 and beyond)
+      const ydoc = new Y.Doc();
+      Y.applyUpdate(ydoc, new Uint8Array(existing.state));
+      Y.applyUpdate(ydoc, updateBytes!);
+      mergedState = Y.encodeStateAsUpdate(ydoc);
     }
 
-    // 7. Extract plain text from the client-supplied snapshot for search indexing
+    if (mergedState.length > MAX_STATE_BYTES) {
+      throw new BlockDocumentSizeError(mergedState.length, MAX_STATE_BYTES);
+    }
+
+    // 6. Extract plain text from the client-supplied snapshot for search indexing
     const text = extractText(clientSnapshot);
 
-    // 8. Persist in a transaction (BlockDocument + ContextEntry.extractedText)
+    // 7. Persist in a transaction (BlockDocument + ContextEntry.extractedText)
     const updated = await prisma.$transaction(async (tx) => {
       const newDoc = await tx.blockDocument.update({
         where: { id: existing.id },
         data: {
-          state: Buffer.from(merged),
+          state: Buffer.from(mergedState),
           snapshot: clientSnapshot as never,
           version: existing.version + 1,
         },

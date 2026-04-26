@@ -137,11 +137,13 @@ export {
   contextMapSchema,
   llmUsageSchema,
   updateAiSettingsSchema,
+  llmChatRequestSchema,
   llmUsageQuerySchema,
   type ContextMapItem,
   type ContextMapContent,
   type ContextMap,
   type LlmUsage,
   type UpdateAiSettingsInput,
+  type LlmChatRequestInput,
   type LlmUsageQuery,
 } from "./llm";

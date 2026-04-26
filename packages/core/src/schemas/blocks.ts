@@ -29,10 +29,16 @@ export type SerializedEditorStateInput = z.infer<
 // 1 MiB encoded (the application layer also enforces 256 KiB decoded).
 
 export const syncBlockUpdateSchema = z.object({
+  // Phase 6a simplification: empty string means snapshot-only sync (no Yjs
+  // binary update). The server skips Y.applyUpdate and uses the client
+  // snapshot directly. Wave 8 collaboration will send real Yjs updates.
   update: z
     .string()
-    .regex(/^[A-Za-z0-9+/]+=*$/, "Must be valid base64")
-    .max(1024 * 1024),
+    .max(1024 * 1024)
+    .refine(
+      (v) => v === "" || /^[A-Za-z0-9+/]+=*$/.test(v),
+      "Must be empty or valid base64",
+    ),
   expectedVersion: z.number().int().nonnegative(),
   // Client-supplied snapshot: the client computes this via
   // editor.getEditorState().toJSON() and sends it alongside the Yjs update.

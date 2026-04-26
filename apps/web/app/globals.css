@@ -293,3 +293,434 @@
     box-shadow: none !important;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   Block Editor (Lexical) styles
+   Maps EDITOR_THEME class names from @ascend/editor to CSS variables.
+   Dark mode handled via the existing .dark {} CSS variable overrides.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.editor-shell {
+  position: relative;
+  line-height: 1.65;
+  font-size: 0.875rem;
+}
+
+.editor-content {
+  min-height: 200px;
+  padding: 0;
+}
+
+.editor-content:focus {
+  outline: none;
+}
+
+.editor-placeholder {
+  color: oklch(var(--muted-foreground));
+  font-size: 0.875rem;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  user-select: none;
+}
+
+/* ── Block elements ────────────────────────────────────────────── */
+
+.editor-paragraph {
+  margin-bottom: 0.5rem;
+}
+
+.editor-heading-h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  font-family: var(--font-serif);
+  line-height: 1.3;
+}
+
+.editor-heading-h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  font-family: var(--font-serif);
+  line-height: 1.35;
+}
+
+.editor-heading-h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 0.75rem;
+  margin-bottom: 0.375rem;
+  line-height: 1.4;
+}
+
+.editor-heading-h4,
+.editor-heading-h5,
+.editor-heading-h6 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.editor-quote {
+  border-left: 3px solid oklch(var(--border));
+  padding-left: 1rem;
+  margin-left: 0;
+  margin-bottom: 0.75rem;
+  color: oklch(var(--muted-foreground));
+  font-style: italic;
+}
+
+/* ── Lists ────────────────────────────────────────────────────── */
+
+.editor-list-ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 0.625rem;
+}
+
+.editor-list-ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 0.625rem;
+}
+
+.editor-list-item {
+  margin-bottom: 0.25rem;
+}
+
+.editor-list-item-nested {
+  list-style-type: none;
+}
+
+.editor-list-item-checked,
+.editor-list-item-unchecked {
+  position: relative;
+  list-style-type: none;
+  padding-left: 1.5rem;
+  margin-left: -1.5rem;
+}
+
+.editor-list-item-checked::before,
+.editor-list-item-unchecked::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.25rem;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid oklch(var(--border));
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.editor-list-item-checked::before {
+  background: oklch(var(--primary));
+  border-color: oklch(var(--primary));
+}
+
+.editor-list-item-checked::after {
+  content: "";
+  position: absolute;
+  left: 0.25rem;
+  top: 0.3rem;
+  width: 0.4rem;
+  height: 0.6rem;
+  border: solid oklch(var(--primary-foreground));
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.editor-list-item-checked {
+  text-decoration: line-through;
+  color: oklch(var(--muted-foreground));
+}
+
+/* ── Inline text formatting ────────────────────────────────────── */
+
+.editor-text-bold {
+  font-weight: 700;
+}
+
+.editor-text-italic {
+  font-style: italic;
+}
+
+.editor-text-underline {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.editor-text-strikethrough {
+  text-decoration: line-through;
+}
+
+.editor-text-code {
+  background-color: oklch(var(--muted));
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.8125rem;
+  font-family: var(--font-mono);
+}
+
+.editor-text-highlight {
+  background-color: oklch(var(--accent) / 0.3);
+}
+
+.editor-text-subscript {
+  font-size: 0.75em;
+  vertical-align: sub;
+}
+
+.editor-text-superscript {
+  font-size: 0.75em;
+  vertical-align: super;
+}
+
+/* ── Code blocks ────────────────────────────────────────────────── */
+
+.editor-code {
+  background-color: oklch(var(--muted));
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin-bottom: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  tab-size: 2;
+  white-space: pre;
+}
+
+/* Code highlight tokens */
+.editor-token-keyword { color: oklch(0.6 0.2 280); }
+.editor-token-string { color: oklch(0.6 0.15 140); }
+.editor-token-number { color: oklch(0.6 0.2 30); }
+.editor-token-comment { color: oklch(0.55 0 0); font-style: italic; }
+.editor-token-function { color: oklch(0.55 0.2 260); }
+.editor-token-operator { color: oklch(0.55 0.15 30); }
+.editor-token-punctuation { color: oklch(0.6 0 0); }
+.editor-token-variable { color: oklch(0.6 0.15 200); }
+.editor-token-atrule { color: oklch(0.55 0.2 280); }
+.editor-token-attr { color: oklch(0.6 0.2 30); }
+.editor-token-boolean { color: oklch(0.6 0.2 30); }
+.editor-token-builtin { color: oklch(0.55 0.2 260); }
+.editor-token-cdata { color: oklch(0.55 0 0); }
+.editor-token-char { color: oklch(0.6 0.15 140); }
+.editor-token-class { color: oklch(0.6 0.2 50); }
+.editor-token-class-name { color: oklch(0.6 0.2 50); }
+.editor-token-constant { color: oklch(0.6 0.2 30); }
+.editor-token-deleted { color: oklch(0.55 0.2 25); }
+.editor-token-doctype { color: oklch(0.55 0 0); }
+.editor-token-entity { color: oklch(0.6 0.2 30); }
+.editor-token-important { color: oklch(0.6 0.2 30); font-weight: 700; }
+.editor-token-inserted { color: oklch(0.6 0.15 140); }
+.editor-token-namespace { color: oklch(0.55 0.15 30); }
+.editor-token-prolog { color: oklch(0.55 0 0); }
+.editor-token-property { color: oklch(0.55 0.2 280); }
+.editor-token-regex { color: oklch(0.6 0.2 30); }
+.editor-token-selector { color: oklch(0.6 0.15 140); }
+.editor-token-symbol { color: oklch(0.6 0.2 30); }
+.editor-token-tag { color: oklch(0.55 0.2 25); }
+.editor-token-url { color: oklch(0.55 0.2 260); text-decoration: underline; }
+
+/* ── Links ──────────────────────────────────────────────────────── */
+
+.editor-link {
+  color: oklch(var(--primary));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.editor-link:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* ── WikiLink pill ──────────────────────────────────────────────── */
+
+.editor-wikilink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.0625rem 0.375rem;
+  border-radius: 0.25rem;
+  background: oklch(var(--accent) / 0.15);
+  color: oklch(var(--primary));
+  font-size: 0.875em;
+  cursor: pointer;
+  text-decoration: none;
+  vertical-align: baseline;
+}
+
+.editor-wikilink:hover {
+  background: oklch(var(--accent) / 0.25);
+}
+
+.editor-wikilink:focus-visible {
+  outline: 2px solid oklch(var(--ring));
+  outline-offset: 1px;
+  border-radius: 0.25rem;
+}
+
+/* ── Mention pill ───────────────────────────────────────────────── */
+
+.editor-mention {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.0625rem 0.375rem;
+  border-radius: 0.25rem;
+  background: oklch(var(--secondary) / 0.15);
+  color: oklch(var(--secondary));
+  font-size: 0.875em;
+  cursor: pointer;
+  text-decoration: none;
+  vertical-align: baseline;
+}
+
+.editor-mention:hover {
+  background: oklch(var(--secondary) / 0.25);
+}
+
+.editor-mention:focus-visible {
+  outline: 2px solid oklch(var(--ring));
+  outline-offset: 1px;
+  border-radius: 0.25rem;
+}
+
+/* ── AI Block ───────────────────────────────────────────────────── */
+
+.editor-ai-block {
+  margin: 0.5rem 0;
+  min-height: 2rem;
+}
+
+/* ── Embed ──────────────────────────────────────────────────────── */
+
+.editor-embed {
+  margin: 0.75rem 0;
+  border: 1px solid oklch(var(--border));
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+/* ── Callout ────────────────────────────────────────────────────── */
+
+.editor-callout {
+  margin: 0.5rem 0;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  border-left: 4px solid oklch(var(--primary));
+  background: oklch(var(--primary) / 0.05);
+}
+
+.editor-callout[data-variant="info"] {
+  border-left-color: oklch(0.6 0.15 240);
+  background: oklch(0.6 0.15 240 / 0.05);
+}
+
+.editor-callout[data-variant="warning"] {
+  border-left-color: oklch(0.7 0.15 80);
+  background: oklch(0.7 0.15 80 / 0.05);
+}
+
+.editor-callout[data-variant="success"] {
+  border-left-color: oklch(0.65 0.15 150);
+  background: oklch(0.65 0.15 150 / 0.05);
+}
+
+.editor-callout[data-variant="danger"] {
+  border-left-color: oklch(0.6 0.2 25);
+  background: oklch(0.6 0.2 25 / 0.05);
+}
+
+/* ── Toggle (collapsible) ──────────────────────────────────────── */
+
+.editor-toggle {
+  margin: 0.5rem 0;
+  border: 1px solid oklch(var(--border));
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.editor-toggle > summary {
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  font-weight: 500;
+  user-select: none;
+  list-style: none;
+}
+
+.editor-toggle > summary::before {
+  content: "\25B6";
+  display: inline-block;
+  margin-right: 0.5rem;
+  font-size: 0.75em;
+  transition: transform 150ms ease;
+}
+
+.editor-toggle[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.editor-toggle > *:not(summary) {
+  padding: 0 0.75rem 0.5rem;
+}
+
+/* ── Image ──────────────────────────────────────────────────────── */
+
+.editor-image {
+  margin: 0.75rem 0;
+  text-align: center;
+}
+
+.editor-image img {
+  max-width: 100%;
+  border-radius: 0.5rem;
+}
+
+/* ── File ───────────────────────────────────────────────────────── */
+
+.editor-file {
+  margin: 0.5rem 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid oklch(var(--border));
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: oklch(var(--muted-foreground));
+}
+
+/* ── Horizontal Rule ────────────────────────────────────────────── */
+
+.editor-shell hr {
+  border: none;
+  border-top: 1px solid oklch(var(--border));
+  margin: 1rem 0;
+}
+
+/* ── Dark mode token adjustments ────────────────────────────────── */
+
+.dark .editor-token-keyword { color: oklch(0.75 0.15 280); }
+.dark .editor-token-string { color: oklch(0.75 0.12 140); }
+.dark .editor-token-number { color: oklch(0.75 0.15 30); }
+.dark .editor-token-comment { color: oklch(0.5 0 0); }
+.dark .editor-token-function { color: oklch(0.7 0.15 260); }
+.dark .editor-token-operator { color: oklch(0.7 0.12 30); }
+.dark .editor-token-punctuation { color: oklch(0.65 0 0); }
+.dark .editor-token-variable { color: oklch(0.7 0.12 200); }
+
+/* ── Reduced motion ─────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .editor-toggle > summary::before {
+    transition: none;
+  }
+}

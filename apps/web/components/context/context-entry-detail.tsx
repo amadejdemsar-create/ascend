@@ -16,7 +16,6 @@ import {
   useContextEntry,
   useDeleteContext,
   useTogglePin,
-  useUpdateContext,
 } from "@/lib/hooks/use-context";
 import { useUIStore } from "@/lib/stores/ui-store";
 import { apiFetch } from "@/lib/api-client";
@@ -27,6 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { ContextEdgesPanel } from "@/components/context/context-edges-panel";
 import { ContextTypeSelect } from "@/components/context/context-type-select";
+import { ContextBlockEditor } from "@/components/context/context-block-editor";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -106,16 +106,25 @@ export function ContextEntryDetail({
 
   const entry = entryRaw as EntryData | undefined;
   const deleteContext = useDeleteContext();
-  const updateContext = useUpdateContext();
   const togglePin = useTogglePin();
   const setContextTagFilter = useUIStore((s) => s.setContextTagFilter);
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  // Edit mode is keyed by entryId so switching entries automatically exits
-  // editing without an effect that calls setIsEditing(false).
-  const [editingKey, setEditingKey] = useState<string | null>(null);
-  const isEditing = editingKey === entryId;
-  const [draft, setDraft] = useState<string>("");
+
+  // Listen for wikilink/mention navigation events from the block editor.
+  // The WikiLinkPill and MentionPill components dispatch custom DOM events
+  // when clicked, because they can't access the onNavigate prop directly
+  // from deep inside the Lexical editor tree.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ entryId: string }>).detail;
+      if (detail?.entryId) {
+        onNavigate?.(detail.entryId);
+      }
+    };
+    window.addEventListener("ascend:navigate-entry", handler);
+    return () => window.removeEventListener("ascend:navigate-entry", handler);
+  }, [onNavigate]);
 
   const isLoading = isCurrentPriorities ? cpLoading : entryLoading;
 
@@ -151,49 +160,6 @@ export function ContextEntryDetail({
     });
   }, [sourceContent, titleToId]);
 
-  function enterEdit() {
-    if (isCurrentPriorities) return;
-    setDraft(sourceContent);
-    setEditingKey(entryId);
-  }
-
-  function exitEdit() {
-    setEditingKey(null);
-  }
-
-  async function saveDraft() {
-    if (isCurrentPriorities) {
-      exitEdit();
-      return;
-    }
-    if (!entry) {
-      exitEdit();
-      return;
-    }
-    if (draft === entry.content) {
-      exitEdit();
-      return;
-    }
-    try {
-      await updateContext.mutateAsync({
-        id: entryId,
-        data: { content: draft },
-      });
-      exitEdit();
-      toast.success("Saved");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to save");
-    }
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Escape") {
-      e.preventDefault();
-      setDraft(sourceContent);
-      exitEdit();
-    }
-  }
-
   function handleContentClick(e: React.MouseEvent<HTMLDivElement>) {
     const target = e.target as HTMLElement;
     const link = target.closest("[data-wikilink-id]") as HTMLElement | null;
@@ -202,30 +168,17 @@ export function ContextEntryDetail({
       e.stopPropagation();
       const id = link.dataset.wikilinkId;
       if (id) onNavigate?.(id);
-      return;
     }
-
-    // Clicking the rendered content (outside a wikilink) enters edit mode,
-    // but only for real entries (not the dynamic Current Priorities view).
-    enterEdit();
   }
 
   function handleContentKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
-    // If focus is on a wikilink anchor, Enter/Space should navigate to it
-    // instead of entering edit mode.
+    // If focus is on a wikilink anchor, Enter/Space should navigate to it.
     const target = e.target as HTMLElement;
     const link = target.closest?.("[data-wikilink-id]") as HTMLElement | null;
     if (link && (e.key === "Enter" || e.key === " ")) {
       e.preventDefault();
       const id = link.dataset.wikilinkId;
       if (id) onNavigate?.(id);
-      return;
-    }
-
-    if (isCurrentPriorities) return;
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      enterEdit();
     }
   }
 
@@ -434,27 +387,12 @@ export function ContextEntryDetail({
         </div>
       </div>
 
-      {/* Content */}
+      {/* Content: Block Editor (replaces legacy textarea) */}
       <div className="flex-1 space-y-5 p-4">
-        {isEditing ? (
-          <textarea
-            autoFocus
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={saveDraft}
-            onKeyDown={handleKeyDown}
-            className="w-full min-h-[400px] rounded-lg border border-border bg-background p-3 font-mono text-sm resize-y focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          />
-        ) : (
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={handleContentClick}
-            onKeyDown={handleContentKeyDown}
-            className="context-prose cursor-text rounded-md py-2 hover:bg-muted/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            dangerouslySetInnerHTML={{ __html: renderedHtml }}
-          />
-        )}
+        <ContextBlockEditor
+          entryId={entryId}
+          fallbackContent={sourceContent}
+        />
 
         <Separator />
         <ContextEdgesPanel entryId={entryId} />
