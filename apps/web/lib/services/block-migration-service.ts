@@ -64,10 +64,55 @@ export const blockMigrationService = {
       // Fall through to re-create.
     }
 
-    // 3. Convert markdown to Lexical serialized editor state
+    // 3. Convert markdown to Lexical serialized editor state.
+    // markdownToBlocks is tolerant — it falls back to a plain-text-paragraphs
+    // snapshot if strict conversion throws. Belt-and-suspenders: also catch
+    // here in case the fallback path itself fails on pathological input.
     const md = entry.content ?? "";
-    const snapshot = markdownToBlocks(md);
-    const text = extractText(snapshot);
+    let snapshot;
+    let text;
+    try {
+      snapshot = markdownToBlocks(md);
+      text = extractText(snapshot);
+    } catch (err) {
+      console.error(
+        `[blockMigrationService.migrateEntryToBlocks] Conversion threw for entry ${entryId}:`,
+        err instanceof Error ? err.message : err,
+      );
+      // Last-resort fallback: a single paragraph holding the raw text.
+      snapshot = {
+        root: {
+          type: "root",
+          version: 1,
+          direction: null,
+          format: "",
+          indent: 0,
+          children: [
+            {
+              type: "paragraph",
+              version: 1,
+              direction: null,
+              format: "",
+              indent: 0,
+              children: md
+                ? [
+                    {
+                      type: "text",
+                      version: 1,
+                      detail: 0,
+                      format: 0,
+                      mode: "normal",
+                      style: "",
+                      text: md.slice(0, 10000),
+                    },
+                  ]
+                : [],
+            },
+          ],
+        },
+      };
+      text = md;
+    }
 
     // 4. Build a Yjs doc to serve as the CRDT container.
     // For the migration path, the Yjs doc is a fresh empty doc. The actual
