@@ -309,9 +309,17 @@ async function fetchGraphWithContent(
  * Throws ContextMapParseError on failure.
  */
 function parseMapOutput(raw: string): ContextMapContent {
+  // Strip markdown fences if the provider wrapped JSON in ```json ... ```
+  // (Gemini and Anthropic occasionally do this even with structured-output mode).
+  const cleaned = raw
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/```\s*$/i, "")
+    .trim();
+
   let parsed: unknown;
   try {
-    parsed = JSON.parse(raw);
+    parsed = JSON.parse(cleaned);
   } catch (e) {
     throw new ContextMapParseError(raw, e);
   }

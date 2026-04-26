@@ -31,11 +31,11 @@ export type ContextMapItem = z.infer<typeof contextMapItemSchema>;
  */
 export const contextMapContentSchema = z.object({
   summary: z.string().optional(),
-  themes: z.array(contextMapItemSchema),
-  principles: z.array(contextMapItemSchema),
-  projects: z.array(contextMapItemSchema),
-  tensions: z.array(contextMapItemSchema),
-  orphans: z.array(contextMapItemSchema),
+  themes: z.array(contextMapItemSchema).default([]),
+  principles: z.array(contextMapItemSchema).default([]),
+  projects: z.array(contextMapItemSchema).default([]),
+  tensions: z.array(contextMapItemSchema).default([]),
+  orphans: z.array(contextMapItemSchema).default([]),
 });
 
 export type ContextMapContent = z.infer<typeof contextMapContentSchema>;
