@@ -13,6 +13,7 @@ import type {
 import { parseWikilinks } from "@ascend/core";
 import { contextLinkService } from "@/lib/services/context-link-service";
 import { embeddingService } from "@/lib/services/embedding-service";
+import { blockMigrationService } from "@/lib/services/block-migration-service";
 
 export const contextService = {
   /**
@@ -173,6 +174,21 @@ export const contextService = {
         .catch((err) =>
           console.warn(
             `[contextService.update] Embedding regeneration failed for entry ${id}:`,
+            err instanceof Error ? err.message : err,
+          ),
+        );
+    }
+
+    // Regenerate BlockDocument from new markdown if content changed externally
+    // (e.g., via MCP set_context) and the entry already has a block doc.
+    // This keeps the block editor view coherent with the content field.
+    // Synchronous: the cost is small (markdown to blocks is fast, no LLM).
+    if (contentChanged && data.content !== undefined) {
+      void blockMigrationService
+        .regenerateFromContent(userId, id, data.content)
+        .catch((err) =>
+          console.warn(
+            `[contextService.update] Block doc regeneration failed for entry ${id}:`,
             err instanceof Error ? err.message : err,
           ),
         );

@@ -34,6 +34,14 @@ export const syncBlockUpdateSchema = z.object({
     .regex(/^[A-Za-z0-9+/]+=*$/, "Must be valid base64")
     .max(1024 * 1024),
   expectedVersion: z.number().int().nonnegative(),
+  // Client-supplied snapshot: the client computes this via
+  // editor.getEditorState().toJSON() and sends it alongside the Yjs update.
+  // Required because @lexical/yjs has no clean server-side API to extract
+  // a Lexical snapshot from a Yjs Doc without a full editor + Provider
+  // binding. For Wave 3 single-user this is safe; Wave 8 collaboration
+  // would replace this with a server-side Lexical headless editor wired
+  // to the Yjs doc via the V2 binding.
+  snapshot: serializedEditorStateSchema,
 });
 
 export type SyncBlockUpdateInput = z.infer<typeof syncBlockUpdateSchema>;

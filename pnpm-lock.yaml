@@ -16,6 +16,9 @@ importers:
       '@ascend/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@ascend/editor':
+        specifier: workspace:*
+        version: link:../../packages/editor
       '@ascend/graph':
         specifier: workspace:*
         version: link:../../packages/graph
@@ -145,6 +148,9 @@ importers:
       tw-animate-css:
         specifier: ^1.4.0
         version: 1.4.0
+      yjs:
+        specifier: 13.6.30
+        version: 13.6.30
       zod:
         specifier: ^4.3.6
         version: 4.3.6
