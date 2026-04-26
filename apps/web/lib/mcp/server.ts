@@ -17,6 +17,7 @@ import { handleTodoTool } from "./tools/todo-tools";
 import { handleFocusTool } from "./tools/focus-tools";
 import { handleContextGraphTool } from "./tools/context-graph-tools";
 import { handleLlmTool } from "./tools/llm-tools";
+import { handleBlockTool } from "./tools/block-tools";
 import { contextService } from "@/lib/services/context-service";
 import { categoryService } from "@/lib/services/category-service";
 
@@ -57,6 +58,13 @@ const LLM_TOOL_NAMES = new Set([
   "suggest_connections",
   "detect_contradictions",
   "summarize_subgraph",
+]);
+const BLOCK_TOOL_NAMES = new Set([
+  "get_blocks",
+  "add_block",
+  "update_block",
+  "move_block",
+  "delete_block",
 ]);
 
 /**
@@ -125,7 +133,11 @@ export function createAscendMcpServer(userId: string): Server {
       return handleLlmTool(userId, name, args ?? {});
     }
 
-    // All 50 tool definitions are now routed. This fallback should never be reached.
+    if (BLOCK_TOOL_NAMES.has(name)) {
+      return handleBlockTool(userId, name, args ?? {});
+    }
+
+    // All 55 tool definitions are now routed. This fallback should never be reached.
     return {
       content: [{ type: "text" as const, text: `Unknown tool: ${name}` }],
       isError: true,

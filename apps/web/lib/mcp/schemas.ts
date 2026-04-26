@@ -984,4 +984,101 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       required: ["rootEntryId"],
     },
   },
+
+  // ── Block Document ────────────────────────────────────────────────
+
+  {
+    name: "get_blocks",
+    description:
+      "Get the block document snapshot for a context entry. Returns the Lexical serialized state (root + children blocks) plus version. Returns null content if the entry has no block document yet (legacy markdown not yet migrated).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        entryId: { type: "string", description: "The id of the context entry" },
+      },
+      required: ["entryId"],
+    },
+  },
+
+  {
+    name: "add_block",
+    description:
+      "Insert a new block into a context entry's block document. Specify position via afterBlockId (insert after existing block) or parentBlockId (nest as child). If neither, append to root.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        entryId: { type: "string", description: "The context entry ID" },
+        block: {
+          type: "object",
+          description:
+            "Block to insert. Must have type field. Other fields depend on block type. Common types: paragraph, heading (with tag h1/h2/h3), list, listitem, code (with language), quote, callout (with variant info/warning/danger).",
+          properties: {
+            type: { type: "string" },
+          },
+          required: ["type"],
+        },
+        afterBlockId: {
+          type: "string",
+          description: "Optional: insert after the block with this Lexical key",
+        },
+        parentBlockId: {
+          type: "string",
+          description: "Optional: nest as child of this block",
+        },
+      },
+      required: ["entryId", "block"],
+    },
+  },
+
+  {
+    name: "update_block",
+    description:
+      "Update properties of a single block by its Lexical key. Patch is shallow-merged into the block's properties (does not deep-merge nested children).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        entryId: { type: "string", description: "The context entry ID" },
+        blockId: {
+          type: "string",
+          description: "The Lexical key of the block to update",
+        },
+        patch: {
+          type: "object",
+          description: "Partial block fields to merge",
+        },
+      },
+      required: ["entryId", "blockId", "patch"],
+    },
+  },
+
+  {
+    name: "move_block",
+    description:
+      "Reorder a block within its document. Specify new position via beforeId, afterId, or parentId (nest under).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        entryId: { type: "string", description: "The context entry ID" },
+        blockId: { type: "string", description: "The block to move" },
+        beforeId: { type: "string", description: "Place before this block" },
+        afterId: { type: "string", description: "Place after this block" },
+        parentId: { type: "string", description: "Nest under this block" },
+      },
+      required: ["entryId", "blockId"],
+    },
+  },
+
+  {
+    name: "delete_block",
+    description:
+      "Remove a single block from a context entry. If the document would become empty, an empty paragraph block is inserted automatically (Lexical requires non-empty root).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        entryId: { type: "string", description: "The context entry ID" },
+        blockId: { type: "string", description: "The Lexical key of the block to remove" },
+      },
+      required: ["entryId", "blockId"],
+    },
+  },
 ];
