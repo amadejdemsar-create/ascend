@@ -28,6 +28,11 @@
 
 import { prisma } from "@/lib/db";
 import { extractText } from "@ascend/editor";
+import type {
+  BlockOpAddInput,
+  BlockOpMoveInput,
+  BlockOpUpdateInput,
+} from "@ascend/core";
 import * as Y from "yjs";
 
 // ── Size caps ──────────────────────────────────────────────────────
@@ -305,4 +310,275 @@ export const blockDocumentService = {
       where: { entryId, userId },
     });
   },
+
+  // ── LLM-friendly block manipulation methods ─────────────────────
+  //
+  // These methods operate on the snapshot JSON tree directly (no headless
+  // Lexical editor). After tree manipulation, they delegate to
+  // replaceSnapshot for persistence (Yjs doc rebuild + extractedText +
+  // version bump). This approach is simpler and avoids the complexity of
+  // hydrating a Lexical editor on the server for each mutation.
+
+  /**
+   * Add a block at a position in the document.
+   *
+   * Positioning rules:
+   *   - afterBlockId: insert immediately after the matching block in its parent's children
+   *   - parentBlockId: append as the last child of the matching block
+   *   - Neither: append at the end of root.children
+   *
+   * Assigns a stable key to the new block using crypto.randomUUID().
+   */
+  async addBlock(
+    userId: string,
+    entryId: string,
+    op: BlockOpAddInput,
+  ): Promise<{ snapshot: unknown; version: number }> {
+    const doc = await this.getByEntryId(userId, entryId);
+    if (!doc) throw new Error("Block document not found");
+
+    const snapshot = structuredClone(doc.snapshot) as SnapshotRoot;
+    const blockData = op.block as Record<string, unknown>;
+    const existingChildren = Array.isArray(blockData.children)
+      ? (blockData.children as BlockNode[])
+      : [];
+    const newBlock: BlockNode = {
+      ...blockData,
+      key: crypto.randomUUID().slice(0, 8),
+      children: existingChildren,
+      type: op.block.type,
+      version: 1,
+    };
+
+    if (op.afterBlockId) {
+      const inserted = insertAfter(snapshot.root.children, op.afterBlockId, newBlock);
+      if (!inserted) throw new Error(`Block ${op.afterBlockId} not found`);
+    } else if (op.parentBlockId) {
+      const parent = findBlock(snapshot.root.children, op.parentBlockId);
+      if (!parent) throw new Error(`Block ${op.parentBlockId} not found`);
+      if (!Array.isArray(parent.children)) parent.children = [];
+      parent.children.push(newBlock);
+    } else {
+      snapshot.root.children.push(newBlock);
+    }
+
+    const result = await this.replaceSnapshot(userId, entryId, snapshot, doc.version);
+    if (result.conflict) {
+      throw new Error("Concurrent modification; retry");
+    }
+    return { snapshot, version: result.version };
+  },
+
+  /**
+   * Update a single block's properties via shallow merge.
+   *
+   * The patch is shallow-merged into the block's own properties (NOT
+   * deep-merged to avoid surprising behavior on nested children). The
+   * `key`, `type`, and `children` fields cannot be overwritten via patch.
+   */
+  async updateBlock(
+    userId: string,
+    entryId: string,
+    blockId: string,
+    patch: BlockOpUpdateInput["patch"],
+  ): Promise<{ snapshot: unknown; version: number }> {
+    const doc = await this.getByEntryId(userId, entryId);
+    if (!doc) throw new Error("Block document not found");
+
+    const snapshot = structuredClone(doc.snapshot) as SnapshotRoot;
+    const block = findBlock(snapshot.root.children, blockId);
+    if (!block) throw new Error(`Block ${blockId} not found`);
+
+    // Shallow merge: protect structural fields from accidental overwrite
+    const { key: _k, type: _t, children: _c, ...safePatch } = patch as Record<string, unknown>;
+    Object.assign(block, safePatch);
+
+    const result = await this.replaceSnapshot(userId, entryId, snapshot, doc.version);
+    if (result.conflict) {
+      throw new Error("Concurrent modification; retry");
+    }
+    return { snapshot, version: result.version };
+  },
+
+  /**
+   * Move a block to a new position.
+   *
+   * Positioning rules:
+   *   - afterId: insert immediately after the target block
+   *   - beforeId: insert immediately before the target block
+   *   - parentId: append as the last child of the target block
+   *
+   * At least one of afterId, beforeId, parentId must be specified
+   * (validated by the Zod schema's refine).
+   */
+  async moveBlock(
+    userId: string,
+    entryId: string,
+    op: BlockOpMoveInput,
+  ): Promise<{ snapshot: unknown; version: number }> {
+    const doc = await this.getByEntryId(userId, entryId);
+    if (!doc) throw new Error("Block document not found");
+
+    const snapshot = structuredClone(doc.snapshot) as SnapshotRoot;
+
+    // 1. Splice the block from its current position
+    const removed = removeBlock(snapshot.root.children, op.blockId);
+    if (!removed) throw new Error(`Block ${op.blockId} not found`);
+
+    // 2. Insert at new position
+    if (op.afterId) {
+      const inserted = insertAfter(snapshot.root.children, op.afterId, removed);
+      if (!inserted) throw new Error(`Target block ${op.afterId} not found`);
+    } else if (op.beforeId) {
+      const inserted = insertBefore(snapshot.root.children, op.beforeId, removed);
+      if (!inserted) throw new Error(`Target block ${op.beforeId} not found`);
+    } else if (op.parentId) {
+      const parent = findBlock(snapshot.root.children, op.parentId);
+      if (!parent) throw new Error(`Target block ${op.parentId} not found`);
+      if (!Array.isArray(parent.children)) parent.children = [];
+      parent.children.push(removed);
+    }
+
+    const result = await this.replaceSnapshot(userId, entryId, snapshot, doc.version);
+    if (result.conflict) {
+      throw new Error("Concurrent modification; retry");
+    }
+    return { snapshot, version: result.version };
+  },
+
+  /**
+   * Delete a block by its key.
+   *
+   * If deleting the last block, inserts an empty paragraph to maintain
+   * Lexical's non-empty root invariant.
+   */
+  async deleteBlock(
+    userId: string,
+    entryId: string,
+    blockId: string,
+  ): Promise<{ snapshot: unknown; version: number }> {
+    const doc = await this.getByEntryId(userId, entryId);
+    if (!doc) throw new Error("Block document not found");
+
+    const snapshot = structuredClone(doc.snapshot) as SnapshotRoot;
+    const removed = removeBlock(snapshot.root.children, blockId);
+    if (!removed) throw new Error(`Block ${blockId} not found`);
+
+    // Lexical requires at least one child in root
+    if (snapshot.root.children.length === 0) {
+      snapshot.root.children.push({
+        type: "paragraph",
+        key: crypto.randomUUID().slice(0, 8),
+        children: [],
+        direction: null,
+        format: "",
+        indent: 0,
+        textFormat: 0,
+        textStyle: "",
+        version: 1,
+      });
+    }
+
+    const result = await this.replaceSnapshot(userId, entryId, snapshot, doc.version);
+    if (result.conflict) {
+      throw new Error("Concurrent modification; retry");
+    }
+    return { snapshot, version: result.version };
+  },
 };
+
+// ── Block tree types ──────────────────────────────────────────────
+
+interface BlockNode {
+  key?: string;
+  type: string;
+  children?: BlockNode[];
+  [prop: string]: unknown;
+}
+
+interface SnapshotRoot {
+  root: {
+    type: string;
+    children: BlockNode[];
+    [prop: string]: unknown;
+  };
+}
+
+// ── Block tree helpers ────────────────────────────────────────────
+//
+// Recursive utilities for finding, inserting, and removing blocks
+// in the Lexical snapshot JSON tree. Blocks are identified by their
+// `key` field (Lexical's stable node identifier).
+
+/**
+ * Find a block by key in a tree of children. Recurses into nested children.
+ */
+function findBlock(children: BlockNode[], key: string): BlockNode | null {
+  for (const child of children) {
+    if (child.key === key) return child;
+    if (child.children && child.children.length > 0) {
+      const found = findBlock(child.children, key);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+/**
+ * Remove a block by key from a tree. Returns the removed block or null.
+ * Recurses into nested children.
+ */
+function removeBlock(children: BlockNode[], key: string): BlockNode | null {
+  for (let i = 0; i < children.length; i++) {
+    if (children[i].key === key) {
+      return children.splice(i, 1)[0];
+    }
+    if (children[i].children && children[i].children!.length > 0) {
+      const found = removeBlock(children[i].children!, key);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+/**
+ * Insert a block immediately after the block with the given key.
+ * Returns true if the target was found and the block was inserted.
+ */
+function insertAfter(
+  children: BlockNode[],
+  afterKey: string,
+  block: BlockNode,
+): boolean {
+  for (let i = 0; i < children.length; i++) {
+    if (children[i].key === afterKey) {
+      children.splice(i + 1, 0, block);
+      return true;
+    }
+    if (children[i].children && children[i].children!.length > 0) {
+      if (insertAfter(children[i].children!, afterKey, block)) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Insert a block immediately before the block with the given key.
+ * Returns true if the target was found and the block was inserted.
+ */
+function insertBefore(
+  children: BlockNode[],
+  beforeKey: string,
+  block: BlockNode,
+): boolean {
+  for (let i = 0; i < children.length; i++) {
+    if (children[i].key === beforeKey) {
+      children.splice(i, 0, block);
+      return true;
+    }
+    if (children[i].children && children[i].children!.length > 0) {
+      if (insertBefore(children[i].children!, beforeKey, block)) return true;
+    }
+  }
+  return false;
+}
