@@ -33,6 +33,7 @@ export const queryKeys = {
       forEntry: (entryId: string) => ["context", "links", "forEntry", entryId] as const,
     },
     map: () => ["context", "map"] as const,
+    blocks: (entryId: string) => ["context", "blocks", entryId] as const,
   },
   categories: {
     all: () => ["categories"] as const,
