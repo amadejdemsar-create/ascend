@@ -16,6 +16,7 @@ import { handleContextTool } from "./tools/context-tools";
 import { handleTodoTool } from "./tools/todo-tools";
 import { handleFocusTool } from "./tools/focus-tools";
 import { handleContextGraphTool } from "./tools/context-graph-tools";
+import { handleLlmTool } from "./tools/llm-tools";
 import { contextService } from "@/lib/services/context-service";
 import { categoryService } from "@/lib/services/category-service";
 
@@ -50,6 +51,13 @@ const CONTEXT_GRAPH_TOOLS = new Set([
   "update_context_type",
 ]);
 const FOCUS_TOOLS = new Set(["get_focus_sessions"]);
+const LLM_TOOL_NAMES = new Set([
+  "get_context_map",
+  "refresh_context_map",
+  "suggest_connections",
+  "detect_contradictions",
+  "summarize_subgraph",
+]);
 
 /**
  * Create an MCP Server instance scoped to a specific user.
@@ -113,7 +121,11 @@ export function createAscendMcpServer(userId: string): Server {
       return handleFocusTool(userId, name, args ?? {});
     }
 
-    // All 45 tool definitions are now routed. This fallback should never be reached.
+    if (LLM_TOOL_NAMES.has(name)) {
+      return handleLlmTool(userId, name, args ?? {});
+    }
+
+    // All 50 tool definitions are now routed. This fallback should never be reached.
     return {
       content: [{ type: "text" as const, text: `Unknown tool: ${name}` }],
       isError: true,

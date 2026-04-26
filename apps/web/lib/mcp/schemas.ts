@@ -908,4 +908,80 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       },
     },
   },
+
+  // ── LLM / AI-native ──────────────────────────────────────────────
+
+  {
+    name: "get_context_map",
+    description:
+      "Get the current Context Map (user's synthesized graph: themes, principles, projects, tensions, orphans). Returns null if no map exists yet.",
+    inputSchema: {
+      type: "object",
+      properties: {},
+    },
+  },
+
+  {
+    name: "refresh_context_map",
+    description:
+      "Trigger LLM synthesis to regenerate the Context Map. Cost-capped. Cooldown 30 minutes since last refresh. Returns updated ContextMap row.",
+    inputSchema: {
+      type: "object",
+      properties: {},
+    },
+  },
+
+  {
+    name: "suggest_connections",
+    description:
+      "Given an entry id, suggest up to 5 typed-link suggestions to add. Uses semantic similarity + LLM rerank to identify high-value missing edges.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        entryId: {
+          type: "string",
+          description: "The context entry ID to suggest connections for.",
+        },
+      },
+      required: ["entryId"],
+    },
+  },
+
+  {
+    name: "detect_contradictions",
+    description:
+      "Scan the user's graph for content tensions. With entryId, only contradictions involving that entry; without, scans the entire graph for top 10 tensions. Returns up to 10.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        entryId: {
+          type: "string",
+          description:
+            "Optional: restrict contradiction scan to this entry. Omit to scan entire graph.",
+        },
+      },
+    },
+  },
+
+  {
+    name: "summarize_subgraph",
+    description:
+      "LLM-generated summary of the 1- or 2-hop neighborhood around a root entry. Useful for agents to ask 'what is around X?' and get a coherent narrative instead of raw graph data.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        rootEntryId: {
+          type: "string",
+          description: "The center context entry ID to summarize around.",
+        },
+        depth: {
+          type: "integer",
+          minimum: 1,
+          maximum: 2,
+          description: "How many hops to include. Defaults to 2.",
+        },
+      },
+      required: ["rootEntryId"],
+    },
+  },
 ];

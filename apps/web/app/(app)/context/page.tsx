@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { useContextEntries, useTogglePin } from "@/lib/hooks/use-context";
@@ -14,6 +14,7 @@ import { ContextViewSwitcher } from "@/components/context/context-view-switcher"
 import type { ContextEntryType } from "@ascend/core";
 import { ContextGraphView } from "@/components/context/context-graph-view";
 import { ContextBacklinksView } from "@/components/context/context-backlinks-view";
+import { ContextMapCard, ContextMapFilterPill } from "@/components/context/context-map-card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import {
@@ -41,6 +42,9 @@ export default function ContextPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [showCurrentPriorities, setShowCurrentPriorities] = useState(false);
+  const [mapFilterEntryIds, setMapFilterEntryIds] = useState<string[] | null>(
+    null,
+  );
 
   const contextFilters = useUIStore((s) => s.contextFilters);
   const setContextTagFilter = useUIStore((s) => s.setContextTagFilter);
@@ -54,9 +58,17 @@ export default function ContextPage() {
   const entryList = (entries ?? []) as ContextEntry[];
 
   const filteredEntries = useMemo(() => {
-    if (!tagFilter) return entryList;
-    return entryList.filter((entry) => entry.tags.includes(tagFilter));
-  }, [entryList, tagFilter]);
+    let list = entryList;
+    if (tagFilter) {
+      list = list.filter((entry) => entry.tags.includes(tagFilter));
+    }
+    // Apply map filter if active
+    if (mapFilterEntryIds) {
+      const idSet = new Set(mapFilterEntryIds);
+      list = list.filter((entry) => idSet.has(entry.id));
+    }
+    return list;
+  }, [entryList, tagFilter, mapFilterEntryIds]);
 
   const pinnedEntries = useMemo(() => {
     return filteredEntries.filter((entry) => entry.isPinned);
@@ -135,6 +147,10 @@ export default function ContextPage() {
     handleSelectEntry(id);
   }
 
+  const handleClearMapFilter = useCallback(() => {
+    setMapFilterEntryIds(null);
+  }, []);
+
   // Listen for graph node selections (dispatched from ContextGraphView)
   useEffect(() => {
     function handleGraphNodeSelect(e: Event) {
@@ -152,6 +168,19 @@ export default function ContextPage() {
         "ascend:context-node-select",
         handleGraphNodeSelect,
       );
+  }, []);
+
+  // Listen for map filter events (dispatched from ContextMapCard items)
+  useEffect(() => {
+    function handleMapFilter(e: Event) {
+      const detail = (e as CustomEvent<{ entryIds: string[] }>).detail;
+      if (detail?.entryIds && detail.entryIds.length > 0) {
+        setMapFilterEntryIds(detail.entryIds);
+      }
+    }
+    window.addEventListener("ascend:context-filter", handleMapFilter);
+    return () =>
+      window.removeEventListener("ascend:context-filter", handleMapFilter);
   }, []);
 
   const showDetail = selectedEntryId || showCurrentPriorities;
@@ -221,6 +250,14 @@ export default function ContextPage() {
               />
               <ContextSearch onSelect={handleSearchSelect} />
             </div>
+            <div className="p-4">
+              <ContextMapCard />
+              {mapFilterEntryIds && (
+                <div className="mb-3">
+                  <ContextMapFilterPill onClear={handleClearMapFilter} />
+                </div>
+              )}
+            </div>
             <ContextEntryList
               entries={pinnedEntries}
               selectedId={selectedEntryId}
@@ -253,6 +290,14 @@ export default function ContextPage() {
                   </>
                 }
               />
+            </div>
+            <div className="p-4">
+              <ContextMapCard />
+              {mapFilterEntryIds && (
+                <div className="mb-3">
+                  <ContextMapFilterPill onClear={handleClearMapFilter} />
+                </div>
+              )}
             </div>
             <ContextBacklinksView
               selectedId={selectedEntryId}
@@ -301,6 +346,16 @@ export default function ContextPage() {
               </Collapsible>
             </div>
 
+            {/* Context Map card */}
+            <div className="p-4 pb-0">
+              <ContextMapCard />
+              {mapFilterEntryIds && (
+                <div className="mb-3">
+                  <ContextMapFilterPill onClear={handleClearMapFilter} />
+                </div>
+              )}
+            </div>
+
             {/* Entry list */}
             <ContextEntryList
               entries={filteredEntries}
@@ -344,6 +399,11 @@ export default function ContextPage() {
                 </>
               }
             />
+            {/* Map card in graph header */}
+            <ContextMapCard />
+            {mapFilterEntryIds && (
+              <ContextMapFilterPill onClear={handleClearMapFilter} />
+            )}
           </div>
         )}
         {renderLeftPanelContent()}

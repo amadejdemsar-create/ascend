@@ -88,4 +88,53 @@ export const userService = {
   async countUserStats() {
     return prisma.userStats.count();
   },
+
+  /**
+   * Get user's AI settings. Returns the UserSettings row or null.
+   * userId scoped via the @unique column.
+   */
+  async getSettings(userId: string) {
+    return prisma.userSettings.findFirst({
+      where: { userId },
+      select: {
+        id: true,
+        chatProvider: true,
+        chatModel: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  },
+
+  /**
+   * Update AI settings (chatProvider, chatModel). Upserts the
+   * UserSettings row if it does not exist yet.
+   * userId scoped (safety rule 1).
+   */
+  async updateAiSettings(
+    userId: string,
+    data: { chatProvider?: string; chatModel?: string | null },
+  ) {
+    // Build the update payload; only include provided fields.
+    // Use Record<string, unknown> for the dynamic build, then pass to Prisma.
+    const update: Record<string, unknown> = {};
+    if (data.chatProvider !== undefined) update.chatProvider = data.chatProvider;
+    if (data.chatModel !== undefined) update.chatModel = data.chatModel;
+
+    return prisma.userSettings.upsert({
+      where: { userId },
+      update,
+      create: {
+        userId,
+        ...update,
+      },
+      select: {
+        id: true,
+        chatProvider: true,
+        chatModel: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  },
 };

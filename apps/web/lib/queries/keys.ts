@@ -57,5 +57,9 @@ export const queryKeys = {
     usage: (window?: string) => ["llm", "usage", window ?? "day"] as const,
     providers: () => ["llm", "providers"] as const,
   },
+  settings: {
+    all: () => ["settings"] as const,
+    ai: () => ["settings", "ai"] as const,
+  },
   dashboard: () => ["dashboard"] as const,
 };
