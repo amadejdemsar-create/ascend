@@ -13,6 +13,7 @@ COPY packages/storage/package.json ./packages/storage/
 COPY packages/ui-tokens/package.json ./packages/ui-tokens/
 COPY packages/graph/package.json ./packages/graph/
 COPY packages/llm/package.json ./packages/llm/
+COPY packages/editor/package.json ./packages/editor/
 RUN pnpm install --frozen-lockfile
 
 # Stage 2: Build the application
@@ -30,6 +31,7 @@ COPY --from=deps /app/packages/storage/node_modules ./packages/storage/node_modu
 COPY --from=deps /app/packages/ui-tokens/node_modules ./packages/ui-tokens/node_modules
 COPY --from=deps /app/packages/graph/node_modules ./packages/graph/node_modules
 COPY --from=deps /app/packages/llm/node_modules ./packages/llm/node_modules
+COPY --from=deps /app/packages/editor/node_modules ./packages/editor/node_modules
 COPY . .
 ENV DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
 # auth-service.ts has a module-init guard that throws if AUTH_JWT_SECRET is
@@ -56,6 +58,7 @@ COPY packages/storage/package.json ./packages/storage/
 COPY packages/ui-tokens/package.json ./packages/ui-tokens/
 COPY packages/graph/package.json ./packages/graph/
 COPY packages/llm/package.json ./packages/llm/
+COPY packages/editor/package.json ./packages/editor/
 RUN pnpm install --frozen-lockfile --prod
 
 # Stage 4: Production runner
