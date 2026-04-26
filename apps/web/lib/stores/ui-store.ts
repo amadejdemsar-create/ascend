@@ -29,6 +29,7 @@ function createAdapterStorage<S>(): PersistStorage<S> {
 
 export type ViewType = "list" | "tree" | "timeline";
 export type ContextViewType = "list" | "graph" | "pinned" | "backlinks";
+export type ContextSearchMode = "text" | "semantic" | "hybrid";
 export type TodoDateTab = "today" | "week" | "all";
 
 export interface ActiveFilters {
@@ -77,6 +78,7 @@ interface UIStore {
   todoHideCompleted: boolean;
   contextFilters: ContextFilters;
   contextActiveView: ContextViewType;
+  contextSearchMode: ContextSearchMode;
   setTodoDateTab: (tab: TodoDateTab) => void;
   setTodoHideCompleted: (hide: boolean) => void;
   setContextTagFilter: (tag: string | null) => void;
@@ -88,6 +90,7 @@ interface UIStore {
   setActiveView: (view: ViewType) => void;
   setActiveFilters: (filters: ActiveFilters) => void;
   setContextActiveView: (view: ContextViewType) => void;
+  setContextSearchMode: (mode: ContextSearchMode) => void;
   setActiveSorting: (sorting: SortingState) => void;
   setTimelineZoom: (zoom: TimelineZoom) => void;
   setTimelineYear: (year: number) => void;
@@ -114,6 +117,7 @@ export const useUIStore = create<UIStore>()(
       todoHideCompleted: true,
       contextFilters: {},
       contextActiveView: "list",
+      contextSearchMode: "hybrid",
       setTodoDateTab: (tab) => set({ todoDateTab: tab }),
       setTodoHideCompleted: (hide) => set({ todoHideCompleted: hide }),
       setContextTagFilter: (tag) =>
@@ -136,6 +140,7 @@ export const useUIStore = create<UIStore>()(
       setActiveView: (view) => set({ activeView: view }),
       setActiveFilters: (filters) => set({ activeFilters: filters }),
       setContextActiveView: (view) => set({ contextActiveView: view }),
+      setContextSearchMode: (mode) => set({ contextSearchMode: mode }),
       setActiveSorting: (sorting) => set({ activeSorting: sorting }),
       setTimelineZoom: (zoom) => set({ timelineZoom: zoom }),
       setTimelineYear: (year) => set({ timelineYear: year }),
@@ -144,7 +149,7 @@ export const useUIStore = create<UIStore>()(
     }),
     {
       name: "ascend-ui",
-      version: 9,
+      version: 10,
       storage: createAdapterStorage(),
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as Record<string, unknown>;
@@ -198,6 +203,12 @@ export const useUIStore = create<UIStore>()(
                 : "list",
           };
         }
+        if (version === 9) {
+          return {
+            ...state,
+            contextSearchMode: "hybrid",
+          };
+        }
         return state;
       },
       partialize: (state) => ({
@@ -212,6 +223,7 @@ export const useUIStore = create<UIStore>()(
         todoHideCompleted: state.todoHideCompleted,
         contextFilters: state.contextFilters,
         contextActiveView: state.contextActiveView,
+        contextSearchMode: state.contextSearchMode,
       }),
     }
   )

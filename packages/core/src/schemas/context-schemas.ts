@@ -34,8 +34,21 @@ export const contextFiltersSchema = z.object({
   tag: z.string().optional(),
 });
 
+// ── Search mode enum ─────────────────────────────────────────────
+
+export const CONTEXT_SEARCH_MODE_VALUES = [
+  "text",
+  "semantic",
+  "hybrid",
+] as const;
+
+export const contextSearchModeSchema = z.enum(CONTEXT_SEARCH_MODE_VALUES);
+export type ContextSearchMode = z.infer<typeof contextSearchModeSchema>;
+
 export const contextSearchSchema = z.object({
   q: z.string().min(1).max(500),
+  mode: contextSearchModeSchema.optional().default("hybrid"),
+  limit: z.coerce.number().int().min(1).max(100).optional().default(20),
 });
 
 // ── Context link schemas ──────────────────────────────────────────

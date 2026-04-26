@@ -90,10 +90,35 @@ export function useContextEntry(id: string) {
   });
 }
 
-export function useSearchContext(query: string) {
+export interface ContextSearchResult {
+  id: string;
+  title: string;
+  content: string;
+  tags: string[];
+  type: string;
+  isPinned: boolean;
+  categoryId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  score: number;
+  matchedVia: "text" | "semantic" | "both";
+}
+
+export function useSearchContext(
+  query: string,
+  opts?: { mode?: "text" | "semantic" | "hybrid" },
+) {
+  const mode = opts?.mode ?? "hybrid";
   return useQuery({
-    queryKey: queryKeys.context.search(query),
-    queryFn: () => fetchJson(`/api/context/search?q=${encodeURIComponent(query)}`),
+    queryKey: queryKeys.context.search(query, mode),
+    queryFn: () => {
+      const params = new URLSearchParams();
+      params.set("q", query);
+      if (mode !== "hybrid") params.set("mode", mode);
+      return fetchJson<ContextSearchResult[]>(
+        `/api/context/search?${params.toString()}`,
+      );
+    },
     enabled: query.length > 0,
   });
 }

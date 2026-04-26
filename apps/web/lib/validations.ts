@@ -46,6 +46,8 @@ export {
   contextEntryTypeSchema,
   contextLinkTypeSchema,
   contextLinkSourceSchema,
+  contextSearchModeSchema,
+  CONTEXT_SEARCH_MODE_VALUES,
   // Context schemas and types
   createContextSchema,
   updateContextSchema,
@@ -56,6 +58,7 @@ export {
   deleteContextLinkQuerySchema,
   contextGraphFiltersSchema,
   contextNeighborsQuerySchema,
+  type ContextSearchMode,
   type CreateContextInput,
   type UpdateContextInput,
   type ContextFilters,

@@ -4,6 +4,7 @@ import {
   updateContextSchema,
   contextFiltersSchema,
   contextSearchSchema,
+  type ContextSearchMode,
 } from "@/lib/validations";
 import { ZodError } from "zod";
 
@@ -72,8 +73,15 @@ export async function handleContextTool(
 
       case "search_context": {
         // MCP schema uses "query" but internal schema uses "q"
-        const { q } = contextSearchSchema.parse({ q: args.query });
-        const results = await contextService.search(userId, q);
+        const parsed = contextSearchSchema.parse({
+          q: args.query,
+          mode: args.mode ?? "hybrid",
+          limit: args.limit ?? 20,
+        });
+        const results = await contextService.search(userId, parsed.q, {
+          mode: parsed.mode as ContextSearchMode,
+          limit: parsed.limit,
+        });
         return { content: [{ type: "text", text: JSON.stringify(results, null, 2) }] };
       }
 

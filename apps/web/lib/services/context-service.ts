@@ -8,6 +8,7 @@ import type {
   CreateContextInput,
   UpdateContextInput,
   ContextFilters,
+  ContextSearchMode,
 } from "@/lib/validations";
 import { parseWikilinks } from "@ascend/core";
 import { contextLinkService } from "@/lib/services/context-link-service";
@@ -213,33 +214,48 @@ export const contextService = {
   },
 
   /**
-   * Full-text search across context entries using PostgreSQL tsvector.
-   * Results are ranked by relevance (title weighted higher than content,
-   * content higher than tags).
+   * Search across context entries with three modes:
+   *
+   * - "text"     : tsvector full-text search (existing path, unchanged)
+   * - "semantic" : pgvector cosine similarity via embeddingService
+   * - "hybrid"   : runs BOTH in parallel, merges by entry id with weighted sum
+   *                (0.55 * normalized_ts_rank + 0.45 * cosine_similarity)
+   *
+   * Every hybrid or semantic query incurs a Gemini Embedding API call for
+   * the query vector (~5-50 tokens, <$0.00001 per query). No caching for now.
+   * The cost gate is enforced by embeddingService.searchSemantic.
    */
-  async search(userId: string, query: string) {
-    const results = await prisma.$queryRaw<
-      Array<{
-        id: string;
-        title: string;
-        content: string;
-        tags: string[];
-        categoryId: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        rank: number;
-      }>
-    >`
-      SELECT "id", "title", "content", "tags", "categoryId", "createdAt", "updatedAt",
-        ts_rank("search_vector", plainto_tsquery('english', ${query})) as rank
-      FROM "ContextEntry"
-      WHERE "userId" = ${userId}
-        AND "search_vector" @@ plainto_tsquery('english', ${query})
-      ORDER BY rank DESC
-      LIMIT 50
-    `;
+  async search(
+    userId: string,
+    query: string,
+    opts?: { mode?: ContextSearchMode; limit?: number },
+  ): Promise<ContextEntrySearchResult[]> {
+    const mode = opts?.mode ?? "hybrid";
+    const limit = opts?.limit ?? 20;
 
-    return results;
+    if (mode === "text") {
+      return searchText(userId, query, limit);
+    }
+
+    if (mode === "semantic") {
+      return searchSemantic(userId, query, limit);
+    }
+
+    // mode === "hybrid": run both paths in parallel, merge results
+    const [textResults, semanticResults] = await Promise.all([
+      searchText(userId, query, limit),
+      searchSemantic(userId, query, limit).catch((err) => {
+        // If semantic search fails (e.g. missing API key, cost cap hit),
+        // gracefully degrade to text-only results.
+        console.warn(
+          "[contextService.search] Semantic search failed, falling back to text-only:",
+          err instanceof Error ? err.message : err,
+        );
+        return [] as ContextEntrySearchResult[];
+      }),
+    ]);
+
+    return mergeHybridResults(textResults, semanticResults, limit);
   },
 
   /**
@@ -761,3 +777,202 @@ export const contextService = {
       );
   },
 };
+
+// ── Hybrid search types and helpers ─────────────────────────────
+
+/**
+ * Unified search result shape returned by all three search modes.
+ * `score` is normalized to the 0-1 range.
+ * `matchedVia` indicates which search path(s) contributed the result.
+ */
+export interface ContextEntrySearchResult {
+  id: string;
+  title: string;
+  content: string;
+  tags: string[];
+  type: string;
+  isPinned: boolean;
+  categoryId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  score: number;
+  matchedVia: "text" | "semantic" | "both";
+}
+
+/**
+ * Text search via tsvector. ts_rank scores are normalized so that the
+ * max result in the set gets score = 1.0 and others are scaled proportionally.
+ *
+ * userId-scoped (safety rule 1). Does NOT touch the search_vector column
+ * definition, GIN index, or trigger (DZ-2).
+ */
+async function searchText(
+  userId: string,
+  query: string,
+  limit: number,
+): Promise<ContextEntrySearchResult[]> {
+  const raw = await prisma.$queryRaw<
+    Array<{
+      id: string;
+      title: string;
+      content: string;
+      tags: string[];
+      type: string;
+      isPinned: boolean;
+      categoryId: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+      rank: number;
+    }>
+  >`
+    SELECT "id", "title", "content", "tags", "type"::text,
+           "isPinned", "categoryId", "createdAt", "updatedAt",
+           ts_rank("search_vector", plainto_tsquery('english', ${query})) as rank
+    FROM "ContextEntry"
+    WHERE "userId" = ${userId}
+      AND "search_vector" @@ plainto_tsquery('english', ${query})
+    ORDER BY rank DESC
+    LIMIT ${limit}
+  `;
+
+  // Normalize ranks to 0-1 range (max in set = 1.0)
+  const maxRank = raw.reduce((max, r) => Math.max(max, r.rank), 0);
+
+  return raw.map((r) => ({
+    id: r.id,
+    title: r.title,
+    content: r.content,
+    tags: r.tags,
+    type: r.type,
+    isPinned: r.isPinned,
+    categoryId: r.categoryId,
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt,
+    score: maxRank > 0 ? r.rank / maxRank : 0,
+    matchedVia: "text" as const,
+  }));
+}
+
+/**
+ * Semantic search via pgvector cosine similarity.
+ * Delegates to embeddingService.searchSemantic which handles query embedding,
+ * cost gating (DZ-9), and userId scoping (safety rule 1).
+ *
+ * cosine similarity is already in the 0-1 range (1 - cosine_distance).
+ */
+async function searchSemantic(
+  userId: string,
+  query: string,
+  limit: number,
+): Promise<ContextEntrySearchResult[]> {
+  const results = await embeddingService.searchSemantic(userId, query, limit);
+
+  // embeddingService.searchSemantic returns a narrower shape; we need to
+  // enrich with the full columns for the unified result type.
+  if (results.length === 0) return [];
+
+  const entryIds = results.map((r) => r.id);
+  const entries = await prisma.contextEntry.findMany({
+    where: { id: { in: entryIds }, userId },
+    select: {
+      id: true,
+      title: true,
+      content: true,
+      tags: true,
+      type: true,
+      isPinned: true,
+      categoryId: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  const entryMap = new Map(entries.map((e) => [e.id, e]));
+
+  const merged: ContextEntrySearchResult[] = [];
+  for (const r of results) {
+    const entry = entryMap.get(r.id);
+    if (!entry) continue;
+    merged.push({
+      id: entry.id,
+      title: entry.title,
+      content: entry.content ?? "",
+      tags: entry.tags,
+      type: entry.type as string,
+      isPinned: entry.isPinned,
+      categoryId: entry.categoryId,
+      createdAt: entry.createdAt,
+      updatedAt: entry.updatedAt,
+      score: r.similarity,
+      matchedVia: "semantic" as const,
+    });
+  }
+  return merged;
+}
+
+/**
+ * Merge text and semantic results using a weighted sum:
+ *   hybrid_score = 0.55 * text_score + 0.45 * semantic_score
+ *
+ * For entries present in only one set, only that weight applies.
+ * The matchedVia field reflects which path(s) contributed.
+ */
+function mergeHybridResults(
+  textResults: ContextEntrySearchResult[],
+  semanticResults: ContextEntrySearchResult[],
+  limit: number,
+): ContextEntrySearchResult[] {
+  const TEXT_WEIGHT = 0.55;
+  const SEMANTIC_WEIGHT = 0.45;
+
+  // Index text results by id
+  const textMap = new Map<string, ContextEntrySearchResult>();
+  for (const r of textResults) {
+    textMap.set(r.id, r);
+  }
+
+  // Index semantic results by id
+  const semanticMap = new Map<string, ContextEntrySearchResult>();
+  for (const r of semanticResults) {
+    semanticMap.set(r.id, r);
+  }
+
+  // Collect all unique ids
+  const allIds = new Set([...textMap.keys(), ...semanticMap.keys()]);
+
+  const merged: ContextEntrySearchResult[] = [];
+
+  for (const id of allIds) {
+    const textResult = textMap.get(id);
+    const semanticResult = semanticMap.get(id);
+
+    // Determine match source and compute blended score
+    let score: number;
+    let matchedVia: "text" | "semantic" | "both";
+
+    if (textResult && semanticResult) {
+      score =
+        TEXT_WEIGHT * textResult.score + SEMANTIC_WEIGHT * semanticResult.score;
+      matchedVia = "both";
+    } else if (textResult) {
+      score = TEXT_WEIGHT * textResult.score;
+      matchedVia = "text";
+    } else {
+      score = SEMANTIC_WEIGHT * semanticResult!.score;
+      matchedVia = "semantic";
+    }
+
+    // Use whichever result we have for the entry data (prefer text for richer data)
+    const base = textResult ?? semanticResult!;
+
+    merged.push({
+      ...base,
+      score: Math.round(score * 10000) / 10000, // 4 decimal places
+      matchedVia,
+    });
+  }
+
+  // Sort by score descending and take top `limit`
+  merged.sort((a, b) => b.score - a.score);
+  return merged.slice(0, limit);
+}

@@ -489,11 +489,20 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: "search_context",
     description:
-      "Search across all context documents using full-text search. Returns results ranked by relevance (title matches weighted higher than content).",
+      "Search across all context documents. Supports three modes: 'text' (keyword full-text via tsvector), 'semantic' (AI meaning-based via embeddings, costs an embedding API call per query), or 'hybrid' (default, blends both with 0.55 text + 0.45 semantic weighting). Returns results ranked by blended score with matchedVia indicator.",
     inputSchema: {
       type: "object",
       properties: {
         query: { type: "string", description: "Search query (supports natural language)" },
+        mode: {
+          type: "string",
+          enum: ["text", "semantic", "hybrid"],
+          description: "Search mode: 'text' for keyword, 'semantic' for AI meaning, 'hybrid' for both (default: hybrid)",
+        },
+        limit: {
+          type: "number",
+          description: "Maximum number of results to return (1 to 100, default: 20)",
+        },
       },
       required: ["query"],
     },

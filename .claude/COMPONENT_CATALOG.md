@@ -2,7 +2,7 @@
 
 > **Monorepo note:** Components currently live in `components/`. After Wave 0 (monorepo conversion), they will live under `apps/web/components/`. Shared UI primitives (raw design tokens only) will live in `packages/ui-tokens/` and are NOT listed here. This catalog covers application-level components, not token definitions.
 
-**Total**: 86 reusable components across 13 directories.
+**Total**: 87 reusable components across 13 directories.
 
 Use this catalog before creating any new component. Duplicating existing components is the most common UI mistake in Ascend. Check here first, then grep for similar implementations.
 
@@ -14,7 +14,7 @@ For each component: file path, one-line purpose, where it is used, and key props
 - [Goal Components](#goal-components) (26)
 - [Todo Components](#todo-components) (7)
 - [Calendar Components](#calendar-components) (3)
-- [Context Components](#context-components) (5)
+- [Context Components](#context-components) (6)
 - [Dashboard Components](#dashboard-components) (6)
 - [Category Components](#category-components) (6)
 - [Layout Components](#layout-components) (5)
@@ -123,7 +123,7 @@ Location: `components/calendar/`. Three components covering month grid, day deta
 
 ## Context Components
 
-Location: `components/context/`. Five components for the context knowledge base (markdown + tags + wikilinks + full-text search).
+Location: `components/context/`. Six components for the context knowledge base (markdown + tags + wikilinks + hybrid search).
 
 | Component | File | Purpose | Used by | Key Props |
 |-----------|------|---------|---------|-----------|
@@ -131,7 +131,8 @@ Location: `components/context/`. Five components for the context knowledge base 
 | ContextEntryDetail | `components/context/context-entry-detail.tsx` | Canonical context entry viewer with rendered markdown, tags, backlinks | Context page | `entryId`, `onClose`, `onEdit` |
 | ContextEntryEditor | `components/context/context-entry-editor.tsx` | Markdown editor for create/edit with tag input | Context page (via modal or edit mode) | `mode: "create" \| "edit"`, `initialData?`, `onSave` |
 | ContextEntryList | `components/context/context-entry-list.tsx` | Scrollable list of context entries with preview | Context page | `entries: ContextEntry[]`, `selectedId?`, `onSelect(id)` |
-| ContextSearch | `components/context/context-search.tsx` | Full-text search input using the raw-SQL `search_vector` column | Context page header | `onQueryChange(query)` |
+| ContextSearch | `components/context/context-search.tsx` | Hybrid search input (tsvector + pgvector) with mode toggle. Reads `contextSearchMode` from Zustand | Context page header | `onSelect(id)` |
+| SemanticSearchToggle | `components/context/semantic-search-toggle.tsx` | Segmented control for search mode (Text / Semantic / Hybrid). Reads/writes `contextSearchMode` in Zustand | `context-search.tsx` | None (reads/writes store) |
 
 ---
 
