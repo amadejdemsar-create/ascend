@@ -78,6 +78,20 @@ export function SlashMenuPlugin() {
     setPosition(null);
   }, []);
 
+  // Close the menu when any scrollable ancestor scrolls or the window resizes.
+  // The menu uses position: fixed, so it would otherwise stay pinned at stale
+  // viewport coords while the underlying caret moves out from under it.
+  useEffect(() => {
+    if (!isOpen) return;
+    const onScrollOrResize = () => closeMenu();
+    window.addEventListener("scroll", onScrollOrResize, true); // capture: catches scrollable ancestors
+    window.addEventListener("resize", onScrollOrResize);
+    return () => {
+      window.removeEventListener("scroll", onScrollOrResize, true);
+      window.removeEventListener("resize", onScrollOrResize);
+    };
+  }, [isOpen, closeMenu]);
+
   const items: SlashMenuItem[] = useMemo(() => [
     {
       id: "heading1",
@@ -331,7 +345,9 @@ export function SlashMenuPlugin() {
           const beforeSlash = offset > 1 ? textContent[offset - 2] : "";
           if (beforeSlash !== "" && beforeSlash !== " " && beforeSlash !== "\n") return;
 
-          // Get caret position for menu placement
+          // Get caret position for menu placement.
+          // We use position: fixed on the menu, so coords are viewport-relative.
+          // Do NOT add scrollX/scrollY (that would be absolute-positioning).
           const domSelection = window.getSelection();
           if (!domSelection || domSelection.rangeCount === 0) return;
 
@@ -339,8 +355,8 @@ export function SlashMenuPlugin() {
           const rect = range.getBoundingClientRect();
 
           setPosition({
-            top: rect.bottom + window.scrollY + 4,
-            left: rect.left + window.scrollX,
+            top: rect.bottom + 4,
+            left: rect.left,
           });
           setIsOpen(true);
           setQuery("");
