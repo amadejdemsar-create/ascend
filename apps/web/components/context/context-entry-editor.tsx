@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ContextBlockEditor } from "@/components/context/context-block-editor";
 import {
   Select,
   SelectTrigger,
@@ -192,15 +193,26 @@ export function ContextEntryEditor({
           <Label htmlFor="context-content" className="text-xs text-muted-foreground">
             Content
           </Label>
-          <Textarea
-            id="context-content"
-            value={content}
-            onChange={(e) => setContent((e.target as HTMLTextAreaElement).value)}
-            placeholder="Write your content in Markdown..."
-            rows={12}
-            className="font-mono text-sm"
-            required
-          />
+          {isEditing && entryId ? (
+            // Existing entries use the Wave 3 Lexical block editor with autosave.
+            // Title changes still go through the form Save; content is autosaved.
+            <div className="rounded-md border bg-background p-3">
+              <ContextBlockEditor entryId={entryId} fallbackContent={content} />
+              <p className="mt-2 text-xs text-muted-foreground">
+                Content autosaves as you type. Use the Save button above only to update the title or category.
+              </p>
+            </div>
+          ) : (
+            <Textarea
+              id="context-content"
+              value={content}
+              onChange={(e) => setContent((e.target as HTMLTextAreaElement).value)}
+              placeholder="Write your content in Markdown..."
+              rows={12}
+              className="font-mono text-sm"
+              required
+            />
+          )}
           <p className="text-xs text-muted-foreground">
             Supports Markdown. Use [[Title]] to link to other documents.
           </p>
