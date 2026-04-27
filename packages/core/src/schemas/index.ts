@@ -106,11 +106,23 @@ export {
   ALLOWED_MIME_TYPES,
   UPLOAD_MAX_BYTES,
   PRESIGN_EXPIRES_SECONDS,
+  EXTRACTION_STATUS_VALUES,
   presignUploadSchema,
   confirmUploadSchema,
+  fileStatusSchema,
+  reExtractSchema,
+  uploadFileToolSchema,
+  getFileContentToolSchema,
+  listFilesByTypeToolSchema,
   type AllowedMimeType,
+  type ExtractionStatusValue,
   type PresignUploadInput,
   type ConfirmUploadInput,
+  type FileStatus,
+  type ReExtractInput,
+  type UploadFileToolInput,
+  type GetFileContentToolInput,
+  type ListFilesByTypeToolInput,
 } from "./files";
 
 // Block editor schemas and types

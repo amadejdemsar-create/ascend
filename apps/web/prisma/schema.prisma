@@ -50,6 +50,13 @@ enum FileStatus {
   FAILED
 }
 
+enum ExtractionStatus {
+  PENDING
+  EXTRACTING
+  COMPLETE
+  FAILED
+}
+
 enum ContextEntryType {
   NOTE
   SOURCE
@@ -415,6 +422,10 @@ model ContextEntry {
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // Wave 4: back-relation from File (File.contextEntryId FK points here;
+  // no extra FK column on ContextEntry, just the Prisma back-relation).
+  file File?
+
   // Graph edges
   outgoingLinks ContextLink[] @relation("ContextLinkFrom")
   incomingLinks ContextLink[] @relation("ContextLinkTo")
@@ -498,6 +509,23 @@ model File {
   uploadedAt DateTime?
   status     FileStatus @default(PENDING)
 
+  // Wave 4: extraction pipeline fields
+  extractedText       String?
+  thumbnailKey        String?
+  pageCount           Int?
+  extractionStatus    ExtractionStatus @default(PENDING)
+  extractionError     String?
+  extractedAt         DateTime?
+  multimodalEmbedding Unsupported("vector(1536)")?
+
+  // Wave 4: 1:1 link to the parent ContextEntry (file points at its entry;
+  // ContextEntry.file is the back-relation with no extra FK column).
+  contextEntryId String?       @unique
+  contextEntry   ContextEntry? @relation(fields: [contextEntryId], references: [id], onDelete: SetNull)
+
+  // Wave 4: extraction job (one job per file)
+  extractionJob ExtractionJob?
+
   // Wave 0: workspace scaffolding (nullable until Wave 8 backfill)
   workspaceId String?
 
@@ -506,6 +534,7 @@ model File {
 
   @@index([userId, status])
   @@index([sha256])
+  @@index([extractionStatus])
 }
 
 model Session {
@@ -583,4 +612,33 @@ model LlmUsage {
   createdAt          DateTime         @default(now())
 
   @@index([userId, createdAt])
+}
+
+// =====================================================================
+//  Wave 4: ExtractionJob queue table
+//
+//  Each uploaded File gets one ExtractionJob row. The extraction worker
+//  (HTTP cron tick at POST /api/files/extract/run) claims PENDING rows
+//  ordered by scheduledAt, runs the modality-specific handler, and marks
+//  the job COMPLETE or FAILED.
+//
+//  Retry with exponential backoff: on failure, scheduledAt is bumped to
+//  now() + interval * 5^attempts. maxAttempts defaults to 3. After 3
+//  failures the job stays FAILED permanently (DZ-13 mitigation).
+// =====================================================================
+model ExtractionJob {
+  id          String           @id @default(cuid())
+  fileId      String           @unique
+  file        File             @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  status      ExtractionStatus @default(PENDING)
+  attempts    Int              @default(0)
+  maxAttempts Int              @default(3)
+  lastError   String?
+  scheduledAt DateTime         @default(now())
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([status, scheduledAt])
 }
