@@ -8,6 +8,7 @@ import { useKeyboardShortcuts } from "@/lib/hooks/use-keyboard-shortcuts";
 import { KeyboardShortcuts } from "@/components/command-palette/keyboard-shortcuts";
 import { CommandPalette } from "@/components/command-palette/command-palette";
 import { GoalModal } from "@/components/goals/goal-modal";
+import { FileDropZone } from "@/components/files/file-drop-zone";
 import { FocusTimerWidget } from "@/components/focus/focus-timer-widget";
 import { SyncIndicator } from "@/components/layout/sync-indicator";
 import { SessionExpiredListener } from "@/components/auth/session-expired-listener";
@@ -63,6 +64,7 @@ export default function AppLayout({
       <BottomTabBar />
       <CommandPalette />
       <GoalModal />
+      <FileDropZone />
       <KeyboardShortcuts
         open={shortcutRefOpen}
         onOpenChange={setShortcutRefOpen}

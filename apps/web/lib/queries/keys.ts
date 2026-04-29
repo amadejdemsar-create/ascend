@@ -62,5 +62,9 @@ export const queryKeys = {
     all: () => ["settings"] as const,
     ai: () => ["settings", "ai"] as const,
   },
+  files: {
+    all: () => ["files"] as const,
+    status: (id: string) => ["files", "status", id] as const,
+  },
   dashboard: () => ["dashboard"] as const,
 };
