@@ -56,6 +56,18 @@ export class FileNode extends DecoratorNode<null> {
     return this.getLatest().__fileId;
   }
 
+  // ── Setters ───────────────────────────────────────────────────
+
+  /**
+   * Replace the file reference. Used by the web layer's Replace action
+   * to swap the underlying file after a new upload.
+   */
+  setFileId(fileId: string): this {
+    const writable = this.getWritable();
+    writable.__fileId = fileId;
+    return writable;
+  }
+
   // ── Block behavior ────────────────────────────────────────────
 
   isInline(): boolean {

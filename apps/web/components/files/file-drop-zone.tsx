@@ -52,9 +52,15 @@ export function FileDropZone() {
 
   const handleDrop = useCallback(
     async (e: DragEvent) => {
+      // Check BEFORE calling preventDefault: if the block editor's
+      // FileDropPlugin already handled this drop, skip the global flow.
+      const alreadyHandled = e.defaultPrevented;
+
       e.preventDefault();
       dragCounterRef.current = 0;
       setIsDragActive(false);
+
+      if (alreadyHandled) return;
 
       const droppedFiles = e.dataTransfer?.files;
       if (!droppedFiles || droppedFiles.length === 0) return;

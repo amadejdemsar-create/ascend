@@ -5,8 +5,12 @@ import { fileService } from "@/lib/services/file-service";
 /**
  * GET /api/files/[id]/status
  *
- * Returns extraction status for a file. Lightweight endpoint for polling
- * extraction progress from the UI without fetching the full file payload.
+ * Returns extraction status and core metadata for a file. Used for
+ * polling extraction progress and rendering file blocks in the editor.
+ *
+ * Wave 4 Phase 5 extended the response to include filename, mimeType,
+ * sizeBytes, and extractedText so the file block component can render
+ * without a second round-trip.
  */
 export async function GET(
   request: NextRequest,
@@ -26,10 +30,14 @@ export async function GET(
 
     return NextResponse.json({
       id: file.id,
+      filename: file.filename,
+      mimeType: file.mimeType,
+      sizeBytes: Number(file.sizeBytes),
       status: file.status,
       extractionStatus: file.extractionStatus,
       extractedAt: file.extractedAt?.toISOString() ?? null,
       extractionError: file.extractionError ?? null,
+      extractedText: file.extractedText ?? null,
       pageCount: file.pageCount ?? null,
     });
   } catch (error) {

@@ -24,6 +24,7 @@ import { WikiLinkAutocompletePlugin } from "@/components/editor/wikilink-autocom
 import { MentionAutocompletePlugin } from "@/components/editor/mention-autocomplete-plugin";
 import { KeyboardShortcutsPlugin } from "@/components/editor/keyboard-shortcuts-plugin";
 import { DecoratorPlugin } from "@/components/editor/decorator-plugin";
+import { FileDropPlugin } from "@/components/editor/file-drop-plugin";
 import {
   useBlockDocument,
   useMigrateBlockDocument,
@@ -197,12 +198,13 @@ function EditorInner({
           version={version}
           sync={sync}
         />
-        <SlashMenuPlugin />
+        <SlashMenuPlugin entryId={entryId} />
         <InlineToolbarPlugin />
         <WikiLinkAutocompletePlugin />
         <MentionAutocompletePlugin />
         <KeyboardShortcutsPlugin />
-        <DecoratorPlugin />
+        <DecoratorPlugin entryId={entryId} />
+        <FileDropPlugin entryId={entryId} />
       </div>
     </LexicalComposer>
   );

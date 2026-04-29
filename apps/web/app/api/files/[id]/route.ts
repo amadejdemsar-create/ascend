@@ -5,15 +5,22 @@ import { fileService } from "@/lib/services/file-service";
 /**
  * GET /api/files/[id]
  *
- * Download a file. Behavior depends on MIME type:
+ * Download a file. Behavior depends on MIME type and Accept header:
  *
- * - image/svg+xml: streams bytes server-side with hardened security headers
- *   (Content-Disposition: attachment, X-Content-Type-Options: nosniff) to
- *   prevent inline rendering and XSS via embedded scripts. See the SVG
+ * - image/svg+xml: always streams bytes server-side with hardened security
+ *   headers (Content-Disposition: attachment, X-Content-Type-Options: nosniff)
+ *   to prevent inline rendering and XSS via embedded scripts. See the SVG
  *   security note in packages/core/src/schemas/files.ts.
  *
- * - All other MIME types: returns a short-lived presigned GET URL (5-min
- *   expiry) that the client can use to download directly from R2.
+ * - Binary redirect (Phase 5 amendment): when the Accept header indicates the
+ *   caller wants media bytes (image/*, audio/*, video/*, or *​/* without
+ *   application/json), returns a 302 redirect to the presigned R2 URL. This
+ *   allows <img src>, <audio src>, and <video src> to point directly at this
+ *   route. Excludes SVG (handled above) for security.
+ *
+ * - Default (JSON): returns a short-lived presigned GET URL (5-min expiry)
+ *   as JSON `{ url, expiresAt }`. Used by the FileCard download flow and
+ *   any client that explicitly requests application/json.
  */
 export async function GET(
   request: NextRequest,
@@ -54,6 +61,21 @@ export async function GET(
       auth.userId,
       id,
     );
+
+    // Binary redirect: when the caller wants media bytes (e.g. <img src>,
+    // <audio src>, <video src>), redirect to the presigned R2 URL instead
+    // of returning JSON. This avoids a client round-trip for URL resolution.
+    const accept = request.headers.get("accept") ?? "";
+    const wantsBinary =
+      !accept.includes("application/json") &&
+      (accept.includes("image/") ||
+        accept.includes("audio/") ||
+        accept.includes("video/") ||
+        accept.includes("*/*"));
+
+    if (wantsBinary) {
+      return NextResponse.redirect(url, { status: 302 });
+    }
 
     return NextResponse.json({ url, expiresAt });
   } catch (error) {

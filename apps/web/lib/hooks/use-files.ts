@@ -28,9 +28,13 @@ export interface FileApiResponse {
 
 export interface FileStatusResponse {
   id: string;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
   status: "PENDING" | "UPLOADED" | "FAILED";
   extractionStatus: "PENDING" | "EXTRACTING" | "COMPLETE" | "FAILED";
   extractionError: string | null;
+  extractedText: string | null;
   pageCount: number | null;
   extractedAt: string | null;
 }
