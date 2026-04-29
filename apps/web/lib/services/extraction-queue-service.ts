@@ -107,12 +107,15 @@ export const extractionQueueService = {
    *
    * @throws {Error} "Not found" if the file does not exist or belong to the user.
    */
-  async enqueue(userId: string, fileId: string): Promise<void> {
+  async enqueue(
+    userId: string,
+    fileId: string,
+  ): Promise<{ jobId: string; scheduledAt: Date }> {
     // Verify file ownership (Safety Rule 1)
     const file = await fileService.getFile(userId, fileId);
     if (!file) throw new Error("Not found");
 
-    await prisma.extractionJob.upsert({
+    const job = await prisma.extractionJob.upsert({
       where: { fileId },
       create: {
         fileId,
@@ -127,6 +130,8 @@ export const extractionQueueService = {
         completedAt: null,
       },
     });
+
+    return { jobId: job.id, scheduledAt: job.scheduledAt };
   },
 
   /**

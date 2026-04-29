@@ -1,4 +1,9 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import crypto from "node:crypto";
 import { prisma } from "@/lib/db";
@@ -8,6 +13,7 @@ import {
   ALLOWED_MIME_TYPES,
   UPLOAD_MAX_BYTES,
   PRESIGN_EXPIRES_SECONDS,
+  DOWNLOAD_URL_EXPIRES_SECONDS,
 } from "@/lib/validations";
 
 // ---------------------------------------------------------------------------
@@ -96,6 +102,7 @@ export const fileService = {
   async createPresignedUpload(
     userId: string,
     input: PresignUploadInput,
+    contextEntryId?: string,
   ): Promise<{
     fileId: string;
     uploadUrl: string;
@@ -121,7 +128,7 @@ export const fileService = {
 
     const storageKey = buildStorageKey(userId, input.filename);
 
-    // Create PENDING file record
+    // Create PENDING file record, optionally linked to a ContextEntry
     const file = await prisma.file.create({
       data: {
         userId,
@@ -132,6 +139,7 @@ export const fileService = {
         filename: input.filename,
         status: "PENDING",
         workspaceId: null,
+        ...(contextEntryId && { contextEntryId }),
       },
     });
 
@@ -238,5 +246,143 @@ export const fileService = {
     }
 
     await prisma.file.delete({ where: { id } });
+  },
+
+  /**
+   * Generate a presigned GET URL for downloading a file from R2.
+   *
+   * 5-minute expiry (shorter than the 15-minute upload URL) to limit
+   * exposure of the download link.
+   *
+   * @throws {Error} "Not found" if the file does not exist or belong to the user.
+   * @throws {Error} if R2 is not configured.
+   */
+  async createDownloadUrl(
+    userId: string,
+    id: string,
+  ): Promise<{ url: string; expiresAt: string }> {
+    const file = await prisma.file.findFirst({
+      where: { id, userId },
+    });
+    if (!file) throw new Error("Not found");
+
+    const s3 = getS3Client();
+    if (!s3) {
+      throw new Error(
+        "Storage not configured. Set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, and R2_BUCKET.",
+      );
+    }
+
+    const command = new GetObjectCommand({
+      Bucket: file.bucket,
+      Key: file.storageKey,
+    });
+    const url = await getSignedUrl(s3.client, command, {
+      expiresIn: DOWNLOAD_URL_EXPIRES_SECONDS,
+    });
+
+    const expiresAt = new Date(
+      Date.now() + DOWNLOAD_URL_EXPIRES_SECONDS * 1000,
+    ).toISOString();
+
+    return { url, expiresAt };
+  },
+
+  /**
+   * Stream a file's bytes from R2. Used for SVG serving where we must
+   * add hardened security headers (Content-Disposition: attachment,
+   * X-Content-Type-Options: nosniff) and cannot use a presigned URL.
+   *
+   * Returns the R2 response body as a web ReadableStream, plus metadata
+   * needed for the response headers.
+   *
+   * @throws {Error} "Not found" if the file does not exist or belong to the user.
+   * @throws {Error} if R2 is not configured or the download fails.
+   */
+  async streamFile(
+    userId: string,
+    id: string,
+  ): Promise<{
+    stream: ReadableStream<Uint8Array>;
+    contentType: string;
+    sizeBytes: number;
+    filename: string;
+  }> {
+    const file = await prisma.file.findFirst({
+      where: { id, userId },
+    });
+    if (!file) throw new Error("Not found");
+
+    const s3 = getS3Client();
+    if (!s3) {
+      throw new Error(
+        "Storage not configured. Set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, and R2_BUCKET.",
+      );
+    }
+
+    const response = await s3.client.send(
+      new GetObjectCommand({
+        Bucket: file.bucket,
+        Key: file.storageKey,
+      }),
+    );
+
+    if (!response.Body) {
+      throw new Error("Empty response from storage");
+    }
+
+    // Convert Node.js Readable to Web ReadableStream.
+    // The AWS SDK v3 returns Body as a Readable (Node) or ReadableStream (browser).
+    // In a Node/Edge environment, we need to convert.
+    const { Readable } = await import("node:stream");
+    const nodeReadable = response.Body as import("node:stream").Readable;
+    const webStream = Readable.toWeb(nodeReadable) as ReadableStream<Uint8Array>;
+
+    return {
+      stream: webStream,
+      contentType: file.mimeType,
+      sizeBytes: Number(file.sizeBytes),
+      filename: file.filename,
+    };
+  },
+
+  /**
+   * Delete orphan PENDING files older than 24 hours.
+   *
+   * Files stuck in PENDING status were never confirmed (the client started
+   * a presign but never uploaded, or the upload failed). We clean them up
+   * to reclaim R2 storage and keep the database tidy.
+   *
+   * Called by the cron cleanup endpoint (POST /api/files/cleanup).
+   * Failures on individual files are logged and skipped so one bad file
+   * does not abort the entire batch.
+   */
+  async cleanupOrphanPending(): Promise<{ deleted: number }> {
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    const orphans = await prisma.file.findMany({
+      where: {
+        status: "PENDING",
+        createdAt: { lt: cutoff },
+      },
+      select: { id: true, userId: true },
+    });
+
+    let deleted = 0;
+    for (const orphan of orphans) {
+      try {
+        // deleteFile is userId-scoped and handles R2 + Prisma deletion
+        await fileService.deleteFile(orphan.userId, orphan.id);
+        deleted++;
+      } catch (err) {
+        console.error(
+          `[fileService.cleanupOrphanPending] Failed to delete orphan file ${orphan.id}:`,
+          err instanceof Error ? err.message : err,
+        );
+        // Continue to next file; do not abort batch
+      }
+    }
+
+    return { deleted };
   },
 };

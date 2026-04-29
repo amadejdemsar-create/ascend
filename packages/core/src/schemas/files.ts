@@ -25,6 +25,19 @@ export const ALLOWED_MIME_TYPES_ARRAY = [
   "text/markdown",
   "text/csv",
   "application/json",
+  // Wave 4 Phase 3: audio types (transcription handlers exist in extraction pipeline)
+  "audio/mpeg",
+  "audio/wav",
+  "audio/x-wav",
+  "audio/mp4",
+  "audio/x-m4a",
+  "audio/webm",
+  // Wave 4 Phase 3: video types (transcription handlers exist in extraction pipeline)
+  "video/mp4",
+  "video/quicktime",
+  "video/webm",
+  // Wave 4 Phase 3: XLSX (extraction handler exists)
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 ] as const;
 
 export type AllowedMimeType = (typeof ALLOWED_MIME_TYPES_ARRAY)[number];
@@ -34,8 +47,11 @@ export const ALLOWED_MIME_TYPES = new Set<string>(ALLOWED_MIME_TYPES_ARRAY);
 /** Maximum upload size in bytes (100 MiB). */
 export const UPLOAD_MAX_BYTES = 100 * 1024 * 1024;
 
-/** Presigned URL expiry in seconds (15 minutes). */
+/** Presigned URL expiry in seconds (15 minutes, for uploads). */
 export const PRESIGN_EXPIRES_SECONDS = 900;
+
+/** Download URL expiry in seconds (5 minutes). Shorter than upload to limit exposure. */
+export const DOWNLOAD_URL_EXPIRES_SECONDS = 300;
 
 // ── Extraction status values ──────────────────────────────────────────
 // Matches the ExtractionStatus enum in schema.prisma. Used by Zod schemas
@@ -55,6 +71,10 @@ export const presignUploadSchema = z.object({
   filename: z.string().min(1).max(255).trim(),
   mimeType: z.enum(ALLOWED_MIME_TYPES_ARRAY),
   sizeBytes: z.number().int().positive().max(UPLOAD_MAX_BYTES),
+  // Wave 4 Phase 3: optional link to an existing ContextEntry
+  entryId: z.string().min(1).optional(),
+  // Wave 4 Phase 3: auto-create a ContextEntry of type SOURCE for this file
+  createEntry: z.boolean().optional().default(false),
 });
 export type PresignUploadInput = z.infer<typeof presignUploadSchema>;
 
