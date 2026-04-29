@@ -22,7 +22,12 @@ import {
 
 let cachedS3: { client: S3Client; bucket: string } | null | undefined;
 
-function getS3Client(): { client: S3Client; bucket: string } | null {
+/**
+ * Lazy-init singleton for the S3/R2 client. Exported so that
+ * extraction-service.ts can download file contents from R2 without
+ * duplicating the client setup.
+ */
+export function getS3Client(): { client: S3Client; bucket: string } | null {
   if (cachedS3 !== undefined) return cachedS3;
 
   const accountId = process.env.R2_ACCOUNT_ID;

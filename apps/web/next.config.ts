@@ -2,7 +2,14 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  serverExternalPackages: ["@modelcontextprotocol/sdk", "pdfkit"],
+  serverExternalPackages: [
+    "@modelcontextprotocol/sdk",
+    "pdfkit",
+    "unpdf",
+    "xlsx",
+    "ffmpeg-static",
+    "papaparse",
+  ],
   transpilePackages: ["@ascend/core", "@ascend/api-client", "@ascend/storage", "@ascend/ui-tokens"],
   experimental: {
     viewTransition: true,

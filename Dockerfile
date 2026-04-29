@@ -68,6 +68,11 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Wave 4: ffmpeg for video audio-track extraction. The musl-native build
+# from Alpine packages is guaranteed to work (unlike ffmpeg-static's
+# glibc-linked binaries). ffmpeg-static is used only in local dev.
+RUN apk add --no-cache ffmpeg
+
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 

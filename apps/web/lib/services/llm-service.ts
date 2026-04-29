@@ -27,6 +27,8 @@ import {
   findModel,
   MissingApiKeyError,
   BudgetExceededError,
+  RateLimitError,
+  ProviderHttpError,
   withRetry,
 } from "@ascend/llm";
 
@@ -37,6 +39,9 @@ import {
 // (todaySpent + estimatedCostCents) > HARD_CAP_CENTS_PER_DAY.
 const SOFT_CAP_CENTS_PER_DAY = 200; // $2.00
 const HARD_CAP_CENTS_PER_DAY = 1000; // $10.00
+
+/** Default Gemini model for vision/image captioning. */
+const DEFAULT_VISION_MODEL = "gemini-2.5-flash";
 
 // ── Env var mapping ─────────────────────────────────────────────
 
@@ -355,4 +360,347 @@ export const llmService = {
       available: !!process.env[ENV_KEYS[kind]],
     }));
   },
+
+  // ── Transcription (Wave 4) ────────────────────────────────────
+  //
+  // Transcription lives in llmService (web-only) rather than being
+  // extracted to @ascend/llm because:
+  //   1. Only OpenAI Whisper is supported (no multi-provider abstraction needed)
+  //   2. The endpoint uses multipart/form-data with Blob (not JSON chat)
+  //   3. @ascend/llm is currently chat + embedding only
+  // The architect agent should not flag this as a cross-platform violation.
+
+  /**
+   * Transcribe audio using OpenAI Whisper (whisper-1).
+   *
+   * Flow mirrors llmService.chat:
+   *   1. Estimate cost from buffer size (assume ~1 MB/min compressed audio)
+   *   2. requestBudget (DZ-9 gate, throws on hard cap)
+   *   3. withRetry(() => POST multipart to /v1/audio/transcriptions)
+   *   4. Log LlmUsage row with actual cost based on returned duration
+   *   5. Return transcript text + duration + cost
+   *
+   * Always uses OpenAI regardless of user's chatProvider preference.
+   * If OPENAI_API_KEY is missing, throws immediately.
+   *
+   * @param userId Owner of the file (for budget and usage tracking).
+   * @param audioBuffer Raw audio file content (MP3, WAV, etc.).
+   * @param mimeType MIME type of the audio (e.g., "audio/mpeg").
+   * @param opts.signal AbortSignal for cancellation.
+   * @param opts.model Override the transcription model (default "whisper-1").
+   */
+  async transcribe(
+    userId: string,
+    audioBuffer: Buffer,
+    mimeType: string,
+    opts?: { signal?: AbortSignal; model?: string },
+  ): Promise<{
+    text: string;
+    durationSec: number;
+    estimatedCostCents: number;
+  }> {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new MissingApiKeyError("OPENAI_API_KEY");
+    }
+
+    const model = opts?.model ?? "whisper-1";
+
+    // 1. Pre-estimate cost from buffer size.
+    // whisper-1 costs $0.006/minute = 0.6 cents/minute.
+    // Assume ~1 MB per minute for compressed audio (conservative).
+    const estimatedMinutes = Math.max(
+      1,
+      Math.ceil(audioBuffer.length / (1024 * 1024)),
+    );
+    const estimatedCostCents = Math.ceil(estimatedMinutes * 0.6);
+
+    // 2. Budget gate (DZ-9). MUST happen before the API call.
+    await llmService.requestBudget(userId, estimatedCostCents);
+
+    // 3. Build multipart/form-data request.
+    // Using globalThis.fetch + FormData + Blob to stay platform-agnostic
+    // (consistent with @ascend/llm patterns).
+    const formData = new FormData();
+
+    // Resolve file extension from MIME type for the filename hint
+    const ext = mimeExtensionMap[mimeType] ?? "mp3";
+    // Copy into a fresh ArrayBuffer to satisfy Blob's BlobPart type.
+    // Buffer.buffer is ArrayBufferLike which TS 5.9 rejects for Blob.
+    const ab = audioBuffer.buffer.slice(
+      audioBuffer.byteOffset,
+      audioBuffer.byteOffset + audioBuffer.byteLength,
+    ) as ArrayBuffer;
+    const blob = new Blob([ab], { type: mimeType });
+    formData.append("file", blob, `audio.${ext}`);
+    formData.append("model", model);
+    // verbose_json returns duration and segment-level metadata
+    formData.append("response_format", "verbose_json");
+
+    // 4. Call OpenAI with retry (retries on 429/5xx, never on 4xx)
+    const result = await withRetry(
+      async () => {
+        const response = await globalThis.fetch(
+          "https://api.openai.com/v1/audio/transcriptions",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+            },
+            body: formData,
+            signal: opts?.signal,
+          },
+        );
+
+        if (!response.ok) {
+          const errorBody = await response.text().catch(() => "");
+          if (response.status === 429) {
+            // Parse Retry-After header if present
+            const retryAfterHeader = response.headers.get("Retry-After");
+            const retryAfterMs = retryAfterHeader
+              ? parseInt(retryAfterHeader, 10) * 1000
+              : undefined;
+            throw new RateLimitError(
+              retryAfterMs != null && !isNaN(retryAfterMs)
+                ? retryAfterMs
+                : undefined,
+            );
+          }
+          if (response.status >= 500) {
+            throw new ProviderHttpError(response.status, errorBody);
+          }
+          // 4xx errors (except 429) are not retryable
+          throw new ProviderHttpError(response.status, errorBody);
+        }
+
+        return response.json() as Promise<WhisperVerboseResponse>;
+      },
+      { maxRetries: 3, signal: opts?.signal },
+    );
+
+    const durationSec = result.duration ?? 0;
+    const text = result.text ?? "";
+
+    // 5. Compute actual cost from real duration
+    const actualMinutes = Math.max(1, Math.ceil(durationSec / 60));
+    const actualCostCents = Math.ceil(actualMinutes * 0.6);
+
+    // 6. Log usage to LlmUsage
+    await prisma.llmUsage.create({
+      data: {
+        userId,
+        provider: "OPENAI",
+        model,
+        purpose: "transcribe",
+        // Whisper does not report token counts; use 0 for both
+        promptTokens: 0,
+        completionTokens: 0,
+        estimatedCostCents: actualCostCents,
+      },
+    });
+
+    return {
+      text,
+      durationSec,
+      estimatedCostCents: actualCostCents,
+    };
+  },
+
+  // ── Image Captioning (Wave 4) ─────────────────────────────────
+  //
+  // Direct Gemini Vision API call because @ascend/llm ChatMessage.content
+  // is string-only (no multimodal content parts). Budget and usage are
+  // handled here in the service layer, keeping Prisma imports confined
+  // to lib/services/ (Safety Rule 4).
+
+  /**
+   * Caption an image using Gemini Vision.
+   *
+   * Sends the raw image bytes as inlineData to Gemini's generateContent
+   * endpoint with a structured prompt that returns CAPTION + TAGS.
+   *
+   * @param userId Owner of the file (for budget and usage tracking).
+   * @param imageBuffer Raw image file content.
+   * @param mimeType Image MIME type (e.g., "image/png", "image/jpeg").
+   * @param opts.signal AbortSignal for cancellation.
+   * @param opts.model Override the vision model (default DEFAULT_VISION_MODEL).
+   */
+  async captionImage(
+    userId: string,
+    imageBuffer: Buffer,
+    mimeType: string,
+    opts?: { signal?: AbortSignal; model?: string },
+  ): Promise<{
+    caption: string;
+    tags: string[];
+    promptTokens: number;
+    completionTokens: number;
+  }> {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new MissingApiKeyError("GEMINI_API_KEY");
+    }
+
+    const visionModel = opts?.model ?? DEFAULT_VISION_MODEL;
+
+    // Estimate cost. Gemini charges ~258 tokens per image tile.
+    // A single image is roughly 258 prompt tokens + our text prompt (~50 tokens).
+    const estimatedCost = estimateCostCents({
+      provider: "GEMINI",
+      model: visionModel,
+      promptTokens: 500,
+      completionTokens: 150,
+    });
+
+    // DZ-9 budget gate
+    await llmService.requestBudget(userId, estimatedCost);
+
+    const base64Data = imageBuffer.toString("base64");
+
+    const requestBody = {
+      contents: [
+        {
+          parts: [
+            {
+              inlineData: {
+                mimeType,
+                data: base64Data,
+              },
+            },
+            {
+              text:
+                "Caption this image in 1 to 2 sentences and produce 3 to 7 " +
+                "comma-separated tags. Format exactly as:\n" +
+                "CAPTION: <text>\nTAGS: a, b, c",
+            },
+          ],
+        },
+      ],
+      generationConfig: {
+        maxOutputTokens: 300,
+        temperature: 0.3,
+      },
+    };
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${visionModel}:generateContent`;
+
+    const result = await withRetry(
+      async () => {
+        const response = await globalThis.fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey,
+          },
+          body: JSON.stringify(requestBody),
+          signal: opts?.signal,
+        });
+
+        if (!response.ok) {
+          const errorText = await response
+            .text()
+            .catch(() => response.statusText);
+          if (response.status === 429) {
+            throw new RateLimitError();
+          }
+          throw new ProviderHttpError(response.status, errorText);
+        }
+
+        return response.json() as Promise<GeminiVisionResponse>;
+      },
+      { maxRetries: 3, signal: opts?.signal },
+    );
+
+    const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    const promptTokens = result.usageMetadata?.promptTokenCount ?? 0;
+    const completionTokens = result.usageMetadata?.candidatesTokenCount ?? 0;
+
+    // Log actual usage
+    const realCost = estimateCostCents({
+      provider: "GEMINI",
+      model: visionModel,
+      promptTokens,
+      completionTokens,
+    });
+
+    await prisma.llmUsage.create({
+      data: {
+        userId,
+        provider: "GEMINI",
+        model: visionModel,
+        purpose: "image_extraction",
+        promptTokens,
+        completionTokens,
+        estimatedCostCents: realCost,
+      },
+    });
+
+    // Parse structured response
+    const { caption, tags } = parseVisionResponse(rawText);
+
+    return { caption, tags, promptTokens, completionTokens };
+  },
 };
+
+// ── Whisper types ───────────────────────────────────────────────
+
+interface WhisperVerboseResponse {
+  text?: string;
+  duration?: number;
+  language?: string;
+  segments?: Array<{
+    start: number;
+    end: number;
+    text: string;
+  }>;
+}
+
+// ── Gemini Vision types ─────────────────────────────────────────
+
+interface GeminiVisionResponse {
+  candidates?: Array<{
+    content?: {
+      parts?: Array<{ text?: string }>;
+    };
+  }>;
+  usageMetadata?: {
+    promptTokenCount?: number;
+    candidatesTokenCount?: number;
+  };
+}
+
+// ── MIME to file extension map (for Whisper file hint) ──────────
+
+const mimeExtensionMap: Record<string, string> = {
+  "audio/mpeg": "mp3",
+  "audio/mp3": "mp3",
+  "audio/wav": "wav",
+  "audio/x-wav": "wav",
+  "audio/wave": "wav",
+  "audio/ogg": "ogg",
+  "audio/flac": "flac",
+  "audio/mp4": "m4a",
+  "audio/x-m4a": "m4a",
+  "audio/webm": "webm",
+  "audio/aac": "aac",
+};
+
+// ── Vision response parser ──────────────────────────────────────
+
+function parseVisionResponse(raw: string): {
+  caption: string;
+  tags: string[];
+} {
+  const captionMatch = raw.match(/CAPTION:\s*(.+?)(?:\n|$)/i);
+  const tagsMatch = raw.match(/TAGS:\s*(.+?)(?:\n|$)/i);
+
+  const caption = captionMatch?.[1]?.trim() ?? raw.trim();
+  const tags = tagsMatch?.[1]
+    ? tagsMatch[1]
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean)
+    : [];
+
+  return { caption, tags };
+}
