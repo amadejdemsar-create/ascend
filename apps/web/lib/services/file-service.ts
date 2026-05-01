@@ -221,6 +221,119 @@ export const fileService = {
   },
 
   /**
+   * Server-side upload: writes bytes directly to R2 via PutObjectCommand,
+   * creates the File row in UPLOADED status in one step.
+   *
+   * Used by the MCP `upload_file` tool and any future server-side ingestion
+   * path (e.g., email-to-Ascend). Skips the presigned-URL round-trip since
+   * the server already has the bytes in memory.
+   *
+   * @param userId The owner user ID (Safety Rule 1).
+   * @param input  Filename, MIME type, and declared size.
+   * @param buffer The raw file bytes.
+   * @param contextEntryId Optional ContextEntry to link the file to.
+   * @returns The created File row (serializable via serializeFile).
+   * @throws {Error} if MIME type is not allowed, size exceeds cap, or R2 is unconfigured.
+   */
+  async uploadBytes(
+    userId: string,
+    input: { filename: string; mimeType: string; sizeBytes: number },
+    buffer: Buffer,
+    contextEntryId?: string,
+  ): Promise<File> {
+    // Runtime guards
+    if (!ALLOWED_MIME_TYPES.has(input.mimeType)) {
+      throw new Error(`MIME type not allowed: ${input.mimeType}`);
+    }
+    if (input.sizeBytes > UPLOAD_MAX_BYTES) {
+      throw new Error(
+        `File size ${input.sizeBytes} exceeds maximum ${UPLOAD_MAX_BYTES} bytes`,
+      );
+    }
+    if (buffer.length !== input.sizeBytes) {
+      throw new Error(
+        `Declared size ${input.sizeBytes} does not match buffer length ${buffer.length}`,
+      );
+    }
+
+    const s3 = getS3Client();
+    if (!s3) {
+      throw new Error(
+        "Storage not configured. Set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, and R2_BUCKET.",
+      );
+    }
+
+    const storageKey = buildStorageKey(userId, input.filename);
+
+    // Upload directly to R2
+    await s3.client.send(
+      new PutObjectCommand({
+        Bucket: s3.bucket,
+        Key: storageKey,
+        Body: buffer,
+        ContentType: input.mimeType,
+        ContentLength: input.sizeBytes,
+      }),
+    );
+
+    // Create File row in UPLOADED status (skip PENDING since bytes are already in R2)
+    const file = await prisma.file.create({
+      data: {
+        userId,
+        storageKey,
+        bucket: s3.bucket,
+        mimeType: input.mimeType,
+        sizeBytes: BigInt(input.sizeBytes),
+        filename: input.filename,
+        status: "UPLOADED",
+        uploadedAt: new Date(),
+        workspaceId: null,
+        ...(contextEntryId && { contextEntryId }),
+      },
+    });
+
+    return file;
+  },
+
+  /**
+   * List files for a user, optionally filtered by MIME type prefix.
+   *
+   * Used by the MCP `list_files_by_type` tool for browsing a user's files.
+   *
+   * @param userId The owner user ID (Safety Rule 1).
+   * @param opts.mimeTypePrefix Filter files whose mimeType starts with this string (e.g., "image/", "audio/").
+   * @param opts.limit Maximum files to return (default 50, max 200).
+   * @param opts.offset Pagination offset (default 0).
+   * @returns { files, total } where total is the unfiltered count matching the where clause.
+   */
+  async listFiles(
+    userId: string,
+    opts: { mimeTypePrefix?: string; limit?: number; offset?: number } = {},
+  ): Promise<{ files: File[]; total: number }> {
+    const limit = Math.min(opts.limit ?? 50, 200);
+    const offset = opts.offset ?? 0;
+
+    const where: { userId: string; mimeType?: { startsWith: string } } = {
+      userId,
+    };
+    if (opts.mimeTypePrefix) {
+      where.mimeType = { startsWith: opts.mimeTypePrefix };
+    }
+
+    const [files, total] = await Promise.all([
+      prisma.file.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        take: limit,
+        skip: offset,
+      }),
+      prisma.file.count({ where }),
+    ]);
+
+    return { files, total };
+  },
+
+  /**
    * Delete a File row AND the R2 object. Scoped to userId.
    *
    * Deletion order: R2 first, then Prisma. If R2 delete fails, the row

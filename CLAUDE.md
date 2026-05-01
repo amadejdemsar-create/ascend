@@ -1,6 +1,6 @@
 # Ascend
 
-Personal operating system built on the inputs/outputs framework. Goals are outputs (results you want), todos are inputs (actions that drive results), context is your AI knowledge base as a typed-edge graph, and the calendar ties it all into daily planning. The entire system is exposed via 55 MCP tools.
+Personal operating system built on the inputs/outputs framework. Goals are outputs (results you want), todos are inputs (actions that drive results), context is your AI knowledge base as a typed-edge graph, and the calendar ties it all into daily planning. The entire system is exposed via 58 MCP tools.
 
 ## Tech Stack
 
@@ -141,7 +141,7 @@ Thin wrappers: authenticate via `authenticate()` (3-path resolver: cookie JWT, B
 One hook file per domain. `useQuery` for reads, `useMutation` for writes with `onSuccess` cache invalidation. Query key factory in `apps/web/lib/queries/keys.ts`. Cache config in `apps/web/lib/offline/cache-config.ts`. All fetches go through `apiFetch` from `apps/web/lib/api-client.ts`.
 
 ### MCP Server (`apps/web/lib/mcp/`)
-55 tools across handler files (40 CRUD/dashboard + 7 Wave 1 graph tools: `get_context_graph`, `get_node_neighbors`, `get_related_context`, `list_nodes_by_type`, `create_typed_link`, `remove_typed_link`, `update_context_type` + 3 Wave 2 AI tools: `get_context_map`, `refresh_context_map`, `suggest_connections` + `detect_contradictions` and `summarize_subgraph` routed to `llm-tools.ts` = 50, + 5 Wave 3 block tools: `get_blocks`, `add_block`, `update_block`, `move_block`, `delete_block` = 55). Schemas in `apps/web/lib/mcp/schemas.ts` as raw JSON Schema (not Zod) for SDK compatibility. Handlers in `apps/web/lib/mcp/tools/` call the service layer. Routing in `apps/web/lib/mcp/server.ts` uses Set-based name matching to dispatch to handlers. Transport: Streamable HTTP at `/api/mcp`. Authenticated via API key through `authenticate()` — the API key path of the three.
+58 tools across handler files (40 CRUD/dashboard + 7 Wave 1 graph tools: `get_context_graph`, `get_node_neighbors`, `get_related_context`, `list_nodes_by_type`, `create_typed_link`, `remove_typed_link`, `update_context_type` + 3 Wave 2 AI tools: `get_context_map`, `refresh_context_map`, `suggest_connections` + `detect_contradictions` and `summarize_subgraph` routed to `llm-tools.ts` = 50, + 5 Wave 3 block tools: `get_blocks`, `add_block`, `update_block`, `move_block`, `delete_block` = 55, + 3 Wave 4 file tools: `upload_file`, `get_file_content`, `list_files_by_type` = 58). Schemas in `apps/web/lib/mcp/schemas.ts` as raw JSON Schema (not Zod) for SDK compatibility. Handlers in `apps/web/lib/mcp/tools/` call the service layer. Routing in `apps/web/lib/mcp/server.ts` uses Set-based name matching to dispatch to handlers. Transport: Streamable HTTP at `/api/mcp`. Authenticated via API key through `authenticate()` — the API key path of the three.
 
 ### AI Layer (Wave 2)
 - **`@ascend/llm`** (`packages/llm/`): platform-agnostic provider abstraction. Exports `EmbeddingProvider` (Gemini-only) and `ChatProvider` (Gemini, OpenAI, Anthropic) interfaces, a pricing table (`pricing.ts`), a cost estimator (`cost.ts`), a retry helper (`retry.ts`, capped exponential backoff, never retries 4xx), and a model catalog (`listModels(provider)`). No Next.js, React, or Prisma imports.
@@ -257,6 +257,7 @@ Board/Kanban view components exist (`goal-board-*.tsx`) but are dead code; remov
 | Editor styles | `apps/web/app/globals.css` (editor-specific classes at bottom) |
 | Block-level API routes | `apps/web/app/api/context/[id]/blocks/**/route.ts` |
 | Block-level MCP tools | `apps/web/lib/mcp/tools/block-tools.ts` |
+| File MCP tools (upload, get content, list) | `apps/web/lib/mcp/tools/file-tools.ts` |
 | Block document React Query hooks | `apps/web/lib/hooks/use-block-document.ts` |
 | Add nav item | `apps/web/components/layout/nav-config.ts` |
 | Add MCP tool schema | `apps/web/lib/mcp/schemas.ts` |

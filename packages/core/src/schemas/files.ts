@@ -133,7 +133,7 @@ export type GetFileContentToolInput = z.infer<typeof getFileContentToolSchema>;
 // list_files_by_type: MCP tool for listing files filtered by MIME prefix
 export const listFilesByTypeToolSchema = z.object({
   mimeTypePrefix: z.string().max(200).optional(),
-  limit: z.number().int().min(1).max(100).optional().default(50),
+  limit: z.number().int().min(1).max(200).optional().default(50),
   offset: z.number().int().min(0).optional().default(0),
 });
 export type ListFilesByTypeToolInput = z.infer<

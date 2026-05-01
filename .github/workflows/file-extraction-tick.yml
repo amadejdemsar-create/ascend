@@ -1,0 +1,24 @@
+name: File Extraction Tick
+
+# Process pending file extraction jobs every 5 minutes.
+#
+# This could move to Dokploy scheduled tasks if GitHub Actions cron
+# drift (up to 15 minutes) becomes an issue. The extraction queue is
+# idempotent and concurrency-safe (SELECT ... FOR UPDATE SKIP LOCKED),
+# so overlapping ticks are harmless.
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: # manual trigger from Actions UI
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger extraction batch
+        run: |
+          curl -fsS -X POST \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            https://ascend.nativeai.agency/api/files/extract/run

@@ -18,6 +18,7 @@ import { handleFocusTool } from "./tools/focus-tools";
 import { handleContextGraphTool } from "./tools/context-graph-tools";
 import { handleLlmTool } from "./tools/llm-tools";
 import { handleBlockTool } from "./tools/block-tools";
+import { handleFileTool } from "./tools/file-tools";
 import { contextService } from "@/lib/services/context-service";
 import { categoryService } from "@/lib/services/category-service";
 
@@ -65,6 +66,11 @@ const BLOCK_TOOL_NAMES = new Set([
   "update_block",
   "move_block",
   "delete_block",
+]);
+const FILE_TOOL_NAMES = new Set([
+  "upload_file",
+  "get_file_content",
+  "list_files_by_type",
 ]);
 
 /**
@@ -137,7 +143,11 @@ export function createAscendMcpServer(userId: string): Server {
       return handleBlockTool(userId, name, args ?? {});
     }
 
-    // All 55 tool definitions are now routed. This fallback should never be reached.
+    if (FILE_TOOL_NAMES.has(name)) {
+      return handleFileTool(userId, name, args ?? {});
+    }
+
+    // All 58 tool definitions are now routed. This fallback should never be reached.
     return {
       content: [{ type: "text" as const, text: `Unknown tool: ${name}` }],
       isError: true,

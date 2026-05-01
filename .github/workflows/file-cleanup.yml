@@ -1,0 +1,21 @@
+name: File Cleanup
+
+# Delete orphan PENDING files (presigned but never confirmed) older
+# than 24 hours. Runs daily at 04:00 UTC.
+
+on:
+  schedule:
+    # 04:00 UTC daily (05:00 or 06:00 CET/CEST)
+    - cron: "0 4 * * *"
+  workflow_dispatch: # manual trigger from Actions UI
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger file cleanup
+        run: |
+          curl -fsS -X POST \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            https://ascend.nativeai.agency/api/files/cleanup

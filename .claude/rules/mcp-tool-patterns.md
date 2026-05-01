@@ -7,7 +7,7 @@ globs: lib/mcp/**
 
 ## Overview
 
-Ascend exposes 37 MCP tools via Streamable HTTP at `/api/mcp`. The server uses the low-level `Server` class from `@modelcontextprotocol/sdk` with raw JSON Schema tool definitions (not Zod) because of Zod v3/v4 type incompatibilities with the high-level McpServer API. Runtime validation of arguments happens inside handlers using Zod v4 schemas from `lib/validations.ts`.
+Ascend exposes 58 MCP tools via Streamable HTTP at `/api/mcp`. The server uses the low-level `Server` class from `@modelcontextprotocol/sdk` with raw JSON Schema tool definitions (not Zod) because of Zod v3/v4 type incompatibilities with the high-level McpServer API. Runtime validation of arguments happens inside handlers using Zod v4 schemas from `lib/validations.ts`.
 
 ## Adding a New Tool
 
@@ -126,3 +126,8 @@ if (MY_NEW_TOOLS.has(name)) {
 | DATA_TOOLS | `tools/data-tools.ts` | export_data, import_data, get_settings, update_settings |
 | CONTEXT_TOOLS | `tools/context-tools.ts` | set_context, get_context, list_context, search_context, delete_context |
 | TODO_TOOLS | `tools/todo-tools.ts` | create_todo, get_todo, update_todo, delete_todo, list_todos, complete_todo, search_todos, get_daily_big3, set_daily_big3, get_todos_for_date |
+| CONTEXT_GRAPH_TOOLS | `tools/context-graph-tools.ts` | get_context_graph, get_node_neighbors, get_related_context, list_nodes_by_type, create_typed_link, remove_typed_link, update_context_type |
+| FOCUS_TOOLS | `tools/focus-tools.ts` | get_focus_sessions |
+| LLM_TOOL_NAMES | `tools/llm-tools.ts` | get_context_map, refresh_context_map, suggest_connections, detect_contradictions, summarize_subgraph |
+| BLOCK_TOOL_NAMES | `tools/block-tools.ts` | get_blocks, add_block, update_block, move_block, delete_block |
+| FILE_TOOL_NAMES | `tools/file-tools.ts` | upload_file, get_file_content, list_files_by_type |

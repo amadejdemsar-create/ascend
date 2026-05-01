@@ -14,6 +14,8 @@ import {
   TODO_STATUS_ENUM,
   CONTEXT_ENTRY_TYPE_ENUM,
   CONTEXT_LINK_TYPE_ENUM,
+  ALLOWED_MIME_TYPES_ARRAY,
+  EXTRACTION_STATUS_VALUES,
 } from "@ascend/core";
 
 export interface ToolDefinition {
@@ -1079,6 +1081,86 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         blockId: { type: "string", description: "The Lexical key of the block to remove" },
       },
       required: ["entryId", "blockId"],
+    },
+  },
+
+  // ── File Operations ──────────────────────────────────────────────
+
+  {
+    name: "upload_file",
+    description:
+      "Upload a file to Ascend by URL or base64 content. Exactly one of url or base64 must be provided. The file is stored in R2 and extraction (text, page count) is enqueued automatically. Optionally link to an existing ContextEntry via entryId. When entryId is omitted, the file exists standalone and can be linked later.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        url: {
+          type: "string",
+          description:
+            "HTTPS URL to fetch the file from. Only https: scheme is allowed (SSRF protection). Mutually exclusive with base64.",
+        },
+        base64: {
+          type: "string",
+          description:
+            "Base64-encoded file content. Mutually exclusive with url.",
+        },
+        mimeType: {
+          type: "string",
+          enum: [...ALLOWED_MIME_TYPES_ARRAY],
+          description: "MIME type of the file (must be in the allowlist).",
+        },
+        filename: {
+          type: "string",
+          description: "Original filename (1 to 500 chars).",
+        },
+        entryId: {
+          type: "string",
+          description:
+            "Optional ContextEntry ID to link this file to. The entry must exist and belong to the user.",
+        },
+      },
+      required: ["mimeType", "filename"],
+    },
+  },
+
+  {
+    name: "get_file_content",
+    description:
+      "Get a file's metadata and extracted content. Returns the current extraction state without blocking; if extraction is not yet complete, extractionStatus will be PENDING or EXTRACTING. Extracted text is capped at 100,000 characters.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        fileId: { type: "string", description: "The file ID to retrieve." },
+      },
+      required: ["fileId"],
+    },
+  },
+
+  {
+    name: "list_files_by_type",
+    description:
+      "List the current user's files, optionally filtered by MIME type prefix (e.g., 'image/', 'audio/', 'application/pdf'). Returns metadata for each file including extraction status. Sorted by most recent first.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        mimeTypePrefix: {
+          type: "string",
+          description:
+            "Filter files whose MIME type starts with this prefix (e.g., 'image/' for all images).",
+        },
+        limit: {
+          type: "integer",
+          minimum: 1,
+          maximum: 200,
+          description: "Maximum number of files to return (default 50, max 200).",
+          default: 50,
+        },
+        offset: {
+          type: "integer",
+          minimum: 0,
+          description: "Number of files to skip for pagination (default 0).",
+          default: 0,
+        },
+      },
     },
   },
 ];
