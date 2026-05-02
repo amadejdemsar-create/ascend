@@ -19,6 +19,8 @@ export const ContextEntryType = {
   DECISION: "DECISION",
   QUESTION: "QUESTION",
   AREA: "AREA",
+  DATABASE: "DATABASE",
+  RECORD: "RECORD",
 } as const;
 
 export type ContextEntryType =
@@ -32,6 +34,8 @@ export const CONTEXT_ENTRY_TYPE_VALUES = [
   "DECISION",
   "QUESTION",
   "AREA",
+  "DATABASE",
+  "RECORD",
 ] as const;
 
 export const CONTEXT_ENTRY_TYPE_ENUM: string[] = [...CONTEXT_ENTRY_TYPE_VALUES];
@@ -48,6 +52,7 @@ export const ContextLinkType = {
   SUPERSEDES: "SUPERSEDES",
   APPLIES_TO: "APPLIES_TO",
   PART_OF: "PART_OF",
+  DATABASE_RELATION: "DATABASE_RELATION",
 } as const;
 
 export type ContextLinkType =
@@ -63,6 +68,7 @@ export const CONTEXT_LINK_TYPE_VALUES = [
   "SUPERSEDES",
   "APPLIES_TO",
   "PART_OF",
+  "DATABASE_RELATION",
 ] as const;
 
 export const CONTEXT_LINK_TYPE_ENUM: string[] = [...CONTEXT_LINK_TYPE_VALUES];

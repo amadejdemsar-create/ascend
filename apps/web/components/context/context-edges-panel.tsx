@@ -45,6 +45,7 @@ const LINK_TYPE_LABELS: Record<ContextLinkType, string> = {
   SUPERSEDES: "Supersedes",
   APPLIES_TO: "Applies to",
   PART_OF: "Part of",
+  DATABASE_RELATION: "DB Relation",
 };
 
 export { LINK_TYPE_LABELS };

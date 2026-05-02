@@ -46,6 +46,8 @@ import {
   CheckCircle,
   HelpCircle,
   Target,
+  Table2,
+  Rows3,
 } from "lucide-react";
 
 // ── Constants ──────────────────────────────────────────────────────
@@ -65,6 +67,7 @@ const LINK_TYPE_LABELS: Record<ContextLinkType, string> = {
   SUPERSEDES: "Supersedes",
   APPLIES_TO: "Applies to",
   PART_OF: "Part of",
+  DATABASE_RELATION: "DB Relation",
 };
 
 /** Human-readable labels for entry types */
@@ -76,6 +79,8 @@ const ENTRY_TYPE_LABELS: Record<ContextEntryType, string> = {
   DECISION: "Decision",
   QUESTION: "Question",
   AREA: "Area",
+  DATABASE: "Database",
+  RECORD: "Record",
 };
 
 /** Icons for entry type filter chips */
@@ -87,6 +92,8 @@ const ENTRY_TYPE_ICONS: Record<ContextEntryType, typeof FileText> = {
   DECISION: CheckCircle,
   QUESTION: HelpCircle,
   AREA: Target,
+  DATABASE: Table2,
+  RECORD: Rows3,
 };
 
 // ── Component ──────────────────────────────────────────────────────

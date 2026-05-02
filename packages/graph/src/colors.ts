@@ -36,6 +36,10 @@ export function nodeColor(type: ContextEntryType): string {
       return "#22d3ee"; // cyan-400
     case "AREA":
       return "#4ade80"; // green-400
+    case "DATABASE":
+      return "#f97316"; // orange-500 (structured data)
+    case "RECORD":
+      return "#94a3b8"; // slate-400 (row in a database)
   }
 }
 
@@ -63,5 +67,7 @@ export function edgeColor(type: ContextLinkType): string {
       return "#14b8a6"; // teal-500
     case "PART_OF":
       return "#ec4899"; // pink-500
+    case "DATABASE_RELATION":
+      return "#f97316"; // orange-500, database relation
   }
 }

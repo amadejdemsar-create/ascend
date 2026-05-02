@@ -9,6 +9,8 @@ import {
   CheckCircle,
   HelpCircle,
   Target,
+  Table2,
+  Rows3,
 } from "lucide-react";
 import { CONTEXT_ENTRY_TYPE_VALUES, type ContextEntryType } from "@ascend/core";
 import { nodeColor } from "@ascend/graph";
@@ -31,6 +33,8 @@ const ENTRY_TYPE_LABELS: Record<ContextEntryType, string> = {
   DECISION: "Decision",
   QUESTION: "Question",
   AREA: "Area",
+  DATABASE: "Database",
+  RECORD: "Record",
 };
 
 const ENTRY_TYPE_ICONS: Record<ContextEntryType, typeof FileText> = {
@@ -41,6 +45,8 @@ const ENTRY_TYPE_ICONS: Record<ContextEntryType, typeof FileText> = {
   DECISION: CheckCircle,
   QUESTION: HelpCircle,
   AREA: Target,
+  DATABASE: Table2,
+  RECORD: Rows3,
 };
 
 export { ENTRY_TYPE_LABELS, ENTRY_TYPE_ICONS };

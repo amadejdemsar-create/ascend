@@ -65,6 +65,8 @@ enum ContextEntryType {
   DECISION
   QUESTION
   AREA
+  DATABASE
+  RECORD
 }
 
 enum ContextLinkType {
@@ -77,6 +79,7 @@ enum ContextLinkType {
   SUPERSEDES
   APPLIES_TO
   PART_OF
+  DATABASE_RELATION
 }
 
 enum ContextLinkSource {
@@ -119,6 +122,10 @@ model User {
   contextMaps    ContextMap?
   llmUsage       LlmUsage[]
   blockDocuments BlockDocument[]
+  databases      Database[]
+  databaseFields DatabaseField[]
+  databaseRows   DatabaseRow[]
+  databaseViews  DatabaseView[]
 }
 
 model Goal {
@@ -181,7 +188,7 @@ model Goal {
   progressLogs  ProgressLog[]
   todos         Todo[]
   focusSessions FocusSession[]
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -284,7 +291,7 @@ model FocusSession {
   todoId          String?
   goalId          String?
   durationSeconds Int
-  mode            String   // "focus" or "break"
+  mode            String // "focus" or "break"
   startedAt       DateTime
   endedAt         DateTime
   createdAt       DateTime @default(now())
@@ -410,8 +417,8 @@ model ContextEntry {
 
   // Wave 3: Block editor (Lexical + Yjs)
   // Nullable FK to BlockDocument; populated on first edit in the block editor.
-  blockDocumentId String?         @unique
-  blockDocument   BlockDocument?  @relation(fields: [blockDocumentId], references: [id])
+  blockDocumentId String?        @unique
+  blockDocument   BlockDocument? @relation(fields: [blockDocumentId], references: [id])
   // Denormalized plain text extracted from the block doc; feeds the
   // search_vector trigger so full-text search indexes block content.
   extractedText   String?
@@ -425,6 +432,11 @@ model ContextEntry {
   // Wave 4: back-relation from File (File.contextEntryId FK points here;
   // no extra FK column on ContextEntry, just the Prisma back-relation).
   file File?
+
+  // Wave 5: back-relations from Database and DatabaseRow (1:1 each, both
+  // have contextEntryId @unique pointing here).
+  database    Database?
+  databaseRow DatabaseRow?
 
   // Graph edges
   outgoingLinks ContextLink[] @relation("ContextLinkFrom")
@@ -451,6 +463,11 @@ model ContextLink {
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 
+  // Wave 5: RELATION fields set this to identify which database field
+  // produced this link. Nullable because non-RELATION links have no field.
+  databaseFieldId String?
+  databaseField   DatabaseField? @relation(fields: [databaseFieldId], references: [id], onDelete: Cascade)
+
   fromEntry ContextEntry @relation("ContextLinkFrom", fields: [fromEntryId], references: [id], onDelete: Cascade)
   toEntry   ContextEntry @relation("ContextLinkTo", fields: [toEntryId], references: [id], onDelete: Cascade)
   user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -460,6 +477,7 @@ model ContextLink {
   @@index([fromEntryId])
   @@index([toEntryId])
   @@index([type])
+  @@index([databaseFieldId])
 }
 
 // =====================================================================
@@ -476,34 +494,34 @@ model ContextLink {
 //  concurrency control in the sync endpoint.
 // =====================================================================
 model BlockDocument {
-  id        String   @id @default(cuid())
+  id        String        @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  entryId   String   @unique
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entryId   String        @unique
   entry     ContextEntry?
-  state     Bytes    // Yjs binary state vector (full doc, not deltas)
-  snapshot  Json     // Lexical SerializedEditorState for read-side queries
-  version   Int      @default(1)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  state     Bytes // Yjs binary state vector (full doc, not deltas)
+  snapshot  Json // Lexical SerializedEditorState for read-side queries
+  version   Int           @default(1)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 
   @@index([userId, entryId])
 }
 
 model File {
-  id         String     @id @default(cuid())
-  userId     String
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Storage
-  storageKey String     // S3/R2 key, e.g., "users/<userId>/<uuid>.pdf"
-  bucket     String     @default("ascend-files")
+  storageKey String // S3/R2 key, e.g., "users/<userId>/<uuid>.pdf"
+  bucket     String @default("ascend-files")
   mimeType   String
   sizeBytes  BigInt
 
   // Identity
-  filename   String
-  sha256     String?    // Content hash for deduplication (v1+)
+  filename String
+  sha256   String? // Content hash for deduplication (v1+)
 
   // Lifecycle
   uploadedAt DateTime?
@@ -513,7 +531,7 @@ model File {
   extractedText       String?
   thumbnailKey        String?
   pageCount           Int?
-  extractionStatus    ExtractionStatus @default(PENDING)
+  extractionStatus    ExtractionStatus             @default(PENDING)
   extractionError     String?
   extractedAt         DateTime?
   multimodalEmbedding Unsupported("vector(1536)")?
@@ -529,8 +547,8 @@ model File {
   // Wave 0: workspace scaffolding (nullable until Wave 8 backfill)
   workspaceId String?
 
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId, status])
   @@index([sha256])
@@ -538,23 +556,23 @@ model File {
 }
 
 model Session {
-  id               String    @id @default(cuid())
-  userId           String
-  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Refresh token family (for rotation + reuse detection)
   familyId         String
-  refreshTokenHash String    @unique  // SHA-256 of current refresh token
+  refreshTokenHash String    @unique // SHA-256 of current refresh token
   expiresAt        DateTime
   revokedAt        DateTime?
 
   // Client metadata
-  userAgent        String?
-  ipAddress        String?
-  deviceName       String?
+  userAgent  String?
+  ipAddress  String?
+  deviceName String?
 
-  createdAt        DateTime  @default(now())
-  lastUsedAt       DateTime  @default(now())
+  createdAt  DateTime @default(now())
+  lastUsedAt DateTime @default(now())
 
   @@index([userId])
   @@index([familyId])
@@ -565,25 +583,25 @@ model Session {
 // =====================================================================
 
 model UserSettings {
-  id           String           @id @default(cuid())
-  userId       String           @unique
-  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // AI preferences
   chatProvider ChatProviderKind @default(GEMINI)
-  chatModel    String?          // null = resolve to provider's default model at runtime
+  chatModel    String? // null = resolve to provider's default model at runtime
 
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ContextMap {
-  id           String           @id @default(cuid())
-  userId       String           @unique
-  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Synthesized map content: { themes, principles, projects, tensions, orphans }
-  content      Json
+  content Json
 
   // LLM metadata for the generation that produced this map
   provider     ChatProviderKind
@@ -592,24 +610,24 @@ model ContextMap {
   outputTokens Int
   costCents    Int
 
-  generatedAt  DateTime         @default(now())
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  generatedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model LlmUsage {
-  id                 String           @id @default(cuid())
-  userId             String
-  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   provider           ChatProviderKind
   model              String
-  purpose            String           // "map_refresh", "embedding", "suggest_connections", etc.
+  purpose            String // "map_refresh", "embedding", "suggest_connections", etc.
   promptTokens       Int
   completionTokens   Int
   estimatedCostCents Int
 
-  createdAt          DateTime         @default(now())
+  createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
 }
@@ -641,4 +659,116 @@ model ExtractionJob {
   updatedAt   DateTime         @updatedAt
 
   @@index([status, scheduledAt])
+}
+
+// =====================================================================
+//  Wave 5: Database system enums
+// =====================================================================
+
+enum DatabaseFieldType {
+  TEXT
+  NUMBER
+  DATE
+  SELECT
+  MULTI_SELECT
+  RELATION
+  FORMULA
+  USER
+  CHECKBOX
+  RATING
+  URL
+  EMAIL
+  PHONE
+  FILE
+}
+
+enum DatabaseViewType {
+  TABLE
+  BOARD
+  CALENDAR
+  GALLERY
+  TIMELINE
+}
+
+// =====================================================================
+//  Wave 5: Database system models
+//
+//  Each Database is backed by a ContextEntry of type DATABASE. Each row
+//  is backed by a ContextEntry of type RECORD. This means databases and
+//  rows participate in the full graph, search, and wikilink systems.
+//
+//  RELATION fields use ContextLink rows with type DATABASE_RELATION and
+//  a denormalized databaseFieldId column to identify the source field.
+// =====================================================================
+
+model Database {
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contextEntryId String       @unique
+  contextEntry   ContextEntry @relation(fields: [contextEntryId], references: [id], onDelete: Cascade)
+  defaultViewId  String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  fields DatabaseField[]
+  rows   DatabaseRow[]
+  views  DatabaseView[]
+
+  @@index([userId])
+}
+
+model DatabaseField {
+  id         String            @id @default(cuid())
+  userId     String
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  databaseId String
+  database   Database          @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  name       String
+  type       DatabaseFieldType
+  position   Int
+  config     Json              @default("{}")
+  isPrimary  Boolean           @default(false)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  contextLinks ContextLink[]
+
+  @@unique([databaseId, position])
+  @@index([databaseId])
+  @@index([userId])
+}
+
+model DatabaseRow {
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  databaseId     String
+  database       Database     @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  contextEntryId String       @unique
+  contextEntry   ContextEntry @relation(fields: [contextEntryId], references: [id], onDelete: Cascade)
+  position       Int
+  properties     Json         @default("{}")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([databaseId])
+  @@index([userId])
+}
+
+model DatabaseView {
+  id         String           @id @default(cuid())
+  userId     String
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  databaseId String
+  database   Database         @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  name       String
+  type       DatabaseViewType
+  config     Json             @default("{}")
+  position   Int
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@index([databaseId])
+  @@index([userId])
 }

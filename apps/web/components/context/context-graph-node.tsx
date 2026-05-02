@@ -10,6 +10,8 @@ import {
   CheckCircle,
   HelpCircle,
   Target,
+  Table2,
+  Rows3,
   Pin,
   Link2,
 } from "lucide-react";
@@ -27,6 +29,8 @@ const TYPE_ICONS: Record<ContextEntryType, typeof FileText> = {
   DECISION: CheckCircle,
   QUESTION: HelpCircle,
   AREA: Target,
+  DATABASE: Table2,
+  RECORD: Rows3,
 };
 
 function typeIcon(type: ContextEntryType) {

@@ -1,0 +1,41 @@
+-- Wave 5 Phase 1.7: Search vector for RECORD-type entries (no-op migration)
+--
+-- DECISION: This migration is intentionally a NO-OP. Here is the reasoning:
+--
+-- The existing trigger function `context_entry_search_vector_update()` already
+-- indexes the following columns on ContextEntry:
+--   - title (weight A)
+--   - content (weight B)
+--   - extractedText (weight B) — added in Wave 3
+--   - tags (weight C)
+--
+-- The trigger fires BEFORE INSERT OR UPDATE on those four columns. It does NOT
+-- join to other tables; it only reads NEW.* from the row being modified.
+--
+-- For RECORD-type entries (database rows), the application layer (the future
+-- `databaseRowService`) will:
+--   1. Extract text-searchable property values from the row's properties JSONB
+--      (TEXT, URL, EMAIL, PHONE, and string-result FORMULA values).
+--   2. Write those values into ContextEntry.extractedText as a space-separated
+--      concatenation.
+--   3. The existing trigger then automatically incorporates them into the
+--      search_vector at weight B.
+--
+-- This approach is consistent with how Wave 3 handled block editor content:
+-- the `blockDocumentService` writes plain text to `extractedText` and the
+-- trigger indexes it. No trigger modification is needed.
+--
+-- Alternative considered and rejected: modifying the trigger to JOIN on
+-- DatabaseRow.properties and extract values in PL/pgSQL. This was rejected
+-- because:
+--   (a) It couples the trigger to the database system's JSON schema.
+--   (b) Parsing JSONB property bags with type-awareness in PL/pgSQL is fragile.
+--   (c) The existing pattern (app writes extractedText, trigger indexes it)
+--       is simpler, tested, and proven in Wave 3.
+--
+-- DZ-2 SAFE: No modification to the trigger function or its column list.
+-- GIN index untouched.
+
+-- Intentionally empty. The migration exists for documentation and to maintain
+-- the four-migration structure specified in the Wave 5 plan.
+SELECT 1;
