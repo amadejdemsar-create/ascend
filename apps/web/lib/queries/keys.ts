@@ -66,5 +66,16 @@ export const queryKeys = {
     all: () => ["files"] as const,
     status: (id: string) => ["files", "status", id] as const,
   },
+  databases: {
+    all: () => ["databases"] as const,
+    lists: () => ["databases", "list"] as const,
+    detail: (id: string) => ["databases", "detail", id] as const,
+    fields: (databaseId: string) => ["databases", "fields", databaseId] as const,
+    views: (databaseId: string) => ["databases", "views", databaseId] as const,
+    rows: (databaseId: string, queryHash?: string) =>
+      queryHash
+        ? (["databases", "rows", databaseId, queryHash] as const)
+        : (["databases", "rows", databaseId] as const),
+  },
   dashboard: () => ["dashboard"] as const,
 };
