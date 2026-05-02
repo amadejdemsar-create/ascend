@@ -185,6 +185,7 @@ export {
   createDatabaseRowSchema,
   updateDatabaseRowSchema,
   reorderDatabaseRowsSchema,
+  reorderDatabaseFieldsSchema,
   databaseQuerySchema,
   type DatabaseFieldType,
   type DatabaseViewType,
@@ -207,5 +208,6 @@ export {
   type CreateDatabaseRowInput,
   type UpdateDatabaseRowInput,
   type ReorderDatabaseRowsInput,
+  type ReorderDatabaseFieldsInput,
   type DatabaseQueryInput,
 } from "@ascend/core";

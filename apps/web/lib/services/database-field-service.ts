@@ -178,11 +178,7 @@ export const databaseFieldService = {
    * 2. Remove the field key from every row's properties JSONB.
    * 3. Delete the field row.
    */
-  async delete(
-    userId: string,
-    fieldId: string,
-    options?: { force?: boolean },
-  ): Promise<{ id: string }> {
+  async delete(userId: string, fieldId: string): Promise<{ id: string }> {
     const existing = await prisma.databaseField.findFirst({
       where: { id: fieldId, userId },
     });
@@ -200,6 +196,7 @@ export const databaseFieldService = {
         await tx.$queryRaw`
           DELETE FROM "ContextLink"
           WHERE "databaseFieldId" = ${fieldId}
+            AND "userId" = ${userId}
         `;
       }
 

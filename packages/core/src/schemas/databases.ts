@@ -460,6 +460,13 @@ export type ReorderDatabaseRowsInput = z.infer<
   typeof reorderDatabaseRowsSchema
 >;
 
+export const reorderDatabaseFieldsSchema = z.object({
+  orderedFieldIds: z.array(z.string()).min(1).max(500),
+});
+export type ReorderDatabaseFieldsInput = z.infer<
+  typeof reorderDatabaseFieldsSchema
+>;
+
 // ── Query schemas ─────────────────────────────────────────────────────
 
 export const databaseQuerySchema = z.object({

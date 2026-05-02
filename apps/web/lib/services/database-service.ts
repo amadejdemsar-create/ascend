@@ -255,6 +255,7 @@ export const databaseService = {
         await tx.$queryRaw`
           DELETE FROM "ContextLink"
           WHERE "databaseFieldId" IN (${Prisma.join(fieldIds)})
+            AND "userId" = ${userId}
         `;
       }
 
