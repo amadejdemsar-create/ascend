@@ -2,7 +2,45 @@
 
 Deferred features and initiatives that have been explicitly scoped but not yet implemented. When you want to pick one up, run `/ax:plan <slug>` to create a full PRD + TASKS.md.
 
-Last updated: 26. 4. 2026
+Last updated: 2. 5. 2026
+
+---
+
+## Wave 4 (Universal Files) — SHIPPED 2. 5. 2026
+
+Drop-zone overlay + Upload button on `/context`, MIME-aware extraction pipeline (PDF / image / audio / video / spreadsheet / plain-text) with Postgres-backed queue (`ExtractionJob`, SELECT FOR UPDATE SKIP LOCKED, retry up to 3 with exponential backoff, per-user daily cap of 50). 6 new API routes (`/api/files/[id]`, `/status`, `/extract`, `extract/run`, `cleanup`, plus extended `presign`/`confirm`). 3 new MCP tools: `upload_file`, `get_file_content`, `list_files_by_type` (tool count 55 → 58). File blocks fully implemented in the Lexical editor: `FileBlock` MIME-dispatch wrapper, `PdfPreview` (sandboxed iframe), `ImageBlock` (lightbox + arrow-key nav + zoom), `AudioPlayer`/`VideoPlayer` (transcript collapse), `SpreadsheetPreview` (5×5 inline table), generic `FileCard`. Slash menu items `/upload`, `/file`, `/image`, `/pdf`, `/audio`, `/video`. Two GitHub Actions cron workflows: file-extraction-tick (every 5 min) and file-cleanup (daily 04:00 UTC). DZ-11 resolved (URLs via `/api/files/[id]`, sandboxed PDF iframes, SVG attachment + nosniff). New DZ-12 (extraction queue runaway, fully mitigated) and DZ-13 (R2 orphan in `uploadBytes`, low-risk, deferred). Commits: `632528a`, `7f99c9c`, `b0d67ca`, `b5a3637`, `fc6c42e`, `29ae8cd`. Close-out at `.ascendflow/features/context-v2/wave-4-universal-files/CLOSE-OUT.md`.
+
+## Wave 4 carry-overs (tracked here until picked up)
+
+### LOW
+
+- Strip `storageKey` / `bucket` from API responses (pre-existing pre-Wave 4).
+- SVG GET response could add `filename=` parameter and CSP `sandbox` directive.
+- Explicit 400 on `createEntry` + `entryId` combo in `POST /api/files/presign` (currently silently picks `createEntry`).
+- CUID format validation on `[id]` path params (defense-in-depth).
+- Rename `error` field in `get_file_content` response to `extractionErrorMessage` for clarity.
+- `audio-player.tsx` / `video-player.tsx`: timestamp-linked transcript click-seek deferred (no schema field for word-level Whisper timestamps).
+- Migration `20260427000001/migration.sql:58` `ALTER TABLE ADD CONSTRAINT` lacks `IF NOT EXISTS` guard. Safe (Prisma tracks state) but inconsistent with the file's "IDEMPOTENT" comment.
+- Image alt-text inline editing (currently displayed but not editable from the block).
+- Image presigned URL refresh on visibility change (current 5-min URL can expire mid-session).
+- Drag-drop discoverability hint in the `/context` empty state.
+- Unify lightbox UX between `FileBlockImage` (simple open/close) and `ImageBlock` (arrow-key nav + zoom).
+
+### MEDIUM (should land before Wave 8 multi-user)
+
+- Extract `verifyCronSecret` into a shared helper in `lib/auth.ts` (currently duplicated across `context/map/refresh`, `files/extract/run`, `files/cleanup`).
+- Restrict `POST /api/files/extract/run` JWT path to admin-only (currently any authenticated user can trigger system-wide queue processing).
+- **DZ-13 mitigation.** `fileService.uploadBytes` is non-transactional: R2 PUT then Prisma `create`. If Prisma fails, the R2 object is orphaned permanently. Add an R2 reconciliation sweep, or wrap PUT + create in a try/catch issuing a compensating R2 DELETE on Prisma failure.
+- Rate-limit the `upload_file` MCP tool to prevent R2 quota exhaustion in multi-user.
+- Cursor-based pagination on `list_files_by_type` once any user accumulates a large file count (cap is 200).
+- Upload progress indicator (bytes-sent) on large files. `useUploadFile` does not expose progress; the raw `fetch` to R2 doesn't track sent bytes. Slack/Notion show a progress bar inside the attachment card.
+
+### Deferred features (no schema support yet)
+
+- Persist Whisper `durationSec` and image-handler `tags` (handlers compute them but `File` schema has no columns).
+- Video frame thumbnail strip (Phase 2 deferred frame extraction).
+- Word-level transcript timestamps for click-to-seek (richer Whisper response storage).
+- Frame thumbs as separate File rows.
 
 ---
 

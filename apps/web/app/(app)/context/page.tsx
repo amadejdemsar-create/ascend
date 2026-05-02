@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Plus, Upload } from "lucide-react";
+import { useUploadFile } from "@/lib/hooks/use-files";
 import { useContextEntries, useTogglePin } from "@/lib/hooks/use-context";
 import { useUIStore } from "@/lib/stores/ui-store";
 import { ContextSearch } from "@/components/context/context-search";
@@ -45,6 +46,9 @@ export default function ContextPage() {
   const [mapFilterEntryIds, setMapFilterEntryIds] = useState<string[] | null>(
     null,
   );
+
+  const uploadFileInputRef = useRef<HTMLInputElement>(null);
+  const uploadFile = useUploadFile();
 
   const contextFilters = useUIStore((s) => s.contextFilters);
   const setContextTagFilter = useUIStore((s) => s.setContextTagFilter);
@@ -115,6 +119,25 @@ export default function ContextPage() {
     setSelectedEntryId(null);
     setEditingEntryId(null);
     setShowCurrentPriorities(false);
+  }
+
+  function handleUploadClick() {
+    uploadFileInputRef.current?.click();
+  }
+
+  function handleUploadFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const count = files.length;
+    toast.success(`Uploading ${count} file(s)…`);
+
+    for (let i = 0; i < files.length; i++) {
+      uploadFile.mutate({ file: files[i], createEntry: true });
+    }
+
+    // Reset so picking the same file(s) again triggers onChange
+    e.target.value = "";
   }
 
   function handleSave(id: string) {
@@ -241,6 +264,10 @@ export default function ContextPage() {
                 actions={
                   <>
                     <ContextViewSwitcher />
+                    <Button size="sm" variant="outline" onClick={handleUploadClick} className="gap-1.5">
+                      <Upload className="size-3.5" />
+                      Upload
+                    </Button>
                     <Button size="sm" onClick={handleNewDocument} className="gap-1.5">
                       <Plus className="size-3.5" />
                       New
@@ -283,6 +310,10 @@ export default function ContextPage() {
                 actions={
                   <>
                     <ContextViewSwitcher />
+                    <Button size="sm" variant="outline" onClick={handleUploadClick} className="gap-1.5">
+                      <Upload className="size-3.5" />
+                      Upload
+                    </Button>
                     <Button size="sm" onClick={handleNewDocument} className="gap-1.5">
                       <Plus className="size-3.5" />
                       New
@@ -319,6 +350,10 @@ export default function ContextPage() {
                 actions={
                   <>
                     <ContextViewSwitcher />
+                    <Button size="sm" variant="outline" onClick={handleUploadClick} className="gap-1.5">
+                      <Upload className="size-3.5" />
+                      Upload
+                    </Button>
                     <Button size="sm" onClick={handleNewDocument} className="gap-1.5">
                       <Plus className="size-3.5" />
                       New
@@ -377,6 +412,16 @@ export default function ContextPage() {
 
   return (
     <div className="flex h-full">
+      {/* Hidden file input for Upload button */}
+      <input
+        ref={uploadFileInputRef}
+        type="file"
+        multiple
+        className="hidden"
+        onChange={handleUploadFileChange}
+        aria-hidden="true"
+      />
+
       {/* Left panel: view content */}
       <div
         className={`flex-1 flex flex-col ${isGraphView ? "" : "border-r overflow-y-auto"} ${
@@ -392,6 +437,10 @@ export default function ContextPage() {
               actions={
                 <>
                   <ContextViewSwitcher />
+                  <Button size="sm" variant="outline" onClick={handleUploadClick} className="gap-1.5">
+                    <Upload className="size-3.5" />
+                    Upload
+                  </Button>
                   <Button size="sm" onClick={handleNewDocument} className="gap-1.5">
                     <Plus className="size-3.5" />
                     New

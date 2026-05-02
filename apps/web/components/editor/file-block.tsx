@@ -29,6 +29,7 @@ import { FileCard } from "@/components/files/file-card";
 import { PdfPreview } from "./pdf-preview";
 import { AudioPlayer } from "./audio-player";
 import { VideoPlayer } from "./video-player";
+import { SpreadsheetPreview } from "./spreadsheet-preview";
 
 /**
  * FileBlock: MIME-aware decorator renderer for FileNode.
@@ -154,6 +155,12 @@ export function FileBlock({ nodeKey, fileId, entryId }: FileBlockProps) {
     content = <AudioPlayer fileId={fileId} />;
   } else if (mimeType.startsWith("video/")) {
     content = <VideoPlayer fileId={fileId} />;
+  } else if (
+    mimeType === "text/csv" ||
+    mimeType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+    mimeType === "application/vnd.ms-excel"
+  ) {
+    content = <SpreadsheetPreview fileId={fileId} />;
   } else {
     content = (
       <FileCard
