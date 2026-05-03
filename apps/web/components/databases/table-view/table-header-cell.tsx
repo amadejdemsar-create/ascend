@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import type { Header } from "@tanstack/react-table";
+import { useSortable } from "@dnd-kit/sortable";
 import {
   ArrowUpIcon,
   ArrowDownIcon,
@@ -53,7 +54,7 @@ interface TableHeaderCellProps {
 
 // ── Component ─────────────────────────────────────────────────────────────
 
-export function TableHeaderCell({
+function TableHeaderCellInner({
   header,
   field,
   sort,
@@ -62,7 +63,10 @@ export function TableHeaderCell({
   onRename,
   onChangeType,
   onDelete,
-}: TableHeaderCellProps) {
+  dragHandleProps,
+}: TableHeaderCellProps & {
+  dragHandleProps?: Record<string, unknown>;
+}) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(field.name);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -120,11 +124,11 @@ export function TableHeaderCell({
           "border-r border-border/50 last:border-r-0",
         )}
       >
-        {/* Drag handle for column reorder */}
+        {/* Drag handle for column reorder (dnd-kit) */}
         <div
           className="flex-none opacity-0 group-hover:opacity-60 cursor-grab active:cursor-grabbing px-0.5"
-          draggable
           aria-label={`Drag to reorder column ${field.name}`}
+          {...dragHandleProps}
         >
           <GripVerticalIcon className="size-3.5 text-muted-foreground" aria-hidden="true" />
         </div>
@@ -260,3 +264,46 @@ export function TableHeaderCell({
     </>
   );
 }
+
+// ── Sortable wrapper (uses dnd-kit) ──────────────────────────────────────
+
+/**
+ * Wraps TableHeaderCellInner with useSortable from dnd-kit so the column
+ * header can participate in horizontal drag-and-drop reordering.
+ *
+ * The __drag_handle column is not sortable (it won't be in the
+ * SortableContext items), so this wrapper is only rendered for data columns.
+ */
+export function SortableHeaderCell(props: TableHeaderCellProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: props.field.id });
+
+  const transformStr = transform
+    ? `translate3d(${Math.round(transform.x)}px, ${Math.round(transform.y)}px, 0)`
+    : undefined;
+
+  const style = {
+    transform: transformStr,
+    transition,
+    opacity: isDragging ? 0.5 : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="h-full w-full">
+      <TableHeaderCellInner
+        {...props}
+        dragHandleProps={{ ...attributes, ...listeners }}
+      />
+    </div>
+  );
+}
+
+// ── Legacy export (for backwards compat) ─────────────────────────────────
+
+export { TableHeaderCellInner as TableHeaderCell };

@@ -11,6 +11,19 @@ import {
   type VisibilityState,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  horizontalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
 import { GripVerticalIcon, DatabaseIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -30,7 +43,7 @@ import {
 import { useUpdateField, useDeleteField, useAddField } from "@/lib/hooks/use-database-fields";
 import { useUpdateView } from "@/lib/hooks/use-database-views";
 import { useDatabases } from "@/lib/hooks/use-databases";
-import { TableHeaderCell } from "./table-header-cell";
+import { SortableHeaderCell } from "./table-header-cell";
 import { TableCell } from "./table-cell";
 import { TableAddRow } from "./table-add-row";
 import { TableAddColumn } from "./table-add-column";
@@ -166,7 +179,7 @@ function TableViewInner({ database, view, onOpenRow }: TableViewProps) {
         id: field.id,
         accessorFn: (row) => row[field.id],
         header: ({ header }) => (
-          <TableHeaderCell
+          <SortableHeaderCell
             header={header}
             field={field}
             sort={viewConfig.sort}
@@ -259,6 +272,50 @@ function TableViewInner({ database, view, onOpenRow }: TableViewProps) {
     manualSorting: true,
   });
 
+  // ── Handlers ──────────────────────────────────────────────────────────
+
+  const persistViewConfig = useCallback(
+    (patch: Record<string, unknown>) => {
+      const merged = { ...(view.config ?? {}), ...patch };
+      updateView.mutate({ viewId: view.id, config: merged });
+    },
+    [view.id, view.config, updateView],
+  );
+
+  // ── Column DnD (dnd-kit) ──────────────────────────────────────────────
+
+  const columnDndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+  );
+
+  // Sortable column IDs: only data columns (not __drag_handle).
+  const sortableColumnIds = useMemo(
+    () => visibleFields.map((f) => f.id),
+    [visibleFields],
+  );
+
+  const handleColumnDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      const oldIndex = sortableColumnIds.indexOf(active.id as string);
+      const newIndex = sortableColumnIds.indexOf(over.id as string);
+      if (oldIndex === -1 || newIndex === -1) return;
+
+      const newOrder = arrayMove(sortableColumnIds, oldIndex, newIndex);
+
+      // Build full column order including __drag_handle if present.
+      const fullOrder: string[] = [];
+      if (!hasActiveSort) fullOrder.push("__drag_handle");
+      fullOrder.push(...newOrder);
+
+      setColumnOrder(fullOrder);
+      persistViewConfig({ columnOrder: newOrder });
+    },
+    [sortableColumnIds, hasActiveSort, persistViewConfig],
+  );
+
   // ── Virtualizer ───────────────────────────────────────────────────────
 
   const tableRows = table.getRowModel().rows;
@@ -271,16 +328,6 @@ function TableViewInner({ database, view, onOpenRow }: TableViewProps) {
   });
 
   const virtualRows = virtualizer.getVirtualItems();
-
-  // ── Handlers ──────────────────────────────────────────────────────────
-
-  const persistViewConfig = useCallback(
-    (patch: Record<string, unknown>) => {
-      const merged = { ...(view.config ?? {}), ...patch };
-      updateView.mutate({ viewId: view.id, config: merged });
-    },
-    [view.id, view.config, updateView],
-  );
 
   const handleSortChange = useCallback(
     (sort: SortItem[] | undefined) => {
@@ -455,25 +502,36 @@ function TableViewInner({ database, view, onOpenRow }: TableViewProps) {
   if (tableData.length === 0) {
     return (
       <div className="flex flex-col w-full h-full">
-        {/* Header row (even when empty) */}
-        <div className="flex items-center h-9 border-b border-border bg-muted/30 shrink-0">
-          {table.getHeaderGroups().map((hg) =>
-            hg.headers.map((header) => (
-              <div
-                key={header.id}
-                className="flex items-center h-full"
-                style={{ width: header.getSize() }}
-              >
-                {flexRender(header.column.columnDef.header, header.getContext())}
-              </div>
-            )),
-          )}
-          <TableAddColumn
-            onAddField={handleAddField}
-            isPending={addField.isPending}
-            databases={allDatabases ?? []}
-          />
-        </div>
+        {/* Header row (even when empty), with column DnD */}
+        <DndContext
+          sensors={columnDndSensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleColumnDragEnd}
+        >
+          <div className="flex items-center h-9 border-b border-border bg-muted/30 shrink-0">
+            <SortableContext
+              items={sortableColumnIds}
+              strategy={horizontalListSortingStrategy}
+            >
+              {table.getHeaderGroups().map((hg) =>
+                hg.headers.map((header) => (
+                  <div
+                    key={header.id}
+                    className="flex items-center h-full"
+                    style={{ width: header.getSize() }}
+                  >
+                    {flexRender(header.column.columnDef.header, header.getContext())}
+                  </div>
+                )),
+              )}
+            </SortableContext>
+            <TableAddColumn
+              onAddField={handleAddField}
+              isPending={addField.isPending}
+              databases={allDatabases ?? []}
+            />
+          </div>
+        </DndContext>
         {/* Empty body */}
         <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16">
           <DatabaseIcon className="size-10 text-muted-foreground/40" aria-hidden="true" />
@@ -507,43 +565,54 @@ function TableViewInner({ database, view, onOpenRow }: TableViewProps) {
         aria-rowcount={tableData.length}
         aria-colcount={visibleFields.length}
       >
-        {/* Sticky header */}
-        <div
-          className="sticky top-0 z-20 flex items-center h-9 border-b border-border bg-muted/50 backdrop-blur-sm"
-          style={{ minWidth: totalWidth }}
-          role="row"
+        {/* Sticky header with column DnD */}
+        <DndContext
+          sensors={columnDndSensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleColumnDragEnd}
         >
-          {headerGroups.map((hg) =>
-            hg.headers.map((header) => {
-              const isPrimary =
-                header.id !== "__drag_handle" &&
-                database.fields.find((f) => f.id === header.id)?.isPrimary;
-              return (
-                <div
-                  key={header.id}
-                  className={cn(
-                    "flex items-center h-full shrink-0",
-                    isPrimary && "sticky left-0 z-30 bg-muted/50 backdrop-blur-sm",
-                  )}
-                  style={{ width: header.getSize() }}
-                  role="columnheader"
-                >
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(header.column.columnDef.header, header.getContext())}
-                </div>
-              );
-            }),
-          )}
-          {/* Add column button at the end of header */}
-          <div className="flex items-center h-full shrink-0 sticky right-0">
-            <TableAddColumn
-              onAddField={handleAddField}
-              isPending={addField.isPending}
-              databases={allDatabases ?? []}
-            />
+          <div
+            className="sticky top-0 z-20 flex items-center h-9 border-b border-border bg-muted/50 backdrop-blur-sm"
+            style={{ minWidth: totalWidth }}
+            role="row"
+          >
+            <SortableContext
+              items={sortableColumnIds}
+              strategy={horizontalListSortingStrategy}
+            >
+              {headerGroups.map((hg) =>
+                hg.headers.map((header) => {
+                  const isPrimary =
+                    header.id !== "__drag_handle" &&
+                    database.fields.find((f) => f.id === header.id)?.isPrimary;
+                  return (
+                    <div
+                      key={header.id}
+                      className={cn(
+                        "flex items-center h-full shrink-0",
+                        isPrimary && "sticky left-0 z-30 bg-muted/50 backdrop-blur-sm",
+                      )}
+                      style={{ width: header.getSize() }}
+                      role="columnheader"
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.header, header.getContext())}
+                    </div>
+                  );
+                }),
+              )}
+            </SortableContext>
+            {/* Add column button at the end of header */}
+            <div className="flex items-center h-full shrink-0 sticky right-0">
+              <TableAddColumn
+                onAddField={handleAddField}
+                isPending={addField.isPending}
+                databases={allDatabases ?? []}
+              />
+            </div>
           </div>
-        </div>
+        </DndContext>
 
         {/* Virtual body */}
         <div
