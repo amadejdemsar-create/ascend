@@ -45,6 +45,7 @@ import { useUpdateView } from "@/lib/hooks/use-database-views";
 import { TimelineAxis } from "./timeline-axis";
 import { TimelineBar } from "./timeline-bar";
 import { TimelineViewErrorBoundary } from "./timeline-view-error-boundary";
+import { ViewConfigPopover } from "@/components/databases/view-config";
 import { cn } from "@/lib/utils";
 
 // ── Constants ────────────────────────────────────────────────────────────
@@ -666,14 +667,17 @@ function TimelineViewInner({
               ))}
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 text-xs"
-            onClick={handleScrollToToday}
-          >
-            Today
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={handleScrollToToday}
+            >
+              Today
+            </Button>
+            <ViewConfigPopover database={database} view={view} />
+          </div>
         </div>
 
         {/* Scrollable timeline area */}

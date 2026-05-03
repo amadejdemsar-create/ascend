@@ -49,6 +49,7 @@ import { useUpdateView } from "@/lib/hooks/use-database-views";
 import { CalendarRowChip } from "./calendar-row-chip";
 import { CalendarDayDetail } from "./calendar-day-detail";
 import { CalendarViewErrorBoundary } from "./calendar-view-error-boundary";
+import { ViewConfigPopover } from "@/components/databases/view-config";
 import { cn } from "@/lib/utils";
 
 // ── Constants ────────────────────────────────────────────────────────────
@@ -419,26 +420,29 @@ function CalendarViewInner({
           <h2 className="text-lg font-semibold text-foreground">
             {format(currentMonth, "MMMM yyyy")}
           </h2>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handlePrevMonth}
-              aria-label="Previous month"
-            >
-              <ChevronLeftIcon className="size-4" aria-hidden="true" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleToday}>
-              Today
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleNextMonth}
-              aria-label="Next month"
-            >
-              <ChevronRightIcon className="size-4" aria-hidden="true" />
-            </Button>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handlePrevMonth}
+                aria-label="Previous month"
+              >
+                <ChevronLeftIcon className="size-4" aria-hidden="true" />
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleToday}>
+                Today
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleNextMonth}
+                aria-label="Next month"
+              >
+                <ChevronRightIcon className="size-4" aria-hidden="true" />
+              </Button>
+            </div>
+            <ViewConfigPopover database={database} view={view} />
           </div>
         </div>
 

@@ -18,6 +18,7 @@ import {
 import { useUpdateView } from "@/lib/hooks/use-database-views";
 import { GalleryCard } from "./gallery-card";
 import { GalleryViewErrorBoundary } from "./gallery-view-error-boundary";
+import { ViewConfigPopover } from "@/components/databases/view-config";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -199,7 +200,7 @@ function GalleryViewInner({ database, view, onOpenRow }: GalleryViewProps) {
 
   return (
     <div className="p-4">
-      {/* Header: cover field config */}
+      {/* Header: cover field config + view config popover */}
       <div className="flex items-center gap-2 mb-4">
         <Popover>
           <PopoverTrigger
@@ -250,6 +251,8 @@ function GalleryViewInner({ database, view, onOpenRow }: GalleryViewProps) {
             </div>
           </PopoverContent>
         </Popover>
+
+        <ViewConfigPopover database={database} view={view} />
       </div>
 
       {/* Card grid */}

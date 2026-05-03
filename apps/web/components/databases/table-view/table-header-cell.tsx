@@ -34,7 +34,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 import type { DatabaseFieldResponse } from "@/lib/hooks/use-databases";
 import type { SortItem } from "@ascend/core";
 
@@ -50,6 +49,7 @@ interface TableHeaderCellProps {
   onRename: (fieldId: string, name: string) => void;
   onChangeType: (fieldId: string, newType: string) => void;
   onDelete: (fieldId: string) => void;
+  onFilterByColumn?: (fieldId: string) => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────
@@ -63,6 +63,7 @@ function TableHeaderCellInner({
   onRename,
   onChangeType,
   onDelete,
+  onFilterByColumn,
   dragHandleProps,
 }: TableHeaderCellProps & {
   dragHandleProps?: Record<string, unknown>;
@@ -113,8 +114,10 @@ function TableHeaderCellInner({
   }, [field.id, onDelete]);
 
   const handleFilterClick = useCallback(() => {
-    toast.info("Filter builder lands in Phase 12");
-  }, []);
+    if (onFilterByColumn) {
+      onFilterByColumn(field.id);
+    }
+  }, [onFilterByColumn, field.id]);
 
   return (
     <>

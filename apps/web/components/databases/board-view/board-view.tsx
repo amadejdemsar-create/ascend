@@ -33,6 +33,7 @@ import { useUpdateView } from "@/lib/hooks/use-database-views";
 import { BoardColumn } from "./board-column";
 import { BoardCard } from "./board-card";
 import { BoardViewErrorBoundary } from "./board-view-error-boundary";
+import { ViewConfigPopover } from "@/components/databases/view-config";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -401,13 +402,11 @@ function BoardViewInner({ database, view, onOpenRow }: BoardViewProps) {
           </div>
         )}
 
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => toast.info("View config UI lands in Phase 12")}
-        >
-          Configure board
-        </Button>
+        <ViewConfigPopover
+          database={database}
+          view={view}
+          initialTab="layout"
+        />
       </div>
     );
   }
@@ -431,17 +430,23 @@ function BoardViewInner({ database, view, onOpenRow }: BoardViewProps) {
     .slice(0, 3);
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <div
-        className="flex gap-3 p-4 overflow-x-auto h-full items-start"
-        role="region"
-        aria-label={`${database.name} board grouped by ${groupByField.name}`}
+    <div className="flex flex-col h-full">
+      {/* Toolbar */}
+      <div className="flex items-center justify-end px-4 py-1 border-b border-border/40 shrink-0">
+        <ViewConfigPopover database={database} view={view} />
+      </div>
+
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
       >
+        <div
+          className="flex gap-3 p-4 overflow-x-auto flex-1 items-start"
+          role="region"
+          aria-label={`${database.name} board grouped by ${groupByField.name}`}
+        >
         {columnEntries.map(({ option, rows: columnRows }) => (
           <BoardColumn
             key={option?.id ?? "__null__"}
@@ -475,7 +480,8 @@ function BoardViewInner({ database, view, onOpenRow }: BoardViewProps) {
           />
         ) : null}
       </DragOverlay>
-    </DndContext>
+      </DndContext>
+    </div>
   );
 }
 

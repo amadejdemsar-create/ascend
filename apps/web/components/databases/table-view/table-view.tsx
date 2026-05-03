@@ -48,6 +48,7 @@ import { TableCell } from "./table-cell";
 import { TableAddRow } from "./table-add-row";
 import { TableAddColumn } from "./table-add-column";
 import { TableViewErrorBoundary } from "./table-view-error-boundary";
+import { ViewConfigPopover } from "@/components/databases/view-config";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -77,6 +78,7 @@ const RESIZE_DEBOUNCE_MS = 300;
 function TableViewInner({ database, view, onOpenRow }: TableViewProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const resizeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [filterByColumnId, setFilterByColumnId] = useState<string | undefined>(undefined);
 
   // Parse view config.
   const viewConfig = useMemo(() => {
@@ -188,6 +190,7 @@ function TableViewInner({ database, view, onOpenRow }: TableViewProps) {
             onRename={handleRenameField}
             onChangeType={handleChangeType}
             onDelete={handleDeleteField}
+            onFilterByColumn={handleFilterByColumn}
           />
         ),
         cell: ({ row }) => (
@@ -364,6 +367,13 @@ function TableViewInner({ database, view, onOpenRow }: TableViewProps) {
       // Phase 7 surfaces the kebab; the actual type-change popover with
       // compatible-type picker is deferred to a follow-up. For now, toast.
       toast.info("Type change UI will be expanded in a future phase");
+    },
+    [],
+  );
+
+  const handleFilterByColumn = useCallback(
+    (fieldId: string) => {
+      setFilterByColumnId(fieldId);
     },
     [],
   );
@@ -556,6 +566,17 @@ function TableViewInner({ database, view, onOpenRow }: TableViewProps) {
 
   return (
     <div className="flex flex-col w-full h-full">
+      {/* Toolbar with view config popover */}
+      <div className="flex items-center justify-end px-2 py-1 border-b border-border/40 shrink-0">
+        <ViewConfigPopover
+          database={database}
+          view={view}
+          initialFilterFieldId={filterByColumnId}
+          initialTab={filterByColumnId ? "filter" : undefined}
+          onClose={() => setFilterByColumnId(undefined)}
+        />
+      </div>
+
       {/* Scroll container */}
       <div
         ref={scrollRef}
