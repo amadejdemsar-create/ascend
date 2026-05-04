@@ -157,9 +157,7 @@ export async function handleDatabaseTool(
             properties: z.record(z.string(), z.unknown()).optional(),
           })
           .parse(args);
-        const result = await databaseRowService.create(userId, databaseId, {
-          properties,
-        });
+        const result = await databaseRowService.create(userId, databaseId, properties ?? {});
         return ok({
           rowId: result.id,
           databaseId: result.databaseId,

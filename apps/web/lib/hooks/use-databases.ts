@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api-client";
 import { queryKeys } from "@/lib/queries/keys";
+import { fireDatabaseCreatedConfetti } from "@/lib/confetti";
 
 // ---------------------------------------------------------------------------
 // Response types (mirror the API route JSON shapes)
@@ -126,6 +127,8 @@ export function useCreateDatabase() {
           queryKey: queryKeys.context.detail(variables.parentEntryId),
         });
       }
+      // Celebration: gentle confetti burst on database creation.
+      fireDatabaseCreatedConfetti();
     },
   });
 }

@@ -134,6 +134,57 @@ export function useDeleteField(databaseId: string) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Change Field Type
+// ---------------------------------------------------------------------------
+
+export interface ChangeFieldTypeInput {
+  fieldId: string;
+  newType: string;
+  force?: boolean;
+}
+
+export interface ChangeFieldTypeResult {
+  ok: boolean;
+  field?: DatabaseFieldResponse;
+  offendingRowIds?: string[];
+}
+
+/**
+ * Change a field's type with optional forced coercion.
+ *
+ * On success returns { ok: true, field }. If validation fails and force is
+ * not set, returns { ok: false, offendingRowIds }. The caller can then prompt
+ * the user and retry with force=true.
+ *
+ * Invalidates: database detail (field definition changed), rows (cell values
+ * may have been coerced or cleared).
+ */
+export function useChangeFieldType(databaseId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation<ChangeFieldTypeResult, Error, ChangeFieldTypeInput>({
+    mutationFn: ({ fieldId, newType, force }) =>
+      apiFetch<ChangeFieldTypeResult>(
+        `/api/databases/${databaseId}/fields/${fieldId}/change-type`,
+        {
+          method: "POST",
+          body: JSON.stringify({ newType, force }),
+        },
+      ),
+    onSuccess: (result) => {
+      if (result.ok) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.databases.detail(databaseId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.databases.rows(databaseId),
+        });
+      }
+    },
+  });
+}
+
 /**
  * Reorder fields within a database (drag-and-drop column reordering).
  */

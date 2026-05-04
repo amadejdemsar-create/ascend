@@ -198,7 +198,7 @@ export function useUpdateRow(databaseId: string) {
         `/api/databases/${databaseId}/rows/${rowId}`,
         {
           method: "PATCH",
-          body: JSON.stringify({ properties }),
+          body: JSON.stringify({ propertiesPatch: properties }),
         },
       ),
     onSuccess: (_result, { affectsRelations, rowEntryId }) => {

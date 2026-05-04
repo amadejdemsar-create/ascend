@@ -45,6 +45,7 @@ import { useUpdateView } from "@/lib/hooks/use-database-views";
 import { useDatabases } from "@/lib/hooks/use-databases";
 import { SortableHeaderCell } from "./table-header-cell";
 import { TableCell } from "./table-cell";
+import { RelationCellWrapper } from "./relation-cell-wrapper";
 import { TableAddRow } from "./table-add-row";
 import { TableAddColumn } from "./table-add-column";
 import { TableViewErrorBoundary } from "./table-view-error-boundary";
@@ -184,28 +185,41 @@ function TableViewInner({ database, view, onOpenRow }: TableViewProps) {
           <SortableHeaderCell
             header={header}
             field={field}
+            databaseId={database.id}
             sort={viewConfig.sort}
             onSortChange={handleSortChange}
             onHide={handleHideField}
             onRename={handleRenameField}
-            onChangeType={handleChangeType}
             onDelete={handleDeleteField}
             onFilterByColumn={handleFilterByColumn}
           />
         ),
-        cell: ({ row }) => (
-          <TableCell
-            field={field}
-            value={row.original[field.id]}
-            isPrimary={field.isPrimary}
-            onOpenRow={
-              field.isPrimary
-                ? () => onOpenRow(row.original.__entryId)
-                : undefined
-            }
-            onUpdate={(newValue) => handleCellUpdate(row.original, field, newValue)}
-          />
-        ),
+        cell: ({ row }) =>
+          field.type === "RELATION" ? (
+            <RelationCellWrapper
+              field={field}
+              value={row.original[field.id]}
+              isPrimary={field.isPrimary}
+              onOpenRow={
+                field.isPrimary
+                  ? () => onOpenRow(row.original.__entryId)
+                  : undefined
+              }
+              onUpdate={(newValue) => handleCellUpdate(row.original, field, newValue)}
+            />
+          ) : (
+            <TableCell
+              field={field}
+              value={row.original[field.id]}
+              isPrimary={field.isPrimary}
+              onOpenRow={
+                field.isPrimary
+                  ? () => onOpenRow(row.original.__entryId)
+                  : undefined
+              }
+              onUpdate={(newValue) => handleCellUpdate(row.original, field, newValue)}
+            />
+          ),
         size: viewConfig.columnWidths?.[field.id] ?? DEFAULT_COLUMN_WIDTH,
         minSize: MIN_COLUMN_WIDTH,
         enableResizing: true,
@@ -360,15 +374,6 @@ function TableViewInner({ database, view, onOpenRow }: TableViewProps) {
       );
     },
     [database.id, updateField],
-  );
-
-  const handleChangeType = useCallback(
-    (fieldId: string, currentType: string) => {
-      // Phase 7 surfaces the kebab; the actual type-change popover with
-      // compatible-type picker is deferred to a follow-up. For now, toast.
-      toast.info("Type change UI will be expanded in a future phase");
-    },
-    [],
   );
 
   const handleFilterByColumn = useCallback(

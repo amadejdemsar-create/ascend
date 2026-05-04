@@ -68,6 +68,7 @@ export const databaseRelationService = {
           WHERE "databaseFieldId" = ${fieldId}
             AND "fromEntryId" = ${sourceEntryId}
             AND "toEntryId" IN (${Prisma.join(removed)})
+            AND "userId" = ${userId}
         `;
       }
     });

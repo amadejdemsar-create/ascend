@@ -34,6 +34,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { ChangeTypePopover } from "./change-type-popover";
 import type { DatabaseFieldResponse } from "@/lib/hooks/use-databases";
 import type { SortItem } from "@ascend/core";
 
@@ -43,11 +44,11 @@ import type { SortItem } from "@ascend/core";
 interface TableHeaderCellProps {
   header: Header<any, unknown>;
   field: DatabaseFieldResponse;
+  databaseId: string;
   sort: SortItem[] | undefined;
   onSortChange: (sort: SortItem[] | undefined) => void;
   onHide: (fieldId: string) => void;
   onRename: (fieldId: string, name: string) => void;
-  onChangeType: (fieldId: string, newType: string) => void;
   onDelete: (fieldId: string) => void;
   onFilterByColumn?: (fieldId: string) => void;
 }
@@ -57,11 +58,11 @@ interface TableHeaderCellProps {
 function TableHeaderCellInner({
   header,
   field,
+  databaseId,
   sort,
   onSortChange,
   onHide,
   onRename,
-  onChangeType,
   onDelete,
   onFilterByColumn,
   dragHandleProps,
@@ -71,6 +72,7 @@ function TableHeaderCellInner({
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(field.name);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showChangeType, setShowChangeType] = useState(false);
   const renameInputRef = useRef<HTMLInputElement>(null);
 
   // Determine current sort direction for this field.
@@ -189,7 +191,12 @@ function TableHeaderCellInner({
               <PencilIcon className="size-4 mr-2" aria-hidden="true" />
               Rename
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onChangeType(field.id, field.type)}>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.preventDefault();
+                setShowChangeType(true);
+              }}
+            >
               <RepeatIcon className="size-4 mr-2" aria-hidden="true" />
               Change type
             </DropdownMenuItem>
@@ -264,6 +271,16 @@ function TableHeaderCellInner({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Change type popover */}
+      <ChangeTypePopover
+        databaseId={databaseId}
+        fieldId={field.id}
+        fieldName={field.name}
+        currentType={field.type}
+        open={showChangeType}
+        onOpenChange={setShowChangeType}
+      />
     </>
   );
 }

@@ -14,6 +14,8 @@ interface TableCellProps {
   isPrimary: boolean;
   onOpenRow?: () => void;
   onUpdate: (newValue: unknown) => void;
+  /** Extra props forwarded to the PropertyCell editor (e.g. resolvedEntries, onSearch for RELATION). */
+  editorProps?: Record<string, unknown>;
 }
 
 // Fields that cannot be edited inline via click-to-edit.
@@ -35,6 +37,7 @@ export function TableCell({
   isPrimary,
   onOpenRow,
   onUpdate,
+  editorProps,
 }: TableCellProps) {
   const [isEditing, setIsEditing] = useState(false);
   const cellRef = useRef<HTMLDivElement>(null);
@@ -123,6 +126,7 @@ export function TableCell({
         mode="cell"
         disabled={!isEditing && !CLICK_TOGGLE_TYPES.has(field.type)}
         autoFocus={isEditing}
+        editorProps={editorProps}
       />
     </div>
   );

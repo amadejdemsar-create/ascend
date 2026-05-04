@@ -64,14 +64,19 @@ export function DatabaseDetail({ entryId, onOpenRow }: DatabaseDetailProps) {
         databaseId={database.id}
       />
 
-      {/* Active view renderer */}
+      {/* Active view renderer with fade+slide transition */}
       <div className="flex-1 overflow-auto">
         {activeView ? (
-          <ActiveViewRenderer
-            database={database}
-            view={activeView}
-            onOpenRow={onOpenRow}
-          />
+          <div
+            key={activeView.id}
+            className="h-full motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-1 motion-safe:duration-200 motion-reduce:animate-none"
+          >
+            <ActiveViewRenderer
+              database={database}
+              view={activeView}
+              onOpenRow={onOpenRow}
+            />
+          </div>
         ) : (
           <div className="flex items-center justify-center p-8 text-muted-foreground text-sm">
             No views available. Add one above.

@@ -2,7 +2,49 @@
 
 Deferred features and initiatives that have been explicitly scoped but not yet implemented. When you want to pick one up, run `/ax:plan <slug>` to create a full PRD + TASKS.md.
 
-Last updated: 2. 5. 2026
+Last updated: 4. 5. 2026
+
+---
+
+## Wave 5 (Databases + properties) — SHIPPED 4. 5. 2026
+
+Notion-grade databases shipped end to end with no scope deferral per the user's "do everything, do not deffer" mandate. 14 field types (TEXT, NUMBER, DATE, SELECT, MULTI_SELECT, RELATION, FORMULA, USER, CHECKBOX, RATING, URL, EMAIL, PHONE, FILE), 5 view types (Table via TanStack Table + Virtual; Board kanban via @dnd-kit; Calendar month grid via @dnd-kit; Gallery responsive grid; Timeline gantt via @dnd-kit + raw pointer events for edge resize), full formula engine (1890 LOC, 28/28 fixtures), many-to-many relations through the existing ContextLink graph (DATABASE_RELATION typed edge), Notion-style filter builder (recursive AND/OR groups, depth-capped at 5), sort builder, 4-tab view config popover (Filter, Sort, Properties, Layout), inline cell editing, change-type dialog with force-conversion flow, row detail integration (each row IS a ContextEntry of type RECORD with its own BlockDocument body), backlinks panel, slash menu Database item, /context "New" dropdown with Database option, view-switch micro-interaction (motion-safe fade-slide), confetti on database creation, 10 new MCP tools (count 58 → 68). New danger zones DZ-14 (formula CPU/memory), DZ-15 (JSONB property bloat), DZ-16 (RELATION cascade explosion) all mitigated. Commits: `13106a8`, `b88800c`, `c58aa53`, `70320c8`, `aad5184`, `df1f7c0`, `e7ea93c`, `187771d`, `9d009f5`, `b88d9c7`, `ddc6f50`, `765c778`, `3d8f3f0`, plus the wave-close commit. Close-out at `.ascendflow/features/context-v2/wave-5-databases-and-properties/CLOSE-OUT.md`.
+
+## Wave 5 carry-overs (tracked here until picked up)
+
+### LOW
+
+- Tab key advances cell-to-cell in Table view (Notion-style spreadsheet ergonomics). Currently Enter commits and closes; Tab does not move focus to the next cell.
+- Calendar chips and Gallery cards are click-only; no `tabIndex` + arrow-key navigation. Accessibility gap.
+- View config popover "Options" button shows aggregate count but doesn't differentiate filter vs. sort vs. hidden-field counts.
+- Timeline bars at very small durations (zoom × duration < edge-handle width) overlap edge handles. Add a minimum-width guard.
+- Error toasts in Board/Calendar/Timeline drag handlers surface raw `err.message`; should wrap in a human-readable formatter.
+- First-row-created confetti (was deferred from the close-fix scope; database-creation confetti shipped).
+- View-switch animation is fade-slide only; no spring/bounce variants per view type. Polish item.
+- Relation editor in Table cells uses naive entry search (`/api/context/search?q=...`); no scope-narrowing to the target database when `field.config.targetDatabaseId` is set. Functional, but unnecessarily broad.
+- Migration `20260502120002_create_database_models` does not use `IF NOT EXISTS` on `CREATE TYPE` and `CREATE TABLE` statements (Prisma's tracker handles re-execution; defense-in-depth gap, not a real failure mode).
+
+### MEDIUM (should land before Wave 8 multi-user)
+
+- **Type-change UI for non-allowed coercions.** Currently the dialog supports TEXT → URL/EMAIL/PHONE, NUMBER → TEXT, SELECT → MULTI_SELECT only. Other coercions return "Unsupported type change. Delete and recreate." A future pass should support more (DATE → TEXT, MULTI_SELECT → TEXT comma-joined, etc.).
+- `databaseFieldService.cycleCheck` does not include `userId` in its query (called only after upstream ownership verification). Defense-in-depth gap.
+- `databaseQueryService.query` falls back to in-memory filter + sort for FORMULA-targeted clauses, capped at 10k rows. At scale, this is a perf cliff. Plan: materialized formula values OR computed columns.
+- Three of the new routes (`by-entry`, `relation-backlinks`, `row-by-entry`) import `validateApiKey` while the rest use `authenticate` (alias). Standardize.
+
+### Notion / Airtable parity items deferred to a future polish wave
+
+- **Rollups.** Aggregate property: sum/avg/min/max/count of a relation's property.
+- **Synced/duplicated databases** across pages (Wave 8 multi-workspace territory).
+- **Database templates / starter schemas** (CRM, reading list, expense ledger).
+- **CSV/XLSX import / export.**
+- **External integrations** (Notion API, Airtable API, Google Sheets sync).
+- **Database-level permissions** (per-row visibility rules, per-view sharing). Wave 8.
+- **Aggregations in the table footer** (sum/count/avg row).
+- **OpenGraph image fetch** for URL covers in Gallery view (currently shows the URL text inside a styled box).
+
+### Stubs left in code (should be cleared before next wave)
+
+- None. The wave-close session deliberately closed all critic-flagged stubs (type-change UI, relation autocomplete in Table cells, view-switch animation, database-created confetti).
 
 ---
 
