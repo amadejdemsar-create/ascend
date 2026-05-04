@@ -31,6 +31,7 @@ import {
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queries/keys";
+import { formatErrorMessage } from "@/lib/format-error";
 import type {
   DatabaseResponse,
   DatabaseViewResponse,
@@ -311,7 +312,7 @@ function TimelineViewInner({
             queryClient.invalidateQueries({
               queryKey: queryKeys.databases.rows(database.id),
             });
-            toast.error(`Failed to move bar: ${err.message}`);
+            toast.error(`Failed to move bar: ${formatErrorMessage(err)}`);
           },
         },
       );
@@ -384,7 +385,7 @@ function TimelineViewInner({
             queryClient.invalidateQueries({
               queryKey: queryKeys.databases.rows(database.id),
             });
-            toast.error(`Failed to resize bar: ${err.message}`);
+            toast.error(`Failed to resize bar: ${formatErrorMessage(err)}`);
           },
         },
       );
@@ -454,7 +455,7 @@ function TimelineViewInner({
             queryClient.invalidateQueries({
               queryKey: queryKeys.databases.rows(database.id),
             });
-            toast.error(`Failed to resize bar: ${err.message}`);
+            toast.error(`Failed to resize bar: ${formatErrorMessage(err)}`);
           },
         },
       );

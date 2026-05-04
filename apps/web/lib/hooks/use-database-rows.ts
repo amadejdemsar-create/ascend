@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api-client";
 import { queryKeys } from "@/lib/queries/keys";
+import { fireFirstRowConfetti } from "@/lib/confetti";
 
 // ---------------------------------------------------------------------------
 // Relation Backlinks
@@ -163,6 +164,13 @@ export function useCreateRow(databaseId: string) {
         },
       ),
     onSuccess: () => {
+      // First-row confetti: celebrate the user's first row in this database.
+      const storageKey = `ascend.firstRowCelebrated.${databaseId}`;
+      if (typeof window !== "undefined" && !localStorage.getItem(storageKey)) {
+        localStorage.setItem(storageKey, "1");
+        fireFirstRowConfetti();
+      }
+
       // Prefix invalidation: catches all query hashes for this database.
       queryClient.invalidateQueries({
         queryKey: queryKeys.databases.rows(databaseId),

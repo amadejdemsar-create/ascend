@@ -16,10 +16,12 @@ interface TableCellProps {
   onUpdate: (newValue: unknown) => void;
   /** Extra props forwarded to the PropertyCell editor (e.g. resolvedEntries, onSearch for RELATION). */
   editorProps?: Record<string, unknown>;
+  /** Unique cell coordinate for Tab navigation (set by table-view). */
+  cellId?: string;
 }
 
 // Fields that cannot be edited inline via click-to-edit.
-const NON_EDITABLE_TYPES = new Set(["FORMULA"]);
+const NON_EDITABLE_TYPES = new Set(["FORMULA", "USER"]);
 
 // Fields that toggle on single click without opening an editor.
 const CLICK_TOGGLE_TYPES = new Set(["CHECKBOX"]);
@@ -38,6 +40,7 @@ export function TableCell({
   onOpenRow,
   onUpdate,
   editorProps,
+  cellId,
 }: TableCellProps) {
   const [isEditing, setIsEditing] = useState(false);
   const cellRef = useRef<HTMLDivElement>(null);
@@ -86,15 +89,55 @@ export function TableCell({
     [field.type, onUpdate],
   );
 
-  // Close editor on Escape key.
+  // Handle keyboard navigation: Escape closes editor, Tab advances to next cell.
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Escape" && isEditing) {
         e.stopPropagation();
         setIsEditing(false);
+        return;
+      }
+
+      // Tab / Shift+Tab: commit current edit and advance focus to adjacent cell.
+      if (e.key === "Tab") {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Close current editor (commits via blur semantics on the PropertyCell).
+        if (isEditing) {
+          setIsEditing(false);
+        }
+
+        // Find all focusable cells in the table grid via data-cell-id.
+        const grid = cellRef.current?.closest("[role='grid']");
+        if (!grid) return;
+
+        const allCells = Array.from(
+          grid.querySelectorAll<HTMLElement>("[data-cell-id]"),
+        );
+        if (allCells.length === 0 || !cellId) return;
+
+        const currentIndex = allCells.findIndex(
+          (el) => el.dataset.cellId === cellId,
+        );
+        if (currentIndex === -1) return;
+
+        // Determine direction: forward (Tab) or backward (Shift+Tab).
+        const direction = e.shiftKey ? -1 : 1;
+
+        // Walk in direction, skipping non-editable cells.
+        let nextIndex = currentIndex + direction;
+        while (nextIndex >= 0 && nextIndex < allCells.length) {
+          const nextEl = allCells[nextIndex];
+          if (nextEl.dataset.editable !== "false") {
+            nextEl.focus();
+            return;
+          }
+          nextIndex += direction;
+        }
       }
     },
-    [isEditing],
+    [isEditing, cellId],
   );
 
   // Cast field to the shape PropertyCell expects. The DatabaseFieldResponse
@@ -118,6 +161,8 @@ export function TableCell({
       role="gridcell"
       tabIndex={0}
       aria-label={`${field.name}: ${value != null ? String(value) : "empty"}`}
+      data-cell-id={cellId}
+      data-editable={NON_EDITABLE_TYPES.has(field.type) ? "false" : "true"}
     >
       <PropertyCell
         field={fieldForEditor}

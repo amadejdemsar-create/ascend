@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import type { DatabaseFieldResponse } from "@/lib/hooks/use-databases";
+import { useDatabase } from "@/lib/hooks/use-databases";
 import {
   useRelationSearch,
   useResolvedEntries,
@@ -16,6 +17,8 @@ interface RelationCellWrapperProps {
   isPrimary: boolean;
   onOpenRow?: () => void;
   onUpdate: (newValue: unknown) => void;
+  /** Unique cell coordinate for Tab navigation (forwarded to TableCell). */
+  cellId?: string;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────
@@ -33,8 +36,23 @@ export function RelationCellWrapper({
   isPrimary,
   onOpenRow,
   onUpdate,
+  cellId,
 }: RelationCellWrapperProps) {
-  const onSearch = useRelationSearch();
+  // Extract targetDatabaseId from the RELATION field config.
+  const targetDatabaseId = useMemo(() => {
+    const config = field.config as { targetDatabaseId?: string | null } | null;
+    return config?.targetDatabaseId ?? null;
+  }, [field.config]);
+
+  // Fetch the target database to resolve its primary field ID.
+  const { data: targetDb } = useDatabase(targetDatabaseId ?? "");
+  const targetPrimaryFieldId = useMemo(() => {
+    if (!targetDb) return null;
+    const primary = targetDb.fields.find((f) => f.isPrimary);
+    return primary?.id ?? null;
+  }, [targetDb]);
+
+  const onSearch = useRelationSearch(targetDatabaseId, targetPrimaryFieldId);
 
   // Extract entry IDs from the current value.
   const entryIds = useMemo(() => {
@@ -61,6 +79,7 @@ export function RelationCellWrapper({
       onOpenRow={onOpenRow}
       onUpdate={onUpdate}
       editorProps={editorProps}
+      cellId={cellId}
     />
   );
 }

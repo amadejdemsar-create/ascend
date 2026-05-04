@@ -206,6 +206,7 @@ function TableViewInner({ database, view, onOpenRow }: TableViewProps) {
                   : undefined
               }
               onUpdate={(newValue) => handleCellUpdate(row.original, field, newValue)}
+              cellId={`${row.original.__id}:${field.id}`}
             />
           ) : (
             <TableCell
@@ -218,6 +219,7 @@ function TableViewInner({ database, view, onOpenRow }: TableViewProps) {
                   : undefined
               }
               onUpdate={(newValue) => handleCellUpdate(row.original, field, newValue)}
+              cellId={`${row.original.__id}:${field.id}`}
             />
           ),
         size: viewConfig.columnWidths?.[field.id] ?? DEFAULT_COLUMN_WIDTH,

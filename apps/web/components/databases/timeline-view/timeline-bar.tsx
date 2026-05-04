@@ -23,6 +23,7 @@ export interface TimelineBarProps {
 // ── Constants ────────────────────────────────────────────────────────────
 
 const HANDLE_WIDTH = 6;
+const MIN_BAR_WIDTH = 2 * HANDLE_WIDTH + 12; // Minimum 24px so handles never overlap.
 const CLICK_THRESHOLD = 8;
 
 // ── Component ────────────────────────────────────────────────────────────
@@ -183,15 +184,17 @@ export function TimelineBar({
   // ── Computed dimensions with resize offsets ─────────────────────────────
 
   const effectiveLeft = baseLeft + leftResizeOffset + translateX;
-  const effectiveWidth =
-    baseWidth - leftResizeOffset + rightResizeOffset;
+  const effectiveWidth = Math.max(
+    baseWidth - leftResizeOffset + rightResizeOffset,
+    MIN_BAR_WIDTH,
+  );
 
   return (
     <div
       className="absolute h-7 flex items-center"
       style={{
         left: effectiveLeft,
-        width: Math.max(effectiveWidth, pixelsPerDay),
+        width: effectiveWidth,
         top: 4,
       }}
     >

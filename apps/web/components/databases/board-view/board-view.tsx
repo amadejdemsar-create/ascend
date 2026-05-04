@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queries/keys";
+import { formatErrorMessage } from "@/lib/format-error";
 import type {
   DatabaseResponse,
   DatabaseViewResponse,
@@ -277,7 +278,7 @@ function BoardViewInner({ database, view, onOpenRow }: BoardViewProps) {
             queryClient.invalidateQueries({
               queryKey: queryKeys.databases.rows(database.id),
             });
-            toast.error(`Failed to move card: ${err.message}`);
+            toast.error(`Failed to move card: ${formatErrorMessage(err)}`);
           },
         },
       );

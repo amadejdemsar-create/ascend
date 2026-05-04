@@ -18,22 +18,68 @@ interface SearchResult {
   type?: string;
 }
 
+interface DatabaseRowResult {
+  id: string;
+  entryId: string;
+  properties: Record<string, unknown>;
+}
+
+interface DatabaseRowsPageResult {
+  rows: DatabaseRowResult[];
+  total: number;
+}
+
 // ── Hook ──────────────────────────────────────────────────────────────────
 
 /**
- * Returns a stable `onSearch` callback and a `useResolvedEntries` sub-hook
- * for use by RELATION cells in the Table view.
+ * Returns a stable `onSearch` callback for use by RELATION cells.
  *
- * - `onSearch` hits GET /api/context/search?q=<query>&mode=text&limit=20
- *   and returns matching entries as { id, title }.
- * - `resolvedEntries` resolves a list of entry IDs to their titles using
- *   a batch query (GET /api/context?ids=<csv> if available, else individual fetches).
+ * When `targetDatabaseId` and `targetPrimaryFieldId` are provided, search is
+ * scoped to the target database's rows using a text-contains filter on the
+ * primary field. Otherwise, falls back to the unscoped context search.
  */
-export function useRelationSearch() {
+export function useRelationSearch(
+  targetDatabaseId?: string | null,
+  targetPrimaryFieldId?: string | null,
+) {
   const onSearch = useCallback(
     async (query: string): Promise<RelationEntry[]> => {
       if (!query.trim()) return [];
+
       try {
+        // Scoped search: query the target database's rows directly.
+        if (targetDatabaseId && targetPrimaryFieldId) {
+          const filter = JSON.stringify({
+            combinator: "AND",
+            clauses: [
+              {
+                type: "field",
+                fieldId: targetPrimaryFieldId,
+                op: "contains",
+                value: query.trim(),
+              },
+            ],
+          });
+          const params = new URLSearchParams({
+            filter,
+            perPage: "20",
+          });
+          const result = await apiFetch<DatabaseRowsPageResult>(
+            `/api/databases/${targetDatabaseId}/rows?${params.toString()}`,
+          );
+          return result.rows.map((r) => {
+            const title = r.properties[targetPrimaryFieldId];
+            return {
+              id: r.entryId,
+              title:
+                typeof title === "string" && title.trim()
+                  ? title
+                  : "(Untitled)",
+            };
+          });
+        }
+
+        // Fallback: unscoped context search.
         const results = await apiFetch<SearchResult[]>(
           `/api/context/search?q=${encodeURIComponent(query)}&mode=text&limit=20`,
         );
@@ -45,7 +91,7 @@ export function useRelationSearch() {
         return [];
       }
     },
-    [],
+    [targetDatabaseId, targetPrimaryFieldId],
   );
 
   return onSearch;

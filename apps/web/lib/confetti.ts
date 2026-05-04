@@ -43,3 +43,20 @@ export function fireDatabaseCreatedConfetti(): void {
     ticks: 90,
   });
 }
+
+/**
+ * Smaller confetti burst for the first row added to a database.
+ * Lighter than the database-creation celebration (30 particles, shorter).
+ */
+export function fireFirstRowConfetti(): void {
+  if (prefersReducedMotion()) return;
+  if (!canFire()) return;
+
+  confetti({
+    particleCount: 30,
+    spread: 45,
+    origin: { y: 0.6 },
+    disableForReducedMotion: true,
+    ticks: 60,
+  });
+}

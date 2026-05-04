@@ -219,9 +219,19 @@ export function ViewConfigPopover({
       >
         <SlidersHorizontalIcon className="size-3.5" aria-hidden="true" />
         Options
-        {(filterCount > 0 || sortCount > 0 || hiddenCount > 0) && (
-          <span className="inline-flex items-center justify-center rounded-full bg-primary/10 text-primary px-1 text-[10px] font-medium min-w-[16px]">
-            {filterCount + sortCount + hiddenCount}
+        {filterCount > 0 && (
+          <span className="inline-flex items-center justify-center rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 px-1 text-[10px] font-medium min-w-[16px]">
+            F{filterCount}
+          </span>
+        )}
+        {sortCount > 0 && (
+          <span className="inline-flex items-center justify-center rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 px-1 text-[10px] font-medium min-w-[16px]">
+            S{sortCount}
+          </span>
+        )}
+        {hiddenCount > 0 && (
+          <span className="inline-flex items-center justify-center rounded-full bg-muted text-muted-foreground px-1 text-[10px] font-medium min-w-[16px]">
+            H{hiddenCount}
           </span>
         )}
       </PopoverTrigger>
