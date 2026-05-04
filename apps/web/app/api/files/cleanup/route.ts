@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "node:crypto";
-import { handleApiError } from "@/lib/auth";
+import { verifyCronSecret, handleApiError } from "@/lib/auth";
 import { fileService } from "@/lib/services/file-service";
 
 /**
@@ -27,28 +26,3 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// ── Cron secret verification ─────────────────────────────────────
-
-/**
- * Verify the x-cron-secret header against CRON_SECRET env var.
- * Uses timing-safe comparison to prevent side-channel attacks.
- * Returns false if CRON_SECRET is not set or header is missing.
- */
-function verifyCronSecret(request: NextRequest): boolean {
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret) return false;
-
-  const headerValue = request.headers.get("x-cron-secret");
-  if (!headerValue) return false;
-
-  // Encode to buffers for timing-safe comparison
-  const expected = Buffer.from(cronSecret, "utf-8");
-  const received = Buffer.from(headerValue, "utf-8");
-
-  // timingSafeEqual throws if buffers have different lengths,
-  // so check length first (length itself leaks, but the actual
-  // content does not, which is the standard approach)
-  if (expected.length !== received.length) return false;
-
-  return crypto.timingSafeEqual(expected, received);
-}

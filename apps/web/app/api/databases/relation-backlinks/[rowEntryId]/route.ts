@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { validateApiKey, unauthorizedResponse, handleApiError } from "@/lib/auth";
+import { authenticate, unauthorizedResponse, handleApiError } from "@/lib/auth";
 import { databaseRelationService } from "@/lib/services/database-relation-service";
 
 /**
@@ -12,7 +12,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ rowEntryId: string }> },
 ) {
-  const auth = await validateApiKey(request);
+  const auth = await authenticate(request);
   if (!auth.success) return unauthorizedResponse();
 
   try {

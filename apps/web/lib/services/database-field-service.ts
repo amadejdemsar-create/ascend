@@ -76,6 +76,7 @@ export const databaseFieldService = {
       const deps = extractDependencies(parseResult.ast);
       if (deps.length > 0) {
         const cycleResult = await cycleCheck(
+          userId,
           databaseId,
           input.name,
           deps,
@@ -146,6 +147,7 @@ export const databaseFieldService = {
         if (deps.length > 0) {
           const fieldName = input.name ?? existing.name;
           const cycleResult = await cycleCheck(
+            userId,
             existing.databaseId,
             fieldName,
             deps,
@@ -331,6 +333,8 @@ export const databaseFieldService = {
       TEXT: ["URL", "EMAIL", "PHONE"],
       NUMBER: ["TEXT"],
       SELECT: ["MULTI_SELECT"],
+      DATE: ["TEXT"],
+      MULTI_SELECT: ["TEXT"],
     };
 
     const allowed = allowedCoercions[oldType];
@@ -408,6 +412,47 @@ export const databaseFieldService = {
       });
     }
 
+    // For DATE → TEXT: no row-level transformation needed. DATE field values
+    // are stored as ISO strings in JSONB, which are already valid TEXT values.
+    // The type change on the field itself (below) is sufficient.
+
+    // For MULTI_SELECT → TEXT: join option labels into comma-separated string
+    if (oldType === "MULTI_SELECT" && newType === "TEXT") {
+      const rows = await prisma.databaseRow.findMany({
+        where: { databaseId: existing.databaseId, userId },
+        select: { id: true, properties: true },
+      });
+
+      // Build an option ID → label lookup from the field's config
+      const fieldConfig = existing.config as { options?: Array<{ id: string; label: string }> };
+      const optionMap = new Map<string, string>();
+      if (fieldConfig.options) {
+        for (const opt of fieldConfig.options) {
+          optionMap.set(opt.id, opt.label);
+        }
+      }
+
+      await prisma.$transaction(async (tx) => {
+        for (const row of rows) {
+          const props = row.properties as Record<string, unknown>;
+          const value = props[fieldId];
+          if (value === null || value === undefined) continue;
+          if (Array.isArray(value)) {
+            // Map option IDs to labels, falling back to the ID itself
+            const labels = value.map((optId: unknown) => {
+              const id = String(optId);
+              return optionMap.get(id) ?? id;
+            });
+            props[fieldId] = labels.join(", ");
+            await tx.databaseRow.update({
+              where: { id: row.id },
+              data: { properties: props as Prisma.InputJsonValue },
+            });
+          }
+        }
+      });
+    }
+
     // If the new type is FORMULA, validate the expression and cycle-check
     // (this shouldn't happen from the allowed coercions above, but defensive)
 
@@ -437,20 +482,22 @@ export const databaseFieldService = {
  *
  * Uses DFS with coloring (WHITE/GRAY/BLACK) for cycle detection.
  *
+ * @param userId - Owner user ID (defense-in-depth: Safety Rule 1)
  * @param databaseId - The database to load fields from
  * @param proposedFieldName - The name of the field being added or updated
  * @param proposedDeps - The dependency names extracted from the formula
  * @param excludeFieldId - If updating, exclude this field's old deps from the graph
  */
 async function cycleCheck(
+  userId: string,
   databaseId: string,
   proposedFieldName: string,
   proposedDeps: string[],
   excludeFieldId: string | undefined,
 ): Promise<CycleCheckResult> {
-  // Load all FORMULA fields for this database
+  // Load all FORMULA fields for this database, scoped to userId (defense-in-depth)
   const formulaFields = await prisma.databaseField.findMany({
-    where: { databaseId, type: "FORMULA" },
+    where: { databaseId, userId, type: "FORMULA" },
     select: { id: true, name: true, config: true },
   });
 

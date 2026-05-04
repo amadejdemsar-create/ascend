@@ -39,6 +39,12 @@ const ALLOWED_COERCIONS: Record<string, { type: string; label: string; warning?:
   SELECT: [
     { type: "MULTI_SELECT", label: "Multi-select" },
   ],
+  DATE: [
+    { type: "TEXT", label: "Text" },
+  ],
+  MULTI_SELECT: [
+    { type: "TEXT", label: "Text", warning: "Option labels will be joined with commas." },
+  ],
 };
 
 // ── Component ─────────────────────────────────────────────────────────────

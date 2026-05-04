@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "node:crypto";
 import { userService } from "@/lib/services/user-service";
 import { authService } from "@/lib/services/auth-service";
 import { ZodError } from "zod";
@@ -90,4 +91,34 @@ export function handleApiError(error: unknown) {
     { error: "Internal server error" },
     { status: 500 }
   );
+}
+
+// ---------------------------------------------------------------------------
+// verifyCronSecret(request): timing-safe cron secret validation
+//
+// Used by cron-only routes (context map refresh, file extraction tick,
+// file cleanup, anything else triggered by GitHub Actions). Verifies the
+// x-cron-secret header matches the CRON_SECRET env var using timing-safe
+// comparison to prevent side-channel attacks.
+//
+// Returns false if CRON_SECRET is not set or header is missing.
+// ---------------------------------------------------------------------------
+
+export function verifyCronSecret(request: NextRequest): boolean {
+  const expected = process.env.CRON_SECRET;
+  if (!expected) return false;
+
+  const provided = request.headers.get("x-cron-secret");
+  if (!provided) return false;
+
+  try {
+    const a = Buffer.from(provided, "utf-8");
+    const b = Buffer.from(expected, "utf-8");
+    // Length check first; timingSafeEqual throws on length mismatch.
+    // Length itself leaks, but the actual content does not.
+    if (a.length !== b.length) return false;
+    return timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
 }

@@ -276,23 +276,43 @@ export const fileService = {
       }),
     );
 
-    // Create File row in UPLOADED status (skip PENDING since bytes are already in R2)
-    const file = await prisma.file.create({
-      data: {
-        userId,
-        storageKey,
-        bucket: s3.bucket,
-        mimeType: input.mimeType,
-        sizeBytes: BigInt(input.sizeBytes),
-        filename: input.filename,
-        status: "UPLOADED",
-        uploadedAt: new Date(),
-        workspaceId: null,
-        ...(contextEntryId && { contextEntryId }),
-      },
-    });
+    // Create File row in UPLOADED status (skip PENDING since bytes are already in R2).
+    // If Prisma fails, issue a compensating R2 DELETE to avoid orphaning the object.
+    try {
+      const file = await prisma.file.create({
+        data: {
+          userId,
+          storageKey,
+          bucket: s3.bucket,
+          mimeType: input.mimeType,
+          sizeBytes: BigInt(input.sizeBytes),
+          filename: input.filename,
+          status: "UPLOADED",
+          uploadedAt: new Date(),
+          workspaceId: null,
+          ...(contextEntryId && { contextEntryId }),
+        },
+      });
 
-    return file;
+      return file;
+    } catch (prismaErr) {
+      // Compensating delete to avoid orphaning the R2 object (DZ-13).
+      // Best-effort; if this also fails, log and surface the original error.
+      try {
+        await s3.client.send(
+          new DeleteObjectCommand({
+            Bucket: s3.bucket,
+            Key: storageKey,
+          }),
+        );
+      } catch (cleanupErr) {
+        console.error(
+          "[fileService.uploadBytes] R2 compensating delete failed",
+          { storageKey, cleanupErr },
+        );
+      }
+      throw prismaErr;
+    }
   },
 
   /**
