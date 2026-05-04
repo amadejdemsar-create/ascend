@@ -531,6 +531,8 @@ model File {
   extractedText       String?
   thumbnailKey        String?
   pageCount           Int?
+  durationSec         Float?
+  tags                String[]               @default([])
   extractionStatus    ExtractionStatus             @default(PENDING)
   extractionError     String?
   extractedAt         DateTime?

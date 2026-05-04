@@ -123,6 +123,8 @@ export const extractionService = {
           extractedText: result.text,
           pageCount: result.pageCount ?? null,
           thumbnailKey: result.thumbnailKey ?? null,
+          durationSec: result.durationSec ?? null,
+          tags: result.tags ?? [],
           extractionStatus: "COMPLETE",
           extractionError: null,
           extractedAt: new Date(),

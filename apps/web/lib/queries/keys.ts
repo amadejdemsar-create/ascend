@@ -77,5 +77,8 @@ export const queryKeys = {
         ? (["databases", "rows", databaseId, queryHash] as const)
         : (["databases", "rows", databaseId] as const),
   },
+  og: {
+    image: (url: string) => ["og", "image", url] as const,
+  },
   dashboard: () => ["dashboard"] as const,
 };

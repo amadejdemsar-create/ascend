@@ -4,6 +4,7 @@ import { ImageIcon } from "lucide-react";
 import type { DatabaseField } from "@ascend/core";
 import type { DatabaseFieldResponse } from "@/lib/hooks/use-databases";
 import { PropertyCell } from "@/components/databases/property-editors";
+import { useOpenGraphImage } from "@/lib/hooks/use-og";
 import { cn } from "@/lib/utils";
 
 // ── Types ─────────────────────────────────────────────────────────────────
@@ -143,18 +144,7 @@ function resolveCover(
       return <PlaceholderCover />;
     }
 
-    // For v1, render the URL as text inside a styled container.
-    return (
-      <div className="flex flex-col items-center justify-center gap-1 px-3 text-center">
-        <ImageIcon
-          className="size-6 text-muted-foreground/40"
-          aria-hidden="true"
-        />
-        <span className="text-xs text-muted-foreground truncate max-w-full">
-          {urlValue}
-        </span>
-      </div>
-    );
+    return <UrlCover url={urlValue} />;
   }
 
   // Unsupported cover field type: fall back to placeholder.
@@ -167,5 +157,45 @@ function PlaceholderCover() {
       className="size-8 text-muted-foreground/30"
       aria-hidden="true"
     />
+  );
+}
+
+/**
+ * URL cover with OpenGraph image fetching.
+ *
+ * Uses the /api/og endpoint to extract the og:image meta tag from the URL.
+ * Falls back to a text display of the URL if no OG image is found or while
+ * loading.
+ */
+function UrlCover({ url }: { url: string }) {
+  const { ogImage, isLoading } = useOpenGraphImage(url);
+
+  if (ogImage) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={ogImage}
+        alt=""
+        className="absolute inset-0 w-full h-full object-contain p-2"
+        loading="lazy"
+      />
+    );
+  }
+
+  // Loading or no OG image: show URL as text fallback.
+  return (
+    <div className="flex flex-col items-center justify-center gap-1 px-3 text-center">
+      {isLoading ? (
+        <div className="size-6 rounded bg-muted-foreground/10 animate-pulse" />
+      ) : (
+        <ImageIcon
+          className="size-6 text-muted-foreground/40"
+          aria-hidden="true"
+        />
+      )}
+      <span className="text-xs text-muted-foreground truncate max-w-full">
+        {url}
+      </span>
+    </div>
   );
 }
