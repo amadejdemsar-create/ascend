@@ -77,6 +77,18 @@ export function useDatabase(id: string) {
   });
 }
 
+/**
+ * Fetch a database by its backing ContextEntry ID.
+ * Used when opening a DATABASE entry in the detail panel.
+ */
+export function useDatabaseByEntry(entryId: string) {
+  return useQuery({
+    queryKey: ["databases", "by-entry", entryId],
+    queryFn: () => apiFetch<DatabaseResponse>(`/api/databases/by-entry/${entryId}`),
+    enabled: !!entryId,
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Mutation Hooks
 // ---------------------------------------------------------------------------

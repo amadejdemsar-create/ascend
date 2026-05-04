@@ -147,6 +147,32 @@ export const databaseService = {
   },
 
   /**
+   * Get a database by its backing ContextEntry ID. Used by the detail panel
+   * when only the entry ID is known. Returns same shape as getById.
+   */
+  async getByEntryId(userId: string, entryId: string) {
+    return prisma.database.findFirst({
+      where: { contextEntryId: entryId, userId },
+      include: {
+        fields: { orderBy: { position: "asc" } },
+        views: { orderBy: { position: "asc" } },
+        contextEntry: {
+          select: {
+            id: true,
+            title: true,
+            type: true,
+            categoryId: true,
+            tags: true,
+            isPinned: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+      },
+    });
+  },
+
+  /**
    * List all databases for the user with field count, row count, and view count.
    * Ordered by updatedAt descending.
    */

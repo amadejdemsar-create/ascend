@@ -5,6 +5,34 @@ import { apiFetch } from "@/lib/api-client";
 import { queryKeys } from "@/lib/queries/keys";
 
 // ---------------------------------------------------------------------------
+// Relation Backlinks
+// ---------------------------------------------------------------------------
+
+export interface RelationBacklinkGroup {
+  fieldId: string;
+  fieldName: string;
+  databaseId: string;
+  databaseName: string;
+  rows: Array<{ entryId: string; title: string }>;
+}
+
+/**
+ * Fetch incoming DATABASE_RELATION links for a row's entry, grouped by
+ * source database and field.
+ */
+export function useRelationBacklinks(rowEntryId: string) {
+  return useQuery({
+    queryKey: ["databases", "relation-backlinks", rowEntryId],
+    queryFn: () =>
+      apiFetch<RelationBacklinkGroup[]>(
+        `/api/databases/relation-backlinks/${rowEntryId}`,
+      ),
+    enabled: !!rowEntryId,
+    staleTime: 60_000,
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 

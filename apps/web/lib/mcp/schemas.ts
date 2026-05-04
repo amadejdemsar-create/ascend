@@ -16,7 +16,12 @@ import {
   CONTEXT_LINK_TYPE_ENUM,
   ALLOWED_MIME_TYPES_ARRAY,
   EXTRACTION_STATUS_VALUES,
+  DATABASE_FIELD_TYPE_VALUES,
+  DATABASE_VIEW_TYPE_VALUES,
 } from "@ascend/core";
+
+const DATABASE_FIELD_TYPE_ENUM = [...DATABASE_FIELD_TYPE_VALUES];
+const DATABASE_VIEW_TYPE_ENUM = [...DATABASE_VIEW_TYPE_VALUES];
 
 export interface ToolDefinition {
   name: string;
@@ -1161,6 +1166,221 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
           default: 0,
         },
       },
+    },
+  },
+
+  // ── Database Operations (Wave 5) ────────────────────────────────────
+
+  {
+    name: "create_database",
+    description:
+      "Create a new typed database with a default 'Name' text column and a Table view. Returns the database ID, context entry ID, fields, and views.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: {
+          type: "string",
+          description: "Database name (1 to 200 chars). Becomes the ContextEntry title.",
+        },
+        parentEntryId: {
+          type: "string",
+          description: "Optional parent ContextEntry ID to attach the database to.",
+        },
+      },
+      required: ["name"],
+    },
+  },
+
+  {
+    name: "add_field",
+    description:
+      "Add a new field (column) to a database. Supports TEXT, NUMBER, DATE, SELECT, MULTI_SELECT, RELATION, FORMULA, USER, CHECKBOX, RATING, URL, EMAIL, PHONE, FILE. The field is appended at the end.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        databaseId: { type: "string", description: "The database ID" },
+        name: { type: "string", description: "Field name (1 to 80 chars)" },
+        type: {
+          type: "string",
+          enum: DATABASE_FIELD_TYPE_ENUM,
+          description: "The field type",
+        },
+        config: {
+          type: "object",
+          description: "Type-specific configuration (e.g., options for SELECT, expression for FORMULA, targetDatabaseId for RELATION)",
+        },
+      },
+      required: ["databaseId", "name", "type"],
+    },
+  },
+
+  {
+    name: "update_field",
+    description:
+      "Update a database field's name, config, or position. Cannot change the field type (use delete + add for that).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        fieldId: { type: "string", description: "The field ID to update" },
+        name: { type: "string", description: "New field name (1 to 80 chars)" },
+        config: {
+          type: "object",
+          description: "Updated type-specific configuration",
+        },
+        position: {
+          type: "integer",
+          minimum: 0,
+          description: "New position index for reordering",
+        },
+      },
+      required: ["fieldId"],
+    },
+  },
+
+  {
+    name: "delete_field",
+    description:
+      "Delete a field from a database. Removes the field from all rows' properties. Cannot delete the primary (Name) field. If the field is a RELATION type, all corresponding ContextLink rows are also removed.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        fieldId: { type: "string", description: "The field ID to delete" },
+      },
+      required: ["fieldId"],
+    },
+  },
+
+  {
+    name: "create_row",
+    description:
+      "Create a new row in a database. Each row is a ContextEntry of type RECORD with a BlockDocument for its body. Optionally provide initial property values.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        databaseId: { type: "string", description: "The database to add the row to" },
+        properties: {
+          type: "object",
+          description: "Initial property values keyed by field ID. All fields are optional; omitted fields get null.",
+        },
+      },
+      required: ["databaseId"],
+    },
+  },
+
+  {
+    name: "update_row",
+    description:
+      "Update a row's property values. Provide a partial patch; only the fields included in propertiesPatch are changed. RELATION field changes automatically create/remove ContextLink rows.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        rowId: { type: "string", description: "The row ID to update" },
+        propertiesPatch: {
+          type: "object",
+          description: "Partial property values keyed by field ID. Set a value to null to clear it.",
+        },
+      },
+      required: ["rowId", "propertiesPatch"],
+    },
+  },
+
+  {
+    name: "delete_row",
+    description:
+      "Delete a row from a database. This also deletes the backing ContextEntry (type RECORD), its BlockDocument, and all RELATION links from/to this row.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        rowId: { type: "string", description: "The row ID to delete" },
+      },
+      required: ["rowId"],
+    },
+  },
+
+  {
+    name: "create_view",
+    description:
+      "Create a new view for a database. Supported types: TABLE, BOARD (requires groupByFieldId in config), CALENDAR (requires dateFieldId), GALLERY, TIMELINE (requires startFieldId + endFieldId).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        databaseId: { type: "string", description: "The database to add the view to" },
+        name: { type: "string", description: "View name (1 to 80 chars)" },
+        type: {
+          type: "string",
+          enum: DATABASE_VIEW_TYPE_ENUM,
+          description: "The view type",
+        },
+        config: {
+          type: "object",
+          description: "View-type-specific configuration (column widths, groupBy, dateField, etc.)",
+        },
+      },
+      required: ["databaseId", "name", "type"],
+    },
+  },
+
+  {
+    name: "update_view",
+    description:
+      "Update a view's name or configuration. Use this to change filters, sorts, column widths, groupBy, etc.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        viewId: { type: "string", description: "The view ID to update" },
+        name: { type: "string", description: "New view name (1 to 80 chars)" },
+        config: {
+          type: "object",
+          description: "Updated view configuration",
+        },
+      },
+      required: ["viewId"],
+    },
+  },
+
+  {
+    name: "query_database",
+    description:
+      "Query rows from a database with optional filtering, sorting, and pagination. Can use a saved view's filters/sorts via viewId, or provide inline filter/sort to override. Returns paginated rows with computed formula values.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        databaseId: { type: "string", description: "The database to query" },
+        viewId: {
+          type: "string",
+          description: "Optional view ID to use as the base filter/sort config",
+        },
+        filter: {
+          type: "object",
+          description: "Optional filter object with combinator (AND/OR) and clauses array. Each clause has fieldId, op, and value.",
+        },
+        sort: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              fieldId: { type: "string" },
+              direction: { type: "string", enum: ["asc", "desc"] },
+            },
+            required: ["fieldId", "direction"],
+          },
+          description: "Optional sort specification (array of {fieldId, direction})",
+        },
+        page: {
+          type: "integer",
+          minimum: 1,
+          description: "Page number (default 1)",
+          default: 1,
+        },
+        perPage: {
+          type: "integer",
+          minimum: 1,
+          maximum: 500,
+          description: "Rows per page (default 200, max 500)",
+          default: 200,
+        },
+      },
+      required: ["databaseId"],
     },
   },
 ];

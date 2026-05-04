@@ -359,6 +359,25 @@ export const databaseRowService = {
       orderBy: { position: "asc" },
     });
   },
+
+  /**
+   * Get a row by its backing ContextEntry ID. Used by the detail panel
+   * to self-bootstrap when only the entry ID is known.
+   * Returns the row with its parent database (fields, contextEntry).
+   */
+  async getByEntryId(userId: string, entryId: string) {
+    return prisma.databaseRow.findFirst({
+      where: { contextEntryId: entryId, userId },
+      include: {
+        database: {
+          include: {
+            contextEntry: { select: { id: true, title: true } },
+            fields: { orderBy: { position: "asc" } },
+          },
+        },
+      },
+    });
+  },
 };
 
 // ── Private helpers ───────────────────────────────────────────────────

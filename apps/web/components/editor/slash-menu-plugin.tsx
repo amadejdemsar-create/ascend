@@ -43,6 +43,7 @@ import {
   FileTextIcon,
   MusicIcon,
   VideoIcon,
+  DatabaseIcon,
 } from "lucide-react";
 import { INSERT_HORIZONTAL_RULE_COMMAND } from "@lexical/react/LexicalHorizontalRuleNode";
 import {
@@ -51,9 +52,11 @@ import {
   $createAIBlockNode,
   $createFileNode,
   $createImageNode,
+  $createWikiLinkNode,
 } from "@ascend/editor";
 import { toast } from "sonner";
 import { useUploadFile } from "@/lib/hooks/use-files";
+import { useCreateDatabase } from "@/lib/hooks/use-databases";
 
 /**
  * SlashMenuPlugin: triggered by `/` at the start of a paragraph or after
@@ -86,6 +89,7 @@ export function SlashMenuPlugin({ entryId }: SlashMenuPluginProps) {
 
   // File upload support
   const uploadFile = useUploadFile();
+  const createDatabase = useCreateDatabase();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingFileTypeRef = useRef<"upload" | "image" | "pdf" | "audio" | "video" | null>(null);
   const entryIdRef = useRef(entryId);
@@ -178,6 +182,36 @@ export function SlashMenuPlugin({ entryId }: SlashMenuPluginProps) {
     },
     [],
   );
+
+  // ── Database creation handler ────────────────────────────────
+
+  const handleCreateDatabase = useCallback(async () => {
+    try {
+      const result = await createDatabase.mutateAsync({
+        name: "Untitled Database",
+        parentEntryId: entryIdRef.current,
+      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const raw = result as any;
+      const dbEntryId = raw.entryId ?? raw.contextEntry?.id ?? raw.database?.contextEntryId ?? null;
+      const title = raw.name ?? raw.contextEntry?.title ?? "Untitled Database";
+      // Insert a wikilink to the new database
+      editor.update(() => {
+        const selection = $getSelection();
+        if ($isRangeSelection(selection)) {
+          const wikiNode = $createWikiLinkNode({
+            relation: "REFERENCES",
+            targetTitle: title,
+            targetEntryId: dbEntryId,
+          });
+          selection.insertNodes([wikiNode]);
+        }
+      });
+      toast.success("Database created");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to create database");
+    }
+  }, [editor, createDatabase]);
 
   // ── Menu items ───────────────────────────────────────────────
 
@@ -392,6 +426,14 @@ export function SlashMenuPlugin({ entryId }: SlashMenuPluginProps) {
       icon: <VideoIcon className="size-4" aria-hidden="true" />,
       onSelect: () => openFilePicker("video"),
     },
+    // ── Database ────────────────────────────────────────────
+    {
+      id: "database",
+      label: "Database",
+      keywords: ["database", "table", "board", "calendar", "gallery", "timeline", "db"],
+      icon: <DatabaseIcon className="size-4" aria-hidden="true" />,
+      onSelect: () => { handleCreateDatabase(); },
+    },
     // ── AI Block ────────────────────────────────────────────
     {
       id: "ai-block",
@@ -408,7 +450,7 @@ export function SlashMenuPlugin({ entryId }: SlashMenuPluginProps) {
         });
       },
     },
-  ], [editor, openFilePicker]);
+  ], [editor, openFilePicker, handleCreateDatabase]);
 
   const filteredItems = useMemo(() => {
     if (!query) return items;

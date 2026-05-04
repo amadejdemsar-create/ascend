@@ -27,6 +27,8 @@ import { Separator } from "@/components/ui/separator";
 import { ContextEdgesPanel } from "@/components/context/context-edges-panel";
 import { ContextTypeSelect } from "@/components/context/context-type-select";
 import { ContextBlockEditor } from "@/components/context/context-block-editor";
+import { DatabaseDetail } from "@/components/databases/database-detail";
+import { DatabaseRowProperties } from "@/components/databases/database-row-properties";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -387,15 +389,30 @@ export function ContextEntryDetail({
         </div>
       </div>
 
-      {/* Content: Block Editor (replaces legacy textarea) */}
+      {/* Content: type-based dispatch */}
       <div className="flex-1 space-y-5 p-4">
-        <ContextBlockEditor
-          entryId={entryId}
-          fallbackContent={sourceContent}
-        />
+        {entry.type === "DATABASE" ? (
+          <DatabaseDetail
+            entryId={entryId}
+            onOpenRow={(rowEntryId) => onNavigate?.(rowEntryId)}
+          />
+        ) : (
+          <>
+            {entry.type === "RECORD" && (
+              <DatabaseRowProperties
+                rowEntryId={entryId}
+                onNavigate={onNavigate}
+              />
+            )}
+            <ContextBlockEditor
+              entryId={entryId}
+              fallbackContent={sourceContent}
+            />
 
-        <Separator />
-        <ContextEdgesPanel entryId={entryId} />
+            <Separator />
+            <ContextEdgesPanel entryId={entryId} />
+          </>
+        )}
       </div>
 
       <AlertDialog

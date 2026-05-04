@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Upload } from "lucide-react";
+import { Plus, Upload, FileText, Database } from "lucide-react";
 import { useUploadFile } from "@/lib/hooks/use-files";
+import { useCreateDatabase } from "@/lib/hooks/use-databases";
 import { useContextEntries, useTogglePin } from "@/lib/hooks/use-context";
 import { useUIStore } from "@/lib/stores/ui-store";
 import { ContextSearch } from "@/components/context/context-search";
@@ -18,6 +19,12 @@ import { ContextBacklinksView } from "@/components/context/context-backlinks-vie
 import { ContextMapCard, ContextMapFilterPill } from "@/components/context/context-map-card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Collapsible,
   CollapsibleTrigger,
@@ -49,6 +56,7 @@ export default function ContextPage() {
 
   const uploadFileInputRef = useRef<HTMLInputElement>(null);
   const uploadFile = useUploadFile();
+  const createDatabase = useCreateDatabase();
 
   const contextFilters = useUIStore((s) => s.contextFilters);
   const setContextTagFilter = useUIStore((s) => s.setContextTagFilter);
@@ -119,6 +127,24 @@ export default function ContextPage() {
     setSelectedEntryId(null);
     setEditingEntryId(null);
     setShowCurrentPriorities(false);
+  }
+
+  async function handleNewDatabase() {
+    try {
+      const result = await createDatabase.mutateAsync({ name: "Untitled Database" });
+      // The response from the service has { database, fields, views, contextEntry }
+      // The hook types it as DatabaseResponse which has entryId, but the raw response
+      // may have contextEntry.id or database.contextEntryId. Handle both.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const raw = result as any;
+      const entryId = raw.entryId ?? raw.contextEntry?.id ?? raw.database?.contextEntryId;
+      if (entryId) {
+        handleSelectEntry(entryId);
+      }
+      toast.success("Database created");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to create database");
+    }
   }
 
   function handleUploadClick() {
@@ -209,6 +235,32 @@ export default function ContextPage() {
   const showDetail = selectedEntryId || showCurrentPriorities;
   const showEditor = isCreating || editingEntryId;
 
+  // Reusable "New" dropdown button for the toolbar
+  function NewButton() {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button size="sm" className="gap-1.5" />
+          }
+        >
+          <Plus className="size-3.5" />
+          New
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={handleNewDocument} className="gap-2">
+            <FileText className="size-4" />
+            Note
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleNewDatabase} className="gap-2">
+            <Database className="size-4" />
+            Database
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
   // For graph view, the left panel is replaced by the graph canvas.
   // For pinned view, the left panel shows only pinned entries.
   // For backlinks view, placeholder for now.
@@ -268,10 +320,7 @@ export default function ContextPage() {
                       <Upload className="size-3.5" />
                       Upload
                     </Button>
-                    <Button size="sm" onClick={handleNewDocument} className="gap-1.5">
-                      <Plus className="size-3.5" />
-                      New
-                    </Button>
+                    <NewButton />
                   </>
                 }
               />
@@ -314,10 +363,7 @@ export default function ContextPage() {
                       <Upload className="size-3.5" />
                       Upload
                     </Button>
-                    <Button size="sm" onClick={handleNewDocument} className="gap-1.5">
-                      <Plus className="size-3.5" />
-                      New
-                    </Button>
+                    <NewButton />
                   </>
                 }
               />
@@ -354,10 +400,7 @@ export default function ContextPage() {
                       <Upload className="size-3.5" />
                       Upload
                     </Button>
-                    <Button size="sm" onClick={handleNewDocument} className="gap-1.5">
-                      <Plus className="size-3.5" />
-                      New
-                    </Button>
+                    <NewButton />
                   </>
                 }
               />
@@ -441,10 +484,7 @@ export default function ContextPage() {
                     <Upload className="size-3.5" />
                     Upload
                   </Button>
-                  <Button size="sm" onClick={handleNewDocument} className="gap-1.5">
-                    <Plus className="size-3.5" />
-                    New
-                  </Button>
+                  <NewButton />
                 </>
               }
             />

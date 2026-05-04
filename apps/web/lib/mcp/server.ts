@@ -19,6 +19,7 @@ import { handleContextGraphTool } from "./tools/context-graph-tools";
 import { handleLlmTool } from "./tools/llm-tools";
 import { handleBlockTool } from "./tools/block-tools";
 import { handleFileTool } from "./tools/file-tools";
+import { handleDatabaseTool } from "./tools/database-tools";
 import { contextService } from "@/lib/services/context-service";
 import { categoryService } from "@/lib/services/category-service";
 
@@ -71,6 +72,18 @@ const FILE_TOOL_NAMES = new Set([
   "upload_file",
   "get_file_content",
   "list_files_by_type",
+]);
+const DATABASE_TOOL_NAMES = new Set([
+  "create_database",
+  "add_field",
+  "update_field",
+  "delete_field",
+  "create_row",
+  "update_row",
+  "delete_row",
+  "create_view",
+  "update_view",
+  "query_database",
 ]);
 
 /**
@@ -147,7 +160,11 @@ export function createAscendMcpServer(userId: string): Server {
       return handleFileTool(userId, name, args ?? {});
     }
 
-    // All 58 tool definitions are now routed. This fallback should never be reached.
+    if (DATABASE_TOOL_NAMES.has(name)) {
+      return handleDatabaseTool(userId, name, args ?? {});
+    }
+
+    // All 68 tool definitions are now routed. This fallback should never be reached.
     return {
       content: [{ type: "text" as const, text: `Unknown tool: ${name}` }],
       isError: true,
