@@ -1,0 +1,17 @@
+name: Wave 7 — version retention compactor (nightly)
+on:
+  schedule:
+    # 03:00 UTC daily (04:00 or 05:00 CET/CEST)
+    - cron: "0 3 * * *"
+  workflow_dispatch: # manual trigger from Actions UI
+
+jobs:
+  compact:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger retention compactor
+        run: |
+          curl -fsS -X POST \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            https://ascend.nativeai.agency/api/versions/compact

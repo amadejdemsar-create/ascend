@@ -1,0 +1,17 @@
+name: Wave 7 — graph daily snapshot precompute (nightly)
+on:
+  schedule:
+    # 03:30 UTC daily, 30 min after retention compactor
+    - cron: "30 3 * * *"
+  workflow_dispatch: # manual trigger from Actions UI
+
+jobs:
+  precompute:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger graph snapshot precompute
+        run: |
+          curl -fsS -X POST \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            https://ascend.nativeai.agency/api/graph/snapshots/precompute
