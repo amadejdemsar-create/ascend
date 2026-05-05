@@ -2,7 +2,44 @@
 
 Deferred features and initiatives that have been explicitly scoped but not yet implemented. When you want to pick one up, run `/ax:plan <slug>` to create a full PRD + TASKS.md.
 
-Last updated: 4. 5. 2026
+Last updated: 5. 5. 2026
+
+---
+
+## Wave 7 (Provenance + time travel) — SHIPPED 5. 5. 2026
+
+Full provenance system shipped across 13 commits (11 phase commits + 2 production incident fixes). Every node-shaped entity (ContextEntry, Goal, Todo, DatabaseRow, DatabaseField) is now snapshotted to an append-only `NodeVersion` table with a 60s debounced trigger pattern that fires on every qualifying mutation. Every ContextLink mutation is logged to `EdgeEvent`. A pure-TS diff engine (`@ascend/diff` shared package) provides 4 type-aware diff strategies with 10/10 fixture tests. The UI includes a collapsible version history panel mounted in 4 detail panels, a full-screen diff modal with type-aware renderers, restore and branch actions, and a 90-day time slider on the graph view backed by precomputed `GraphDailySnapshot` rows. 5 new MCP tools bring the total from 68 to 73. Two nightly cron workflows handle retention compaction (03:00 UTC) and graph snapshot precomputation (03:30 UTC). A one-shot backfill script creates v1 snapshots for all existing entities. The `DERIVED_FROM` ContextLinkType enables branching with cycle detection (100-hop walk) and a 50-derivative hard cap.
+
+Two production incidents during the wave: a Dockerfile missing the `packages/diff` COPY stage (fixed in `59c76a4`), and a Next.js param collision between `GET /api/versions/[nodeType]/[nodeId]` and `GET /api/versions/[id]` that required renaming the single-version route to `/api/versions/by-id/[id]` (fixed in `7890113`). Both were caught and resolved before deployment. Commits: `279fe9e`, `6dd2121`, `c24c816`, `6bc0aae`, `d834431`, `abbe99d`, `59c76a4`, `04edcbd`, `7890113`, `0dfc073`, `7ccdd33`, `ae9a964`, `02ed232`, plus the wave-close commit. Close-out at `.ascendflow/features/context-v2/wave-7-provenance-and-time-travel/CLOSE-OUT.md`.
+
+## Wave 7 carry-overs (tracked here until picked up)
+
+### MEDIUM (should land before Wave 8 multi-user)
+
+- **`User.role` admin-only routes.** Still pending from Wave 4 backlog. Wave 7 added 2 more cron-secret routes; the admin-only-via-JWT pattern remains unimplemented.
+- **Per-user retention customization.** Retention policy is hardcoded at 30d all / 30d 1/day / forever 1/week (Monday-anchored). Surfacing this in `/settings` with per-user overrides is deferred.
+- **Time slider beyond 90 days.** The slider is hard-capped at 90 days. Lifting it requires extending the precompute backfill window and potentially a historical backfill endpoint.
+- **Edge history viewer.** EdgeEvents are stored and queryable but no dedicated UI exists. The graph time slider implicitly visualizes edge history through daily snapshots, but per-edge history browsing is deferred.
+- **Cron slot staggering.** Retention compactor and map-refresh both run at 03:00 UTC. Non-issue for single-user production (both complete quickly), but should be staggered if multi-user concurrency grows.
+- **retention-compactor full-history-load memory pattern.** `compactUserVersions` loads all versions per (nodeType, nodeId) into memory before computing the keep-set. For thousands of versions on a single node this could spike memory. Not relevant at current scale; plan cursor-based chunking before Wave 8.
+- **graph-snapshot replay loads all EdgeEvents up to cutoff into memory.** The `precomputeDailySnapshot` method replays edge events in-memory. Adequate under cron-secret gate for single-user; cursor-based replay before Wave 8 multi-user.
+
+### LOW (UX polish)
+
+- **Field labels in field-diff-renderer use camelCase keys.** Should humanize them (e.g., `startDate` → "Start date") for a more polished diff view.
+- **DERIVED_FROM derivative count fetched on BranchDialog open.** Currently passes 0 to the dialog; the soft warning (> 5 derivatives) is suppressed. Fetch actual count or pass from parent.
+- **Cascade-delete tombstone snapshots for child goals.** Currently only the deleted root goal gets a tombstone snapshot. Child goals deleted via cascade are not snapshotted.
+- **Restore wraps unexpected errors with generic message.** Currently can leak Prisma constraint field names to the client in error messages. Non-critical for single-user, should wrap before multi-user.
+- **Rate limiting on Wave 7 routes.** None of the 5 user-facing routes have rate limiting. Wave 8 multi-user work.
+- **GraphDailySnapshot backfill for dates older than the cron has covered.** If the cron has only been running for 3 days, the slider shows "snapshot not yet computed" for day 4 and earlier. Falls back gracefully but is not ideal.
+- **Three-pane desktop diff view.** The PRD specified left/center/right on wide viewports. Phase 8 implemented single-column tabbed for readability. Design decision, not a bug, but the three-pane approach may be revisited.
+
+### Notion/Airtable parity items deferred
+
+- **Merging branches.** Branching is one-way in Wave 7. Merge UI + three-way diff merge tooling is Wave 8 collaboration territory.
+- **Real-time collaboration on a single document.** Wave 8.
+- **Search across versions.** "Find a note that mentioned X last quarter" requires a separate full-text index over historical payloads.
+- **Time slider on non-graph views.** Calendar, Table, Board, Gallery, Timeline views remain live-only. Future polish.
 
 ---
 

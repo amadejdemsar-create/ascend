@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useId } from "react";
+import { useState, useId, useCallback } from "react";
 import { formatDistanceToNow } from "date-fns";
 import {
   ChevronDownIcon,
@@ -8,15 +8,17 @@ import {
   Undo2Icon,
   GitBranchPlusIcon,
   HistoryIcon,
+  LoaderIcon,
 } from "lucide-react";
 import { useVersions } from "@/lib/hooks/use-versions";
-import type { VersionListItem } from "@/lib/hooks/use-versions";
+import type { VersionListItem, VersionListResponse } from "@/lib/hooks/use-versions";
 import { useUIStore } from "@/lib/stores/ui-store";
 import type { NodeType } from "@/lib/validations";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { apiFetch } from "@/lib/api-client";
 import { formatTrigger } from "./format-trigger";
 import { VersionDiffModal } from "./version-diff-modal";
 import { RestoreConfirmationDialog } from "./restore-confirmation-dialog";
@@ -54,8 +56,34 @@ export function VersionHistoryPanel({
   const setExpanded = useUIStore((s) => s.setVersionHistoryExpanded);
 
   const { data, isLoading } = useVersions(nodeType, nodeId, { limit: 20 });
-  const versions = data?.versions ?? [];
-  const hasMore = !!data?.nextCursor;
+
+  // Pagination: accumulate additional pages fetched via "Show older versions"
+  const [extraPages, setExtraPages] = useState<VersionListResponse[]>([]);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const initialVersions = data?.versions ?? [];
+  const allVersions = [
+    ...initialVersions,
+    ...extraPages.flatMap((p) => p.versions),
+  ];
+  const lastCursor =
+    extraPages.length > 0
+      ? extraPages[extraPages.length - 1].nextCursor
+      : data?.nextCursor ?? null;
+  const hasMore = !!lastCursor;
+
+  const loadOlderVersions = useCallback(async () => {
+    if (!lastCursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const next = await apiFetch<VersionListResponse>(
+        `/api/versions/${nodeType}/${nodeId}?limit=20&cursor=${lastCursor}`,
+      );
+      setExtraPages((prev) => [...prev, next]);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [lastCursor, loadingMore, nodeType, nodeId]);
 
   // State for sub-dialogs
   const [diffModal, setDiffModal] = useState<{ toVersionId: string } | null>(null);
@@ -63,7 +91,7 @@ export function VersionHistoryPanel({
   const [branchDialog, setBranchDialog] = useState<VersionListItem | null>(null);
 
   const isBranchable = BRANCHABLE_TYPES.has(nodeType);
-  const count = versions.length + (hasMore ? "+" : "");
+  const count = allVersions.length + (hasMore ? "+" : "");
 
   function handleToggle() {
     setExpanded(storeKey, !expanded);
@@ -81,7 +109,7 @@ export function VersionHistoryPanel({
       >
         <HistoryIcon className="size-4 shrink-0" aria-hidden="true" />
         <span className="flex-1 text-left">
-          {isLoading ? "Version history" : `${count} version${versions.length === 1 ? "" : "s"}`}
+          {isLoading ? "Version history" : `${count} version${allVersions.length === 1 ? "" : "s"}`}
         </span>
         <ChevronDownIcon
           className={cn(
@@ -103,15 +131,15 @@ export function VersionHistoryPanel({
             </div>
           )}
 
-          {!isLoading && versions.length === 0 && (
+          {!isLoading && allVersions.length === 0 && (
             <p className="py-3 text-xs text-muted-foreground">
               No version history yet.
             </p>
           )}
 
-          {!isLoading && versions.length > 0 && (
+          {!isLoading && allVersions.length > 0 && (
             <ul className="space-y-1 py-1" role="list" aria-label="Version history">
-              {versions.map((v) => {
+              {allVersions.map((v) => {
                 const triggerDisplay = formatTrigger(v.trigger as VersionTrigger);
                 const timeAgo = formatDistanceToNow(new Date(v.createdAt), {
                   addSuffix: true,
@@ -180,11 +208,22 @@ export function VersionHistoryPanel({
             </ul>
           )}
 
-          {/* "Show all" link when there are more versions */}
+          {/* Load older versions when more exist */}
           {!isLoading && hasMore && (
-            <p className="px-2 py-1 text-[0.65rem] text-muted-foreground">
-              Showing latest 20 versions. Full history available via API.
-            </p>
+            <div className="px-2 py-1.5">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={loadOlderVersions}
+                disabled={loadingMore}
+                className="h-7 w-full text-xs text-muted-foreground hover:text-foreground gap-1.5"
+              >
+                {loadingMore && (
+                  <LoaderIcon className="size-3 animate-spin" aria-hidden="true" />
+                )}
+                {loadingMore ? "Loading..." : "Show older versions"}
+              </Button>
+            </div>
           )}
         </div>
       )}
