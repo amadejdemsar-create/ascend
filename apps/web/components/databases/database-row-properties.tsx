@@ -1,15 +1,17 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { DatabaseIcon, LinkIcon } from "lucide-react";
+import { DatabaseIcon, GitBranchPlusIcon, LinkIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { useDatabase } from "@/lib/hooks/use-databases";
 import { useDatabaseRows, useUpdateRow } from "@/lib/hooks/use-database-rows";
+import { useVersions } from "@/lib/hooks/use-versions";
 import { PropertyCell } from "./property-editors";
 import { DatabaseRelationBacklinks } from "./database-relation-backlinks";
-import { VersionHistoryPanel } from "@/components/versioning";
+import { VersionHistoryPanel, BranchDialog } from "@/components/versioning";
 import type { DatabaseFieldResponse } from "@/lib/hooks/use-databases";
 
 interface DatabaseRowPropertiesProps {
@@ -71,6 +73,7 @@ function DatabaseRowPropertiesInner({
   rowEntryId: string;
   onNavigate?: (entryId: string) => void;
 }) {
+  const [branchDialogOpen, setBranchDialogOpen] = useState(false);
   // We'll fetch using the entry's row data. Since we don't have a direct
   // "get row by entryId" endpoint, we use an approach where we read from
   // the context entry detail which includes databaseRow info.
@@ -101,6 +104,15 @@ function DatabaseRowPropertiesInner({
   // We need: databaseId, rowId, properties, and the database's fields.
   const { data, isLoading } = useRowByEntryId(rowEntryId);
 
+  // Fetch latest version so the "Branch this" button can pass the most recent
+  // versionId to the BranchDialog. Rows are always branchable.
+  const { data: latestVersionData, isLoading: versionsLoading } = useVersions(
+    "DATABASE_ROW",
+    data?.rowId ?? "",
+    { limit: 1 },
+  );
+  const latestVersionId = latestVersionData?.versions?.[0]?.id ?? null;
+
   if (isLoading) {
     return (
       <div className="space-y-2 mb-4">
@@ -117,7 +129,7 @@ function DatabaseRowPropertiesInner({
 
   return (
     <div className="space-y-3 mb-4">
-      {/* Header: database name link */}
+      {/* Header: database name link + branch action */}
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <DatabaseIcon className="size-3" aria-hidden="true" />
         {data.databaseEntryId && onNavigate ? (
@@ -132,6 +144,19 @@ function DatabaseRowPropertiesInner({
           <span>{data.databaseName}</span>
         )}
         <span className="text-muted-foreground/60">· row</span>
+        <span className="ml-auto">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setBranchDialogOpen(true)}
+            title="Branch this row"
+            aria-label="Branch this row"
+            disabled={versionsLoading || !latestVersionId}
+            className="size-5"
+          >
+            <GitBranchPlusIcon className="size-3" />
+          </Button>
+        </span>
       </div>
 
       {/* Property editors in expanded mode */}
@@ -159,6 +184,22 @@ function DatabaseRowPropertiesInner({
       />
 
       <Separator />
+
+      {/* Branch dialog */}
+      {latestVersionId && (
+        <BranchDialog
+          open={branchDialogOpen}
+          onClose={() => setBranchDialogOpen(false)}
+          versionId={latestVersionId}
+          nodeType="DATABASE_ROW"
+          nodeId={data.rowId}
+          sourceTitle={data.databaseName}
+          onBranched={(newId) => {
+            setBranchDialogOpen(false);
+            onNavigate?.(newId);
+          }}
+        />
+      )}
     </div>
   );
 }

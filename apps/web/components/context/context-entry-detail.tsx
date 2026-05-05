@@ -5,6 +5,7 @@ import { marked } from "marked";
 import { toast } from "sonner";
 import {
   ArrowLeftIcon,
+  GitBranchPlusIcon,
   PencilIcon,
   Trash2Icon,
   XIcon,
@@ -17,6 +18,7 @@ import {
   useDeleteContext,
   useTogglePin,
 } from "@/lib/hooks/use-context";
+import { useVersions } from "@/lib/hooks/use-versions";
 import { useUIStore } from "@/lib/stores/ui-store";
 import { apiFetch } from "@/lib/api-client";
 import type { ContextEntryType } from "@ascend/core";
@@ -29,7 +31,7 @@ import { ContextTypeSelect } from "@/components/context/context-type-select";
 import { ContextBlockEditor } from "@/components/context/context-block-editor";
 import { DatabaseDetail } from "@/components/databases/database-detail";
 import { DatabaseRowProperties } from "@/components/databases/database-row-properties";
-import { VersionHistoryPanel } from "@/components/versioning";
+import { VersionHistoryPanel, BranchDialog } from "@/components/versioning";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -40,6 +42,17 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
+
+/** Context entry types that support branching (matches branch-service.ts) */
+const BRANCHABLE_CONTEXT_ENTRY_TYPES = new Set([
+  "NOTE",
+  "SOURCE",
+  "PROJECT",
+  "PERSON",
+  "DECISION",
+  "QUESTION",
+  "AREA",
+]);
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type EntryData = Record<string, any>;
@@ -113,6 +126,21 @@ export function ContextEntryDetail({
   const setContextTagFilter = useUIStore((s) => s.setContextTagFilter);
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [branchDialogOpen, setBranchDialogOpen] = useState(false);
+
+  // Determine if this entry is branchable (only for regular entry types, not DATABASE or RECORD).
+  const entryType = (entry?.type as string) ?? "";
+  const isBranchable = BRANCHABLE_CONTEXT_ENTRY_TYPES.has(entryType);
+
+  // Fetch the latest version (limit: 1) so the "Branch this" button can pass
+  // the most recent versionId to the BranchDialog. Only fetch when the entry
+  // is branchable to avoid unnecessary queries.
+  const { data: latestVersionData, isLoading: versionsLoading } = useVersions(
+    "CONTEXT_ENTRY",
+    entryId,
+    { limit: 1 },
+  );
+  const latestVersionId = latestVersionData?.versions?.[0]?.id ?? null;
 
   // Listen for wikilink/mention navigation events from the block editor.
   // The WikiLinkPill and MentionPill components dispatch custom DOM events
@@ -367,6 +395,18 @@ export function ContextEntryDetail({
           <Button variant="ghost" size="icon-sm" onClick={onEdit} title="Edit" aria-label="Edit document">
             <PencilIcon className="size-4" />
           </Button>
+          {isBranchable && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setBranchDialogOpen(true)}
+              title="Branch this"
+              aria-label="Branch this document"
+              disabled={versionsLoading || !latestVersionId}
+            >
+              <GitBranchPlusIcon className="size-4" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon-sm"
@@ -448,6 +488,22 @@ export function ContextEntryDetail({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Branch dialog (for branchable entry types) */}
+      {isBranchable && latestVersionId && (
+        <BranchDialog
+          open={branchDialogOpen}
+          onClose={() => setBranchDialogOpen(false)}
+          versionId={latestVersionId}
+          nodeType="CONTEXT_ENTRY"
+          nodeId={entryId}
+          sourceTitle={entry.title ?? "Untitled"}
+          onBranched={(newId) => {
+            setBranchDialogOpen(false);
+            onNavigate?.(newId);
+          }}
+        />
+      )}
     </div>
   );
 }

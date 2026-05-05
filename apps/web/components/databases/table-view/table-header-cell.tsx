@@ -8,6 +8,7 @@ import {
   ArrowDownIcon,
   MoreHorizontalIcon,
   GripVerticalIcon,
+  HistoryIcon,
   PencilIcon,
   EyeOffIcon,
   TrashIcon,
@@ -34,7 +35,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { useVersions } from "@/lib/hooks/use-versions";
 import { ChangeTypePopover } from "./change-type-popover";
+import { VersionDiffModal } from "@/components/versioning/version-diff-modal";
 import type { DatabaseFieldResponse } from "@/lib/hooks/use-databases";
 import type { SortItem } from "@ascend/core";
 
@@ -73,7 +76,17 @@ function TableHeaderCellInner({
   const [renameValue, setRenameValue] = useState(field.name);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showChangeType, setShowChangeType] = useState(false);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
   const renameInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch latest version for the field (used by the "Version history" menu item).
+  // Only fetches when the modal is about to open or the menu is visible (lazy).
+  const { data: latestVersionData } = useVersions(
+    "DATABASE_FIELD",
+    field.id,
+    { limit: 1 },
+  );
+  const latestVersionId = latestVersionData?.versions?.[0]?.id ?? null;
 
   // Determine current sort direction for this field.
   const currentSort = sort?.find((s) => s.fieldId === field.id);
@@ -213,6 +226,13 @@ function TableHeaderCellInner({
               <FilterIcon className="size-4 mr-2" aria-hidden="true" />
               Filter by this column
             </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => setShowVersionHistory(true)}
+              disabled={!latestVersionId}
+            >
+              <HistoryIcon className="size-4 mr-2" aria-hidden="true" />
+              Version history
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => onHide(field.id)}>
               <EyeOffIcon className="size-4 mr-2" aria-hidden="true" />
@@ -281,6 +301,20 @@ function TableHeaderCellInner({
         open={showChangeType}
         onOpenChange={setShowChangeType}
       />
+
+      {/* Version history diff modal for the field */}
+      {showVersionHistory && latestVersionId && (
+        <VersionDiffModal
+          open={showVersionHistory}
+          onClose={() => setShowVersionHistory(false)}
+          nodeType="DATABASE_FIELD"
+          nodeId={field.id}
+          fromVersionId={null}
+          toVersionId={latestVersionId}
+          sourceTitle={field.name}
+          databaseId={databaseId}
+        />
+      )}
     </>
   );
 }

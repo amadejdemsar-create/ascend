@@ -25,7 +25,8 @@ export interface BranchDialogProps {
   nodeType: NodeType;
   nodeId: string;
   sourceTitle: string;
-  derivativeCount: number;
+  /** Number of existing derivatives for the soft warning (>5). Defaults to 0 (suppressed). */
+  derivativeCount?: number;
   onBranched?: (newNodeId: string) => void;
 }
 
@@ -36,7 +37,7 @@ export function BranchDialog({
   nodeType,
   nodeId,
   sourceTitle,
-  derivativeCount,
+  derivativeCount = 0,
   onBranched,
 }: BranchDialogProps) {
   const [title, setTitle] = useState(`${sourceTitle} (branch)`);
