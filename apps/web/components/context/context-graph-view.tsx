@@ -16,6 +16,7 @@ import {
   type NodeMouseHandler,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { format, parseISO } from "date-fns";
 
 import { computeLayout, edgeColor, nodeColor } from "@ascend/graph";
 import {
@@ -25,6 +26,8 @@ import {
   type ContextLinkType,
 } from "@ascend/core";
 import { useContextGraph } from "@/lib/hooks/use-context";
+import type { ContextGraphResponse } from "@/lib/hooks/use-context";
+import { useGraphAt } from "@/lib/hooks/use-versions";
 import { useUIStore } from "@/lib/stores/ui-store";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -34,10 +37,13 @@ import {
   ContextGraphNode,
   type ContextNodeData,
 } from "@/components/context/context-graph-node";
+import { ContextGraphTimeSlider } from "@/components/context/context-graph-time-slider";
 import { cn } from "@/lib/utils";
 import {
+  AlertTriangle,
   Network,
   RefreshCw,
+  RotateCcw,
   X,
   FileText,
   BookOpen,
@@ -110,20 +116,45 @@ export function ContextGraphView() {
   // Focus mode: double-click a node to highlight its 2-hop neighborhood
   const [focusNodeId, setFocusNodeId] = useState<string | null>(null);
 
-  // Store access
+  // Store access: graph time-travel state
   const contextFilters = useUIStore((s) => s.contextFilters);
+  const graphViewAtDate = useUIStore((s) => s.graphViewAtDate);
+  const setGraphViewAtDate = useUIStore((s) => s.setGraphViewAtDate);
+  const isTimeTraveling = graphViewAtDate !== null;
 
-  // Fetch the full graph
+  // Fetch the live graph
   const {
-    data: graphData,
-    isPending,
-    isError,
+    data: liveGraphData,
+    isPending: livePending,
+    isError: liveError,
     refetch,
   } = useContextGraph(
     contextFilters.tag
       ? { tag: contextFilters.tag, cap: 1000 }
       : undefined,
   );
+
+  // Fetch the historical graph (conditional on graphViewAtDate being set)
+  const {
+    data: historicalGraphData,
+    isPending: historicalPending,
+    isError: historicalError,
+    error: historicalErrorObj,
+  } = useGraphAt(graphViewAtDate);
+
+  // Determine active graph data: historical (cast to same shape) or live
+  const graphData: ContextGraphResponse | undefined = useMemo(() => {
+    if (!isTimeTraveling) return liveGraphData;
+    if (!historicalGraphData) return undefined;
+    // The API returns nodes/edges as unknown[]; they are the same shape as ContextGraphNode/Edge.
+    return {
+      nodes: historicalGraphData.nodes,
+      edges: historicalGraphData.edges,
+    } as ContextGraphResponse;
+  }, [isTimeTraveling, liveGraphData, historicalGraphData]);
+
+  const isPending = isTimeTraveling ? historicalPending : livePending;
+  const isError = isTimeTraveling ? historicalError : liveError;
 
   // ── Layout computation ─────────────────────────────────────────
 
@@ -193,17 +224,19 @@ export function ContextGraphView() {
         id: node.id,
         type: "contextNode" as const,
         position: { x: pos?.x ?? 0, y: pos?.y ?? 0 },
+        draggable: !isTimeTraveling,
         data: {
           title: node.title,
           type: node.type,
           isPinned: node.isPinned,
           outgoingCount: node.outgoingCount,
           incomingCount: node.incomingCount,
+          readOnly: isTimeTraveling,
         },
         style: isFaded ? { opacity: 0.15, pointerEvents: "none" as const } : undefined,
       };
     });
-  }, [layoutResult, focusNeighborhood]);
+  }, [layoutResult, focusNeighborhood, isTimeTraveling]);
 
   const rfEdges: Edge[] = useMemo(() => {
     if (!layoutResult) return [];
@@ -308,7 +341,7 @@ export function ContextGraphView() {
 
   // ── Render states ──────────────────────────────────────────────
 
-  if (isPending) {
+  if (isPending && !isTimeTraveling) {
     return (
       <div className="flex flex-1 flex-col gap-3 p-4">
         <Skeleton className="h-8 w-full rounded-lg" />
@@ -317,7 +350,7 @@ export function ContextGraphView() {
     );
   }
 
-  if (isError) {
+  if (isError && !isTimeTraveling) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8">
         <p className="text-sm text-muted-foreground">
@@ -332,6 +365,52 @@ export function ContextGraphView() {
   }
 
   if (!graphData || graphData.nodes.length === 0) {
+    // If time-traveling and got an error, show a specific fallback
+    if (isTimeTraveling && historicalError) {
+      const errorMessage =
+        historicalErrorObj instanceof Error
+          ? historicalErrorObj.message
+          : "Snapshot not available for this date.";
+      return (
+        <div className="flex flex-1 flex-col">
+          <ContextGraphTimeSlider
+            value={graphViewAtDate}
+            onChange={setGraphViewAtDate}
+          />
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8">
+            <AlertTriangle className="size-8 text-amber-500" aria-hidden="true" />
+            <p className="text-sm text-muted-foreground text-center max-w-md">
+              {errorMessage}
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setGraphViewAtDate(null)}
+            >
+              <RotateCcw className="mr-1.5 size-3.5" aria-hidden="true" />
+              Return to now
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    // If time-traveling and loading, show skeleton with slider
+    if (isTimeTraveling && isPending) {
+      return (
+        <div className="flex flex-1 flex-col">
+          <ContextGraphTimeSlider
+            value={graphViewAtDate}
+            onChange={setGraphViewAtDate}
+          />
+          <div className="flex flex-1 flex-col gap-3 p-4">
+            <Skeleton className="h-8 w-full rounded-lg" />
+            <Skeleton className="h-[400px] w-full rounded-lg" />
+          </div>
+        </div>
+      );
+    }
+
     return (
       <EmptyState
         icon={Network}
@@ -347,6 +426,35 @@ export function ContextGraphView() {
       onKeyDown={handleKeyDown}
       tabIndex={-1}
     >
+      {/* Time slider */}
+      <ContextGraphTimeSlider
+        value={graphViewAtDate}
+        onChange={setGraphViewAtDate}
+      />
+
+      {/* "Viewing past state" banner */}
+      {isTimeTraveling && (
+        <div className="flex items-center gap-2 border-b border-amber-300/50 bg-amber-50 px-4 py-1.5 text-xs text-amber-800 dark:border-amber-700/30 dark:bg-amber-950/40 dark:text-amber-300">
+          <AlertTriangle className="size-3.5 shrink-0" aria-hidden="true" />
+          <span>
+            Viewing graph as it was on{" "}
+            <strong>
+              {format(parseISO(graphViewAtDate!), "d. M. yyyy")}
+            </strong>
+            . Edits disabled.
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ml-auto h-6 gap-1 px-2 text-[11px] text-amber-700 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-200"
+            onClick={() => setGraphViewAtDate(null)}
+          >
+            <RotateCcw className="size-3" aria-hidden="true" />
+            Return to now
+          </Button>
+        </div>
+      )}
+
       {/* Filter chip bar */}
       <div className="flex flex-wrap items-center gap-1.5 border-b px-4 py-2">
         {/* Node type chips */}

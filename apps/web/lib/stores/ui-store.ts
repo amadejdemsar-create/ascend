@@ -80,6 +80,8 @@ interface UIStore {
   contextActiveView: ContextViewType;
   contextSearchMode: ContextSearchMode;
   versionHistoryExpanded: Record<string, boolean>;
+  /** Transient: ISO date string for graph time-travel. null = live state. NOT persisted. */
+  graphViewAtDate: string | null;
   setTodoDateTab: (tab: TodoDateTab) => void;
   setTodoHideCompleted: (hide: boolean) => void;
   setContextTagFilter: (tag: string | null) => void;
@@ -97,6 +99,7 @@ interface UIStore {
   setTimelineYear: (year: number) => void;
   setTimelineMonth: (month: number) => void;
   setVersionHistoryExpanded: (key: string, expanded: boolean) => void;
+  setGraphViewAtDate: (date: string | null) => void;
   resetFilters: () => void;
 }
 
@@ -121,6 +124,7 @@ export const useUIStore = create<UIStore>()(
       contextActiveView: "list",
       contextSearchMode: "hybrid",
       versionHistoryExpanded: {},
+      graphViewAtDate: null,
       setTodoDateTab: (tab) => set({ todoDateTab: tab }),
       setTodoHideCompleted: (hide) => set({ todoHideCompleted: hide }),
       setContextTagFilter: (tag) =>
@@ -152,6 +156,7 @@ export const useUIStore = create<UIStore>()(
         set((s) => ({
           versionHistoryExpanded: { ...s.versionHistoryExpanded, [key]: expanded },
         })),
+      setGraphViewAtDate: (date) => set({ graphViewAtDate: date }),
       resetFilters: () => set({ activeFilters: {}, activeSorting: [] }),
     }),
     {

@@ -45,6 +45,8 @@ export interface ContextNodeData {
   isPinned: boolean;
   outgoingCount: number;
   incomingCount: number;
+  /** When true, drag-to-reposition is blocked and visual style is desaturated. */
+  readOnly?: boolean;
   [key: string]: unknown;
 }
 
@@ -56,6 +58,7 @@ function ContextGraphNodeInner({ data, selected }: NodeProps<ContextNodeType>) {
   const Icon = typeIcon(data.type);
   const color = nodeColor(data.type);
   const linkCount = (data.outgoingCount ?? 0) + (data.incomingCount ?? 0);
+  const readOnly = data.readOnly ?? false;
 
   return (
     <>
@@ -69,8 +72,10 @@ function ContextGraphNodeInner({ data, selected }: NodeProps<ContextNodeType>) {
         className={cn(
           "rounded-lg border-2 bg-background px-3 py-2 shadow-sm transition-shadow min-w-[120px] max-w-[200px]",
           selected && "ring-2 ring-primary ring-offset-1",
+          readOnly && "opacity-90 cursor-default",
         )}
         style={{ borderColor: color }}
+        aria-readonly={readOnly || undefined}
       >
         <div className="flex items-center gap-2">
           <div
