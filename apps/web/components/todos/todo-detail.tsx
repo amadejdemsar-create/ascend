@@ -52,6 +52,7 @@ import { isOverdue } from "@/lib/todo-utils";
 import { StreakHeatmap } from "./streak-heatmap";
 import { useTodoFocusSummary } from "@/lib/hooks/use-focus";
 import { useFocusStore } from "@/lib/stores/focus-store";
+import { VersionHistoryPanel } from "@/components/versioning";
 
 function formatDuration(seconds: number): string {
   const hours = Math.floor(seconds / 3600);
@@ -527,6 +528,15 @@ export function TodoDetail({ todoId, onClose, isMobileOverlay }: TodoDetailProps
             </button>
           )}
         </div>
+
+        <Separator />
+
+        {/* Version history */}
+        <VersionHistoryPanel
+          nodeType="TODO"
+          nodeId={todoId}
+          sourceTitle={todo.title}
+        />
 
         <Separator />
 

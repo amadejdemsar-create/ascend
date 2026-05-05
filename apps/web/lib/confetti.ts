@@ -60,3 +60,20 @@ export function fireFirstRowConfetti(): void {
     ticks: 60,
   });
 }
+
+/**
+ * Small confetti burst for branching a version.
+ * Subtle celebration (25 particles, short), matching the "fork" event gravity.
+ */
+export function fireBranchConfetti(): void {
+  if (prefersReducedMotion()) return;
+  if (!canFire()) return;
+
+  confetti({
+    particleCount: 25,
+    spread: 40,
+    origin: { y: 0.55 },
+    disableForReducedMotion: true,
+    ticks: 50,
+  });
+}

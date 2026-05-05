@@ -9,6 +9,7 @@ import { useDatabase } from "@/lib/hooks/use-databases";
 import { useDatabaseRows, useUpdateRow } from "@/lib/hooks/use-database-rows";
 import { PropertyCell } from "./property-editors";
 import { DatabaseRelationBacklinks } from "./database-relation-backlinks";
+import { VersionHistoryPanel } from "@/components/versioning";
 import type { DatabaseFieldResponse } from "@/lib/hooks/use-databases";
 
 interface DatabaseRowPropertiesProps {
@@ -146,6 +147,15 @@ function DatabaseRowPropertiesInner({
       <DatabaseRelationBacklinks
         rowEntryId={rowEntryId}
         onNavigate={onNavigate}
+      />
+
+      {/* Version history */}
+      <VersionHistoryPanel
+        nodeType="DATABASE_ROW"
+        nodeId={data.rowId}
+        sourceTitle={data.databaseName}
+        databaseId={data.databaseId}
+        onBranched={onNavigate}
       />
 
       <Separator />

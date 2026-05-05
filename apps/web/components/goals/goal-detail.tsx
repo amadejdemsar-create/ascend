@@ -35,6 +35,7 @@ import {
 import { ProgressIncrement } from "@/components/goals/progress-increment";
 import { ProgressHistorySheet } from "@/components/goals/progress-history-sheet";
 import { GoalLinkedTodos } from "@/components/goals/goal-linked-todos";
+import { VersionHistoryPanel } from "@/components/versioning";
 
 // How many children to show before collapsing behind a "Show all" toggle
 // on mobile. Desktop (md+) always shows every child.
@@ -548,6 +549,15 @@ export function GoalDetail({ goalId, onClose, isMobileOverlay }: GoalDetailProps
             />
           </div>
         </div>
+
+        <Separator />
+
+        {/* Version history */}
+        <VersionHistoryPanel
+          nodeType="GOAL"
+          nodeId={goalId}
+          sourceTitle={goal.title}
+        />
 
         <Separator />
 

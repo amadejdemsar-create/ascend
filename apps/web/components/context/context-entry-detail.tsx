@@ -29,6 +29,7 @@ import { ContextTypeSelect } from "@/components/context/context-type-select";
 import { ContextBlockEditor } from "@/components/context/context-block-editor";
 import { DatabaseDetail } from "@/components/databases/database-detail";
 import { DatabaseRowProperties } from "@/components/databases/database-row-properties";
+import { VersionHistoryPanel } from "@/components/versioning";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -407,6 +408,14 @@ export function ContextEntryDetail({
             <ContextBlockEditor
               entryId={entryId}
               fallbackContent={sourceContent}
+            />
+
+            <Separator />
+            <VersionHistoryPanel
+              nodeType="CONTEXT_ENTRY"
+              nodeId={entryId}
+              sourceTitle={entry.title ?? "Untitled"}
+              onBranched={(newId) => onNavigate?.(newId)}
             />
 
             <Separator />

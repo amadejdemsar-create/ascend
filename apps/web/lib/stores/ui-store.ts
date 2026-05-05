@@ -79,6 +79,7 @@ interface UIStore {
   contextFilters: ContextFilters;
   contextActiveView: ContextViewType;
   contextSearchMode: ContextSearchMode;
+  versionHistoryExpanded: Record<string, boolean>;
   setTodoDateTab: (tab: TodoDateTab) => void;
   setTodoHideCompleted: (hide: boolean) => void;
   setContextTagFilter: (tag: string | null) => void;
@@ -95,6 +96,7 @@ interface UIStore {
   setTimelineZoom: (zoom: TimelineZoom) => void;
   setTimelineYear: (year: number) => void;
   setTimelineMonth: (month: number) => void;
+  setVersionHistoryExpanded: (key: string, expanded: boolean) => void;
   resetFilters: () => void;
 }
 
@@ -118,6 +120,7 @@ export const useUIStore = create<UIStore>()(
       contextFilters: {},
       contextActiveView: "list",
       contextSearchMode: "hybrid",
+      versionHistoryExpanded: {},
       setTodoDateTab: (tab) => set({ todoDateTab: tab }),
       setTodoHideCompleted: (hide) => set({ todoHideCompleted: hide }),
       setContextTagFilter: (tag) =>
@@ -145,11 +148,15 @@ export const useUIStore = create<UIStore>()(
       setTimelineZoom: (zoom) => set({ timelineZoom: zoom }),
       setTimelineYear: (year) => set({ timelineYear: year }),
       setTimelineMonth: (month) => set({ timelineMonth: month }),
+      setVersionHistoryExpanded: (key, expanded) =>
+        set((s) => ({
+          versionHistoryExpanded: { ...s.versionHistoryExpanded, [key]: expanded },
+        })),
       resetFilters: () => set({ activeFilters: {}, activeSorting: [] }),
     }),
     {
       name: "ascend-ui",
-      version: 10,
+      version: 11,
       storage: createAdapterStorage(),
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as Record<string, unknown>;
@@ -209,6 +216,12 @@ export const useUIStore = create<UIStore>()(
             contextSearchMode: "hybrid",
           };
         }
+        if (version === 10) {
+          return {
+            ...state,
+            versionHistoryExpanded: {},
+          };
+        }
         return state;
       },
       partialize: (state) => ({
@@ -224,6 +237,7 @@ export const useUIStore = create<UIStore>()(
         contextFilters: state.contextFilters,
         contextActiveView: state.contextActiveView,
         contextSearchMode: state.contextSearchMode,
+        versionHistoryExpanded: state.versionHistoryExpanded,
       }),
     }
   )
