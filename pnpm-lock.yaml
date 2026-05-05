@@ -16,6 +16,9 @@ importers:
       '@ascend/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@ascend/diff':
+        specifier: workspace:*
+        version: link:../../packages/diff
       '@ascend/editor':
         specifier: workspace:*
         version: link:../../packages/editor

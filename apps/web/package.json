@@ -15,6 +15,7 @@
   "dependencies": {
     "@ascend/api-client": "workspace:*",
     "@ascend/core": "workspace:*",
+    "@ascend/diff": "workspace:*",
     "@ascend/editor": "workspace:*",
     "@ascend/graph": "workspace:*",
     "@ascend/llm": "workspace:*",
