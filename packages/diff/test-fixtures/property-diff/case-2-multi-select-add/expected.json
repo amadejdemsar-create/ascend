@@ -1,0 +1,28 @@
+{
+  "kind": "property-diff",
+  "entries": [
+    {
+      "fieldId": "field-tags",
+      "fieldName": "Tags",
+      "fieldType": "MULTI_SELECT",
+      "change": "modified",
+      "before": [
+        "ui",
+        "components"
+      ],
+      "after": [
+        "ui",
+        "components",
+        "tokens"
+      ]
+    },
+    {
+      "fieldId": "field-rating",
+      "fieldName": "Rating",
+      "fieldType": "RATING",
+      "change": "modified",
+      "before": 4,
+      "after": 5
+    }
+  ]
+}

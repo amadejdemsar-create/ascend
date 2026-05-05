@@ -1,0 +1,15 @@
+{
+  "nodeType": "DATABASE_ROW",
+  "propertyFieldDefs": [
+    { "id": "field-title", "name": "Title", "type": "TEXT" },
+    { "id": "field-tags", "name": "Tags", "type": "MULTI_SELECT" },
+    { "id": "field-rating", "name": "Rating", "type": "RATING" }
+  ],
+  "payload": {
+    "properties": {
+      "field-title": "Design System",
+      "field-tags": ["ui", "components", "tokens"],
+      "field-rating": 5
+    }
+  }
+}

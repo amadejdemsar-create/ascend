@@ -1,0 +1,98 @@
+{
+  "kind": "block-diff",
+  "blocks": [
+    {
+      "change": "removed",
+      "block": {
+        "blockId": "paragraph:2:jowrd1",
+        "blockType": "paragraph",
+        "text": "Old content that will be removed entirely.",
+        "raw": {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Old content that will be removed entirely."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "change": "added",
+      "block": {
+        "blockId": "paragraph:2:axnm2f",
+        "blockType": "paragraph",
+        "text": "Brand new conclusion paragraph.",
+        "raw": {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Brand new conclusion paragraph."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "change": "modified",
+      "block": {
+        "blockId": "paragraph:1:bzolth",
+        "blockType": "paragraph",
+        "text": "This is the updated introduction to the project docs.",
+        "raw": {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "This is the updated introduction to the project docs."
+            }
+          ]
+        }
+      },
+      "before": {
+        "blockId": "paragraph:1:4ciobj",
+        "blockType": "paragraph",
+        "text": "This is the introduction to the project documentation.",
+        "raw": {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "This is the introduction to the project documentation."
+            }
+          ]
+        }
+      },
+      "textDiff": {
+        "ops": [
+          {
+            "op": "equal",
+            "text": "This is the "
+          },
+          {
+            "op": "insert",
+            "text": "updated "
+          },
+          {
+            "op": "equal",
+            "text": "introduction to the project doc"
+          },
+          {
+            "op": "delete",
+            "text": "umentation"
+          },
+          {
+            "op": "insert",
+            "text": "s"
+          },
+          {
+            "op": "equal",
+            "text": "."
+          }
+        ]
+      }
+    }
+  ]
+}

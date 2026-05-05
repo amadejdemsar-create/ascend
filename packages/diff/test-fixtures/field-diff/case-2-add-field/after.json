@@ -1,0 +1,13 @@
+{
+  "nodeType": "TODO",
+  "payload": {
+    "title": "Write integration tests",
+    "description": "Cover the auth and file upload paths with Playwright tests",
+    "status": "IN_PROGRESS",
+    "priority": "HIGH",
+    "categoryId": "cat-002",
+    "goalId": "goal-001",
+    "dueDate": "2026-05-15",
+    "scheduledDate": "2026-05-10"
+  }
+}

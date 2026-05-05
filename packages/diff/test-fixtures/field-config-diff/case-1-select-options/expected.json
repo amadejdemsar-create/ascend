@@ -1,0 +1,43 @@
+{
+  "kind": "field-config-diff",
+  "configChanges": [
+    {
+      "key": "options",
+      "change": "modified",
+      "before": [
+        {
+          "id": "opt-1",
+          "label": "Todo",
+          "color": "gray"
+        },
+        {
+          "id": "opt-2",
+          "label": "In Progress",
+          "color": "blue"
+        }
+      ],
+      "after": [
+        {
+          "id": "opt-1",
+          "label": "Todo",
+          "color": "gray"
+        },
+        {
+          "id": "opt-2",
+          "label": "In Progress",
+          "color": "blue"
+        },
+        {
+          "id": "opt-3",
+          "label": "Done",
+          "color": "green"
+        }
+      ]
+    },
+    {
+      "key": "defaultOption",
+      "change": "added",
+      "after": "opt-1"
+    }
+  ]
+}

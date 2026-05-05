@@ -1,0 +1,22 @@
+{
+  "kind": "block-diff",
+  "blocks": [
+    {
+      "change": "added",
+      "block": {
+        "blockId": "paragraph:1:9hwuk7",
+        "blockType": "paragraph",
+        "text": "New paragraph added",
+        "raw": {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "New paragraph added"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

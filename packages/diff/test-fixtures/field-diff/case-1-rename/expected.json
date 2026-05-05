@@ -1,0 +1,43 @@
+{
+  "kind": "field-diff",
+  "entries": [
+    {
+      "field": "title",
+      "change": "modified",
+      "before": "Launch MVP by Q2",
+      "after": "Launch MVP by Q3"
+    },
+    {
+      "field": "description",
+      "change": "modified",
+      "before": "Ship the minimum viable product before end of Q2 2026",
+      "after": "Ship the minimum viable product before end of Q3 2026",
+      "textDiff": {
+        "ops": [
+          {
+            "op": "equal",
+            "text": "Ship the minimum viable product before end of Q"
+          },
+          {
+            "op": "delete",
+            "text": "2"
+          },
+          {
+            "op": "insert",
+            "text": "3"
+          },
+          {
+            "op": "equal",
+            "text": " 2026"
+          }
+        ]
+      }
+    },
+    {
+      "field": "endDate",
+      "change": "modified",
+      "before": "2026-06-30",
+      "after": "2026-09-30"
+    }
+  ]
+}

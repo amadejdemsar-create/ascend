@@ -1,0 +1,41 @@
+{
+  "kind": "property-diff",
+  "entries": [
+    {
+      "fieldId": "field-status",
+      "fieldName": "Status",
+      "fieldType": "SELECT",
+      "change": "modified",
+      "before": "Active",
+      "after": "Inactive"
+    },
+    {
+      "fieldId": "field-notes",
+      "fieldName": "Notes",
+      "fieldType": "TEXT",
+      "change": "modified",
+      "before": "Working on the Ascend project full time",
+      "after": "Working on the Ascend project part time",
+      "textDiff": {
+        "ops": [
+          {
+            "op": "equal",
+            "text": "Working on the Ascend project "
+          },
+          {
+            "op": "delete",
+            "text": "full"
+          },
+          {
+            "op": "insert",
+            "text": "part"
+          },
+          {
+            "op": "equal",
+            "text": " time"
+          }
+        ]
+      }
+    }
+  ]
+}

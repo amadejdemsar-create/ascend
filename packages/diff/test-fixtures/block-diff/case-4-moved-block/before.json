@@ -1,0 +1,22 @@
+{
+  "nodeType": "CONTEXT_ENTRY",
+  "payload": {
+    "root": {
+      "type": "root",
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [{ "type": "text", "text": "Alpha" }]
+        },
+        {
+          "type": "paragraph",
+          "children": [{ "type": "text", "text": "Beta" }]
+        },
+        {
+          "type": "paragraph",
+          "children": [{ "type": "text", "text": "Gamma" }]
+        }
+      ]
+    }
+  }
+}

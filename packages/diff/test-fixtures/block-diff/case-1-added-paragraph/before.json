@@ -1,0 +1,14 @@
+{
+  "nodeType": "CONTEXT_ENTRY",
+  "payload": {
+    "root": {
+      "type": "root",
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [{ "type": "text", "text": "Hello world" }]
+        }
+      ]
+    }
+  }
+}

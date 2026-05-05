@@ -1,0 +1,15 @@
+{
+  "nodeType": "GOAL",
+  "payload": {
+    "title": "Launch MVP by Q2",
+    "description": "Ship the minimum viable product before end of Q2 2026",
+    "horizon": "QUARTERLY",
+    "status": "IN_PROGRESS",
+    "priority": "HIGH",
+    "categoryId": "cat-001",
+    "parentId": null,
+    "startDate": "2026-01-15",
+    "endDate": "2026-06-30",
+    "progress": 45
+  }
+}

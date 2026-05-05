@@ -1,0 +1,11 @@
+{
+  "nodeType": "TODO",
+  "payload": {
+    "title": "Write integration tests",
+    "status": "PENDING",
+    "priority": "MEDIUM",
+    "categoryId": "cat-002",
+    "goalId": "goal-001",
+    "scheduledDate": "2026-05-10"
+  }
+}

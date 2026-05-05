@@ -1,0 +1,84 @@
+{
+  "kind": "block-diff",
+  "blocks": [
+    {
+      "change": "modified",
+      "block": {
+        "blockId": "paragraph:0:kd3uwb",
+        "blockType": "paragraph",
+        "text": "The quick red fox leaps over the lazy cat",
+        "raw": {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The quick red fox leaps over the lazy cat"
+            }
+          ]
+        }
+      },
+      "before": {
+        "blockId": "paragraph:0:endqzi",
+        "blockType": "paragraph",
+        "text": "The quick brown fox jumps over the lazy dog",
+        "raw": {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The quick brown fox jumps over the lazy dog"
+            }
+          ]
+        }
+      },
+      "textDiff": {
+        "ops": [
+          {
+            "op": "equal",
+            "text": "The quick "
+          },
+          {
+            "op": "delete",
+            "text": "b"
+          },
+          {
+            "op": "equal",
+            "text": "r"
+          },
+          {
+            "op": "delete",
+            "text": "own"
+          },
+          {
+            "op": "insert",
+            "text": "ed"
+          },
+          {
+            "op": "equal",
+            "text": " fox "
+          },
+          {
+            "op": "delete",
+            "text": "jum"
+          },
+          {
+            "op": "insert",
+            "text": "lea"
+          },
+          {
+            "op": "equal",
+            "text": "ps over the lazy "
+          },
+          {
+            "op": "delete",
+            "text": "dog"
+          },
+          {
+            "op": "insert",
+            "text": "cat"
+          }
+        ]
+      }
+    }
+  ]
+}

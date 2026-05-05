@@ -1,0 +1,62 @@
+{
+  "kind": "block-diff",
+  "blocks": [
+    {
+      "change": "moved",
+      "block": {
+        "blockId": "paragraph:1:3k5f63",
+        "blockType": "paragraph",
+        "text": "Alpha",
+        "raw": {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Alpha"
+            }
+          ]
+        }
+      },
+      "fromIndex": 0,
+      "toIndex": 1
+    },
+    {
+      "change": "moved",
+      "block": {
+        "blockId": "paragraph:2:yjpncx",
+        "blockType": "paragraph",
+        "text": "Beta",
+        "raw": {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Beta"
+            }
+          ]
+        }
+      },
+      "fromIndex": 1,
+      "toIndex": 2
+    },
+    {
+      "change": "moved",
+      "block": {
+        "blockId": "paragraph:0:3o5e4o",
+        "blockType": "paragraph",
+        "text": "Gamma",
+        "raw": {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Gamma"
+            }
+          ]
+        }
+      },
+      "fromIndex": 2,
+      "toIndex": 0
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "kind": "block-diff",
+  "blocks": [
+    {
+      "change": "removed",
+      "block": {
+        "blockId": "paragraph:2:wfynx4",
+        "blockType": "paragraph",
+        "text": "Second paragraph to remove",
+        "raw": {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Second paragraph to remove"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

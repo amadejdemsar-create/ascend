@@ -1,0 +1,23 @@
+{
+  "nodeType": "CONTEXT_ENTRY",
+  "payload": {
+    "root": {
+      "type": "root",
+      "children": [
+        {
+          "type": "heading",
+          "children": [{ "type": "text", "text": "Title" }],
+          "tag": "h1"
+        },
+        {
+          "type": "paragraph",
+          "children": [{ "type": "text", "text": "First paragraph" }]
+        },
+        {
+          "type": "paragraph",
+          "children": [{ "type": "text", "text": "Second paragraph to remove" }]
+        }
+      ]
+    }
+  }
+}

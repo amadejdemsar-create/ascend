@@ -1,0 +1,27 @@
+{
+  "kind": "field-diff",
+  "entries": [
+    {
+      "field": "description",
+      "change": "added",
+      "after": "Cover the auth and file upload paths with Playwright tests"
+    },
+    {
+      "field": "status",
+      "change": "modified",
+      "before": "PENDING",
+      "after": "IN_PROGRESS"
+    },
+    {
+      "field": "priority",
+      "change": "modified",
+      "before": "MEDIUM",
+      "after": "HIGH"
+    },
+    {
+      "field": "dueDate",
+      "change": "added",
+      "after": "2026-05-15"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "nodeType": "CONTEXT_ENTRY",
+  "payload": {
+    "root": {
+      "type": "root",
+      "children": [
+        {
+          "type": "heading",
+          "children": [{ "type": "text", "text": "Project Notes" }],
+          "tag": "h1"
+        },
+        {
+          "type": "paragraph",
+          "children": [{ "type": "text", "text": "This is the introduction to the project documentation." }]
+        },
+        {
+          "type": "paragraph",
+          "children": [{ "type": "text", "text": "Old content that will be removed entirely." }]
+        }
+      ]
+    }
+  }
+}

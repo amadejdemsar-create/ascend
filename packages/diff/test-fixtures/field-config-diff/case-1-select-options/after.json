@@ -1,0 +1,15 @@
+{
+  "nodeType": "DATABASE_FIELD",
+  "payload": {
+    "name": "Status",
+    "type": "SELECT",
+    "config": {
+      "options": [
+        { "id": "opt-1", "label": "Todo", "color": "gray" },
+        { "id": "opt-2", "label": "In Progress", "color": "blue" },
+        { "id": "opt-3", "label": "Done", "color": "green" }
+      ],
+      "defaultOption": "opt-1"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "nodeType": "DATABASE_ROW",
+  "propertyFieldDefs": [
+    { "id": "field-name", "name": "Name", "type": "TEXT" },
+    { "id": "field-status", "name": "Status", "type": "SELECT" },
+    { "id": "field-notes", "name": "Notes", "type": "TEXT" }
+  ],
+  "payload": {
+    "properties": {
+      "field-name": "Amadej Demsar",
+      "field-status": "Inactive",
+      "field-notes": "Working on the Ascend project part time"
+    }
+  }
+}
