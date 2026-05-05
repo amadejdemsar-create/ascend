@@ -133,7 +133,7 @@ export function useVersion(versionId: string | null | undefined) {
       : (["versions", "detail", "_disabled"] as const),
     queryFn: () => {
       if (!versionId) throw new Error("versionId required");
-      return apiFetch<VersionDetailResponse>(`/api/versions/${versionId}`);
+      return apiFetch<VersionDetailResponse>(`/api/versions/by-id/${versionId}`);
     },
     staleTime: 60 * 60 * 1000, // 1 hour (immutable)
     enabled: !!versionId,
