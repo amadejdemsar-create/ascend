@@ -161,6 +161,30 @@ export {
   type LlmUsageQuery,
 } from "./llm";
 
+// Versioning schemas and types (Wave 7)
+export {
+  NODE_TYPE_VALUES,
+  nodeTypeEnum,
+  VERSION_TRIGGER_VALUES,
+  versionTriggerEnum,
+  EDGE_EVENT_TYPE_VALUES,
+  edgeEventTypeEnum,
+  nodeVersionPayloadSchema,
+  listVersionsQuerySchema,
+  diffVersionsBodySchema,
+  restoreVersionBodySchema,
+  branchNodeBodySchema,
+  graphAtQuerySchema,
+  type NodeType,
+  type VersionTrigger,
+  type EdgeEventType,
+  type ListVersionsQuery,
+  type DiffVersionsBody,
+  type RestoreVersionBody,
+  type BranchNodeBody,
+  type GraphAtQuery,
+} from "./versioning";
+
 // Database schemas and types
 export {
   DATABASE_FIELD_TYPE_VALUES,

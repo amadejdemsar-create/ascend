@@ -126,6 +126,11 @@ model User {
   databaseFields DatabaseField[]
   databaseRows   DatabaseRow[]
   databaseViews  DatabaseView[]
+
+  // Wave 7: Provenance and time-travel
+  nodeVersions        NodeVersion[]
+  edgeEvents          EdgeEvent[]
+  graphDailySnapshots GraphDailySnapshot[]
 }
 
 model Goal {
@@ -693,6 +698,34 @@ enum DatabaseViewType {
 }
 
 // =====================================================================
+//  Wave 7: Provenance and time-travel enums
+// =====================================================================
+
+enum NodeType {
+  CONTEXT_ENTRY
+  GOAL
+  TODO
+  DATABASE_ROW
+  DATABASE_FIELD
+}
+
+enum VersionTrigger {
+  EDIT_DEBOUNCED
+  EDIT_BLUR
+  EDIT_EXPLICIT
+  RESTORE
+  BRANCH
+  BACKFILL
+  MIGRATION
+}
+
+enum EdgeEventType {
+  CREATED
+  REMOVED
+  UPDATED
+}
+
+// =====================================================================
 //  Wave 5: Database system models
 //
 //  Each Database is backed by a ContextEntry of type DATABASE. Each row
@@ -773,4 +806,81 @@ model DatabaseView {
 
   @@index([databaseId])
   @@index([userId])
+}
+
+// =====================================================================
+//  Wave 7: Provenance and time-travel models
+//
+//  NodeVersion stores immutable snapshots of any versionable node (context
+//  entries, goals, todos, database rows, database fields). Each version has
+//  a content hash for dedup and a byte-size cap (DZ-17: 10 MiB).
+//
+//  EdgeEvent is an append-only log of link creation/removal/update events
+//  for the typed-edge graph.
+//
+//  GraphDailySnapshot is a per-day materialized view of the full graph
+//  (nodes + edges) for time-travel queries and playback.
+//
+//  DZ-2 SAFE: Does NOT touch search_vector, the GIN index, or the trigger.
+// =====================================================================
+
+model NodeVersion {
+  id              String         @id @default(cuid())
+  userId          String
+  workspaceId     String?
+  nodeType        NodeType
+  nodeId          String
+  versionNumber   Int
+  payload         Json
+  contentHash     String
+  byteSize        Int
+  trigger         VersionTrigger
+  parentVersionId String?
+  createdAt       DateTime       @default(now())
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentVersion NodeVersion?  @relation("VersionParent", fields: [parentVersionId], references: [id], onDelete: SetNull)
+  childVersions NodeVersion[] @relation("VersionParent")
+
+  @@unique([nodeType, nodeId, versionNumber])
+  @@index([nodeType, nodeId, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([contentHash])
+  @@index([workspaceId])
+}
+
+model EdgeEvent {
+  id           String        @id @default(cuid())
+  userId       String
+  workspaceId  String?
+  eventType    EdgeEventType
+  linkSnapshot Json
+  fromEntryId  String?
+  toEntryId    String?
+  createdAt    DateTime      @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([workspaceId])
+  @@index([fromEntryId, createdAt(sort: Desc)])
+  @@index([toEntryId, createdAt(sort: Desc)])
+}
+
+model GraphDailySnapshot {
+  id           String   @id @default(cuid())
+  userId       String
+  workspaceId  String?
+  snapshotDate DateTime @db.Date
+  nodes        Json
+  edges        Json
+  nodeCount    Int
+  edgeCount    Int
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, snapshotDate])
+  @@index([snapshotDate])
+  @@index([workspaceId])
 }
