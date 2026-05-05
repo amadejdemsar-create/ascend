@@ -18,10 +18,12 @@ import {
   EXTRACTION_STATUS_VALUES,
   DATABASE_FIELD_TYPE_VALUES,
   DATABASE_VIEW_TYPE_VALUES,
+  NODE_TYPE_VALUES,
 } from "@ascend/core";
 
 const DATABASE_FIELD_TYPE_ENUM = [...DATABASE_FIELD_TYPE_VALUES];
 const DATABASE_VIEW_TYPE_ENUM = [...DATABASE_VIEW_TYPE_VALUES];
+const NODE_TYPE_ENUM = [...NODE_TYPE_VALUES];
 
 export interface ToolDefinition {
   name: string;
@@ -1381,6 +1383,117 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         },
       },
       required: ["databaseId"],
+    },
+  },
+
+  // ── Versioning / Time-Travel (Wave 7) ───────────────────────────────
+
+  {
+    name: "list_versions",
+    description:
+      "List the version history for a node (most recent first). Returns up to 100 versions per call. Use for any nodeType: CONTEXT_ENTRY, GOAL, TODO, DATABASE_ROW, or DATABASE_FIELD.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        nodeType: {
+          type: "string",
+          enum: NODE_TYPE_ENUM,
+          description: "The kind of node.",
+        },
+        nodeId: {
+          type: "string",
+          description: "The ID of the entity (entry id, goal id, etc.).",
+        },
+        limit: {
+          type: "number",
+          minimum: 1,
+          maximum: 100,
+          description: "Max versions to return (default 20, max 100).",
+        },
+        cursor: {
+          type: "string",
+          description: "Pagination cursor (versionId of the last item from the previous page).",
+        },
+      },
+      required: ["nodeType", "nodeId"],
+    },
+  },
+
+  {
+    name: "get_version",
+    description:
+      "Fetch a specific version including the full serialized payload. Use this to see the entity's exact state at that point in time.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        versionId: {
+          type: "string",
+          description: "The version ID returned by list_versions.",
+        },
+      },
+      required: ["versionId"],
+    },
+  },
+
+  {
+    name: "diff_versions",
+    description:
+      "Compute a structured diff between two versions of the same node, OR between a version and the current live state (pass fromVersionId as null). The result is a discriminated union by nodeType: block-diff for CONTEXT_ENTRY (Lexical block tree), field-diff for GOAL/TODO (entity metadata), property-diff for DATABASE_ROW (typed properties), field-config-diff for DATABASE_FIELD (schema changes).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        fromVersionId: {
+          type: ["string", "null"],
+          description: "Older version ID. Pass null to diff against the current live state.",
+        },
+        toVersionId: {
+          type: "string",
+          description: "Newer version ID.",
+        },
+      },
+      required: ["fromVersionId", "toVersionId"],
+    },
+  },
+
+  {
+    name: "restore_version",
+    description:
+      "Restore the entity to a previous version. Writes a forward snapshot of the current state first (so the user can undo the restore), then overwrites the entity. Pass dryRun=true to preview the payload that would be written without mutating. ContextLinks (edges) are NOT time-traveled and are preserved as-is.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        versionId: {
+          type: "string",
+          description: "The version to restore.",
+        },
+        dryRun: {
+          type: "boolean",
+          description: "If true, return the payload that would be written without restoring.",
+        },
+      },
+      required: ["versionId"],
+    },
+  },
+
+  {
+    name: "branch_node",
+    description:
+      "Fork an entity at a historical version into a new entity. The new entity gets the version's payload; a DERIVED_FROM ContextLink is created from the new entity to the original. Only branch-eligible types: CONTEXT_ENTRY of type NOTE/SOURCE/PROJECT/PERSON/DECISION/QUESTION/AREA, or DATABASE_ROW. Hard cap of 50 derivatives per source; soft warning at >5.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        versionId: {
+          type: "string",
+          description: "The source version to branch from.",
+        },
+        title: {
+          type: "string",
+          minLength: 1,
+          maxLength: 200,
+          description: "Title for the new entity.",
+        },
+      },
+      required: ["versionId", "title"],
     },
   },
 ];

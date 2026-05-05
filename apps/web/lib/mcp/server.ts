@@ -20,6 +20,7 @@ import { handleLlmTool } from "./tools/llm-tools";
 import { handleBlockTool } from "./tools/block-tools";
 import { handleFileTool } from "./tools/file-tools";
 import { handleDatabaseTool } from "./tools/database-tools";
+import { handleVersionTool } from "./tools/version-tools";
 import { contextService } from "@/lib/services/context-service";
 import { categoryService } from "@/lib/services/category-service";
 
@@ -84,6 +85,13 @@ const DATABASE_TOOL_NAMES = new Set([
   "create_view",
   "update_view",
   "query_database",
+]);
+const VERSION_TOOL_NAMES = new Set([
+  "list_versions",
+  "get_version",
+  "diff_versions",
+  "restore_version",
+  "branch_node",
 ]);
 
 /**
@@ -164,7 +172,11 @@ export function createAscendMcpServer(userId: string): Server {
       return handleDatabaseTool(userId, name, args ?? {});
     }
 
-    // All 68 tool definitions are now routed. This fallback should never be reached.
+    if (VERSION_TOOL_NAMES.has(name)) {
+      return handleVersionTool(userId, name, args ?? {});
+    }
+
+    // All 73 tool definitions are now routed. This fallback should never be reached.
     return {
       content: [{ type: "text" as const, text: `Unknown tool: ${name}` }],
       isError: true,
