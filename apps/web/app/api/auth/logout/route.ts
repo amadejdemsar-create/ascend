@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authService } from "@/lib/services/auth-service";
+import { versioningService } from "@/lib/services/versioning-service";
 import { handleApiError } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
@@ -11,6 +12,10 @@ export async function POST(request: NextRequest) {
       const session =
         await authService.findSessionByRefreshToken(refreshCookie);
       if (session) {
+        // Wave 7: flush any in-flight debounced snapshots before session ends.
+        // Best-effort; errors are swallowed to keep logout idempotent.
+        await versioningService.flushPendingSnapshots(session.userId).catch(() => {});
+
         // Pass userId first per the HIGH-1 fix from checkpoint 2 audit.
         await authService.revokeSession(session.userId, session.id);
       }

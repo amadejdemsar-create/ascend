@@ -4,6 +4,7 @@ import type { CreateGoalInput, UpdateGoalInput, GoalFilters, AddProgressInput, R
 import { validateHierarchy, recalcParentProgress } from "@/lib/services/hierarchy-helpers";
 import { gamificationService } from "@/lib/services/gamification-service";
 import { goalRecurringService } from "@/lib/services/goal-recurring-service";
+import { versioningService } from "@/lib/services/versioning-service";
 
 // A Prisma client suitable for either standalone use or inside an
 // interactive transaction. Service methods that perform multiple
@@ -117,6 +118,9 @@ export const goalService = {
       await recalcParentProgress(userId, id, client);
     }
 
+    // Wave 7: schedule debounced snapshot after successful update
+    versioningService.scheduleSnapshot(userId, "GOAL", id, "EDIT_DEBOUNCED");
+
     return updated;
   },
 
@@ -141,7 +145,7 @@ export const goalService = {
     id: string,
     data: UpdateGoalInput,
   ) {
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       // Read the existing goal before the update so we have the
       // correct horizon + priority for the XP calculation and the
       // recurringSourceId to decide whether to bump a streak.
@@ -181,6 +185,11 @@ export const goalService = {
         ...(streakResult && { _streak: streakResult }),
       };
     });
+
+    // Wave 7: schedule snapshot after successful completion transaction
+    versioningService.scheduleSnapshot(userId, "GOAL", id, "EDIT_DEBOUNCED");
+
+    return result;
   },
 
   /**
@@ -189,6 +198,9 @@ export const goalService = {
   async delete(userId: string, id: string) {
     const goal = await prisma.goal.findFirst({ where: { id, userId } });
     if (!goal) throw new Error("Goal not found");
+
+    // Wave 7: tombstone snapshot BEFORE delete so version history persists
+    await versioningService.createSnapshot(userId, "GOAL", id, "EDIT_EXPLICIT");
 
     return prisma.goal.delete({ where: { id } });
   },

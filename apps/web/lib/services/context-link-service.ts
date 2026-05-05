@@ -4,6 +4,7 @@ import type {
   ContextLinkSource,
   ContextLinkType,
 } from "../../generated/prisma/client";
+import { edgeEventService } from "@/lib/services/edge-event-service";
 
 /**
  * Service for typed context link (edge) CRUD.
@@ -106,7 +107,7 @@ export const contextLinkService = {
     if (!from || !to)
       throw new Error("One or both entries not found for this user");
 
-    return prisma.contextLink.upsert({
+    const link = await prisma.contextLink.upsert({
       where: {
         fromEntryId_toEntryId_type: {
           fromEntryId: input.fromEntryId,
@@ -123,6 +124,11 @@ export const contextLinkService = {
         source: input.source ?? "MANUAL",
       },
     });
+
+    // Wave 7: fire-and-forget edge event log (self-catching inside edgeEventService)
+    void edgeEventService.logCreated(userId, link);
+
+    return link;
   },
 
   /**
@@ -139,10 +145,15 @@ export const contextLinkService = {
     });
     if (!existing) throw new Error("Context link not found");
 
-    return prisma.contextLink.update({
+    const updated = await prisma.contextLink.update({
       where: { id },
       data: { type: data.type },
     });
+
+    // Wave 7: fire-and-forget edge event log (self-catching inside edgeEventService)
+    void edgeEventService.logUpdated(userId, existing, updated);
+
+    return updated;
   },
 
   /**
@@ -167,6 +178,9 @@ export const contextLinkService = {
     }
 
     await prisma.contextLink.delete({ where: { id } });
+
+    // Wave 7: fire-and-forget edge event log (self-catching inside edgeEventService)
+    void edgeEventService.logRemoved(userId, existing);
   },
 
   /**
@@ -195,7 +209,7 @@ export const contextLinkService = {
     });
     if (!sourceEntry) throw new Error("Source entry not found for this user");
 
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       // 1. Load existing CONTENT-source links from this entry
       const existingContentLinks = await tx.contextLink.findMany({
         where: { userId, fromEntryId, source: "CONTENT" },
@@ -287,9 +301,9 @@ export const contextLinkService = {
       }
 
       // 6. Execute creates via upsert to handle race conditions gracefully
-      let created = 0;
+      const createdLinks: ContextLink[] = [];
       for (const [, desired] of toCreate) {
-        await tx.contextLink.upsert({
+        const link = await tx.contextLink.upsert({
           where: {
             fromEntryId_toEntryId_type: {
               fromEntryId,
@@ -306,14 +320,31 @@ export const contextLinkService = {
             source: "CONTENT",
           },
         });
-        created++;
+        createdLinks.push(link);
       }
 
       return {
-        created,
+        created: createdLinks.length,
         updated: 0, // Type changes are handled as delete+create via composite unique
         deleted: toDelete.length,
+        _createdLinks: createdLinks,
+        _deletedLinks: toDelete,
       };
     });
+
+    // Wave 7: fire-and-forget edge events for content-sync link changes.
+    // These calls are self-catching inside edgeEventService.
+    for (const link of result._createdLinks) {
+      void edgeEventService.logCreated(userId, link);
+    }
+    for (const link of result._deletedLinks) {
+      void edgeEventService.logRemoved(userId, link);
+    }
+
+    return {
+      created: result.created,
+      updated: result.updated,
+      deleted: result.deleted,
+    };
   },
 };

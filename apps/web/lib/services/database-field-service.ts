@@ -17,6 +17,7 @@ import {
   getValueSchemaForType,
 } from "@/lib/validations";
 import { parseFormula, extractDependencies } from "@/lib/formula";
+import { versioningService } from "@/lib/services/versioning-service";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -168,10 +169,15 @@ export const databaseFieldService = {
       updateData.position = input.position;
     }
 
-    return prisma.databaseField.update({
+    const updated = await prisma.databaseField.update({
       where: { id: fieldId },
       data: updateData,
     });
+
+    // Wave 7: schedule debounced snapshot after successful update
+    versioningService.scheduleSnapshot(userId, "DATABASE_FIELD", fieldId, "EDIT_DEBOUNCED");
+
+    return updated;
   },
 
   /**
@@ -191,6 +197,9 @@ export const databaseFieldService = {
         "Cannot delete the primary field. Rename it instead, or assign a different field as primary first.",
       );
     }
+
+    // Wave 7: tombstone snapshot BEFORE delete so version history persists
+    await versioningService.createSnapshot(userId, "DATABASE_FIELD", fieldId, "EDIT_EXPLICIT");
 
     await prisma.$transaction(async (tx) => {
       // 1. DZ-16: If RELATION, bulk-delete ContextLink rows
@@ -291,6 +300,11 @@ export const databaseFieldService = {
         });
       }
     });
+
+    // Wave 7: schedule snapshot for each reordered field
+    for (const fieldId of orderedFieldIds) {
+      versioningService.scheduleSnapshot(userId, "DATABASE_FIELD", fieldId, "EDIT_DEBOUNCED");
+    }
 
     // Return fresh field list
     return prisma.databaseField.findMany({
@@ -467,6 +481,9 @@ export const databaseFieldService = {
         config: newConfig as unknown as Prisma.InputJsonValue,
       },
     });
+
+    // Wave 7: type change is a meaningful schema event
+    versioningService.scheduleSnapshot(userId, "DATABASE_FIELD", fieldId, "EDIT_DEBOUNCED");
 
     return { ok: true, field: updated };
   },

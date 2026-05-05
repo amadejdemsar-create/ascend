@@ -34,6 +34,7 @@ import type {
   BlockOpUpdateInput,
 } from "@ascend/core";
 import * as Y from "yjs";
+import { versioningService } from "@/lib/services/versioning-service";
 
 // ── Size caps ──────────────────────────────────────────────────────
 const MAX_STATE_BYTES = 1024 * 1024; // 1 MiB
@@ -230,6 +231,10 @@ export const blockDocumentService = {
       return newDoc;
     });
 
+    // Wave 7: schedule debounced snapshot for the parent ContextEntry.
+    // Two-stage debounce (editor 1.5s autosave + versioning 60s) is intentional.
+    versioningService.scheduleSnapshot(userId, "CONTEXT_ENTRY", entryId, "EDIT_DEBOUNCED");
+
     return { version: updated.version, conflict: false };
   },
 
@@ -312,6 +317,9 @@ export const blockDocumentService = {
       });
       return newDoc;
     });
+
+    // Wave 7: schedule debounced snapshot for the parent ContextEntry.
+    versioningService.scheduleSnapshot(userId, "CONTEXT_ENTRY", entryId, "EDIT_DEBOUNCED");
 
     return { version: updated.version, conflict: false };
   },

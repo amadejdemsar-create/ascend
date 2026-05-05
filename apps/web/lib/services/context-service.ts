@@ -14,6 +14,7 @@ import { parseWikilinks } from "@ascend/core";
 import { contextLinkService } from "@/lib/services/context-link-service";
 import { embeddingService } from "@/lib/services/embedding-service";
 import { blockMigrationService } from "@/lib/services/block-migration-service";
+import { versioningService } from "@/lib/services/versioning-service";
 
 export const contextService = {
   /**
@@ -194,6 +195,9 @@ export const contextService = {
         );
     }
 
+    // Wave 7: schedule a debounced snapshot after successful update
+    versioningService.scheduleSnapshot(userId, "CONTEXT_ENTRY", id, "EDIT_DEBOUNCED");
+
     return updated;
   },
 
@@ -206,6 +210,9 @@ export const contextService = {
       where: { id, userId },
     });
     if (!existing) throw new Error("Context entry not found");
+
+    // Wave 7: tombstone snapshot BEFORE cascade-delete so the version persists
+    await versioningService.createSnapshot(userId, "CONTEXT_ENTRY", id, "EDIT_EXPLICIT");
 
     return prisma.contextEntry.delete({ where: { id } });
   },
@@ -380,13 +387,18 @@ export const contextService = {
     });
     if (!existing) throw new Error("Context entry not found");
 
-    return prisma.contextEntry.update({
+    const updated = await prisma.contextEntry.update({
       where: { id },
       data: { type },
       include: {
         category: { select: { id: true, name: true, color: true, icon: true } },
       },
     });
+
+    // Wave 7: type change is a meaningful version-worthy event
+    versioningService.scheduleSnapshot(userId, "CONTEXT_ENTRY", id, "EDIT_DEBOUNCED");
+
+    return updated;
   },
 
   /**

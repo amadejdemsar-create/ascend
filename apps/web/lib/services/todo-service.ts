@@ -6,6 +6,7 @@ import { todoRecurringService } from "@/lib/services/todo-recurring-service";
 import { gamificationService } from "@/lib/services/gamification-service";
 import { XP_PER_TODO, levelFromXp } from "@/lib/constants";
 import { startOfDay } from "date-fns";
+import { versioningService } from "@/lib/services/versioning-service";
 
 export const todoService = {
   /**
@@ -113,10 +114,15 @@ export const todoService = {
     if (data.scheduledDate) updateData.scheduledDate = new Date(data.scheduledDate);
     if (data.big3Date) updateData.big3Date = new Date(data.big3Date);
 
-    return prisma.todo.update({
+    const updated = await prisma.todo.update({
       where: { id },
       data: updateData,
     });
+
+    // Wave 7: schedule debounced snapshot after successful update
+    versioningService.scheduleSnapshot(userId, "TODO", id, "EDIT_DEBOUNCED");
+
+    return updated;
   },
 
   /**
@@ -125,6 +131,9 @@ export const todoService = {
   async delete(userId: string, id: string) {
     const existing = await prisma.todo.findFirst({ where: { id, userId } });
     if (!existing) throw new Error("Todo not found");
+
+    // Wave 7: tombstone snapshot BEFORE delete so version history persists
+    await versioningService.createSnapshot(userId, "TODO", id, "EDIT_EXPLICIT");
 
     return prisma.todo.delete({ where: { id } });
   },
@@ -142,7 +151,7 @@ export const todoService = {
    * Returns the completed to-do with _xp metadata.
    */
   async complete(userId: string, id: string) {
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const todo = await tx.todo.findFirst({
         where: { id, userId },
         include: { goal: true },
@@ -194,6 +203,11 @@ export const todoService = {
         ...(streakResult && { _streak: streakResult }),
       };
     });
+
+    // Wave 7: schedule snapshot after all completion side effects commit
+    versioningService.scheduleSnapshot(userId, "TODO", id, "EDIT_DEBOUNCED");
+
+    return result;
   },
 
   /**

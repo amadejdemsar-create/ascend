@@ -18,6 +18,7 @@ import type { Prisma } from "../../generated/prisma/client";
 import type { DatabaseFieldType } from "@/lib/validations";
 import { databaseRowPropertiesSchema } from "@/lib/validations";
 import { databaseRelationService } from "@/lib/services/database-relation-service";
+import { versioningService } from "@/lib/services/versioning-service";
 import * as Y from "yjs";
 
 // ── Constants ─────────────────────────────────────────────────────────
@@ -291,6 +292,9 @@ export const databaseRowService = {
       );
     }
 
+    // Wave 7: schedule debounced snapshot after successful update
+    versioningService.scheduleSnapshot(userId, "DATABASE_ROW", rowId, "EDIT_DEBOUNCED");
+
     // Return the updated row
     return prisma.databaseRow.findFirst({
       where: { id: rowId, userId },
@@ -307,6 +311,9 @@ export const databaseRowService = {
       select: { id: true, contextEntryId: true },
     });
     if (!existing) throw new Error("Row not found");
+
+    // Wave 7: tombstone snapshot BEFORE cascade-delete so version persists
+    await versioningService.createSnapshot(userId, "DATABASE_ROW", rowId, "EDIT_EXPLICIT");
 
     // Delete via the ContextEntry (cascades to DatabaseRow and BlockDocument)
     await prisma.contextEntry.delete({
