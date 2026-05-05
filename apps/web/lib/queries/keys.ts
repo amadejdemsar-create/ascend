@@ -1,4 +1,4 @@
-import type { GoalFilters, TodoFilters, ContextFilters, ContextGraphFilters } from "@/lib/validations";
+import type { GoalFilters, TodoFilters, ContextFilters, ContextGraphFilters, NodeType } from "@/lib/validations";
 
 export const queryKeys = {
   goals: {
@@ -34,6 +34,7 @@ export const queryKeys = {
     },
     map: () => ["context", "map"] as const,
     blocks: (entryId: string) => ["context", "blocks", entryId] as const,
+    graphAt: (date: string) => ["context", "graph", "at", date] as const,
   },
   categories: {
     all: () => ["categories"] as const,
@@ -76,6 +77,14 @@ export const queryKeys = {
       queryHash
         ? (["databases", "rows", databaseId, queryHash] as const)
         : (["databases", "rows", databaseId] as const),
+  },
+  versions: {
+    all: () => ["versions"] as const,
+    list: (nodeType: NodeType, nodeId: string) =>
+      ["versions", "list", nodeType, nodeId] as const,
+    detail: (versionId: string) => ["versions", "detail", versionId] as const,
+    diff: (fromVersionId: string | null, toVersionId: string) =>
+      ["versions", "diff", fromVersionId ?? "live", toVersionId] as const,
   },
   og: {
     image: (url: string) => ["og", "image", url] as const,
