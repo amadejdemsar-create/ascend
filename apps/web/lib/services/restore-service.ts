@@ -101,8 +101,17 @@ export const restoreService = {
           break;
       }
     } catch (err) {
+      // Log the full error server-side (may contain Prisma schema field names)
+      // but surface only a generic message to the client.
+      console.error("[restore] internal failure", {
+        userId,
+        nodeType,
+        nodeId,
+        versionId,
+        err,
+      });
       throw new Error(
-        `Restore failed: ${err instanceof Error ? err.message : String(err)}`,
+        "Restore failed due to a database error. The change was not applied.",
       );
     }
 

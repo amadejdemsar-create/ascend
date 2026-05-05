@@ -35,6 +35,7 @@ export const queryKeys = {
     map: () => ["context", "map"] as const,
     blocks: (entryId: string) => ["context", "blocks", entryId] as const,
     graphAt: (date: string) => ["context", "graph", "at", date] as const,
+    derivativeCount: (id: string) => ["context", "derivativeCount", id] as const,
   },
   categories: {
     all: () => ["categories"] as const,

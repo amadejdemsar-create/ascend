@@ -358,3 +358,26 @@ export function useUpdateContextType() {
     },
   });
 }
+
+// ---------------------------------------------------------------------------
+// Derivative count hook (for BranchDialog soft warning)
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch the number of DERIVED_FROM links pointing to a given entry.
+ * Disabled when entryId is null/undefined.
+ * Uses a 5-minute staleTime since derivative counts change infrequently.
+ */
+export function useDerivativeCount(entryId: string | null | undefined) {
+  return useQuery<{ count: number }>({
+    queryKey: entryId
+      ? queryKeys.context.derivativeCount(entryId)
+      : (["context", "derivativeCount", "_disabled"] as const),
+    queryFn: () => {
+      if (!entryId) throw new Error("entryId required");
+      return fetchJson<{ count: number }>(`/api/context/${entryId}/derivative-count`);
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: !!entryId,
+  });
+}

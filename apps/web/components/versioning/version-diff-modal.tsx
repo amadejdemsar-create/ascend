@@ -353,9 +353,58 @@ export function VersionDiffModal({
 
             {diffQuery.data && (
               <>
-                {/* Wide viewport: single column diff */}
-                <div className="hidden lg:block py-3">
-                  <DiffRenderer diff={diffQuery.data} />
+                {/* Wide viewport: three-pane layout (older | diff | newer) */}
+                {/* When fromVersionId is null (vs current), render two panes (diff + newer) */}
+                <div className="hidden lg:grid lg:gap-4 py-3" style={{ gridTemplateColumns: fromVersionId ? "1fr 1.5fr 1fr" : "1.5fr 1fr" }}>
+                  {/* Older pane (only when comparing two versions) */}
+                  {fromVersionId && (
+                    <div className="border-r pr-4 overflow-y-auto max-h-[60vh]">
+                      <VersionPaneHeader
+                        version={toVersionQuery.data ?? undefined}
+                        timestamp={toTimestamp}
+                        fallbackLabel="Older version"
+                      />
+                      {toVersionQuery.data ? (
+                        <VersionPayloadPreview
+                          version={toVersionQuery.data}
+                          nodeType={nodeType}
+                        />
+                      ) : (
+                        <Skeleton className="h-16 w-full mt-2" />
+                      )}
+                    </div>
+                  )}
+
+                  {/* Center diff pane */}
+                  <div className="overflow-y-auto max-h-[60vh]">
+                    <DiffRenderer diff={diffQuery.data} />
+                  </div>
+
+                  {/* Newer pane */}
+                  <div className="border-l pl-4 overflow-y-auto max-h-[60vh]">
+                    {fromVersionId ? (
+                      <>
+                        <VersionPaneHeader
+                          version={fromVersionQuery.data ?? undefined}
+                          timestamp={fromTimestamp}
+                          fallbackLabel="Newer version"
+                        />
+                        {fromVersionQuery.data ? (
+                          <VersionPayloadPreview
+                            version={fromVersionQuery.data}
+                            nodeType={nodeType}
+                          />
+                        ) : (
+                          <Skeleton className="h-16 w-full mt-2" />
+                        )}
+                      </>
+                    ) : (
+                      <div className="text-sm text-muted-foreground">
+                        <p className="font-medium">Current (live)</p>
+                        <p className="text-xs mt-1">This is the current version of the document.</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Narrow viewport: tabbed layout */}

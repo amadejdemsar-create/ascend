@@ -347,4 +347,18 @@ export const contextLinkService = {
       deleted: result.deleted,
     };
   },
+
+  /**
+   * Count DERIVED_FROM links pointing TO a given entry.
+   * Used by BranchDialog for the soft warning (>5 derivatives).
+   */
+  async countDerivatives(userId: string, entryId: string): Promise<number> {
+    return prisma.contextLink.count({
+      where: {
+        userId,
+        type: "DERIVED_FROM",
+        toEntryId: entryId,
+      },
+    });
+  },
 };

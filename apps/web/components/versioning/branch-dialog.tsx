@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { AlertTriangleIcon } from "lucide-react";
 import { useBranch } from "@/lib/hooks/use-versions";
+import { useDerivativeCount } from "@/lib/hooks/use-context";
 import type { NodeType } from "@/lib/validations";
 import { fireBranchConfetti } from "@/lib/confetti";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,10 @@ export function BranchDialog({
 }: BranchDialogProps) {
   const [title, setTitle] = useState(`${sourceTitle} (branch)`);
   const branch = useBranch();
+
+  // Fetch live derivative count when dialog is open
+  const derivativeQuery = useDerivativeCount(open ? nodeId : null);
+  const liveDerivativeCount = derivativeQuery.data?.count ?? derivativeCount;
 
   // Reset title when dialog opens with a new source
   const titleDefault = `${sourceTitle} (branch)`;
@@ -93,14 +98,14 @@ export function BranchDialog({
 
         <div className="space-y-4 py-2">
           {/* Soft warning */}
-          {derivativeCount > 5 && (
+          {liveDerivativeCount > 5 && (
             <div
               className="flex items-start gap-2 rounded-md border border-amber-600/40 bg-amber-50 dark:bg-amber-950/20 p-3 text-sm text-amber-800 dark:text-amber-300"
               role="alert"
             >
               <AlertTriangleIcon className="size-4 mt-0.5 shrink-0" aria-hidden="true" />
               <span>
-                This source already has {derivativeCount} branches. Continue?
+                This source already has {liveDerivativeCount} branches. Continue?
               </span>
             </div>
           )}

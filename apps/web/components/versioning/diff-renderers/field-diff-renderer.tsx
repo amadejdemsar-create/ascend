@@ -3,6 +3,7 @@
 import type { FieldDiffResult, TextDiffOp } from "@ascend/diff";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { formatFieldLabel } from "../format-field-label";
 
 interface FieldDiffRendererProps {
   diff: FieldDiffResult;
@@ -86,7 +87,7 @@ export function FieldDiffRenderer({ diff }: FieldDiffRendererProps) {
                 entry.change === "removed" && "bg-red-50/50 dark:bg-red-950/10",
               )}
             >
-              <td className="px-3 py-2 font-mono text-xs">{entry.field}</td>
+              <td className="px-3 py-2 text-xs font-medium">{formatFieldLabel(entry.field)}</td>
               <td className="px-3 py-2 max-w-[200px] truncate">
                 {entry.change === "added" ? (
                   <span className="text-muted-foreground">{"—"}</span>

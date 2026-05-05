@@ -209,6 +209,8 @@ export const goalService = {
    * Recursively delete a goal and all of its descendants (depth-first).
    * Used by the MCP `delete_goal` tool when `cascade: true` is passed.
    * Each recursive call re-verifies ownership via findFirst({id, userId}).
+   * Tombstone snapshots are created for every node before deletion so the
+   * version history records the moment of deletion.
    */
   async deleteCascade(userId: string, id: string): Promise<void> {
     const goal = await prisma.goal.findFirst({
@@ -220,6 +222,10 @@ export const goalService = {
     for (const child of goal.children) {
       await goalService.deleteCascade(userId, child.id);
     }
+
+    // Tombstone snapshot before delete so version history persists
+    await versioningService.createSnapshot(userId, "GOAL", id, "EDIT_EXPLICIT");
+
     await prisma.goal.delete({ where: { id } });
   },
 
