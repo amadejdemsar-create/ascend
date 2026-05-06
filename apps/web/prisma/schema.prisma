@@ -105,11 +105,9 @@ model User {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  // Wave 0: workspace scaffolding (nullable until Wave 8 backfill)
-  workspaceId String?
-
   // Wave 8: default workspace for auth context resolution
   defaultWorkspaceId String?
+  defaultWorkspace   Workspace? @relation("UserDefaultWorkspace", fields: [defaultWorkspaceId], references: [id], onDelete: SetNull)
 
   goals          Goal[]
   categories     Category[]
@@ -196,8 +194,9 @@ model Goal {
   longestStreak         Int                 @default(0)
   lastCompletedInstance DateTime?
 
-  // Wave 0: workspace scaffolding (nullable until Wave 8 backfill)
-  workspaceId String?
+  // Wave 8: workspace scoping
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   // Relations
   progressLogs  ProgressLog[]
@@ -217,6 +216,7 @@ model Goal {
   @@index([status, userId])
   @@index([deadline])
   @@index([recurringSourceId])
+  @@index([workspaceId])
 }
 
 model Category {
@@ -234,8 +234,9 @@ model Category {
   // Ordering
   sortOrder Int @default(0)
 
-  // Wave 0: workspace scaffolding (nullable until Wave 8 backfill)
-  workspaceId String?
+  // Wave 8: workspace scoping
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   // Relations
   goals          Goal[]
@@ -251,6 +252,7 @@ model Category {
   @@unique([userId, name, parentId])
   @@index([userId])
   @@index([parentId])
+  @@index([workspaceId])
 }
 
 model ProgressLog {
@@ -260,10 +262,15 @@ model ProgressLog {
   note      String?
   createdAt DateTime @default(now())
 
+  // Wave 8: workspace scoping
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   goal Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
 
   @@index([goalId])
   @@index([createdAt])
+  @@index([workspaceId])
 }
 
 model UserStats {
@@ -368,8 +375,9 @@ model Todo {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Wave 0: workspace scaffolding (nullable until Wave 8 backfill)
-  workspaceId String?
+  // Wave 8: workspace scoping
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   // Relations
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -385,6 +393,7 @@ model Todo {
   @@index([status, userId])
   @@index([recurringSourceId])
   @@index([isBig3, big3Date, userId])
+  @@index([workspaceId])
 }
 
 // =====================================================================
@@ -438,8 +447,9 @@ model ContextEntry {
   // search_vector trigger so full-text search indexes block content.
   extractedText   String?
 
-  // Wave 0: workspace scaffolding (nullable until Wave 8 backfill)
-  workspaceId String?
+  // Wave 8: workspace scoping
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -466,6 +476,7 @@ model ContextEntry {
   @@index([categoryId])
   @@index([userId, title])
   @@index([userId, isPinned])
+  @@index([workspaceId])
 }
 
 model ContextLink {
@@ -483,6 +494,10 @@ model ContextLink {
   databaseFieldId String?
   databaseField   DatabaseField? @relation(fields: [databaseFieldId], references: [id], onDelete: Cascade)
 
+  // Wave 8: workspace scoping
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   fromEntry ContextEntry @relation("ContextLinkFrom", fields: [fromEntryId], references: [id], onDelete: Cascade)
   toEntry   ContextEntry @relation("ContextLinkTo", fields: [toEntryId], references: [id], onDelete: Cascade)
   user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -493,6 +508,7 @@ model ContextLink {
   @@index([toEntryId])
   @@index([type])
   @@index([databaseFieldId])
+  @@index([workspaceId])
 }
 
 // =====================================================================
@@ -520,7 +536,12 @@ model BlockDocument {
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
+  // Wave 8: workspace scoping
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@index([userId, entryId])
+  @@index([workspaceId])
 }
 
 model File {
@@ -561,8 +582,9 @@ model File {
   // Wave 4: extraction job (one job per file)
   extractionJob ExtractionJob?
 
-  // Wave 0: workspace scaffolding (nullable until Wave 8 backfill)
-  workspaceId String?
+  // Wave 8: workspace scoping
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -570,6 +592,7 @@ model File {
   @@index([userId, status])
   @@index([sha256])
   @@index([extractionStatus])
+  @@index([workspaceId])
 }
 
 model Session {
@@ -627,9 +650,15 @@ model ContextMap {
   outputTokens Int
   costCents    Int
 
+  // Wave 8: workspace scoping
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   generatedAt DateTime @default(now())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([workspaceId])
 }
 
 model LlmUsage {
@@ -644,9 +673,14 @@ model LlmUsage {
   completionTokens   Int
   estimatedCostCents Int
 
+  // Wave 8: workspace scoping
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
+  @@index([workspaceId])
 }
 
 // =====================================================================
@@ -675,7 +709,12 @@ model ExtractionJob {
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
+  // Wave 8: workspace scoping
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@index([status, scheduledAt])
+  @@index([workspaceId])
 }
 
 // =====================================================================
@@ -786,11 +825,16 @@ model Database {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
+  // Wave 8: workspace scoping
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   fields DatabaseField[]
   rows   DatabaseRow[]
   views  DatabaseView[]
 
   @@index([userId])
+  @@index([workspaceId])
 }
 
 model DatabaseField {
@@ -807,11 +851,16 @@ model DatabaseField {
   createdAt  DateTime          @default(now())
   updatedAt  DateTime          @updatedAt
 
+  // Wave 8: workspace scoping
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   contextLinks ContextLink[]
 
   @@unique([databaseId, position])
   @@index([databaseId])
   @@index([userId])
+  @@index([workspaceId])
 }
 
 model DatabaseRow {
@@ -827,8 +876,13 @@ model DatabaseRow {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
+  // Wave 8: workspace scoping
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@index([databaseId])
   @@index([userId])
+  @@index([workspaceId])
 }
 
 model DatabaseView {
@@ -844,8 +898,13 @@ model DatabaseView {
   createdAt  DateTime         @default(now())
   updatedAt  DateTime         @updatedAt
 
+  // Wave 8: workspace scoping
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@index([databaseId])
   @@index([userId])
+  @@index([workspaceId])
 }
 
 // =====================================================================
@@ -867,7 +926,7 @@ model DatabaseView {
 model NodeVersion {
   id              String         @id @default(cuid())
   userId          String
-  workspaceId     String?
+  workspaceId     String
   nodeType        NodeType
   nodeId          String
   versionNumber   Int
@@ -879,6 +938,7 @@ model NodeVersion {
   createdAt       DateTime       @default(now())
 
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace     Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   parentVersion NodeVersion?  @relation("VersionParent", fields: [parentVersionId], references: [id], onDelete: SetNull)
   childVersions NodeVersion[] @relation("VersionParent")
 
@@ -892,14 +952,15 @@ model NodeVersion {
 model EdgeEvent {
   id           String        @id @default(cuid())
   userId       String
-  workspaceId  String?
+  workspaceId  String
   eventType    EdgeEventType
   linkSnapshot Json
   fromEntryId  String?
   toEntryId    String?
   createdAt    DateTime      @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt(sort: Desc)])
   @@index([workspaceId])
@@ -910,7 +971,7 @@ model EdgeEvent {
 model GraphDailySnapshot {
   id           String   @id @default(cuid())
   userId       String
-  workspaceId  String?
+  workspaceId  String
   snapshotDate DateTime @db.Date
   nodes        Json
   edges        Json
@@ -918,7 +979,8 @@ model GraphDailySnapshot {
   edgeCount    Int
   createdAt    DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([userId, snapshotDate])
   @@index([snapshotDate])
@@ -950,6 +1012,29 @@ model Workspace {
   owner       User                  @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Restrict)
   memberships WorkspaceMembership[]
   activity    ActivityEvent[]
+
+  // Inverse: users who have this as their default workspace
+  defaultForUsers User[] @relation("UserDefaultWorkspace")
+
+  // Inverse: all entity tables scoped to this workspace
+  goals               Goal[]
+  categories          Category[]
+  todos               Todo[]
+  contextEntries      ContextEntry[]
+  contextLinks        ContextLink[]
+  blockDocuments      BlockDocument[]
+  files               File[]
+  extractionJobs      ExtractionJob[]
+  contextMaps         ContextMap[]
+  databases           Database[]
+  databaseFields      DatabaseField[]
+  databaseRows        DatabaseRow[]
+  databaseViews       DatabaseView[]
+  llmUsage            LlmUsage[]
+  progressLogs        ProgressLog[]
+  nodeVersions        NodeVersion[]
+  edgeEvents          EdgeEvent[]
+  graphDailySnapshots GraphDailySnapshot[]
 
   @@index([ownerId])
 }
