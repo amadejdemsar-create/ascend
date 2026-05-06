@@ -12,7 +12,7 @@ export async function GET(
 
   try {
     const { id } = await params;
-    const goal = await goalService.getById(auth.userId, id);
+    const goal = await goalService.getById(auth.userId, auth.workspaceId, id);
     if (!goal) {
       return NextResponse.json({ error: "Goal not found" }, { status: 404 });
     }
@@ -40,13 +40,14 @@ export async function PATCH(
     // rename, priority change, re-completion that was already DONE) go
     // through plain update() — no side effects, no transaction needed.
     if (data.status === "COMPLETED") {
-      const existing = await goalService.getById(auth.userId, id);
+      const existing = await goalService.getById(auth.userId, auth.workspaceId, id);
       if (!existing) {
         return NextResponse.json({ error: "Goal not found" }, { status: 404 });
       }
       if (existing.status !== "COMPLETED") {
         const result = await goalService.completeWithSideEffects(
           auth.userId,
+          auth.workspaceId,
           id,
           data,
         );
@@ -54,7 +55,7 @@ export async function PATCH(
       }
     }
 
-    const goal = await goalService.update(auth.userId, id, data);
+    const goal = await goalService.update(auth.userId, auth.workspaceId, id, data);
     return NextResponse.json(goal);
   } catch (error) {
     return handleApiError(error);
@@ -70,7 +71,7 @@ export async function DELETE(
 
   try {
     const { id } = await params;
-    const goal = await goalService.delete(auth.userId, id);
+    const goal = await goalService.delete(auth.userId, auth.workspaceId, id);
     return NextResponse.json(goal);
   } catch (error) {
     return handleApiError(error);

@@ -27,7 +27,7 @@ export async function POST(
     const { fieldId } = await params;
     const body = await request.json();
     const data = changeTypeBodySchema.parse(body);
-    const result = await databaseFieldService.changeType(auth.userId, fieldId, data);
+    const result = await databaseFieldService.changeType(auth.userId, auth.workspaceId, fieldId, data);
     return NextResponse.json(result);
   } catch (error) {
     return handleApiError(error);

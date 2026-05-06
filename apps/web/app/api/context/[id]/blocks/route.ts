@@ -18,7 +18,7 @@ export async function GET(
 
   try {
     const { id } = await params;
-    const doc = await blockDocumentService.getByEntryId(auth.userId, id);
+    const doc = await blockDocumentService.getByEntryId(auth.userId, auth.workspaceId, id);
     if (!doc) {
       return NextResponse.json(
         { error: "No block document for this entry" },
@@ -53,7 +53,7 @@ export async function POST(
     const { id } = await params;
     const body = await request.json();
     const op = blockOpAddSchema.parse(body);
-    const result = await blockDocumentService.addBlock(auth.userId, id, op);
+    const result = await blockDocumentService.addBlock(auth.userId, auth.workspaceId, id, op);
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
     return handleApiError(error);

@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { items } = reorderTodosSchema.parse(body);
-    await todoService.reorder(auth.userId, items);
+    await todoService.reorder(auth.userId, auth.workspaceId, items);
     return NextResponse.json({ success: true });
   } catch (error) {
     return handleApiError(error);

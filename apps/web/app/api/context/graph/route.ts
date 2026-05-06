@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const filters = contextGraphFiltersSchema.parse(
       Object.fromEntries(url.searchParams),
     );
-    const graph = await contextService.getGraph(auth.userId, filters);
+    const graph = await contextService.getGraph(auth.userId, auth.workspaceId, filters);
     return NextResponse.json(graph);
   } catch (error) {
     return handleApiError(error);

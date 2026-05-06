@@ -25,9 +25,10 @@ export async function extractImage(
   opts?: ExtractionHandlerOpts,
 ): Promise<ExtractionResult> {
   const userId = opts?.userId;
-  if (!userId) {
+  const workspaceId = opts?.workspaceId;
+  if (!userId || !workspaceId) {
     return {
-      text: "[Image extraction unavailable: userId required]",
+      text: "[Image extraction unavailable: userId and workspaceId required]",
     };
   }
 
@@ -38,7 +39,7 @@ export async function extractImage(
   }
 
   try {
-    const result = await llmService.captionImage(userId, buffer, mimeType, {
+    const result = await llmService.captionImage(userId, workspaceId, buffer, mimeType, {
       signal: opts?.signal,
     });
     return {

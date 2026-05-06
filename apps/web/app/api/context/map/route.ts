@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   if (!auth.success) return unauthorizedResponse();
 
   try {
-    const map = await contextMapService.getCurrent(auth.userId);
+    const map = await contextMapService.getCurrent(auth.userId, auth.workspaceId);
     if (!map) {
       return NextResponse.json(
         { error: "No map yet" },

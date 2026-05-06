@@ -14,6 +14,7 @@ type PrismaClientLike = typeof prisma | Prisma.TransactionClient;
  */
 export async function validateHierarchy(
   userId: string,
+  workspaceId: string,
   parentId: string,
   childHorizon: string,
 ): Promise<void> {
@@ -28,7 +29,7 @@ export async function validateHierarchy(
   }
 
   const parent = await prisma.goal.findFirst({
-    where: { id: parentId, userId },
+    where: { id: parentId, userId, workspaceId },
   });
 
   if (!parent) {
@@ -55,18 +56,19 @@ export async function validateHierarchy(
  */
 export async function recalcParentProgress(
   userId: string,
+  workspaceId: string,
   goalId: string,
   client: PrismaClientLike,
 ): Promise<void> {
   const goal = await client.goal.findFirst({
-    where: { id: goalId, userId },
+    where: { id: goalId, userId, workspaceId },
     select: { parentId: true },
   });
 
   if (!goal?.parentId) return;
 
   const parent = await client.goal.findFirst({
-    where: { id: goal.parentId, userId },
+    where: { id: goal.parentId, userId, workspaceId },
     include: {
       children: { select: { id: true, status: true } },
     },
@@ -92,5 +94,5 @@ export async function recalcParentProgress(
   });
 
   // Propagate upward through the hierarchy.
-  await recalcParentProgress(userId, parent.id, client);
+  await recalcParentProgress(userId, workspaceId, parent.id, client);
 }

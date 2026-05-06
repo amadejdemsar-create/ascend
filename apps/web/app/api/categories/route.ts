@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   if (!auth.success) return unauthorizedResponse();
 
   try {
-    const tree = await categoryService.listTree(auth.userId);
+    const tree = await categoryService.listTree(auth.userId, auth.workspaceId);
     return NextResponse.json(tree);
   } catch (error) {
     return handleApiError(error);
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const data = createCategorySchema.parse(body);
-    const category = await categoryService.create(auth.userId, data);
+    const category = await categoryService.create(auth.userId, auth.workspaceId, data);
     return NextResponse.json(category, { status: 201 });
   } catch (error) {
     return handleApiError(error);

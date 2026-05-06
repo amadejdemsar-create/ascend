@@ -16,7 +16,7 @@ export async function POST(
 
   try {
     const { id } = await params;
-    const result = await todoService.uncomplete(auth.userId, id);
+    const result = await todoService.uncomplete(auth.userId, auth.workspaceId, id);
     return NextResponse.json(result);
   } catch (error) {
     return handleApiError(error);

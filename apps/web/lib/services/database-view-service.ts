@@ -16,6 +16,7 @@ import type {
   UpdateDatabaseViewInput,
 } from "@/lib/validations";
 import { databaseViewConfigSchema } from "@/lib/validations";
+import { permissionService } from "@/lib/services/permission-service";
 
 export const databaseViewService = {
   /**
@@ -24,12 +25,16 @@ export const databaseViewService = {
    */
   async create(
     userId: string,
+    workspaceId: string,
     databaseId: string,
     input: CreateDatabaseViewInput,
   ) {
+    // Permission check (mutating operation: creates a view)
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
     // Verify database ownership
     const database = await prisma.database.findFirst({
-      where: { id: databaseId, userId },
+      where: { id: databaseId, userId, workspaceId },
     });
     if (!database) throw new Error("Database not found");
 
@@ -39,7 +44,7 @@ export const databaseViewService = {
 
     // Determine position (max + 1)
     const maxView = await prisma.databaseView.findFirst({
-      where: { databaseId, userId },
+      where: { databaseId, userId, workspaceId },
       orderBy: { position: "desc" },
       select: { position: true },
     });
@@ -48,6 +53,7 @@ export const databaseViewService = {
     return prisma.databaseView.create({
       data: {
         userId,
+        workspaceId,
         databaseId,
         name: input.name,
         type: input.type,
@@ -62,11 +68,15 @@ export const databaseViewService = {
    */
   async update(
     userId: string,
+    workspaceId: string,
     viewId: string,
     input: UpdateDatabaseViewInput,
   ) {
+    // Permission check (mutating operation)
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
     const existing = await prisma.databaseView.findFirst({
-      where: { id: viewId, userId },
+      where: { id: viewId, userId, workspaceId },
     });
     if (!existing) throw new Error("View not found");
 
@@ -96,9 +106,12 @@ export const databaseViewService = {
    * Delete a view. Refuses if it's the database's defaultViewId and no
    * other view exists to fall back to.
    */
-  async delete(userId: string, viewId: string): Promise<{ id: string }> {
+  async delete(userId: string, workspaceId: string, viewId: string): Promise<{ id: string }> {
+    // Permission check (mutating operation: deletes a view)
+    await permissionService.assertCanPerform(userId, workspaceId, "DELETE_NODE");
+
     const existing = await prisma.databaseView.findFirst({
-      where: { id: viewId, userId },
+      where: { id: viewId, userId, workspaceId },
       include: { database: { select: { id: true, defaultViewId: true } } },
     });
     if (!existing) throw new Error("View not found");
@@ -110,6 +123,7 @@ export const databaseViewService = {
         where: {
           databaseId: existing.databaseId,
           userId,
+          workspaceId,
           id: { not: viewId },
         },
         orderBy: { position: "asc" },
@@ -135,9 +149,12 @@ export const databaseViewService = {
   /**
    * Set a view as the database's default. Verifies ownership.
    */
-  async setDefault(userId: string, viewId: string) {
+  async setDefault(userId: string, workspaceId: string, viewId: string) {
+    // Permission check (mutating operation)
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
     const existing = await prisma.databaseView.findFirst({
-      where: { id: viewId, userId },
+      where: { id: viewId, userId, workspaceId },
       include: { database: { select: { id: true, userId: true } } },
     });
     if (!existing) throw new Error("View not found");
@@ -149,22 +166,22 @@ export const databaseViewService = {
     });
 
     return prisma.databaseView.findFirst({
-      where: { id: viewId, userId },
+      where: { id: viewId, userId, workspaceId },
     });
   },
 
   /**
    * List all views for a database, ordered by position.
    */
-  async list(userId: string, databaseId: string) {
+  async list(userId: string, workspaceId: string, databaseId: string) {
     // Verify database ownership
     const database = await prisma.database.findFirst({
-      where: { id: databaseId, userId },
+      where: { id: databaseId, userId, workspaceId },
     });
     if (!database) throw new Error("Database not found");
 
     return prisma.databaseView.findMany({
-      where: { databaseId, userId },
+      where: { databaseId, userId, workspaceId },
       orderBy: { position: "asc" },
     });
   },

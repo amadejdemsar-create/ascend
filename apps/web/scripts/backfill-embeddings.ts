@@ -114,6 +114,7 @@ function parseArgs(): CliArgs {
 interface EntryRow {
   id: string;
   userId: string;
+  workspaceId: string;
   title: string;
   content: string | null;
 }
@@ -147,7 +148,7 @@ async function main() {
     : Prisma.sql``;
 
   const entries = await prisma.$queryRaw<EntryRow[]>`
-    SELECT id, "userId", title, content
+    SELECT id, "userId", "workspaceId", title, content
     FROM "ContextEntry"
     WHERE ${embeddingCondition}
       AND ${userCondition}
@@ -216,7 +217,7 @@ async function main() {
       const batch = userEntries.slice(i, i + args.batchSize);
       const results = await Promise.allSettled(
         batch.map((entry) =>
-          embeddingService.upsertEmbeddingForEntry(entry.userId, entry.id),
+          embeddingService.upsertEmbeddingForEntry(entry.userId, entry.workspaceId, entry.id),
         ),
       );
 

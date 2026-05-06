@@ -25,8 +25,8 @@ export async function POST(
     const body = await request.json().catch(() => ({}));
     reExtractSchema.parse(body);
 
-    // userId-scoped ownership check (Safety Rule 1)
-    const file = await fileService.getFile(auth.userId, id);
+    // userId + workspaceId scoped ownership check (Safety Rule 1)
+    const file = await fileService.getFile(auth.userId, auth.workspaceId, id);
     if (!file) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
@@ -41,6 +41,7 @@ export async function POST(
 
     const { jobId, scheduledAt } = await extractionQueueService.enqueue(
       auth.userId,
+      auth.workspaceId,
       id,
     );
 

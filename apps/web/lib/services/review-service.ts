@@ -231,7 +231,7 @@ export const reviewService = {
    * Builds a markdown document from the user's reflections and persists
    * it via the context service so it shows up in the knowledge base.
    */
-  async saveReview(userId: string, data: SaveReviewInput) {
+  async saveReview(userId: string, workspaceId: string, data: SaveReviewInput) {
     const weekStartDate = startOfDay(new Date(data.weekStart));
     const weekEndDate = addDays(weekStartDate, 6);
 
@@ -252,7 +252,7 @@ export const reviewService = {
       `*Saved from Ascend weekly review on ${nowFormatted}*`,
     ].join("\n");
 
-    return contextService.create(userId, {
+    return contextService.create(userId, workspaceId, {
       title: `Weekly Review: ${startFormatted} to ${endFormatted}`,
       content: markdownBody,
       tags: ["weekly-review"],

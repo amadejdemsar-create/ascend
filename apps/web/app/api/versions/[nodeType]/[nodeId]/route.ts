@@ -29,6 +29,7 @@ export async function GET(
     );
     const result = await versioningService.listVersions(
       auth.userId,
+      auth.workspaceId,
       parsedNodeType,
       nodeId,
       opts,

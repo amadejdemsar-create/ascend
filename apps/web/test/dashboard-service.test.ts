@@ -7,9 +7,9 @@ import { addDays } from "date-fns";
 import { createTestUser, deleteTestUser } from "./helpers";
 
 describe("dashboardService.getDashboardData", () => {
-  let empty: { id: string; apiKey: string };
-  let populated: { id: string; apiKey: string };
-  let isolated: { id: string; apiKey: string };
+  let empty: { id: string; apiKey: string; workspaceId: string };
+  let populated: { id: string; apiKey: string; workspaceId: string };
+  let isolated: { id: string; apiKey: string; workspaceId: string };
 
   beforeAll(async () => {
     empty = await createTestUser("dash-empty");
@@ -27,26 +27,26 @@ describe("dashboardService.getDashboardData", () => {
     //     => upcomingDeadlines should surface it
     //   - totalGoals = 6, completionRate = round(2/6*100) = 33
 
-    const category = await categoryService.create(populated.id, {
+    const category = await categoryService.create(populated.id, populated.workspaceId, {
       name: "Focus",
     });
 
     const now = new Date();
     const soon = addDays(now, 7);
 
-    await goalService.create(populated.id, {
+    await goalService.create(populated.id, populated.workspaceId, {
       title: "Weekly HIGH",
       horizon: "WEEKLY",
       priority: "HIGH",
       categoryId: category.id,
     });
-    await goalService.create(populated.id, {
+    await goalService.create(populated.id, populated.workspaceId, {
       title: "Weekly MEDIUM",
       horizon: "WEEKLY",
       priority: "MEDIUM",
       categoryId: category.id,
     });
-    await goalService.create(populated.id, {
+    await goalService.create(populated.id, populated.workspaceId, {
       title: "Weekly LOW",
       horizon: "WEEKLY",
       priority: "LOW",
@@ -55,12 +55,12 @@ describe("dashboardService.getDashboardData", () => {
 
     // Two COMPLETED goals with completedAt set directly so we don't
     // trip transactional side-effects from the service layer.
-    const g1 = await goalService.create(populated.id, {
+    const g1 = await goalService.create(populated.id, populated.workspaceId, {
       title: "Completed A",
       horizon: "MONTHLY",
       categoryId: category.id,
     });
-    const g2 = await goalService.create(populated.id, {
+    const g2 = await goalService.create(populated.id, populated.workspaceId, {
       title: "Completed B",
       horizon: "MONTHLY",
       categoryId: category.id,
@@ -75,7 +75,7 @@ describe("dashboardService.getDashboardData", () => {
     });
 
     // Upcoming deadline goal (QUARTERLY so it doesn't pollute weeklyFocus)
-    await goalService.create(populated.id, {
+    await goalService.create(populated.id, populated.workspaceId, {
       title: "Upcoming deadline",
       horizon: "QUARTERLY",
       priority: "HIGH",
@@ -84,7 +84,7 @@ describe("dashboardService.getDashboardData", () => {
 
     // Seed the isolated user with its own single HIGH weekly goal that
     // should NEVER surface in `populated`'s dashboard.
-    await goalService.create(isolated.id, {
+    await goalService.create(isolated.id, isolated.workspaceId, {
       title: "Isolated user's weekly",
       horizon: "WEEKLY",
       priority: "HIGH",
@@ -99,7 +99,7 @@ describe("dashboardService.getDashboardData", () => {
 
   describe("empty user", () => {
     it("returns safe defaults when the user has no data", async () => {
-      const data = await dashboardService.getDashboardData(empty.id);
+      const data = await dashboardService.getDashboardData(empty.id, empty.workspaceId);
       expect(data.weeklyFocus).toEqual([]);
       expect(data.progressOverview).toEqual([]);
       expect(data.upcomingDeadlines).toEqual([]);
@@ -118,7 +118,7 @@ describe("dashboardService.getDashboardData", () => {
 
   describe("populated user", () => {
     it("returns the weeklyFocus sorted by priority HIGH > MEDIUM > LOW", async () => {
-      const data = await dashboardService.getDashboardData(populated.id);
+      const data = await dashboardService.getDashboardData(populated.id, populated.workspaceId);
       expect(data.weeklyFocus).toHaveLength(3);
       expect(data.weeklyFocus[0].title).toBe("Weekly HIGH");
       expect(data.weeklyFocus[1].title).toBe("Weekly MEDIUM");
@@ -126,7 +126,7 @@ describe("dashboardService.getDashboardData", () => {
     });
 
     it("counts totals, completions, and completion rate correctly", async () => {
-      const data = await dashboardService.getDashboardData(populated.id);
+      const data = await dashboardService.getDashboardData(populated.id, populated.workspaceId);
       // 3 weekly + 2 completed monthly + 1 quarterly deadline = 6
       expect(data.streaksStats.totalGoals).toBe(6);
       expect(data.streaksStats.totalCompleted).toBe(2);
@@ -135,14 +135,14 @@ describe("dashboardService.getDashboardData", () => {
     });
 
     it("surfaces the upcoming deadline goal", async () => {
-      const data = await dashboardService.getDashboardData(populated.id);
+      const data = await dashboardService.getDashboardData(populated.id, populated.workspaceId);
       expect(data.upcomingDeadlines).toHaveLength(1);
       expect(data.upcomingDeadlines[0].title).toBe("Upcoming deadline");
       expect(data.upcomingDeadlines[0].horizon).toBe("QUARTERLY");
     });
 
     it("aggregates category progress across goals with that category", async () => {
-      const data = await dashboardService.getDashboardData(populated.id);
+      const data = await dashboardService.getDashboardData(populated.id, populated.workspaceId);
       // Category "Focus" was assigned to 3 weekly + 2 completed = 5
       // goals. Of those, 2 are COMPLETED.
       const focus = data.progressOverview.find((p) => p.name === "Focus");
@@ -155,13 +155,13 @@ describe("dashboardService.getDashboardData", () => {
 
   describe("cross-tenant isolation", () => {
     it("does not leak the isolated user's data into the populated user's dashboard", async () => {
-      const data = await dashboardService.getDashboardData(populated.id);
+      const data = await dashboardService.getDashboardData(populated.id, populated.workspaceId);
       const titles = data.weeklyFocus.map((g) => g.title);
       expect(titles).not.toContain("Isolated user's weekly");
     });
 
     it("returns only the isolated user's data when called with their id", async () => {
-      const data = await dashboardService.getDashboardData(isolated.id);
+      const data = await dashboardService.getDashboardData(isolated.id, isolated.workspaceId);
       expect(data.weeklyFocus).toHaveLength(1);
       expect(data.weeklyFocus[0].title).toBe("Isolated user's weekly");
       expect(data.streaksStats.totalGoals).toBe(1);

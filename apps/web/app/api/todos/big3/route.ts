@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
     const dateParam = searchParams.get("date");
     const big3 = await todoService.getBig3(
       auth.userId,
+      auth.workspaceId,
       dateParam ? new Date(dateParam) : undefined,
     );
     return NextResponse.json(big3);
@@ -29,6 +30,7 @@ export async function POST(request: NextRequest) {
     const { todoIds, date } = setBig3Schema.parse(body);
     const big3 = await todoService.setBig3(
       auth.userId,
+      auth.workspaceId,
       todoIds,
       date ? new Date(date) : undefined,
     );

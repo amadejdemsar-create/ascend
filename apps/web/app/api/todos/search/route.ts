@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const todos = await todoService.search(auth.userId, q);
+    const todos = await todoService.search(auth.userId, auth.workspaceId, q);
     return NextResponse.json(todos);
   } catch (error) {
     return handleApiError(error);

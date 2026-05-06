@@ -22,6 +22,7 @@
 
 import { prisma } from "@/lib/db";
 import { edgeEventService } from "./edge-event-service";
+import { workspaceContextService } from "./workspace-context-service";
 
 // ── Constants ────────────��───────────────────────────────────────────
 
@@ -40,6 +41,7 @@ export const graphSnapshotService = {
    */
   async precomputeDailySnapshot(
     userId: string,
+    workspaceId: string,
     date: Date,
   ): Promise<{ id: string } | null> {
     const snapshotDate = new Date(date);
@@ -48,14 +50,15 @@ export const graphSnapshotService = {
     cutoff.setUTCDate(cutoff.getUTCDate() + 1); // exclusive upper bound
 
     // ── Build nodes from latest version per ContextEntry ─────────────
-    // For each ContextEntry owned by user: pick the latest NodeVersion
-    // with createdAt < cutoff.
+    // For each ContextEntry owned by user in this workspace: pick the
+    // latest NodeVersion with createdAt < cutoff.
     const versions = await prisma.$queryRaw<
       Array<{ nodeId: string; payload: unknown }>
     >`
       SELECT DISTINCT ON ("nodeId") "nodeId", "payload"
       FROM "NodeVersion"
       WHERE "userId" = ${userId}
+        AND "workspaceId" = ${workspaceId}
         AND "nodeType" = 'CONTEXT_ENTRY'
         AND "createdAt" < ${cutoff}
       ORDER BY "nodeId", "versionNumber" DESC
@@ -76,6 +79,7 @@ export const graphSnapshotService = {
     // event was CREATED or UPDATED (not REMOVED).
     const events = await edgeEventService.listEventsBeforeCutoff(
       userId,
+      workspaceId,
       cutoff,
     );
 
@@ -164,6 +168,7 @@ export const graphSnapshotService = {
     const upserted = await prisma.graphDailySnapshot.upsert({
       where: { userId_snapshotDate: { userId, snapshotDate } },
       update: {
+        workspaceId,
         nodes: nodes as never,
         edges: edges as never,
         nodeCount: nodes.length,
@@ -171,6 +176,7 @@ export const graphSnapshotService = {
       },
       create: {
         userId,
+        workspaceId,
         snapshotDate,
         nodes: nodes as never,
         edges: edges as never,
@@ -186,6 +192,13 @@ export const graphSnapshotService = {
    * Precompute daily snapshots for ALL users for yesterday.
    * Called by the nightly cron endpoint.
    */
+  /**
+   * Precompute daily snapshots for ALL users for yesterday.
+   * Called by the nightly cron endpoint.
+   *
+   * Cron-driven: iterates users and resolves workspaceId per-user via
+   * User.defaultWorkspaceId (or workspaceContextService fallback).
+   */
   async precomputeAllForYesterday(): Promise<{
     usersProcessed: number;
     snapshotsWritten: number;
@@ -194,11 +207,26 @@ export const graphSnapshotService = {
     yesterday.setUTCHours(0, 0, 0, 0);
     yesterday.setUTCDate(yesterday.getUTCDate() - 1);
 
-    const users = await prisma.user.findMany({ select: { id: true } });
+    const users = await prisma.user.findMany({
+      select: { id: true, defaultWorkspaceId: true },
+    });
     let snapshotsWritten = 0;
 
     for (const u of users) {
-      const result = await this.precomputeDailySnapshot(u.id, yesterday).catch(
+      // Resolve workspaceId: primary from User.defaultWorkspaceId, fallback
+      // via workspaceContextService.
+      const wsId =
+        u.defaultWorkspaceId ??
+        (await workspaceContextService
+          .resolveDefaultWorkspaceId(u.id)
+          .catch(() => null));
+      if (!wsId) {
+        console.error("[graph-snapshot] no workspaceId for user; skipping", {
+          userId: u.id,
+        });
+        continue;
+      }
+      const result = await this.precomputeDailySnapshot(u.id, wsId, yesterday).catch(
         (err) => {
           console.error("[graph-snapshot] failed for user", {
             userId: u.id,

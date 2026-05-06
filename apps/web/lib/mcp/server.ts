@@ -101,7 +101,7 @@ const VERSION_TOOL_NAMES = new Set([
  * to avoid Zod v3/v4 type issues with the high-level McpServer API.
  * Runtime validation happens inside each tool handler using Zod v4.
  */
-export function createAscendMcpServer(userId: string): Server {
+export function createAscendMcpServer(userId: string, workspaceId: string): Server {
   const server = new Server(
     { name: "ascend", version: "1.0.0" },
     { capabilities: { tools: {}, resources: {} } },
@@ -117,63 +117,63 @@ export function createAscendMcpServer(userId: string): Server {
     const { name, arguments: args } = request.params;
 
     if (GOAL_TOOL_NAMES.has(name)) {
-      return handleGoalTool(userId, name, args ?? {});
+      return handleGoalTool(userId, workspaceId, name, args ?? {});
     }
 
     if (PROGRESS_TOOL_NAMES.has(name)) {
-      return handleProgressTool(userId, name, args ?? {});
+      return handleProgressTool(userId, workspaceId, name, args ?? {});
     }
 
     if (BULK_TOOL_NAMES.has(name)) {
-      return handleBulkTool(userId, name, args ?? {});
+      return handleBulkTool(userId, workspaceId, name, args ?? {});
     }
 
     if (DASHBOARD_TOOLS.has(name)) {
-      return handleDashboardTool(userId, name, args ?? {});
+      return handleDashboardTool(userId, workspaceId, name, args ?? {});
     }
 
     if (CATEGORY_TOOLS.has(name)) {
-      return handleCategoryTool(userId, name, args ?? {});
+      return handleCategoryTool(userId, workspaceId, name, args ?? {});
     }
 
     if (DATA_TOOLS.has(name)) {
-      return handleDataTool(userId, name, args ?? {});
+      return handleDataTool(userId, workspaceId, name, args ?? {});
     }
 
     if (CONTEXT_TOOLS.has(name)) {
-      return handleContextTool(userId, name, args ?? {});
+      return handleContextTool(userId, workspaceId, name, args ?? {});
     }
 
     if (CONTEXT_GRAPH_TOOLS.has(name)) {
-      return handleContextGraphTool(userId, name, args ?? {});
+      return handleContextGraphTool(userId, workspaceId, name, args ?? {});
     }
 
     if (TODO_TOOLS.has(name)) {
-      return handleTodoTool(userId, name, args ?? {});
+      return handleTodoTool(userId, workspaceId, name, args ?? {});
     }
 
     if (FOCUS_TOOLS.has(name)) {
-      return handleFocusTool(userId, name, args ?? {});
+      return handleFocusTool(userId, workspaceId, name, args ?? {});
     }
 
     if (LLM_TOOL_NAMES.has(name)) {
-      return handleLlmTool(userId, name, args ?? {});
+      return handleLlmTool(userId, workspaceId, name, args ?? {});
     }
 
     if (BLOCK_TOOL_NAMES.has(name)) {
-      return handleBlockTool(userId, name, args ?? {});
+      return handleBlockTool(userId, workspaceId, name, args ?? {});
     }
 
     if (FILE_TOOL_NAMES.has(name)) {
-      return handleFileTool(userId, name, args ?? {});
+      return handleFileTool(userId, workspaceId, name, args ?? {});
     }
 
     if (DATABASE_TOOL_NAMES.has(name)) {
-      return handleDatabaseTool(userId, name, args ?? {});
+      return handleDatabaseTool(userId, workspaceId, name, args ?? {});
     }
 
     if (VERSION_TOOL_NAMES.has(name)) {
-      return handleVersionTool(userId, name, args ?? {});
+      return handleVersionTool(userId, workspaceId, name, args ?? {});
     }
 
     // All 73 tool definitions are now routed. This fallback should never be reached.
@@ -186,7 +186,7 @@ export function createAscendMcpServer(userId: string): Server {
   // ── MCP Resources: passive context browsing ──────────────────────
 
   server.setRequestHandler(ListResourcesRequestSchema, async () => {
-    const categories = await categoryService.list(userId);
+    const categories = await categoryService.list(userId, workspaceId);
 
     const resources = [
       {
@@ -216,7 +216,7 @@ export function createAscendMcpServer(userId: string): Server {
     const { uri } = request.params;
 
     if (uri === "ascend://context/all") {
-      const entries = await contextService.list(userId);
+      const entries = await contextService.list(userId, workspaceId);
       return {
         contents: [{
           uri,
@@ -227,7 +227,7 @@ export function createAscendMcpServer(userId: string): Server {
     }
 
     if (uri === "ascend://context/current-priorities") {
-      const priorities = await contextService.getCurrentPriorities(userId);
+      const priorities = await contextService.getCurrentPriorities(userId, workspaceId);
       return {
         contents: [{
           uri,
@@ -240,7 +240,7 @@ export function createAscendMcpServer(userId: string): Server {
     const categoryMatch = uri.match(/^ascend:\/\/context\/category\/(.+)$/);
     if (categoryMatch) {
       const categoryId = categoryMatch[1];
-      const entries = await contextService.list(userId, { categoryId });
+      const entries = await contextService.list(userId, workspaceId, { categoryId });
       return {
         contents: [{
           uri,

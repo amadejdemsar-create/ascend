@@ -26,6 +26,7 @@
 import { prisma } from "@/lib/db";
 import { markdownToBlocks, extractText } from "@ascend/editor";
 import * as Y from "yjs";
+import { permissionService } from "@/lib/services/permission-service";
 
 export const blockMigrationService = {
   /**
@@ -36,14 +37,18 @@ export const blockMigrationService = {
    */
   async migrateEntryToBlocks(
     userId: string,
+    workspaceId: string,
     entryId: string,
   ): Promise<{
     blockDocumentId: string;
     version: number;
   }> {
-    // 1. Verify entry ownership (safety rule 1: userId in where clause)
+    // Permission check (mutating operation: creates a BlockDocument)
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
+    // 1. Verify entry ownership (safety rule 1: userId + workspaceId in where clause)
     const entry = await prisma.contextEntry.findFirst({
-      where: { id: entryId, userId },
+      where: { id: entryId, userId, workspaceId },
       select: { id: true, content: true, blockDocumentId: true },
     });
     if (!entry) throw new Error("Entry not found");
@@ -51,7 +56,7 @@ export const blockMigrationService = {
     // 2. Idempotent: if already migrated, return existing.
     if (entry.blockDocumentId) {
       const existing = await prisma.blockDocument.findFirst({
-        where: { id: entry.blockDocumentId, userId },
+        where: { id: entry.blockDocumentId, userId, workspaceId },
         select: { id: true, version: true },
       });
       if (existing) {
@@ -130,6 +135,7 @@ export const blockMigrationService = {
       const doc = await tx.blockDocument.create({
         data: {
           userId,
+          workspaceId,
           entryId,
           state: Buffer.from(state),
           snapshot: snapshot as never,
@@ -161,12 +167,16 @@ export const blockMigrationService = {
    */
   async regenerateFromContent(
     userId: string,
+    workspaceId: string,
     entryId: string,
     newContent: string,
   ): Promise<{ version: number }> {
-    // 1. Verify entry ownership (safety rule 1)
+    // Permission check (mutating operation: overwrites a BlockDocument)
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
+    // 1. Verify entry ownership (safety rule 1: userId + workspaceId in where clause)
     const entry = await prisma.contextEntry.findFirst({
-      where: { id: entryId, userId },
+      where: { id: entryId, userId, workspaceId },
       select: { id: true, blockDocumentId: true },
     });
     if (!entry) throw new Error("Entry not found");
@@ -177,9 +187,9 @@ export const blockMigrationService = {
       return { version: 0 };
     }
 
-    // 2. Load existing block document (userId-scoped)
+    // 2. Load existing block document (userId + workspaceId scoped)
     const existing = await prisma.blockDocument.findFirst({
-      where: { id: entry.blockDocumentId, userId },
+      where: { id: entry.blockDocumentId, userId, workspaceId },
       select: { id: true, version: true },
     });
     if (!existing) {

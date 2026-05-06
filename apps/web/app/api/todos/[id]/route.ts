@@ -12,7 +12,7 @@ export async function GET(
 
   try {
     const { id } = await params;
-    const todo = await todoService.getById(auth.userId, id);
+    const todo = await todoService.getById(auth.userId, auth.workspaceId, id);
     if (!todo) {
       return NextResponse.json({ error: "Todo not found" }, { status: 404 });
     }
@@ -33,7 +33,7 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
     const data = updateTodoSchema.parse(body);
-    const todo = await todoService.update(auth.userId, id, data);
+    const todo = await todoService.update(auth.userId, auth.workspaceId, id, data);
     return NextResponse.json(todo);
   } catch (error) {
     return handleApiError(error);
@@ -49,7 +49,7 @@ export async function DELETE(
 
   try {
     const { id } = await params;
-    const todo = await todoService.delete(auth.userId, id);
+    const todo = await todoService.delete(auth.userId, auth.workspaceId, id);
     return NextResponse.json(todo);
   } catch (error) {
     return handleApiError(error);

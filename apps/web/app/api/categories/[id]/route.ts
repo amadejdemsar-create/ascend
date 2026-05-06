@@ -12,7 +12,7 @@ export async function GET(
 
   try {
     const { id } = await params;
-    const category = await categoryService.getById(auth.userId, id);
+    const category = await categoryService.getById(auth.userId, auth.workspaceId, id);
     if (!category) {
       return NextResponse.json({ error: "Category not found" }, { status: 404 });
     }
@@ -33,7 +33,7 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
     const data = updateCategorySchema.parse(body);
-    const category = await categoryService.update(auth.userId, id, data);
+    const category = await categoryService.update(auth.userId, auth.workspaceId, id, data);
     return NextResponse.json(category);
   } catch (error) {
     return handleApiError(error);
@@ -49,7 +49,7 @@ export async function DELETE(
 
   try {
     const { id } = await params;
-    const category = await categoryService.delete(auth.userId, id);
+    const category = await categoryService.delete(auth.userId, auth.workspaceId, id);
     return NextResponse.json(category);
   } catch (error) {
     return handleApiError(error);

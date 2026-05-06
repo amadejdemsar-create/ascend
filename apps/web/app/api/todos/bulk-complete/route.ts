@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { ids } = bulkCompleteTodosSchema.parse(body);
-    const results = await todoService.bulkComplete(auth.userId, ids);
+    const results = await todoService.bulkComplete(auth.userId, auth.workspaceId, ids);
     return NextResponse.json(results);
   } catch (error) {
     return handleApiError(error);

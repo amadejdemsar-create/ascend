@@ -21,7 +21,7 @@ export async function GET(
   try {
     const { entryId } = await params;
 
-    const row = await databaseRowService.getByEntryId(auth.userId, entryId);
+    const row = await databaseRowService.getByEntryId(auth.userId, auth.workspaceId, entryId);
 
     if (!row) {
       return NextResponse.json({ error: "Row not found" }, { status: 404 });

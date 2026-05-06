@@ -5,6 +5,7 @@
 
 import { goalService } from "@/lib/services/goal-service";
 import { categoryService } from "@/lib/services/category-service";
+import { permissionService } from "@/lib/services/permission-service";
 import { HORIZON_ORDER } from "@/lib/constants";
 import type {
   CreateGoalInput,
@@ -94,8 +95,12 @@ function normalizePriority(raw: string | undefined): PriorityKey {
  */
 export async function runImport(
   userId: string,
+  workspaceId: string,
   payload: ImportData,
 ): Promise<ImportSummary> {
+  // Permission gate: import creates entities, requires WRITE_NODE
+  await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
   const normalized = isOldTodosFormat(payload)
     ? migrateOldFormat(payload)
     : {
@@ -111,7 +116,7 @@ export async function runImport(
 
   for (const cat of normalized.categories) {
     try {
-      const created = await categoryService.create(userId, {
+      const created = await categoryService.create(userId, workspaceId, {
         name: cat.name ?? cat.title ?? "Unnamed",
         color: cat.color ?? "#4F46E5",
         icon: cat.icon ?? undefined,
@@ -173,7 +178,7 @@ export async function runImport(
         timely: goal.timely,
       };
 
-      const created = await goalService.create(userId, goalData);
+      const created = await goalService.create(userId, workspaceId, goalData);
       if (goal.id !== undefined) {
         goalIdMap.set(String(goal.id), created.id);
       }

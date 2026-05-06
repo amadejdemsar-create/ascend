@@ -12,7 +12,7 @@ export async function GET(
 
   try {
     const { id } = await params;
-    const entry = await contextService.getById(auth.userId, id);
+    const entry = await contextService.getById(auth.userId, auth.workspaceId, id);
     if (!entry) {
       return NextResponse.json({ error: "Context entry not found" }, { status: 404 });
     }
@@ -33,7 +33,7 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
     const data = updateContextSchema.parse(body);
-    const entry = await contextService.update(auth.userId, id, data);
+    const entry = await contextService.update(auth.userId, auth.workspaceId, id, data);
     return NextResponse.json(entry);
   } catch (error) {
     return handleApiError(error);
@@ -49,7 +49,7 @@ export async function DELETE(
 
   try {
     const { id } = await params;
-    await contextService.delete(auth.userId, id);
+    await contextService.delete(auth.userId, auth.workspaceId, id);
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     return handleApiError(error);

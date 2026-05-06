@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const input = createContextLinkSchema.parse(body);
-    const link = await contextLinkService.create(auth.userId, input);
+    const link = await contextLinkService.create(auth.userId, auth.workspaceId, input);
     return NextResponse.json(link, { status: 201 });
   } catch (error) {
     return handleApiError(error);
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url);
     const fromEntryId = url.searchParams.get("fromEntryId") ?? undefined;
     const toEntryId = url.searchParams.get("toEntryId") ?? undefined;
-    const links = await contextLinkService.list(auth.userId, { fromEntryId, toEntryId });
+    const links = await contextLinkService.list(auth.userId, auth.workspaceId, { fromEntryId, toEntryId });
     return NextResponse.json(links);
   } catch (error) {
     return handleApiError(error);

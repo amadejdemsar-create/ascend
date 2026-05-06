@@ -42,13 +42,14 @@ function formatTree(goals: FormatTreeNode[], indent: number = 0): string {
  */
 export async function handleDashboardTool(
   userId: string,
+  workspaceId: string,
   name: string,
   args: Record<string, unknown>,
 ): Promise<McpContent> {
   try {
     switch (name) {
       case "get_dashboard": {
-        const data = await dashboardService.getDashboardData(userId);
+        const data = await dashboardService.getDashboardData(userId, workspaceId);
 
         const weeklyLines = data.weeklyFocus
           .map(
@@ -97,11 +98,11 @@ export async function handleDashboardTool(
 
       case "get_current_priorities": {
         const [inProgress, notStarted] = await Promise.all([
-          goalService.list(userId, {
+          goalService.list(userId, workspaceId, {
             horizon: "WEEKLY",
             status: "IN_PROGRESS",
           }),
-          goalService.list(userId, {
+          goalService.list(userId, workspaceId, {
             horizon: "WEEKLY",
             status: "NOT_STARTED",
           }),
@@ -137,7 +138,7 @@ export async function handleDashboardTool(
       }
 
       case "get_stats": {
-        const data = await dashboardService.getDashboardData(userId);
+        const data = await dashboardService.getDashboardData(userId, workspaceId);
         const stats = data.streaksStats;
 
         const formatted =
@@ -156,7 +157,7 @@ export async function handleDashboardTool(
       }
 
       case "get_timeline": {
-        const tree = await goalService.getTree(userId);
+        const tree = await goalService.getTree(userId, workspaceId);
         const formatted =
           "## Goal Timeline (Yearly > Quarterly > Monthly > Weekly)\n\n" +
           (tree.length > 0 ? formatTree(tree as unknown as FormatTreeNode[]) : "No goals found.") +

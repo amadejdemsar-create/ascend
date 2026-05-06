@@ -66,7 +66,7 @@ export const dashboardService = {
    * Aggregate all dashboard widget data in a single call.
    * Runs independent queries in parallel for performance.
    */
-  async getDashboardData(userId: string): Promise<DashboardData> {
+  async getDashboardData(userId: string, workspaceId: string): Promise<DashboardData> {
     const now = new Date();
 
     // Parallel batch 1: four independent queries
@@ -76,6 +76,7 @@ export const dashboardService = {
         prisma.goal.findMany({
           where: {
             userId,
+            workspaceId,
             horizon: "WEEKLY",
             status: { in: ["NOT_STARTED", "IN_PROGRESS"] },
           },
@@ -88,6 +89,7 @@ export const dashboardService = {
         prisma.goal.findMany({
           where: {
             userId,
+            workspaceId,
             deadline: { gte: now, lte: addDays(now, 14) },
             status: { in: ["NOT_STARTED", "IN_PROGRESS"] },
           },
@@ -97,7 +99,7 @@ export const dashboardService = {
 
         // c) All goals with categories for aggregation
         prisma.goal.findMany({
-          where: { userId, categoryId: { not: null } },
+          where: { userId, workspaceId, categoryId: { not: null } },
           select: {
             id: true,
             status: true,
@@ -110,6 +112,7 @@ export const dashboardService = {
         prisma.goal.count({
           where: {
             userId,
+            workspaceId,
             status: "COMPLETED",
             completedAt: { gte: startOfMonth(now), lte: endOfMonth(now) },
           },
@@ -118,12 +121,13 @@ export const dashboardService = {
 
     // Parallel batch 2: totals for completion rate + user stats + active streaks + onboarding
     const [totalGoals, totalCompleted, userStats, activeStreaksCount, userRecord] = await Promise.all([
-      prisma.goal.count({ where: { userId } }),
-      prisma.goal.count({ where: { userId, status: "COMPLETED" } }),
+      prisma.goal.count({ where: { userId, workspaceId } }),
+      prisma.goal.count({ where: { userId, workspaceId, status: "COMPLETED" } }),
       prisma.userStats.findUnique({ where: { userId } }),
       prisma.goal.count({
         where: {
           userId,
+          workspaceId,
           isRecurring: true,
           recurringSourceId: null,
           currentStreak: { gt: 0 },

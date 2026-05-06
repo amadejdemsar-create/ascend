@@ -5,6 +5,7 @@ import { validateHierarchy, recalcParentProgress } from "@/lib/services/hierarch
 import { gamificationService } from "@/lib/services/gamification-service";
 import { goalRecurringService } from "@/lib/services/goal-recurring-service";
 import { versioningService } from "@/lib/services/versioning-service";
+import { permissionService } from "@/lib/services/permission-service";
 
 // A Prisma client suitable for either standalone use or inside an
 // interactive transaction. Service methods that perform multiple
@@ -19,12 +20,14 @@ export const goalService = {
    */
   async list(
     userId: string,
+    workspaceId: string,
     filters?: GoalFilters,
     pagination?: { skip?: number; take?: number },
   ) {
     return prisma.goal.findMany({
       where: {
         userId,
+        workspaceId,
         ...(filters?.horizon && { horizon: filters.horizon }),
         ...(filters?.status && { status: filters.status }),
         ...(filters?.priority && { priority: filters.priority }),
@@ -41,15 +44,18 @@ export const goalService = {
   /**
    * Create a new goal. Validates hierarchy rules if parentId is provided.
    */
-  async create(userId: string, data: CreateGoalInput) {
+  async create(userId: string, workspaceId: string, data: CreateGoalInput) {
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
     if (data.parentId) {
-      await validateHierarchy(userId, data.parentId, data.horizon);
+      await validateHierarchy(userId, workspaceId, data.parentId, data.horizon);
     }
 
     return prisma.goal.create({
       data: {
         ...data,
         userId,
+        workspaceId,
         startDate: data.startDate ? new Date(data.startDate) : undefined,
         deadline: data.deadline ? new Date(data.deadline) : undefined,
       },
@@ -60,9 +66,9 @@ export const goalService = {
    * Get a single goal by ID with its category, children, and parent.
    * Returns null if not found or not owned by the user.
    */
-  async getById(userId: string, id: string) {
+  async getById(userId: string, workspaceId: string, id: string) {
     return prisma.goal.findFirst({
-      where: { id, userId },
+      where: { id, userId, workspaceId },
       include: {
         category: true,
         children: {
@@ -83,11 +89,14 @@ export const goalService = {
    */
   async update(
     userId: string,
+    workspaceId: string,
     id: string,
     data: UpdateGoalInput,
     client: PrismaClientLike = prisma,
   ) {
-    const existing = await client.goal.findFirst({ where: { id, userId } });
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
+    const existing = await client.goal.findFirst({ where: { id, userId, workspaceId } });
     if (!existing) throw new Error("Goal not found");
 
     if (data.parentId !== undefined || data.horizon) {
@@ -95,7 +104,7 @@ export const goalService = {
       const newHorizon = data.horizon ?? existing.horizon;
 
       if (newParentId) {
-        await validateHierarchy(userId, newParentId, newHorizon);
+        await validateHierarchy(userId, workspaceId, newParentId, newHorizon);
       }
     }
 
@@ -115,11 +124,11 @@ export const goalService = {
 
     // If status changed on a goal with a parent, recalculate parent progress.
     if (data.status && updated.parentId) {
-      await recalcParentProgress(userId, id, client);
+      await recalcParentProgress(userId, workspaceId, id, client);
     }
 
     // Wave 7: schedule debounced snapshot after successful update
-    versioningService.scheduleSnapshot(userId, "GOAL", id, "EDIT_DEBOUNCED");
+    versioningService.scheduleSnapshot(userId, workspaceId, "GOAL", id, "EDIT_DEBOUNCED");
 
     return updated;
   },
@@ -142,21 +151,24 @@ export const goalService = {
    */
   async completeWithSideEffects(
     userId: string,
+    workspaceId: string,
     id: string,
     data: UpdateGoalInput,
   ) {
+    // Permission checked inside goalService.update (called within the tx)
     const result = await prisma.$transaction(async (tx) => {
       // Read the existing goal before the update so we have the
       // correct horizon + priority for the XP calculation and the
       // recurringSourceId to decide whether to bump a streak.
-      const existing = await tx.goal.findFirst({ where: { id, userId } });
+      const existing = await tx.goal.findFirst({ where: { id, userId, workspaceId } });
       if (!existing) throw new Error("Goal not found");
 
       // 1. Apply the update inside the transaction.
-      const goal = await goalService.update(userId, id, data, tx);
+      const goal = await goalService.update(userId, workspaceId, id, data, tx);
 
       // 2. Award XP using the pre-update horizon/priority so the
       // source string is stable even if the caller patched them.
+      // gamificationService is userId-only (XP/streaks are user-scoped).
       const xpResult = await gamificationService.awardXp(
         userId,
         id,
@@ -177,7 +189,7 @@ export const goalService = {
       }
 
       // 4. Recalculate parent progress up the hierarchy.
-      await recalcParentProgress(userId, id, tx);
+      await recalcParentProgress(userId, workspaceId, id, tx);
 
       return {
         ...goal,
@@ -187,7 +199,7 @@ export const goalService = {
     });
 
     // Wave 7: schedule snapshot after successful completion transaction
-    versioningService.scheduleSnapshot(userId, "GOAL", id, "EDIT_DEBOUNCED");
+    versioningService.scheduleSnapshot(userId, workspaceId, "GOAL", id, "EDIT_DEBOUNCED");
 
     return result;
   },
@@ -195,12 +207,14 @@ export const goalService = {
   /**
    * Delete a goal. Children get parentId set to null via onDelete: SetNull.
    */
-  async delete(userId: string, id: string) {
-    const goal = await prisma.goal.findFirst({ where: { id, userId } });
+  async delete(userId: string, workspaceId: string, id: string) {
+    await permissionService.assertCanPerform(userId, workspaceId, "DELETE_NODE");
+
+    const goal = await prisma.goal.findFirst({ where: { id, userId, workspaceId } });
     if (!goal) throw new Error("Goal not found");
 
     // Wave 7: tombstone snapshot BEFORE delete so version history persists
-    await versioningService.createSnapshot(userId, "GOAL", id, "EDIT_EXPLICIT");
+    await versioningService.createSnapshot(userId, workspaceId, "GOAL", id, "EDIT_EXPLICIT");
 
     return prisma.goal.delete({ where: { id } });
   },
@@ -208,23 +222,25 @@ export const goalService = {
   /**
    * Recursively delete a goal and all of its descendants (depth-first).
    * Used by the MCP `delete_goal` tool when `cascade: true` is passed.
-   * Each recursive call re-verifies ownership via findFirst({id, userId}).
+   * Each recursive call re-verifies ownership via findFirst({id, userId, workspaceId}).
    * Tombstone snapshots are created for every node before deletion so the
    * version history records the moment of deletion.
    */
-  async deleteCascade(userId: string, id: string): Promise<void> {
+  async deleteCascade(userId: string, workspaceId: string, id: string): Promise<void> {
+    await permissionService.assertCanPerform(userId, workspaceId, "DELETE_NODE");
+
     const goal = await prisma.goal.findFirst({
-      where: { id, userId },
+      where: { id, userId, workspaceId },
       include: { children: { select: { id: true } } },
     });
     if (!goal) throw new Error("Goal not found");
 
     for (const child of goal.children) {
-      await goalService.deleteCascade(userId, child.id);
+      await goalService.deleteCascade(userId, workspaceId, child.id);
     }
 
     // Tombstone snapshot before delete so version history persists
-    await versioningService.createSnapshot(userId, "GOAL", id, "EDIT_EXPLICIT");
+    await versioningService.createSnapshot(userId, workspaceId, "GOAL", id, "EDIT_EXPLICIT");
 
     await prisma.goal.delete({ where: { id } });
   },
@@ -233,9 +249,9 @@ export const goalService = {
    * Get the full goal tree for a user.
    * Fetches all top-level goals (no parent) with nested children 3 levels deep.
    */
-  async getTree(userId: string) {
+  async getTree(userId: string, workspaceId: string) {
     return prisma.goal.findMany({
-      where: { userId, parentId: null },
+      where: { userId, workspaceId, parentId: null },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
       include: {
         category: true,
@@ -262,10 +278,11 @@ export const goalService = {
   /**
    * Search goals by title or description (case insensitive).
    */
-  async search(userId: string, query: string) {
+  async search(userId: string, workspaceId: string, query: string) {
     return prisma.goal.findMany({
       where: {
         userId,
+        workspaceId,
         OR: [
           { title: { contains: query, mode: "insensitive" } },
           { description: { contains: query, mode: "insensitive" } },
@@ -285,11 +302,14 @@ export const goalService = {
    */
   async logProgress(
     userId: string,
+    workspaceId: string,
     goalId: string,
     data: AddProgressInput,
     client: PrismaClientLike = prisma,
   ) {
-    const goal = await client.goal.findFirst({ where: { id: goalId, userId } });
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
+    const goal = await client.goal.findFirst({ where: { id: goalId, userId, workspaceId } });
     if (!goal) throw new Error("Goal not found");
 
     const log = await client.progressLog.create({
@@ -297,6 +317,7 @@ export const goalService = {
         goalId,
         value: data.value,
         note: data.note,
+        workspaceId,
       },
     });
 
@@ -329,12 +350,15 @@ export const goalService = {
    */
   async reverseProgress(
     userId: string,
+    workspaceId: string,
     goalId: string,
     value: number,
     note: string | null = null,
     client: PrismaClientLike = prisma,
   ) {
-    const goal = await client.goal.findFirst({ where: { id: goalId, userId } });
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
+    const goal = await client.goal.findFirst({ where: { id: goalId, userId, workspaceId } });
     if (!goal) throw new Error("Goal not found");
 
     // Find the most recent matching log. If no match, still decrement the
@@ -370,13 +394,15 @@ export const goalService = {
 
   /**
    * Batch update sortOrder for multiple goals in a single transaction.
-   * The where clause includes userId to ensure users can only reorder their own goals.
+   * The where clause includes userId and workspaceId to ensure users can only reorder their own goals.
    */
-  async reorderGoals(userId: string, items: ReorderGoalsInput["items"]) {
+  async reorderGoals(userId: string, workspaceId: string, items: ReorderGoalsInput["items"]) {
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
     await prisma.$transaction(
       items.map(({ id, sortOrder }) =>
         prisma.goal.update({
-          where: { id, userId },
+          where: { id, userId, workspaceId },
           data: { sortOrder },
         })
       )
@@ -387,10 +413,11 @@ export const goalService = {
    * Get goals with deadlines within a date range.
    * Excludes completed and abandoned goals. Ordered by deadline ascending.
    */
-  async getByDeadlineRange(userId: string, start: Date, end: Date) {
+  async getByDeadlineRange(userId: string, workspaceId: string, start: Date, end: Date) {
     return prisma.goal.findMany({
       where: {
         userId,
+        workspaceId,
         deadline: { gte: start, lte: end },
         status: { notIn: ["COMPLETED", "ABANDONED"] },
       },
@@ -410,8 +437,8 @@ export const goalService = {
   /**
    * Get all progress log entries for a goal, ordered by most recent first.
    */
-  async getProgressHistory(userId: string, goalId: string) {
-    const goal = await prisma.goal.findFirst({ where: { id: goalId, userId } });
+  async getProgressHistory(userId: string, workspaceId: string, goalId: string) {
+    const goal = await prisma.goal.findFirst({ where: { id: goalId, userId, workspaceId } });
     if (!goal) throw new Error("Goal not found");
 
     return prisma.progressLog.findMany({

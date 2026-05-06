@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { items } = reorderGoalsSchema.parse(body);
-    await goalService.reorderGoals(auth.userId, items);
+    await goalService.reorderGoals(auth.userId, auth.workspaceId, items);
     return NextResponse.json({ success: true });
   } catch (error) {
     return handleApiError(error);

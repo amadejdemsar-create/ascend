@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json([]);
     }
 
-    const goals = await goalService.search(auth.userId, q);
+    const goals = await goalService.search(auth.userId, auth.workspaceId, q);
     return NextResponse.json(goals);
   } catch (error) {
     return handleApiError(error);

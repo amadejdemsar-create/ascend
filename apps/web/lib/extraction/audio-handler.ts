@@ -17,11 +17,12 @@ export async function extractAudio(
   opts?: ExtractionHandlerOpts,
 ): Promise<ExtractionResult> {
   const userId = opts?.userId;
-  if (!userId) {
-    throw new Error("Audio extraction requires userId for cost tracking");
+  const workspaceId = opts?.workspaceId;
+  if (!userId || !workspaceId) {
+    throw new Error("Audio extraction requires userId and workspaceId for cost tracking");
   }
 
-  const result = await llmService.transcribe(userId, buffer, mimeType, {
+  const result = await llmService.transcribe(userId, workspaceId, buffer, mimeType, {
     signal: opts?.signal,
   });
 

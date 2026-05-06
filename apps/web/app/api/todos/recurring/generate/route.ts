@@ -28,11 +28,12 @@ export async function POST(request: NextRequest) {
       });
       instances = await todoRecurringService.generateInstancesForRange(
         auth.userId,
+        auth.workspaceId,
         start,
         end,
       );
     } else {
-      instances = await todoRecurringService.generateDueInstances(auth.userId);
+      instances = await todoRecurringService.generateDueInstances(auth.userId, auth.workspaceId);
     }
 
     return NextResponse.json(instances);

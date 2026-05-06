@@ -18,6 +18,7 @@ export async function GET(
     );
     const data = await todoRecurringService.getCompletionHistory(
       auth.userId,
+      auth.workspaceId,
       id,
       query.days
     );

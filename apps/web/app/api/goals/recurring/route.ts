@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   if (!auth.success) return unauthorizedResponse();
 
   try {
-    const templates = await goalRecurringService.listTemplates(auth.userId);
+    const templates = await goalRecurringService.listTemplates(auth.userId, auth.workspaceId);
     return NextResponse.json(templates);
   } catch (error) {
     return handleApiError(error);

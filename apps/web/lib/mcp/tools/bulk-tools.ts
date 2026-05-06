@@ -16,6 +16,7 @@ const moveGoalSchema = updateGoalSchema.pick({ horizon: true, parentId: true });
  */
 export async function handleBulkTool(
   userId: string,
+  workspaceId: string,
   name: string,
   args: Record<string, unknown>,
 ): Promise<McpContent> {
@@ -37,7 +38,7 @@ export async function handleBulkTool(
 
         for (const id of ids) {
           try {
-            const existing = await goalService.getById(userId, id);
+            const existing = await goalService.getById(userId, workspaceId, id);
             if (!existing) {
               failed.push({ id, error: "Goal not found" });
               continue;
@@ -51,6 +52,7 @@ export async function handleBulkTool(
             // back the whole per-goal completion.
             const result = await goalService.completeWithSideEffects(
               userId,
+              workspaceId,
               id,
               { status: "COMPLETED" },
             );
@@ -88,7 +90,7 @@ export async function handleBulkTool(
         }
 
         const payload = moveGoalSchema.parse(rawPayload);
-        const result = await goalService.update(userId, id, payload);
+        const result = await goalService.update(userId, workspaceId, id, payload);
         const text = `Goal moved successfully.\n\n${JSON.stringify(result, null, 2)}`;
         return { content: [{ type: "text", text }] };
       }

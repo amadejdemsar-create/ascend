@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
       start: searchParams.get("start"),
       end: searchParams.get("end"),
     });
-    const todos = await todoService.getByDateRange(auth.userId, start, end);
+    const todos = await todoService.getByDateRange(auth.userId, auth.workspaceId, start, end);
     return NextResponse.json(todos);
   } catch (error) {
     return handleApiError(error);

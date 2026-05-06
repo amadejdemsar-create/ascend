@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
     const { fromVersionId, toVersionId } = diffVersionsBodySchema.parse(body);
     const result = await diffService.diffVersions(
       auth.userId,
+      auth.workspaceId,
       fromVersionId,
       toVersionId,
     );

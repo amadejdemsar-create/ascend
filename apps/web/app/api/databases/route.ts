@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   if (!auth.success) return unauthorizedResponse();
 
   try {
-    const result = await databaseService.list(auth.userId);
+    const result = await databaseService.list(auth.userId, auth.workspaceId);
     return NextResponse.json(result);
   } catch (error) {
     return handleApiError(error);
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const data = createDatabaseSchema.parse(body);
-    const result = await databaseService.create(auth.userId, data);
+    const result = await databaseService.create(auth.userId, auth.workspaceId, data);
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
     return handleApiError(error);

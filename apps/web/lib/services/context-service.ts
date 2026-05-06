@@ -15,14 +15,15 @@ import { contextLinkService } from "@/lib/services/context-link-service";
 import { embeddingService } from "@/lib/services/embedding-service";
 import { blockMigrationService } from "@/lib/services/block-migration-service";
 import { versioningService } from "@/lib/services/versioning-service";
+import { permissionService } from "@/lib/services/permission-service";
 
 export const contextService = {
   /**
    * List context entries for a user with optional category/tag filters.
    * Ordered by updatedAt descending (most recently edited first).
    */
-  async list(userId: string, filters?: ContextFilters) {
-    const where: Prisma.ContextEntryWhereInput = { userId };
+  async list(userId: string, workspaceId: string, filters?: ContextFilters) {
+    const where: Prisma.ContextEntryWhereInput = { userId, workspaceId };
 
     if (filters?.categoryId) where.categoryId = filters.categoryId;
     if (filters?.tag) where.tags = { has: filters.tag };
@@ -40,10 +41,12 @@ export const contextService = {
    * Create a new context entry. Parses [[wikilinks]] from content via the
    * @ascend/core parser and syncs typed CONTENT-source links.
    */
-  async create(userId: string, data: CreateContextInput) {
+  async create(userId: string, workspaceId: string, data: CreateContextInput) {
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
     if (data.categoryId) {
       const category = await prisma.category.findFirst({
-        where: { id: data.categoryId, userId },
+        where: { id: data.categoryId, userId, workspaceId },
       });
       if (!category) throw new Error("Category not found");
     }
@@ -51,6 +54,7 @@ export const contextService = {
     const entry = await prisma.contextEntry.create({
       data: {
         userId,
+        workspaceId,
         title: data.title,
         content: data.content,
         categoryId: data.categoryId,
@@ -66,6 +70,7 @@ export const contextService = {
     if (parsed.length > 0) {
       await contextLinkService.syncContentLinks(
         userId,
+        workspaceId,
         entry.id,
         parsed.map((p) => ({ relation: p.relation, title: p.title })),
       );
@@ -77,7 +82,7 @@ export const contextService = {
     // The Phase 4 backfill script handles historical entries that were created
     // before this hook was added or where the embed call failed.
     void embeddingService
-      .upsertEmbeddingForEntry(userId, entry.id)
+      .upsertEmbeddingForEntry(userId, workspaceId, entry.id)
       .catch((err) =>
         console.warn(
           `[contextService.create] Embedding generation failed for entry ${entry.id}:`,
@@ -92,9 +97,9 @@ export const contextService = {
    * Get a single context entry by ID with ownership check.
    * Joins outgoing and incoming ContextLink edges for the detail panel.
    */
-  async getById(userId: string, id: string) {
+  async getById(userId: string, workspaceId: string, id: string) {
     const entry = await prisma.contextEntry.findFirst({
-      where: { id, userId },
+      where: { id, userId, workspaceId },
       include: {
         category: { select: { id: true, name: true, color: true, icon: true } },
         outgoingLinks: {
@@ -121,15 +126,17 @@ export const contextService = {
    * Update a context entry. Re-parses [[wikilinks]] if content changed
    * and syncs typed CONTENT-source links via contextLinkService.
    */
-  async update(userId: string, id: string, data: UpdateContextInput) {
+  async update(userId: string, workspaceId: string, id: string, data: UpdateContextInput) {
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
     const existing = await prisma.contextEntry.findFirst({
-      where: { id, userId },
+      where: { id, userId, workspaceId },
     });
     if (!existing) throw new Error("Context entry not found");
 
     if (data.categoryId) {
       const category = await prisma.category.findFirst({
-        where: { id: data.categoryId, userId },
+        where: { id: data.categoryId, userId, workspaceId },
       });
       if (!category) throw new Error("Category not found");
     }
@@ -155,6 +162,7 @@ export const contextService = {
       const parsed = parseWikilinks(data.content);
       await contextLinkService.syncContentLinks(
         userId,
+        workspaceId,
         id,
         parsed.map((p) => ({ relation: p.relation, title: p.title })),
       );
@@ -171,7 +179,7 @@ export const contextService = {
 
     if (contentChanged || titleChanged) {
       void embeddingService
-        .upsertEmbeddingForEntry(userId, id)
+        .upsertEmbeddingForEntry(userId, workspaceId, id)
         .catch((err) =>
           console.warn(
             `[contextService.update] Embedding regeneration failed for entry ${id}:`,
@@ -186,7 +194,7 @@ export const contextService = {
     // Synchronous: the cost is small (markdown to blocks is fast, no LLM).
     if (contentChanged && data.content !== undefined) {
       void blockMigrationService
-        .regenerateFromContent(userId, id, data.content)
+        .regenerateFromContent(userId, workspaceId, id, data.content)
         .catch((err) =>
           console.warn(
             `[contextService.update] Block doc regeneration failed for entry ${id}:`,
@@ -196,7 +204,7 @@ export const contextService = {
     }
 
     // Wave 7: schedule a debounced snapshot after successful update
-    versioningService.scheduleSnapshot(userId, "CONTEXT_ENTRY", id, "EDIT_DEBOUNCED");
+    versioningService.scheduleSnapshot(userId, workspaceId, "CONTEXT_ENTRY", id, "EDIT_DEBOUNCED");
 
     return updated;
   },
@@ -205,14 +213,16 @@ export const contextService = {
    * Delete a context entry. ContextLinks are cascade-deleted by Prisma
    * (onDelete: Cascade on both fromEntry and toEntry relations).
    */
-  async delete(userId: string, id: string) {
+  async delete(userId: string, workspaceId: string, id: string) {
+    await permissionService.assertCanPerform(userId, workspaceId, "DELETE_NODE");
+
     const existing = await prisma.contextEntry.findFirst({
-      where: { id, userId },
+      where: { id, userId, workspaceId },
     });
     if (!existing) throw new Error("Context entry not found");
 
     // Wave 7: tombstone snapshot BEFORE cascade-delete so the version persists
-    await versioningService.createSnapshot(userId, "CONTEXT_ENTRY", id, "EDIT_EXPLICIT");
+    await versioningService.createSnapshot(userId, workspaceId, "CONTEXT_ENTRY", id, "EDIT_EXPLICIT");
 
     return prisma.contextEntry.delete({ where: { id } });
   },
@@ -221,8 +231,10 @@ export const contextService = {
    * Toggle (or explicitly set) the pinned state of a context entry.
    * If `isPinned` is provided, uses that value; otherwise flips the current value.
    */
-  async togglePin(userId: string, id: string, isPinned?: boolean) {
-    const entry = await prisma.contextEntry.findFirst({ where: { id, userId } });
+  async togglePin(userId: string, workspaceId: string, id: string, isPinned?: boolean) {
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
+    const entry = await prisma.contextEntry.findFirst({ where: { id, userId, workspaceId } });
     if (!entry) throw new Error("Context entry not found");
 
     const newValue = typeof isPinned === "boolean" ? isPinned : !entry.isPinned;
@@ -250,6 +262,7 @@ export const contextService = {
    */
   async search(
     userId: string,
+    workspaceId: string,
     query: string,
     opts?: { mode?: ContextSearchMode; limit?: number },
   ): Promise<ContextEntrySearchResult[]> {
@@ -257,17 +270,17 @@ export const contextService = {
     const limit = opts?.limit ?? 20;
 
     if (mode === "text") {
-      return searchText(userId, query, limit);
+      return searchText(userId, workspaceId, query, limit);
     }
 
     if (mode === "semantic") {
-      return searchSemantic(userId, query, limit);
+      return searchSemantic(userId, workspaceId, query, limit);
     }
 
     // mode === "hybrid": run both paths in parallel, merge results
     const [textResults, semanticResults] = await Promise.all([
-      searchText(userId, query, limit),
-      searchSemantic(userId, query, limit).catch((err) => {
+      searchText(userId, workspaceId, query, limit),
+      searchSemantic(userId, workspaceId, query, limit).catch((err) => {
         // If semantic search fails (e.g. missing API key, cost cap hit),
         // gracefully degrade to text-only results.
         console.warn(
@@ -285,10 +298,10 @@ export const contextService = {
    * Auto-derive a "Current Priorities" document from active goals and today's Big 3.
    * Returns dynamic content (not persisted as a ContextEntry).
    */
-  async getCurrentPriorities(userId: string): Promise<{ title: string; content: string }> {
+  async getCurrentPriorities(userId: string, workspaceId: string): Promise<{ title: string; content: string }> {
     // 1. Active goals ordered by priority desc, deadline asc
     const goals = await prisma.goal.findMany({
-      where: { userId, status: "IN_PROGRESS" },
+      where: { userId, workspaceId, status: "IN_PROGRESS" },
       orderBy: [{ priority: "desc" }, { deadline: "asc" }],
       take: 10,
       select: {
@@ -309,6 +322,7 @@ export const contextService = {
     const big3 = await prisma.todo.findMany({
       where: {
         userId,
+        workspaceId,
         isBig3: true,
         big3Date: { gte: todayStart, lte: todayEnd },
       },
@@ -379,11 +393,14 @@ export const contextService = {
    */
   async updateType(
     userId: string,
+    workspaceId: string,
     id: string,
     type: ContextEntryType,
   ) {
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
     const existing = await prisma.contextEntry.findFirst({
-      where: { id, userId },
+      where: { id, userId, workspaceId },
     });
     if (!existing) throw new Error("Context entry not found");
 
@@ -396,7 +413,7 @@ export const contextService = {
     });
 
     // Wave 7: type change is a meaningful version-worthy event
-    versioningService.scheduleSnapshot(userId, "CONTEXT_ENTRY", id, "EDIT_DEBOUNCED");
+    versioningService.scheduleSnapshot(userId, workspaceId, "CONTEXT_ENTRY", id, "EDIT_DEBOUNCED");
 
     return updated;
   },
@@ -404,9 +421,9 @@ export const contextService = {
   /**
    * Filter entries by type. Used by MCP list_nodes_by_type and UI type chips.
    */
-  async listByType(userId: string, type: ContextEntryType) {
+  async listByType(userId: string, workspaceId: string, type: ContextEntryType) {
     return prisma.contextEntry.findMany({
-      where: { userId, type },
+      where: { userId, workspaceId, type },
       orderBy: [{ isPinned: "desc" }, { updatedAt: "desc" }],
       include: {
         category: { select: { id: true, name: true, color: true, icon: true } },
@@ -421,6 +438,7 @@ export const contextService = {
    */
   async getGraph(
     userId: string,
+    workspaceId: string,
     filters?: {
       types?: ContextEntryType[];
       categoryId?: string;
@@ -446,7 +464,7 @@ export const contextService = {
     const cap = filters?.cap ?? 1000;
 
     // Build entry filter
-    const entryWhere: Prisma.ContextEntryWhereInput = { userId };
+    const entryWhere: Prisma.ContextEntryWhereInput = { userId, workspaceId };
     if (filters?.types && filters.types.length > 0) {
       entryWhere.type = { in: filters.types };
     }
@@ -462,14 +480,14 @@ export const contextService = {
         type: true,
         isPinned: true,
         _count: {
-          // Defense-in-depth: filter degree counts by userId even though
-          // ContextLink creation paths already enforce owner scoping on
-          // both endpoints. If a future code path ever created a cross-
-          // user link, this filter prevents it from inflating the visible
-          // degree for either user.
+          // Defense-in-depth: filter degree counts by userId + workspaceId
+          // even though ContextLink creation paths already enforce owner
+          // scoping on both endpoints. If a future code path ever created
+          // a cross-user link, this filter prevents it from inflating the
+          // visible degree for either user.
           select: {
-            outgoingLinks: { where: { userId } },
-            incomingLinks: { where: { userId } },
+            outgoingLinks: { where: { userId, workspaceId } },
+            incomingLinks: { where: { userId, workspaceId } },
           },
         },
       },
@@ -502,6 +520,7 @@ export const contextService = {
     const edges = await prisma.contextLink.findMany({
       where: {
         userId,
+        workspaceId,
         fromEntryId: { in: [...nodeIds] },
         toEntryId: { in: [...nodeIds] },
       },
@@ -531,6 +550,7 @@ export const contextService = {
    */
   async getNeighbors(
     userId: string,
+    workspaceId: string,
     id: string,
     depth: number,
   ): Promise<{
@@ -551,7 +571,7 @@ export const contextService = {
 
     // Verify the center entry exists and belongs to the user
     const center = await prisma.contextEntry.findFirst({
-      where: { id, userId },
+      where: { id, userId, workspaceId },
       select: { id: true, title: true, type: true, isPinned: true },
     });
     if (!center) throw new Error("Context entry not found");
@@ -569,6 +589,7 @@ export const contextService = {
         prisma.contextLink.findMany({
           where: {
             userId,
+            workspaceId,
             fromEntryId: { in: [...frontier] },
           },
           select: { id: true, fromEntryId: true, toEntryId: true, type: true },
@@ -576,6 +597,7 @@ export const contextService = {
         prisma.contextLink.findMany({
           where: {
             userId,
+            workspaceId,
             toEntryId: { in: [...frontier] },
           },
           select: { id: true, fromEntryId: true, toEntryId: true, type: true },
@@ -605,6 +627,7 @@ export const contextService = {
     const nodeData = await prisma.contextEntry.findMany({
       where: {
         userId,
+        workspaceId,
         id: { in: [...visited] },
       },
       select: { id: true, title: true, type: true, isPinned: true },
@@ -615,6 +638,7 @@ export const contextService = {
     const subgraphEdges = await prisma.contextLink.findMany({
       where: {
         userId,
+        workspaceId,
         fromEntryId: { in: visitedArray },
         toEntryId: { in: visitedArray },
       },
@@ -647,6 +671,7 @@ export const contextService = {
    */
   async getRelated(
     userId: string,
+    workspaceId: string,
     id: string,
   ): Promise<
     Array<{
@@ -658,7 +683,7 @@ export const contextService = {
   > {
     // Verify the source entry exists and belongs to the user
     const source = await prisma.contextEntry.findFirst({
-      where: { id, userId },
+      where: { id, userId, workspaceId },
       select: { id: true, tags: true, categoryId: true },
     });
     if (!source) throw new Error("Context entry not found");
@@ -668,11 +693,11 @@ export const contextService = {
     // 1. Direct edges (weight 1.0)
     const [directOutgoing, directIncoming] = await Promise.all([
       prisma.contextLink.findMany({
-        where: { userId, fromEntryId: id },
+        where: { userId, workspaceId, fromEntryId: id },
         select: { toEntryId: true },
       }),
       prisma.contextLink.findMany({
-        where: { userId, toEntryId: id },
+        where: { userId, workspaceId, toEntryId: id },
         select: { fromEntryId: true },
       }),
     ]);
@@ -698,6 +723,7 @@ export const contextService = {
         prisma.contextLink.findMany({
           where: {
             userId,
+            workspaceId,
             fromEntryId: { in: neighborArray },
             toEntryId: { notIn: [id] },
           },
@@ -706,6 +732,7 @@ export const contextService = {
         prisma.contextLink.findMany({
           where: {
             userId,
+            workspaceId,
             toEntryId: { in: neighborArray },
             fromEntryId: { notIn: [id] },
           },
@@ -733,6 +760,7 @@ export const contextService = {
       const tagMatches = await prisma.contextEntry.findMany({
         where: {
           userId,
+          workspaceId,
           id: { not: id },
           tags: { hasSome: source.tags },
         },
@@ -752,6 +780,7 @@ export const contextService = {
       const categoryMatches = await prisma.contextEntry.findMany({
         where: {
           userId,
+          workspaceId,
           id: { not: id },
           categoryId: source.categoryId,
         },
@@ -775,6 +804,7 @@ export const contextService = {
     const entries = await prisma.contextEntry.findMany({
       where: {
         userId,
+        workspaceId,
         id: { in: sortedIds },
       },
       select: { id: true, title: true, type: true },
@@ -836,6 +866,7 @@ export interface ContextEntrySearchResult {
  */
 async function searchText(
   userId: string,
+  workspaceId: string,
   query: string,
   limit: number,
 ): Promise<ContextEntrySearchResult[]> {
@@ -858,6 +889,7 @@ async function searchText(
            ts_rank("search_vector", plainto_tsquery('english', ${query})) as rank
     FROM "ContextEntry"
     WHERE "userId" = ${userId}
+      AND "workspaceId" = ${workspaceId}
       AND "search_vector" @@ plainto_tsquery('english', ${query})
     ORDER BY rank DESC
     LIMIT ${limit}
@@ -890,10 +922,11 @@ async function searchText(
  */
 async function searchSemantic(
   userId: string,
+  workspaceId: string,
   query: string,
   limit: number,
 ): Promise<ContextEntrySearchResult[]> {
-  const results = await embeddingService.searchSemantic(userId, query, limit);
+  const results = await embeddingService.searchSemantic(userId, workspaceId, query, limit);
 
   // embeddingService.searchSemantic returns a narrower shape; we need to
   // enrich with the full columns for the unified result type.
@@ -901,7 +934,7 @@ async function searchSemantic(
 
   const entryIds = results.map((r) => r.id);
   const entries = await prisma.contextEntry.findMany({
-    where: { id: { in: entryIds }, userId },
+    where: { id: { in: entryIds }, userId, workspaceId },
     select: {
       id: true,
       title: true,

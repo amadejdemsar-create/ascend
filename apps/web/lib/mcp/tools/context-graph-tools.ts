@@ -37,6 +37,7 @@ function fail(message: string): McpContent {
  */
 export async function handleContextGraphTool(
   userId: string,
+  workspaceId: string,
   name: string,
   args: Record<string, unknown>,
 ): Promise<McpContent> {
@@ -54,7 +55,7 @@ export async function handleContextGraphTool(
             cap: z.number().int().min(1).max(5000).optional(),
           })
           .parse(args);
-        const graph = await contextService.getGraph(userId, filters);
+        const graph = await contextService.getGraph(userId, workspaceId, filters);
         return ok(graph);
       }
 
@@ -65,7 +66,7 @@ export async function handleContextGraphTool(
             depth: z.number().int().min(1).max(3).optional().default(1),
           })
           .parse(args);
-        const result = await contextService.getNeighbors(userId, id, depth);
+        const result = await contextService.getNeighbors(userId, workspaceId, id, depth);
         return ok(result);
       }
 
@@ -75,7 +76,7 @@ export async function handleContextGraphTool(
             id: z.string().min(1),
           })
           .parse(args);
-        const related = await contextService.getRelated(userId, id);
+        const related = await contextService.getRelated(userId, workspaceId, id);
         return ok(related);
       }
 
@@ -85,13 +86,13 @@ export async function handleContextGraphTool(
             type: contextEntryTypeSchema,
           })
           .parse(args);
-        const nodes = await contextService.listByType(userId, type);
+        const nodes = await contextService.listByType(userId, workspaceId, type);
         return ok(nodes);
       }
 
       case "create_typed_link": {
         const input = createContextLinkSchema.parse(args);
-        const link = await contextLinkService.create(userId, input);
+        const link = await contextLinkService.create(userId, workspaceId, input);
         return ok(link);
       }
 
@@ -102,7 +103,7 @@ export async function handleContextGraphTool(
             force: z.boolean().optional(),
           })
           .parse(args);
-        await contextLinkService.delete(userId, id, { force });
+        await contextLinkService.delete(userId, workspaceId, id, { force });
         return ok({ ok: true, id });
       }
 
@@ -113,7 +114,7 @@ export async function handleContextGraphTool(
             type: contextEntryTypeSchema,
           })
           .parse(args);
-        const updated = await contextService.updateType(userId, id, type);
+        const updated = await contextService.updateType(userId, workspaceId, id, type);
         return ok(updated);
       }
 

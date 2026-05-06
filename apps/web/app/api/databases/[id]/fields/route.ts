@@ -20,7 +20,7 @@ export async function POST(
     const { id: databaseId } = await params;
     const body = await request.json();
     const data = createDatabaseFieldSchema.parse(body);
-    const result = await databaseFieldService.add(auth.userId, databaseId, data);
+    const result = await databaseFieldService.add(auth.userId, auth.workspaceId, databaseId, data);
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
     return handleApiError(error);

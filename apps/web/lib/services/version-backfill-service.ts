@@ -22,6 +22,7 @@
 
 import { prisma } from "@/lib/db";
 import { createHash } from "node:crypto";
+import { workspaceContextService } from "./workspace-context-service";
 
 // ── Constants ─────────────────────────────────────────────────────────
 
@@ -79,6 +80,7 @@ function computeHash(serialized: string): string {
 
 async function backfillContextEntries(
   userId: string,
+  workspaceId: string,
   summary: CountSummary,
 ): Promise<void> {
   let cursor: string | undefined;
@@ -122,6 +124,7 @@ async function backfillContextEntries(
       await prisma.nodeVersion.create({
         data: {
           userId,
+          workspaceId,
           nodeType: "CONTEXT_ENTRY",
           nodeId: entry.id,
           versionNumber: 1,
@@ -141,6 +144,7 @@ async function backfillContextEntries(
 
 async function backfillGoals(
   userId: string,
+  workspaceId: string,
   summary: CountSummary,
 ): Promise<void> {
   let cursor: string | undefined;
@@ -176,6 +180,7 @@ async function backfillGoals(
       await prisma.nodeVersion.create({
         data: {
           userId,
+          workspaceId,
           nodeType: "GOAL",
           nodeId: goal.id,
           versionNumber: 1,
@@ -195,6 +200,7 @@ async function backfillGoals(
 
 async function backfillTodos(
   userId: string,
+  workspaceId: string,
   summary: CountSummary,
 ): Promise<void> {
   let cursor: string | undefined;
@@ -230,6 +236,7 @@ async function backfillTodos(
       await prisma.nodeVersion.create({
         data: {
           userId,
+          workspaceId,
           nodeType: "TODO",
           nodeId: todo.id,
           versionNumber: 1,
@@ -249,6 +256,7 @@ async function backfillTodos(
 
 async function backfillDatabaseRows(
   userId: string,
+  workspaceId: string,
   summary: CountSummary,
 ): Promise<void> {
   let cursor: string | undefined;
@@ -290,6 +298,7 @@ async function backfillDatabaseRows(
       await prisma.nodeVersion.create({
         data: {
           userId,
+          workspaceId,
           nodeType: "DATABASE_ROW",
           nodeId: row.id,
           versionNumber: 1,
@@ -309,6 +318,7 @@ async function backfillDatabaseRows(
 
 async function backfillDatabaseFields(
   userId: string,
+  workspaceId: string,
   summary: CountSummary,
 ): Promise<void> {
   let cursor: string | undefined;
@@ -344,6 +354,7 @@ async function backfillDatabaseFields(
       await prisma.nodeVersion.create({
         data: {
           userId,
+          workspaceId,
           nodeType: "DATABASE_FIELD",
           nodeId: field.id,
           versionNumber: 1,
@@ -363,6 +374,7 @@ async function backfillDatabaseFields(
 
 async function backfillContextLinks(
   userId: string,
+  workspaceId: string,
   summary: CountSummary,
 ): Promise<void> {
   // Idempotency heuristic: if user already has any EdgeEvent rows,
@@ -393,6 +405,7 @@ async function backfillContextLinks(
       await prisma.edgeEvent.create({
         data: {
           userId,
+          workspaceId,
           eventType: "CREATED",
           linkSnapshot: link as never,
           fromEntryId: link.fromEntryId,
@@ -414,14 +427,14 @@ export const versionBackfillService = {
    * Backfill v1 NodeVersions and CREATED EdgeEvents for a single user.
    * Idempotent: entities with existing versions are skipped.
    */
-  async backfillUser(userId: string): Promise<CountSummary> {
+  async backfillUser(userId: string, workspaceId: string): Promise<CountSummary> {
     const summary = newSummary();
-    await backfillContextEntries(userId, summary);
-    await backfillGoals(userId, summary);
-    await backfillTodos(userId, summary);
-    await backfillDatabaseRows(userId, summary);
-    await backfillDatabaseFields(userId, summary);
-    await backfillContextLinks(userId, summary);
+    await backfillContextEntries(userId, workspaceId, summary);
+    await backfillGoals(userId, workspaceId, summary);
+    await backfillTodos(userId, workspaceId, summary);
+    await backfillDatabaseRows(userId, workspaceId, summary);
+    await backfillDatabaseFields(userId, workspaceId, summary);
+    await backfillContextLinks(userId, workspaceId, summary);
     return summary;
   },
 
@@ -429,15 +442,35 @@ export const versionBackfillService = {
    * Backfill all users. Processes each user independently; a single
    * user's failure does not abort the entire batch.
    */
+  /**
+   * Backfill all users. Processes each user independently; a single
+   * user's failure does not abort the entire batch.
+   *
+   * Cron-driven: iterates users and resolves workspaceId per-user via
+   * User.defaultWorkspaceId (or workspaceContextService fallback).
+   */
   async backfillAllUsers(): Promise<{
     usersProcessed: number;
     totals: CountSummary;
   }> {
-    const users = await prisma.user.findMany({ select: { id: true } });
+    const users = await prisma.user.findMany({
+      select: { id: true, defaultWorkspaceId: true },
+    });
     const totals = newSummary();
 
     for (const user of users) {
-      const userSummary = await this.backfillUser(user.id).catch((err) => {
+      const wsId =
+        user.defaultWorkspaceId ??
+        (await workspaceContextService
+          .resolveDefaultWorkspaceId(user.id)
+          .catch(() => null));
+      if (!wsId) {
+        console.error("[backfill] no workspaceId for user; skipping", {
+          userId: user.id,
+        });
+        continue;
+      }
+      const userSummary = await this.backfillUser(user.id, wsId).catch((err) => {
         console.error("[backfill] failed for user", {
           userId: user.id,
           err,

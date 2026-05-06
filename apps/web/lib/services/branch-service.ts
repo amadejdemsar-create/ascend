@@ -19,6 +19,7 @@ import { contextService } from "./context-service";
 import { databaseRowService } from "./database-row-service";
 import { contextLinkService } from "./context-link-service";
 import { versioningService } from "./versioning-service";
+import { permissionService } from "./permission-service";
 import type { NodeType } from "@/lib/validations";
 import type { ContextEntryType } from "../../generated/prisma/client";
 
@@ -60,10 +61,14 @@ export const branchService = {
    */
   async branch(
     userId: string,
+    workspaceId: string,
     versionId: string,
     title: string,
   ): Promise<BranchResult> {
-    const target = await versioningService.getVersion(userId, versionId);
+    // Permission gate: branching is a write operation (creates a new entity)
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
+    const target = await versioningService.getVersion(userId, workspaceId, versionId);
     if (!target) throw new Error("Version not found");
 
     const nodeType = target.nodeType as NodeType;
@@ -131,7 +136,7 @@ export const branchService = {
         ? (payload.tags as string[])
         : undefined;
 
-      const created = await contextService.create(userId, {
+      const created = await contextService.create(userId, workspaceId, {
         title,
         content: content || " ", // content is required min(1) in schema
         categoryId,
@@ -144,6 +149,7 @@ export const branchService = {
       if (entryType !== "NOTE") {
         await contextService.updateType(
           userId,
+          workspaceId,
           newEntryId,
           entryType as ContextEntryType,
         );
@@ -160,6 +166,7 @@ export const branchService = {
         (payload.properties as Record<string, unknown>) ?? {};
       const created = await databaseRowService.create(
         userId,
+        workspaceId,
         databaseId,
         properties,
       );
@@ -167,7 +174,7 @@ export const branchService = {
     }
 
     // Create DERIVED_FROM link: new node → original source
-    const link = await contextLinkService.create(userId, {
+    const link = await contextLinkService.create(userId, workspaceId, {
       fromEntryId: newEntryId,
       toEntryId: sourceEntryId,
       type: "DERIVED_FROM",
@@ -187,8 +194,10 @@ export const branchService = {
       if (newRow) snapshotNodeId = newRow.id;
     }
 
+    // Branch creates a new entity in the SAME workspace as the source.
     const newVersion = await versioningService.createSnapshot(
       userId,
+      workspaceId,
       nodeType,
       snapshotNodeId,
       "BRANCH",

@@ -17,10 +17,10 @@ export { formatCSV, formatMarkdown };
 /**
  * Export all goals and categories as a formatted JSON string.
  */
-export async function exportJSON(userId: string): Promise<string> {
+export async function exportJSON(userId: string, workspaceId: string): Promise<string> {
   const [goals, categories] = await Promise.all([
-    goalService.list(userId),
-    categoryService.list(userId),
+    goalService.list(userId, workspaceId),
+    categoryService.list(userId, workspaceId),
   ]);
   return JSON.stringify(
     { exportedAt: new Date().toISOString(), goals, categories },
@@ -32,26 +32,26 @@ export async function exportJSON(userId: string): Promise<string> {
 /**
  * Export all goals as a CSV string with headers.
  */
-export async function exportCSV(userId: string): Promise<string> {
-  const goals = await goalService.list(userId);
+export async function exportCSV(userId: string, workspaceId: string): Promise<string> {
+  const goals = await goalService.list(userId, workspaceId);
   return formatCSV(goals);
 }
 
 /**
  * Export all goals as a Markdown document grouped by horizon.
  */
-export async function exportMarkdown(userId: string): Promise<string> {
-  const goals = await goalService.list(userId);
+export async function exportMarkdown(userId: string, workspaceId: string): Promise<string> {
+  const goals = await goalService.list(userId, workspaceId);
   return formatMarkdown(goals);
 }
 
 /**
  * Export goals as a formatted PDF report with progress bars.
  */
-export async function exportPDF(userId: string): Promise<Buffer> {
+export async function exportPDF(userId: string, workspaceId: string): Promise<Buffer> {
   const [goals, categories] = await Promise.all([
-    goalService.list(userId),
-    categoryService.list(userId),
+    goalService.list(userId, workspaceId),
+    categoryService.list(userId, workspaceId),
   ]);
 
   // Build category lookup for display
@@ -148,10 +148,10 @@ export async function exportPDF(userId: string): Promise<Buffer> {
 /**
  * Export goals as a formatted DOCX document with headings and checkboxes.
  */
-export async function exportDOCX(userId: string): Promise<Buffer> {
+export async function exportDOCX(userId: string, workspaceId: string): Promise<Buffer> {
   const [goals, categories] = await Promise.all([
-    goalService.list(userId),
-    categoryService.list(userId),
+    goalService.list(userId, workspaceId),
+    categoryService.list(userId, workspaceId),
   ]);
 
   const categoryMap = new Map(categories.map((c) => [c.id, c.name]));

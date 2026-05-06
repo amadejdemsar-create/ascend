@@ -21,7 +21,7 @@ export async function GET(
 
   try {
     const { id } = await params;
-    const version = await versioningService.getVersion(auth.userId, id);
+    const version = await versioningService.getVersion(auth.userId, auth.workspaceId, id);
     if (!version) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }

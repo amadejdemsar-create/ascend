@@ -15,6 +15,7 @@ type McpContent = {
  */
 export async function handleDataTool(
   userId: string,
+  workspaceId: string,
   name: string,
   args: Record<string, unknown>,
 ): Promise<McpContent> {
@@ -23,8 +24,8 @@ export async function handleDataTool(
       case "export_data": {
         const format = ((args.format as string) ?? "JSON").toUpperCase();
         const [goals, categories] = await Promise.all([
-          goalService.list(userId),
-          categoryService.list(userId),
+          goalService.list(userId, workspaceId),
+          categoryService.list(userId, workspaceId),
         ]);
 
         let output: string;
@@ -69,7 +70,7 @@ export async function handleDataTool(
         }
 
         const payload = importDataSchema.parse(parsed);
-        const summary = await runImport(userId, payload);
+        const summary = await runImport(userId, workspaceId, payload);
 
         const resultText =
           `Imported ${summary.categoriesCreated} categories and ${summary.goalsCreated} goals.\n\nDetails:\n` +

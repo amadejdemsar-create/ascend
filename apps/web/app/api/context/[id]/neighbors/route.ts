@@ -16,7 +16,7 @@ export async function GET(
     const { depth } = contextNeighborsQuerySchema.parse(
       Object.fromEntries(url.searchParams),
     );
-    const result = await contextService.getNeighbors(auth.userId, id, depth);
+    const result = await contextService.getNeighbors(auth.userId, auth.workspaceId, id, depth);
     return NextResponse.json(result);
   } catch (error) {
     return handleApiError(error);

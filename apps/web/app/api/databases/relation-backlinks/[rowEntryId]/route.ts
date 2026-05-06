@@ -19,6 +19,7 @@ export async function GET(
     const { rowEntryId } = await params;
     const backlinks = await databaseRelationService.getBacklinks(
       auth.userId,
+      auth.workspaceId,
       rowEntryId,
     );
     return NextResponse.json(backlinks);

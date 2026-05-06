@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   if (!auth.success) return unauthorizedResponse();
 
   try {
-    const result = await contextService.getCurrentPriorities(auth.userId);
+    const result = await contextService.getCurrentPriorities(auth.userId, auth.workspaceId);
     return NextResponse.json(result);
   } catch (error) {
     return handleApiError(error);

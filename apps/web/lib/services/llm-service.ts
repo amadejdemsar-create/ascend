@@ -163,6 +163,11 @@ export const llmService = {
    * Budget gate (DZ-9). EVERY provider call path MUST call this before
    * invoking the provider. No bypass.
    *
+   * The daily cost cap is per-USER, not per-workspace. The user pays the
+   * LLM bill regardless of which workspace triggered the call. workspaceId
+   * is NOT used for budget enforcement; it is recorded on LlmUsage rows
+   * for analytics only.
+   *
    * Reads today's LlmUsage rollup and refuses if
    * (todaySpent + estimatedCostCents) > HARD_CAP_CENTS_PER_DAY.
    *
@@ -218,6 +223,7 @@ export const llmService = {
    */
   async chat(
     userId: string,
+    workspaceId: string,
     input: Omit<ChatInput, "model">,
     opts: { purpose: string; tier?: ModelTier },
   ): Promise<ChatResult> {
@@ -272,6 +278,7 @@ export const llmService = {
     await prisma.llmUsage.create({
       data: {
         userId,
+        workspaceId,
         provider: providerKind,
         model: resolvedModel,
         purpose: opts.purpose,
@@ -293,6 +300,7 @@ export const llmService = {
    */
   async usageForUser(
     userId: string,
+    workspaceId: string,
     window: "day" | "week",
   ): Promise<{
     totalCostCents: number;
@@ -391,6 +399,7 @@ export const llmService = {
    */
   async transcribe(
     userId: string,
+    workspaceId: string,
     audioBuffer: Buffer,
     mimeType: string,
     opts?: { signal?: AbortSignal; model?: string },
@@ -489,6 +498,7 @@ export const llmService = {
     await prisma.llmUsage.create({
       data: {
         userId,
+        workspaceId,
         provider: "OPENAI",
         model,
         purpose: "transcribe",
@@ -527,6 +537,7 @@ export const llmService = {
    */
   async captionImage(
     userId: string,
+    workspaceId: string,
     imageBuffer: Buffer,
     mimeType: string,
     opts?: { signal?: AbortSignal; model?: string },
@@ -626,6 +637,7 @@ export const llmService = {
     await prisma.llmUsage.create({
       data: {
         userId,
+        workspaceId,
         provider: "GEMINI",
         model: visionModel,
         purpose: "image_extraction",

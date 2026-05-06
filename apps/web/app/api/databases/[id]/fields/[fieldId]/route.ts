@@ -19,7 +19,7 @@ export async function PATCH(
     const { fieldId } = await params;
     const body = await request.json();
     const data = updateDatabaseFieldSchema.parse(body);
-    const result = await databaseFieldService.update(auth.userId, fieldId, data);
+    const result = await databaseFieldService.update(auth.userId, auth.workspaceId, fieldId, data);
     return NextResponse.json(result);
   } catch (error) {
     return handleApiError(error);
@@ -41,7 +41,7 @@ export async function DELETE(
 
   try {
     const { fieldId } = await params;
-    const result = await databaseFieldService.delete(auth.userId, fieldId);
+    const result = await databaseFieldService.delete(auth.userId, auth.workspaceId, fieldId);
     return NextResponse.json(result);
   } catch (error) {
     return handleApiError(error);

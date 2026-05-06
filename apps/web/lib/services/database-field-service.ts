@@ -18,6 +18,7 @@ import {
 } from "@/lib/validations";
 import { parseFormula, extractDependencies } from "@/lib/formula";
 import { versioningService } from "@/lib/services/versioning-service";
+import { permissionService } from "@/lib/services/permission-service";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -51,10 +52,13 @@ export const databaseFieldService = {
    * Zod schema. For FORMULA type, parses the expression and runs cycle detection.
    * Auto-positions to the end.
    */
-  async add(userId: string, databaseId: string, input: AddFieldInput) {
+  async add(userId: string, workspaceId: string, databaseId: string, input: AddFieldInput) {
+    // Permission check (mutating operation: adds a field)
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
     // Verify database ownership
     const database = await prisma.database.findFirst({
-      where: { id: databaseId, userId },
+      where: { id: databaseId, userId, workspaceId },
     });
     if (!database) throw new Error("Database not found");
 
@@ -78,6 +82,7 @@ export const databaseFieldService = {
       if (deps.length > 0) {
         const cycleResult = await cycleCheck(
           userId,
+          workspaceId,
           databaseId,
           input.name,
           deps,
@@ -93,7 +98,7 @@ export const databaseFieldService = {
 
     // Determine position (max + 1)
     const maxField = await prisma.databaseField.findFirst({
-      where: { databaseId, userId },
+      where: { databaseId, userId, workspaceId },
       orderBy: { position: "desc" },
       select: { position: true },
     });
@@ -102,6 +107,7 @@ export const databaseFieldService = {
     return prisma.databaseField.create({
       data: {
         userId,
+        workspaceId,
         databaseId,
         name: input.name,
         type: input.type,
@@ -116,10 +122,13 @@ export const databaseFieldService = {
    * Update field metadata (name, config, position). Never rewrites row
    * property values. If config/formula expression changed, re-cycle-checks.
    */
-  async update(userId: string, fieldId: string, input: UpdateFieldInput) {
+  async update(userId: string, workspaceId: string, fieldId: string, input: UpdateFieldInput) {
+    // Permission check (mutating operation)
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
     // Verify ownership via the field's database
     const existing = await prisma.databaseField.findFirst({
-      where: { id: fieldId, userId },
+      where: { id: fieldId, userId, workspaceId },
       include: { database: { select: { id: true, userId: true } } },
     });
     if (!existing) throw new Error("Field not found");
@@ -149,6 +158,7 @@ export const databaseFieldService = {
           const fieldName = input.name ?? existing.name;
           const cycleResult = await cycleCheck(
             userId,
+            workspaceId,
             existing.databaseId,
             fieldName,
             deps,
@@ -175,7 +185,7 @@ export const databaseFieldService = {
     });
 
     // Wave 7: schedule debounced snapshot after successful update
-    versioningService.scheduleSnapshot(userId, "DATABASE_FIELD", fieldId, "EDIT_DEBOUNCED");
+    versioningService.scheduleSnapshot(userId, workspaceId, "DATABASE_FIELD", fieldId, "EDIT_DEBOUNCED");
 
     return updated;
   },
@@ -186,9 +196,12 @@ export const databaseFieldService = {
    * 2. Remove the field key from every row's properties JSONB.
    * 3. Delete the field row.
    */
-  async delete(userId: string, fieldId: string): Promise<{ id: string }> {
+  async delete(userId: string, workspaceId: string, fieldId: string): Promise<{ id: string }> {
+    // Permission check (mutating operation: deletes a field)
+    await permissionService.assertCanPerform(userId, workspaceId, "DELETE_NODE");
+
     const existing = await prisma.databaseField.findFirst({
-      where: { id: fieldId, userId },
+      where: { id: fieldId, userId, workspaceId },
     });
     if (!existing) throw new Error("Field not found");
 
@@ -199,15 +212,17 @@ export const databaseFieldService = {
     }
 
     // Wave 7: tombstone snapshot BEFORE delete so version history persists
-    await versioningService.createSnapshot(userId, "DATABASE_FIELD", fieldId, "EDIT_EXPLICIT");
+    await versioningService.createSnapshot(userId, workspaceId, "DATABASE_FIELD", fieldId, "EDIT_EXPLICIT");
 
     await prisma.$transaction(async (tx) => {
       // 1. DZ-16: If RELATION, bulk-delete ContextLink rows
+      //    Defense-in-depth: workspaceId guard on raw SQL (DZ-16)
       if (existing.type === "RELATION") {
         await tx.$queryRaw`
           DELETE FROM "ContextLink"
           WHERE "databaseFieldId" = ${fieldId}
             AND "userId" = ${userId}
+            AND "workspaceId" = ${workspaceId}
         `;
       }
 
@@ -218,7 +233,7 @@ export const databaseFieldService = {
 
       while (hasMore) {
         const rows = await tx.databaseRow.findMany({
-          where: { databaseId: existing.databaseId, userId },
+          where: { databaseId: existing.databaseId, userId, workspaceId },
           select: { id: true, properties: true },
           skip: offset,
           take: batchSize,
@@ -260,18 +275,22 @@ export const databaseFieldService = {
    */
   async reorder(
     userId: string,
+    workspaceId: string,
     databaseId: string,
     orderedFieldIds: string[],
   ) {
+    // Permission check (mutating operation)
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
     // Verify ownership
     const database = await prisma.database.findFirst({
-      where: { id: databaseId, userId },
+      where: { id: databaseId, userId, workspaceId },
     });
     if (!database) throw new Error("Database not found");
 
     // Validate all field IDs belong to this database
     const fields = await prisma.databaseField.findMany({
-      where: { databaseId, userId },
+      where: { databaseId, userId, workspaceId },
       select: { id: true },
     });
     const fieldIdSet = new Set(fields.map((f) => f.id));
@@ -303,12 +322,12 @@ export const databaseFieldService = {
 
     // Wave 7: schedule snapshot for each reordered field
     for (const fieldId of orderedFieldIds) {
-      versioningService.scheduleSnapshot(userId, "DATABASE_FIELD", fieldId, "EDIT_DEBOUNCED");
+      versioningService.scheduleSnapshot(userId, workspaceId, "DATABASE_FIELD", fieldId, "EDIT_DEBOUNCED");
     }
 
     // Return fresh field list
     return prisma.databaseField.findMany({
-      where: { databaseId, userId },
+      where: { databaseId, userId, workspaceId },
       orderBy: { position: "asc" },
     });
   },
@@ -324,14 +343,18 @@ export const databaseFieldService = {
    */
   async changeType(
     userId: string,
+    workspaceId: string,
     fieldId: string,
     input: ChangeTypeInput,
   ): Promise<
     | { ok: true; field: Awaited<ReturnType<typeof prisma.databaseField.findFirst>> }
     | { ok: false; offendingRowIds: string[] }
   > {
+    // Permission check (mutating operation: changes field type)
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
     const existing = await prisma.databaseField.findFirst({
-      where: { id: fieldId, userId },
+      where: { id: fieldId, userId, workspaceId },
     });
     if (!existing) throw new Error("Field not found");
 
@@ -361,7 +384,7 @@ export const databaseFieldService = {
     // For TEXT → URL/EMAIL/PHONE: validate existing values
     if (oldType === "TEXT" && ["URL", "EMAIL", "PHONE"].includes(newType)) {
       const rows = await prisma.databaseRow.findMany({
-        where: { databaseId: existing.databaseId, userId },
+        where: { databaseId: existing.databaseId, userId, workspaceId },
         select: { id: true, properties: true },
       });
 
@@ -388,7 +411,7 @@ export const databaseFieldService = {
         await prisma.$transaction(async (tx) => {
           for (const rowId of offendingRowIds) {
             const row = await tx.databaseRow.findFirst({
-              where: { id: rowId, userId },
+              where: { id: rowId, userId, workspaceId },
               select: { properties: true },
             });
             if (!row) continue;
@@ -406,7 +429,7 @@ export const databaseFieldService = {
     // For SELECT → MULTI_SELECT: wrap existing single values in arrays
     if (oldType === "SELECT" && newType === "MULTI_SELECT") {
       const rows = await prisma.databaseRow.findMany({
-        where: { databaseId: existing.databaseId, userId },
+        where: { databaseId: existing.databaseId, userId, workspaceId },
         select: { id: true, properties: true },
       });
 
@@ -433,7 +456,7 @@ export const databaseFieldService = {
     // For MULTI_SELECT → TEXT: join option labels into comma-separated string
     if (oldType === "MULTI_SELECT" && newType === "TEXT") {
       const rows = await prisma.databaseRow.findMany({
-        where: { databaseId: existing.databaseId, userId },
+        where: { databaseId: existing.databaseId, userId, workspaceId },
         select: { id: true, properties: true },
       });
 
@@ -483,7 +506,7 @@ export const databaseFieldService = {
     });
 
     // Wave 7: type change is a meaningful schema event
-    versioningService.scheduleSnapshot(userId, "DATABASE_FIELD", fieldId, "EDIT_DEBOUNCED");
+    versioningService.scheduleSnapshot(userId, workspaceId, "DATABASE_FIELD", fieldId, "EDIT_DEBOUNCED");
 
     return { ok: true, field: updated };
   },
@@ -507,14 +530,15 @@ export const databaseFieldService = {
  */
 async function cycleCheck(
   userId: string,
+  workspaceId: string,
   databaseId: string,
   proposedFieldName: string,
   proposedDeps: string[],
   excludeFieldId: string | undefined,
 ): Promise<CycleCheckResult> {
-  // Load all FORMULA fields for this database, scoped to userId (defense-in-depth)
+  // Load all FORMULA fields for this database, scoped to userId + workspaceId (defense-in-depth)
   const formulaFields = await prisma.databaseField.findMany({
-    where: { databaseId, userId, type: "FORMULA" },
+    where: { databaseId, userId, workspaceId, type: "FORMULA" },
     select: { id: true, name: true, config: true },
   });
 

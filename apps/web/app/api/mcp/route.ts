@@ -99,7 +99,7 @@ export async function POST(request: NextRequest): Promise<Response> {
           body: JSON.stringify(message),
         });
 
-        const server = createAscendMcpServer(auth.userId);
+        const server = createAscendMcpServer(auth.userId, auth.workspaceId);
         const transport = new WebStandardStreamableHTTPServerTransport({
           sessionIdGenerator: undefined,
           enableJsonResponse: true,
@@ -147,7 +147,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     }
 
     // 7. Create a per-request server scoped to this user
-    const server = createAscendMcpServer(auth.userId);
+    const server = createAscendMcpServer(auth.userId, auth.workspaceId);
 
     // 8. Create a stateless Web Standard transport with JSON responses
     const transport = new WebStandardStreamableHTTPServerTransport({

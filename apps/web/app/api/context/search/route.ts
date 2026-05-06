@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
       limit: searchParams.get("limit") ?? undefined,
     });
 
-    const results = await contextService.search(auth.userId, parsed.q, {
+    const results = await contextService.search(auth.userId, auth.workspaceId, parsed.q, {
       mode: parsed.mode,
       limit: parsed.limit,
     });

@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
 
     const result = await llmService.chat(
       auth.userId,
+      auth.workspaceId,
       {
         system: data.system,
         messages: data.messages,

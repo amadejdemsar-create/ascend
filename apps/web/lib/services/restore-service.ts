@@ -23,6 +23,7 @@ import { databaseRowService } from "./database-row-service";
 import { databaseFieldService } from "./database-field-service";
 import { blockDocumentService } from "./block-document-service";
 import { versioningService } from "./versioning-service";
+import { permissionService } from "./permission-service";
 import type { NodeType } from "@/lib/validations";
 import type {
   UpdateContextInput,
@@ -54,10 +55,14 @@ export const restoreService = {
    */
   async restore(
     userId: string,
+    workspaceId: string,
     versionId: string,
     dryRun = false,
   ): Promise<RestoreResult | RestorePreview> {
-    const target = await versioningService.getVersion(userId, versionId);
+    // Permission gate: restoring is a write operation
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
+    const target = await versioningService.getVersion(userId, workspaceId, versionId);
     if (!target) throw new Error("Version not found");
 
     const nodeType = target.nodeType as NodeType;
@@ -76,28 +81,32 @@ export const restoreService = {
     // which bypasses dedup (will still dedup if content is identical).
     await versioningService.createSnapshot(
       userId,
+      workspaceId,
       nodeType,
       nodeId,
       "EDIT_EXPLICIT",
     );
 
-    // Dispatch to appropriate service
+    // Dispatch to appropriate service.
+    // NOTE: Sub-service update calls (contextService, goalService, etc.) retain
+    // their pre-workspaceId signatures until Chunk 1/2 agents land their refactors.
+    // Cross-domain workspaceId propagation completes when all three chunks merge.
     try {
       switch (nodeType) {
         case "CONTEXT_ENTRY":
-          await this._restoreContextEntry(userId, nodeId, payload, warnings);
+          await this._restoreContextEntry(userId, workspaceId, nodeId, payload, warnings);
           break;
         case "GOAL":
-          await this._restoreGoal(userId, nodeId, payload, warnings);
+          await this._restoreGoal(userId, workspaceId, nodeId, payload, warnings);
           break;
         case "TODO":
-          await this._restoreTodo(userId, nodeId, payload, warnings);
+          await this._restoreTodo(userId, workspaceId, nodeId, payload, warnings);
           break;
         case "DATABASE_ROW":
-          await this._restoreDatabaseRow(userId, nodeId, payload, warnings);
+          await this._restoreDatabaseRow(userId, workspaceId, nodeId, payload, warnings);
           break;
         case "DATABASE_FIELD":
-          await this._restoreDatabaseField(userId, nodeId, payload, warnings);
+          await this._restoreDatabaseField(userId, workspaceId, nodeId, payload, warnings);
           break;
       }
     } catch (err) {
@@ -118,6 +127,7 @@ export const restoreService = {
     // RESTORE-triggered snapshot of the new state
     const newVersion = await versioningService.createSnapshot(
       userId,
+      workspaceId,
       nodeType,
       nodeId,
       "RESTORE",
@@ -135,6 +145,7 @@ export const restoreService = {
 
   async _restoreContextEntry(
     userId: string,
+    workspaceId: string,
     id: string,
     payload: Record<string, unknown>,
     warnings: string[],
@@ -160,17 +171,18 @@ export const restoreService = {
     // Only call update if there's something to patch
     const hasFields = Object.keys(patch).length > 0;
     if (hasFields) {
-      await contextService.update(userId, id, patch);
+      await contextService.update(userId, workspaceId, id, patch);
     }
 
     // Restore block document snapshot if present
     if (payload.blockDocumentSnapshot) {
       try {
         // Need current version for optimistic concurrency
-        const currentDoc = await blockDocumentService.getByEntryId(userId, id);
+        const currentDoc = await blockDocumentService.getByEntryId(userId, workspaceId, id);
         if (currentDoc) {
           const result = await blockDocumentService.replaceSnapshot(
             userId,
+            workspaceId,
             id,
             payload.blockDocumentSnapshot,
             currentDoc.version,
@@ -196,6 +208,7 @@ export const restoreService = {
 
   async _restoreGoal(
     userId: string,
+    workspaceId: string,
     id: string,
     payload: Record<string, unknown>,
     _warnings: string[],
@@ -220,11 +233,12 @@ export const restoreService = {
       }
     }
 
-    await goalService.update(userId, id, patch as UpdateGoalInput);
+    await goalService.update(userId, workspaceId, id, patch as UpdateGoalInput);
   },
 
   async _restoreTodo(
     userId: string,
+    workspaceId: string,
     id: string,
     payload: Record<string, unknown>,
     _warnings: string[],
@@ -247,11 +261,12 @@ export const restoreService = {
       }
     }
 
-    await todoService.update(userId, id, patch as UpdateTodoInput);
+    await todoService.update(userId, workspaceId, id, patch as UpdateTodoInput);
   },
 
   async _restoreDatabaseRow(
     userId: string,
+    workspaceId: string,
     rowId: string,
     payload: Record<string, unknown>,
     warnings: string[],
@@ -260,6 +275,7 @@ export const restoreService = {
     if (payload.properties && typeof payload.properties === "object") {
       await databaseRowService.update(
         userId,
+        workspaceId,
         rowId,
         payload.properties as Record<string, unknown>,
       );
@@ -271,11 +287,13 @@ export const restoreService = {
         const entryId = payload.contextEntryId as string;
         const currentDoc = await blockDocumentService.getByEntryId(
           userId,
+          workspaceId,
           entryId,
         );
         if (currentDoc) {
           const result = await blockDocumentService.replaceSnapshot(
             userId,
+            workspaceId,
             entryId,
             payload.bodySnapshot,
             currentDoc.version,
@@ -296,6 +314,7 @@ export const restoreService = {
 
   async _restoreDatabaseField(
     userId: string,
+    workspaceId: string,
     fieldId: string,
     payload: Record<string, unknown>,
     _warnings: string[],
@@ -311,6 +330,6 @@ export const restoreService = {
       patch.position = payload.position;
     }
 
-    await databaseFieldService.update(userId, fieldId, patch);
+    await databaseFieldService.update(userId, workspaceId, fieldId, patch);
   },
 };

@@ -21,6 +21,7 @@ export async function PATCH(
     const data = updateDatabaseRowSchema.parse(body);
     const result = await databaseRowService.update(
       auth.userId,
+      auth.workspaceId,
       rowId,
       data.propertiesPatch,
     );
@@ -44,7 +45,7 @@ export async function DELETE(
 
   try {
     const { rowId } = await params;
-    const result = await databaseRowService.delete(auth.userId, rowId);
+    const result = await databaseRowService.delete(auth.userId, auth.workspaceId, rowId);
     return NextResponse.json(result);
   } catch (error) {
     return handleApiError(error);

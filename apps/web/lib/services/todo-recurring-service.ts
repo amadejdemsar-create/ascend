@@ -3,6 +3,7 @@ import type { Prisma } from "../../generated/prisma/client";
 import { bumpStreak, clampStreakDown } from "@/lib/services/recurring-helpers";
 import { rrulestr } from "rrule";
 import { startOfDay, endOfDay, subDays, addDays, format, isBefore } from "date-fns";
+import { permissionService } from "@/lib/services/permission-service";
 
 // Reusable client type so methods can run inside an interactive
 // $transaction or standalone. See goal-service.ts for the same pattern.
@@ -51,10 +52,13 @@ export const todoRecurringService = {
    *
    * Returns the array of newly created instances.
    */
-  async generateDueInstances(userId: string) {
+  async generateDueInstances(userId: string, workspaceId: string) {
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
     const templates = await prisma.todo.findMany({
       where: {
         userId,
+        workspaceId,
         isRecurring: true,
         recurringSourceId: null,
         status: "PENDING",
@@ -79,6 +83,7 @@ export const todoRecurringService = {
       const existingInstance = await prisma.todo.findFirst({
         where: {
           userId,
+          workspaceId,
           recurringSourceId: template.id,
           status: "PENDING",
           dueDate: nextDate,
@@ -98,14 +103,14 @@ export const todoRecurringService = {
         // If the previous occurrence is after the last completed date, streak is broken
         if (prevDate > lastCompleted && template.currentStreak > 0) {
           await prisma.todo.updateMany({
-            where: { id: template.id, userId },
+            where: { id: template.id, userId, workspaceId },
             data: { currentStreak: 0 },
           });
         }
       } else if (previousOccurrence && !template.lastCompletedDate && template.currentStreak > 0) {
         // Has a previous occurrence but was never completed at all
         await prisma.todo.updateMany({
-          where: { id: template.id, userId },
+          where: { id: template.id, userId, workspaceId },
           data: { currentStreak: 0 },
         });
       }
@@ -114,6 +119,7 @@ export const todoRecurringService = {
       const instance = await prisma.todo.create({
         data: {
           userId,
+          workspaceId,
           title: template.title,
           description: template.description,
           priority: template.priority,
@@ -142,14 +148,17 @@ export const todoRecurringService = {
    *   every calendar month navigation.
    * - Dedup keys compare by start-of-day rather than exact DateTime equality,
    *   so pre-existing instances with any time-of-day still prevent duplicates.
-   * - Every query is userId-scoped.
+   * - Every query is userId+workspaceId-scoped.
    *
    * Returns the array of newly created instances.
    */
-  async generateInstancesForRange(userId: string, start: Date, end: Date) {
+  async generateInstancesForRange(userId: string, workspaceId: string, start: Date, end: Date) {
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
     const templates = await prisma.todo.findMany({
       where: {
         userId,
+        workspaceId,
         isRecurring: true,
         recurringSourceId: null,
         status: "PENDING",
@@ -185,6 +194,7 @@ export const todoRecurringService = {
     const existingInstances = await prisma.todo.findMany({
       where: {
         userId,
+        workspaceId,
         recurringSourceId: { in: templateIds },
         dueDate: { gte: rangeStart, lt: rangeEnd },
       },
@@ -213,6 +223,7 @@ export const todoRecurringService = {
         existingKeys.add(key);
         instancesToCreate.push({
           userId,
+          workspaceId,
           title: template.title,
           description: template.description,
           priority: template.priority,
@@ -239,6 +250,7 @@ export const todoRecurringService = {
     return prisma.todo.findMany({
       where: {
         userId,
+        workspaceId,
         recurringSourceId: { in: templateIds },
         dueDate: { gte: rangeStart, lt: rangeEnd },
       },
@@ -260,6 +272,10 @@ export const todoRecurringService = {
    *   - Count expected occurrences via rrule in last 30 days
    *   - Score = round((completed / expected) * 100), clamped 0 to 100
    *   - If expected = 0, score = 100 (no occurrences expected means perfect)
+   *
+   * Called from within todoService.complete's transaction. No workspaceId
+   * parameter because the caller already validated workspace membership,
+   * and this operates on data already scoped by userId within the tx.
    */
   async completeRecurringInstance(
     userId: string,
@@ -342,6 +358,8 @@ export const todoRecurringService = {
    * mark that should never decrease).
    *
    * Accepts an optional Prisma client to participate in a transaction.
+   * Called from within todoService.uncomplete's transaction. No workspaceId
+   * parameter because the caller already validated workspace membership.
    */
   async reverseRecurringInstance(
     userId: string,
@@ -405,9 +423,9 @@ export const todoRecurringService = {
   /**
    * Get streak and consistency data for a recurring template.
    */
-  async getStreakData(userId: string, templateId: string) {
+  async getStreakData(userId: string, workspaceId: string, templateId: string) {
     const template = await prisma.todo.findFirst({
-      where: { id: templateId, userId, isRecurring: true, recurringSourceId: null },
+      where: { id: templateId, userId, workspaceId, isRecurring: true, recurringSourceId: null },
       select: {
         id: true,
         title: true,
@@ -436,9 +454,9 @@ export const todoRecurringService = {
    *   - "pending": instance exists, not completed, and due date is today or future
    *   - "none": no instance exists for that day
    */
-  async getCompletionHistory(userId: string, templateId: string, days: number = 90) {
+  async getCompletionHistory(userId: string, workspaceId: string, templateId: string, days: number = 90) {
     const template = await prisma.todo.findFirst({
-      where: { id: templateId, userId, isRecurring: true, recurringSourceId: null },
+      where: { id: templateId, userId, workspaceId, isRecurring: true, recurringSourceId: null },
       select: {
         id: true,
         title: true,
@@ -460,6 +478,7 @@ export const todoRecurringService = {
     const instances = await prisma.todo.findMany({
       where: {
         userId,
+        workspaceId,
         recurringSourceId: templateId,
         dueDate: { gte: rangeStart, lte: rangeEnd },
       },

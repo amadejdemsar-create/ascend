@@ -23,6 +23,7 @@ export async function POST(
     const { orderedRowIds } = reorderDatabaseRowsSchema.parse(body);
     const result = await databaseRowService.reorderManual(
       auth.userId,
+      auth.workspaceId,
       databaseId,
       orderedRowIds,
     );

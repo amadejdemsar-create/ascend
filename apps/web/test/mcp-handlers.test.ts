@@ -14,7 +14,7 @@ import { createTestUser, deleteTestUser } from "./helpers";
 // rename breaks the Zod parse step.
 
 describe("MCP handlers", () => {
-  let user: { id: string; apiKey: string };
+  let user: { id: string; apiKey: string; workspaceId: string };
 
   beforeAll(async () => {
     user = await createTestUser("mcp");
@@ -26,7 +26,7 @@ describe("MCP handlers", () => {
 
   describe("handleCategoryTool", () => {
     it("create_category returns a parseable JSON payload on success", async () => {
-      const result = await handleCategoryTool(user.id, "create_category", {
+      const result = await handleCategoryTool(user.id, user.workspaceId, "create_category", {
         name: "MCP Category",
         color: "#10B981",
       });
@@ -38,7 +38,7 @@ describe("MCP handlers", () => {
     });
 
     it("create_category returns isError with Zod details on invalid input", async () => {
-      const result = await handleCategoryTool(user.id, "create_category", {
+      const result = await handleCategoryTool(user.id, user.workspaceId, "create_category", {
         // name is required; passing none triggers a ZodError
         color: "#ffffff",
       });
@@ -47,13 +47,13 @@ describe("MCP handlers", () => {
     });
 
     it("list_categories returns a mixed human-readable + JSON blob", async () => {
-      const result = await handleCategoryTool(user.id, "list_categories", {});
+      const result = await handleCategoryTool(user.id, user.workspaceId, "list_categories", {});
       expect(result.isError).toBeUndefined();
       expect(result.content[0].text).toContain("## Categories");
     });
 
     it("unknown category tool name returns isError", async () => {
-      const result = await handleCategoryTool(user.id, "not_a_real_tool", {});
+      const result = await handleCategoryTool(user.id, user.workspaceId, "not_a_real_tool", {});
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain("Unknown category tool");
     });
@@ -61,7 +61,7 @@ describe("MCP handlers", () => {
 
   describe("handleGoalTool", () => {
     it("create_goal returns a parseable JSON payload on success", async () => {
-      const result = await handleGoalTool(user.id, "create_goal", {
+      const result = await handleGoalTool(user.id, user.workspaceId, "create_goal", {
         title: "MCP Goal",
         horizon: "WEEKLY",
       });
@@ -72,7 +72,7 @@ describe("MCP handlers", () => {
     });
 
     it("get_goal returns isError for a non-existent id", async () => {
-      const result = await handleGoalTool(user.id, "get_goal", {
+      const result = await handleGoalTool(user.id, user.workspaceId, "get_goal", {
         id: "does-not-exist",
       });
       expect(result.isError).toBe(true);
@@ -80,7 +80,7 @@ describe("MCP handlers", () => {
     });
 
     it("create_goal returns isError on invalid horizon", async () => {
-      const result = await handleGoalTool(user.id, "create_goal", {
+      const result = await handleGoalTool(user.id, user.workspaceId, "create_goal", {
         title: "Bad horizon",
         horizon: "MILLENNIAL",
       });
@@ -91,13 +91,13 @@ describe("MCP handlers", () => {
   describe("handleContextTool", () => {
     it("set_context creates a new entry and parses backlinks", async () => {
       // First seed a target so the [[Target]] backlink resolves.
-      const target = await handleContextTool(user.id, "set_context", {
+      const target = await handleContextTool(user.id, user.workspaceId, "set_context", {
         title: "Target",
         content: "body",
       });
       const targetPayload = JSON.parse(target.content[0].text);
 
-      const referrer = await handleContextTool(user.id, "set_context", {
+      const referrer = await handleContextTool(user.id, user.workspaceId, "set_context", {
         title: "Referrer",
         content: "See [[Target]].",
       });
@@ -114,7 +114,7 @@ describe("MCP handlers", () => {
     });
 
     it("get_context returns isError for a non-existent id", async () => {
-      const result = await handleContextTool(user.id, "get_context", {
+      const result = await handleContextTool(user.id, user.workspaceId, "get_context", {
         id: "ghost-id",
       });
       expect(result.isError).toBe(true);
@@ -124,7 +124,7 @@ describe("MCP handlers", () => {
 
   describe("handleTodoTool", () => {
     it("create_todo returns a parseable JSON payload on success", async () => {
-      const result = await handleTodoTool(user.id, "create_todo", {
+      const result = await handleTodoTool(user.id, user.workspaceId, "create_todo", {
         title: "MCP Todo",
         priority: "HIGH",
       });
@@ -135,7 +135,7 @@ describe("MCP handlers", () => {
     });
 
     it("create_todo returns isError on invalid priority", async () => {
-      const result = await handleTodoTool(user.id, "create_todo", {
+      const result = await handleTodoTool(user.id, user.workspaceId, "create_todo", {
         title: "Bad priority",
         priority: "URGENT",
       });
@@ -145,7 +145,7 @@ describe("MCP handlers", () => {
 
   describe("handleDashboardTool", () => {
     it("get_dashboard returns a formatted markdown + embedded raw JSON payload", async () => {
-      const result = await handleDashboardTool(user.id, "get_dashboard", {});
+      const result = await handleDashboardTool(user.id, user.workspaceId, "get_dashboard", {});
       expect(result.isError).toBeUndefined();
       const text = result.content[0].text;
       expect(text).toContain("## Dashboard Summary");

@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     if (searchParams.has("parentId")) rawFilters.parentId = searchParams.get("parentId");
 
     const filters = goalFiltersSchema.parse(rawFilters);
-    const goals = await goalService.list(auth.userId, filters);
+    const goals = await goalService.list(auth.userId, auth.workspaceId, filters);
     return NextResponse.json(goals);
   } catch (error) {
     return handleApiError(error);
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const data = createGoalSchema.parse(body);
-    const goal = await goalService.create(auth.userId, data);
+    const goal = await goalService.create(auth.userId, auth.workspaceId, data);
     return NextResponse.json(goal, { status: 201 });
   } catch (error) {
     return handleApiError(error);

@@ -36,6 +36,7 @@ function formatCategory(cat: CategoryTreeNode, indent: number): string {
  */
 export async function handleCategoryTool(
   userId: string,
+  workspaceId: string,
   name: string,
   args: Record<string, unknown>,
 ): Promise<McpContent> {
@@ -43,7 +44,7 @@ export async function handleCategoryTool(
     switch (name) {
       case "create_category": {
         const data = createCategorySchema.parse(args);
-        const category = await categoryService.create(userId, data);
+        const category = await categoryService.create(userId, workspaceId, data);
         return {
           content: [{ type: "text", text: JSON.stringify(category, null, 2) }],
         };
@@ -58,7 +59,7 @@ export async function handleCategoryTool(
           };
         }
         const data = updateCategorySchema.parse(rest);
-        const category = await categoryService.update(userId, id, data);
+        const category = await categoryService.update(userId, workspaceId, id, data);
         return {
           content: [{ type: "text", text: JSON.stringify(category, null, 2) }],
         };
@@ -72,14 +73,14 @@ export async function handleCategoryTool(
             isError: true,
           };
         }
-        await categoryService.delete(userId, id);
+        await categoryService.delete(userId, workspaceId, id);
         return {
           content: [{ type: "text", text: "Category deleted successfully." }],
         };
       }
 
       case "list_categories": {
-        const categories = await categoryService.listTree(userId);
+        const categories = await categoryService.listTree(userId, workspaceId);
         const tree =
           categories.length === 0
             ? "No categories found."

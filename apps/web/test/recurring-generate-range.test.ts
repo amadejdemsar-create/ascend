@@ -14,7 +14,7 @@ import { createTestUser, deleteTestUser } from "./helpers";
  * tests verify the invariants.
  */
 describe("todoRecurringService.generateInstancesForRange", () => {
-  let user: { id: string; apiKey: string };
+  let user: { id: string; apiKey: string; workspaceId: string };
 
   beforeAll(async () => {
     user = await createTestUser("recurring-range");
@@ -31,7 +31,7 @@ describe("todoRecurringService.generateInstancesForRange", () => {
   async function createDailyTemplate(createdAt: Date) {
     // Create via the service so isRecurring + recurrenceRule land on
     // the row (exercises the create-path fix from dc3498a).
-    const template = await todoService.create(user.id, {
+    const template = await todoService.create(user.id, user.workspaceId, {
       title: "Daily",
       priority: "LOW",
       isRecurring: true,
@@ -53,6 +53,7 @@ describe("todoRecurringService.generateInstancesForRange", () => {
 
     const instances = await todoRecurringService.generateInstancesForRange(
       user.id,
+      user.workspaceId,
       windowStart,
       windowEnd,
     );
@@ -74,6 +75,7 @@ describe("todoRecurringService.generateInstancesForRange", () => {
 
     const first = await todoRecurringService.generateInstancesForRange(
       user.id,
+      user.workspaceId,
       windowStart,
       windowEnd,
     );
@@ -85,6 +87,7 @@ describe("todoRecurringService.generateInstancesForRange", () => {
     // landed in the database.
     const second = await todoRecurringService.generateInstancesForRange(
       user.id,
+      user.workspaceId,
       windowStart,
       windowEnd,
     );
@@ -108,6 +111,7 @@ describe("todoRecurringService.generateInstancesForRange", () => {
     await prisma.todo.create({
       data: {
         userId: user.id,
+        workspaceId: user.workspaceId,
         title: "Manual",
         priority: "LOW",
         recurringSourceId: template.id,
@@ -117,6 +121,7 @@ describe("todoRecurringService.generateInstancesForRange", () => {
 
     await todoRecurringService.generateInstancesForRange(
       user.id,
+      user.workspaceId,
       windowStart,
       windowEnd,
     );
@@ -154,6 +159,7 @@ describe("todoRecurringService.generateInstancesForRange", () => {
       // instances from user A's template on user B's account.
       const created = await todoRecurringService.generateInstancesForRange(
         other.id,
+        other.workspaceId,
         windowStart,
         windowEnd,
       );

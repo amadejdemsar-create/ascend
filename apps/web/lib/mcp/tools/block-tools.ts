@@ -58,6 +58,7 @@ const deleteBlockSchema = z.object({
  */
 export async function handleBlockTool(
   userId: string,
+  workspaceId: string,
   name: string,
   args: Record<string, unknown>,
 ): Promise<McpContent> {
@@ -65,7 +66,7 @@ export async function handleBlockTool(
     switch (name) {
       case "get_blocks": {
         const { entryId } = getBlocksSchema.parse(args);
-        const result = await blockDocumentService.getByEntryId(userId, entryId);
+        const result = await blockDocumentService.getByEntryId(userId, workspaceId, entryId);
         if (!result) {
           return ok({ snapshot: null, version: 0 });
         }
@@ -74,7 +75,7 @@ export async function handleBlockTool(
 
       case "add_block": {
         const { entryId, ...op } = addBlockSchema.parse(args);
-        const result = await blockDocumentService.addBlock(userId, entryId, op);
+        const result = await blockDocumentService.addBlock(userId, workspaceId, entryId, op);
         return ok(result);
       }
 
@@ -82,6 +83,7 @@ export async function handleBlockTool(
         const { entryId, blockId, patch } = updateBlockSchema.parse(args);
         const result = await blockDocumentService.updateBlock(
           userId,
+          workspaceId,
           entryId,
           blockId,
           patch,
@@ -91,7 +93,7 @@ export async function handleBlockTool(
 
       case "move_block": {
         const { entryId, ...op } = moveBlockSchema.parse(args);
-        const result = await blockDocumentService.moveBlock(userId, entryId, op);
+        const result = await blockDocumentService.moveBlock(userId, workspaceId, entryId, op);
         return ok(result);
       }
 
@@ -99,6 +101,7 @@ export async function handleBlockTool(
         const { entryId, blockId } = deleteBlockSchema.parse(args);
         const result = await blockDocumentService.deleteBlock(
           userId,
+          workspaceId,
           entryId,
           blockId,
         );

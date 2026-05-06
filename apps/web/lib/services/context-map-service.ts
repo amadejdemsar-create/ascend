@@ -85,9 +85,9 @@ export const contextMapService = {
    * Get the current Context Map for a user.
    * Returns null if no map has been generated yet.
    */
-  async getCurrent(userId: string): Promise<ContextMapWithMeta | null> {
+  async getCurrent(userId: string, workspaceId: string): Promise<ContextMapWithMeta | null> {
     const row = await prisma.contextMap.findFirst({
-      where: { userId },
+      where: { userId, workspaceId },
     });
 
     if (!row) return null;
@@ -116,6 +116,7 @@ export const contextMapService = {
    */
   async canRefresh(
     userId: string,
+    workspaceId: string,
   ): Promise<{
     ok: boolean;
     reason?: string;
@@ -123,7 +124,7 @@ export const contextMapService = {
     nextAllowedAt?: Date;
   }> {
     const existing = await prisma.contextMap.findFirst({
-      where: { userId },
+      where: { userId, workspaceId },
       select: { generatedAt: true },
     });
 
@@ -165,9 +166,9 @@ export const contextMapService = {
    * Throws BudgetExceededError (from llmService) if cost cap is hit.
    * Throws MissingApiKeyError if the user's provider key is not set.
    */
-  async refresh(userId: string): Promise<ContextMapWithMeta> {
+  async refresh(userId: string, workspaceId: string): Promise<ContextMapWithMeta> {
     // 1. Fetch the user's full graph with content
-    const { nodes, edges } = await fetchGraphWithContent(userId);
+    const { nodes, edges } = await fetchGraphWithContent(userId, workspaceId);
 
     if (nodes.length === 0) {
       throw new Error(
@@ -179,9 +180,9 @@ export const contextMapService = {
     // 2. Synthesize via single-pass or chunked
     let result: SynthesisResult;
     if (nodes.length <= CHUNK_THRESHOLD) {
-      result = await singlePassSynthesize(userId, nodes, edges);
+      result = await singlePassSynthesize(userId, workspaceId, nodes, edges);
     } else {
-      result = await chunkedSynthesize(userId, nodes, edges);
+      result = await chunkedSynthesize(userId, workspaceId, nodes, edges);
     }
 
     // 3. Upsert the ContextMap row (userId is @unique, so upsert on conflict)
@@ -203,6 +204,7 @@ export const contextMapService = {
       },
       create: {
         userId,
+        workspaceId,
         content: contentJson,
         provider,
         model: result.model,
@@ -254,10 +256,11 @@ interface SynthesisResult {
  */
 async function fetchGraphWithContent(
   userId: string,
+  workspaceId: string,
 ): Promise<{ nodes: GraphNode[]; edges: GraphEdge[] }> {
   const [entries, links] = await Promise.all([
     prisma.contextEntry.findMany({
-      where: { userId },
+      where: { userId, workspaceId },
       select: {
         id: true,
         title: true,
@@ -266,14 +269,14 @@ async function fetchGraphWithContent(
         isPinned: true,
         _count: {
           select: {
-            outgoingLinks: { where: { userId } },
-            incomingLinks: { where: { userId } },
+            outgoingLinks: { where: { userId, workspaceId } },
+            incomingLinks: { where: { userId, workspaceId } },
           },
         },
       },
     }),
     prisma.contextLink.findMany({
-      where: { userId },
+      where: { userId, workspaceId },
       select: {
         id: true,
         fromEntryId: true,
@@ -336,6 +339,7 @@ function parseMapOutput(raw: string): ContextMapContent {
  */
 async function singlePassSynthesize(
   userId: string,
+  workspaceId: string,
   nodes: GraphNode[],
   edges: GraphEdge[],
 ): Promise<SynthesisResult> {
@@ -343,6 +347,7 @@ async function singlePassSynthesize(
 
   const chatResult = await llmService.chat(
     userId,
+    workspaceId,
     {
       system,
       messages: [{ role: "user", content: userMessage }],
@@ -387,6 +392,7 @@ async function singlePassSynthesize(
  */
 async function chunkedSynthesize(
   userId: string,
+  workspaceId: string,
   nodes: GraphNode[],
   edges: GraphEdge[],
 ): Promise<SynthesisResult> {
@@ -407,6 +413,7 @@ async function chunkedSynthesize(
   const pass1Prompt = buildChunkPass1Messages(firstBatch, firstBatchEdges);
   const pass1Result = await llmService.chat(
     userId,
+    workspaceId,
     {
       system: pass1Prompt.system,
       messages: [{ role: "user", content: pass1Prompt.userMessage }],
@@ -425,6 +432,7 @@ async function chunkedSynthesize(
   );
   const pass2Result = await llmService.chat(
     userId,
+    workspaceId,
     {
       system: pass2Prompt.system,
       messages: [{ role: "user", content: pass2Prompt.userMessage }],

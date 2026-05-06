@@ -16,7 +16,7 @@ export async function GET(
   if (!auth.success) return unauthorizedResponse();
   try {
     const { id } = await params;
-    const count = await contextLinkService.countDerivatives(auth.userId, id);
+    const count = await contextLinkService.countDerivatives(auth.userId, auth.workspaceId, id);
     return NextResponse.json({ count });
   } catch (error) {
     return handleApiError(error);

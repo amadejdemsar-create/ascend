@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   if (!auth.success) return unauthorizedResponse();
 
   try {
-    const tree = await goalService.getTree(auth.userId);
+    const tree = await goalService.getTree(auth.userId, auth.workspaceId);
     return NextResponse.json(tree);
   } catch (error) {
     return handleApiError(error);

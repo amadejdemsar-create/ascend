@@ -19,6 +19,7 @@
  */
 
 import { prisma } from "@/lib/db";
+import { workspaceContextService } from "./workspace-context-service";
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -39,20 +40,21 @@ export const retentionCompactorService = {
    *
    * Returns the total number of versions deleted.
    */
-  async compactUserVersions(userId: string): Promise<{ deleted: number }> {
+  async compactUserVersions(userId: string, workspaceId: string): Promise<{ deleted: number }> {
     const now = new Date();
     const freshCutoff = new Date(now.getTime() - FRESH_DAYS * MS_PER_DAY);
     const dailyCutoff = new Date(
       now.getTime() - (FRESH_DAYS + DAILY_DAYS) * MS_PER_DAY,
     );
 
-    // Get distinct (nodeType, nodeId) groups for this user
+    // Get distinct (nodeType, nodeId) groups for this user in this workspace
     const groups = await prisma.$queryRaw<
       Array<{ nodeType: string; nodeId: string }>
     >`
       SELECT DISTINCT "nodeType", "nodeId"
       FROM "NodeVersion"
       WHERE "userId" = ${userId}
+        AND "workspaceId" = ${workspaceId}
     `;
 
     let totalDeleted = 0;
@@ -60,7 +62,7 @@ export const retentionCompactorService = {
     for (const { nodeType, nodeId } of groups) {
       // Fetch all versions for this node, newest first
       const versions = await prisma.nodeVersion.findMany({
-        where: { userId, nodeType: nodeType as never, nodeId },
+        where: { userId, workspaceId, nodeType: nodeType as never, nodeId },
         orderBy: { createdAt: "desc" },
         select: { id: true, createdAt: true },
       });
@@ -115,15 +117,36 @@ export const retentionCompactorService = {
    * Processes each user independently; a single user's failure
    * does not abort the entire batch.
    */
+  /**
+   * Compact all users' versions. Called by the nightly cron.
+   * Processes each user independently; a single user's failure
+   * does not abort the entire batch.
+   *
+   * Cron-driven: iterates users and resolves workspaceId per-user via
+   * User.defaultWorkspaceId (or workspaceContextService fallback).
+   */
   async compactAllUsers(): Promise<{
     usersProcessed: number;
     totalDeleted: number;
   }> {
-    const users = await prisma.user.findMany({ select: { id: true } });
+    const users = await prisma.user.findMany({
+      select: { id: true, defaultWorkspaceId: true },
+    });
     let totalDeleted = 0;
 
     for (const u of users) {
-      const result = await this.compactUserVersions(u.id).catch((err) => {
+      const wsId =
+        u.defaultWorkspaceId ??
+        (await workspaceContextService
+          .resolveDefaultWorkspaceId(u.id)
+          .catch(() => null));
+      if (!wsId) {
+        console.error("[retention] no workspaceId for user; skipping", {
+          userId: u.id,
+        });
+        continue;
+      }
+      const result = await this.compactUserVersions(u.id, wsId).catch((err) => {
         console.error("[retention] compaction failed for user", {
           userId: u.id,
           err,

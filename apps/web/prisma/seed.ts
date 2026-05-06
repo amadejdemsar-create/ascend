@@ -31,30 +31,50 @@ async function main() {
 
   console.log("Seeded user stats for:", user.id);
 
+  // Resolve the user's default workspace (created by Phase 1 seed migration).
+  // Fall back to the first ACTIVE membership if defaultWorkspaceId is not set.
+  let workspaceId = user.defaultWorkspaceId as string | null;
+  if (!workspaceId) {
+    const membership = await prisma.workspaceMembership.findFirst({
+      where: { userId: user.id, status: "ACTIVE" },
+      select: { workspaceId: true },
+      orderBy: { createdAt: "asc" },
+    });
+    workspaceId = membership?.workspaceId ?? null;
+  }
+
+  if (!workspaceId) {
+    console.warn("No workspace found for user; skipping category seeding.");
+  }
+
   // Seed default categories (idempotent)
   // Using findFirst + create pattern because the composite unique includes
   // nullable parentId, and SQL NULL != NULL prevents standard upsert matching.
   let categoriesSeeded = 0;
-  for (const cat of DEFAULT_CATEGORIES) {
-    const existing = await prisma.category.findFirst({
-      where: {
-        userId: user.id,
-        name: cat.name,
-        parentId: null,
-      },
-    });
-
-    if (!existing) {
-      await prisma.category.create({
-        data: {
+  if (workspaceId) {
+    for (const cat of DEFAULT_CATEGORIES) {
+      const existing = await prisma.category.findFirst({
+        where: {
           userId: user.id,
+          workspaceId,
           name: cat.name,
-          color: cat.color,
-          icon: cat.icon,
-          sortOrder: cat.sortOrder,
+          parentId: null,
         },
       });
-      categoriesSeeded++;
+
+      if (!existing) {
+        await prisma.category.create({
+          data: {
+            userId: user.id,
+            workspaceId,
+            name: cat.name,
+            color: cat.color,
+            icon: cat.icon,
+            sortOrder: cat.sortOrder,
+          },
+        });
+        categoriesSeeded++;
+      }
     }
   }
 

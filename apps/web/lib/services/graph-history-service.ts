@@ -49,13 +49,12 @@ export const graphHistoryService = {
    *   - Within 90 days: throws NOT_FOUND (snapshot not yet computed)
    *   - Older than 90 days: throws GONE (outside retention window)
    */
-  async getGraphAt(userId: string, date: Date): Promise<GraphAtResult> {
+  async getGraphAt(userId: string, workspaceId: string, date: Date): Promise<GraphAtResult> {
     const todayUtc = new Date();
     todayUtc.setUTCHours(0, 0, 0, 0);
 
     if (date >= todayUtc) {
-      // Live state
-      const graph = await contextService.getGraph(userId);
+      const graph = await contextService.getGraph(userId, workspaceId);
       return {
         nodes: graph.nodes,
         edges: graph.edges,
@@ -68,7 +67,7 @@ export const graphHistoryService = {
     snapshotDate.setUTCHours(0, 0, 0, 0);
 
     const snapshot = await prisma.graphDailySnapshot.findFirst({
-      where: { userId, snapshotDate },
+      where: { userId, workspaceId, snapshotDate },
     });
 
     if (!snapshot) {

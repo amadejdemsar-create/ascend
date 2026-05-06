@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     if (searchParams.has("isBig3")) rawFilters.isBig3 = searchParams.get("isBig3");
 
     const filters = todoFiltersSchema.parse(rawFilters);
-    const todos = await todoService.list(auth.userId, filters);
+    const todos = await todoService.list(auth.userId, auth.workspaceId, filters);
     return NextResponse.json(todos);
   } catch (error) {
     return handleApiError(error);
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const data = createTodoSchema.parse(body);
-    const todo = await todoService.create(auth.userId, data);
+    const todo = await todoService.create(auth.userId, auth.workspaceId, data);
     return NextResponse.json(todo, { status: 201 });
   } catch (error) {
     return handleApiError(error);

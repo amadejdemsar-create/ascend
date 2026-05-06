@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
     const { versionId, dryRun } = restoreVersionBodySchema.parse(body);
     const result = await restoreService.restore(
       auth.userId,
+      auth.workspaceId,
       versionId,
       dryRun ?? false,
     );

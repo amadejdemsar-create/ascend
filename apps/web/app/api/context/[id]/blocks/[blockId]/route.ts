@@ -28,6 +28,7 @@ export async function PATCH(
     const data = blockOpUpdateSchema.parse(body);
     const result = await blockDocumentService.updateBlock(
       auth.userId,
+      auth.workspaceId,
       id,
       blockId,
       data.patch,
@@ -58,7 +59,7 @@ export async function DELETE(
 
   try {
     const { id, blockId } = await params;
-    await blockDocumentService.deleteBlock(auth.userId, id, blockId);
+    await blockDocumentService.deleteBlock(auth.userId, auth.workspaceId, id, blockId);
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     // Surface "Block <id> not found" as 404

@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     if (searchParams.has("tag")) rawFilters.tag = searchParams.get("tag");
 
     const filters = contextFiltersSchema.parse(rawFilters);
-    const entries = await contextService.list(auth.userId, filters);
+    const entries = await contextService.list(auth.userId, auth.workspaceId, filters);
     return NextResponse.json(entries);
   } catch (error) {
     return handleApiError(error);
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const data = createContextSchema.parse(body);
-    const entry = await contextService.create(auth.userId, data);
+    const entry = await contextService.create(auth.userId, auth.workspaceId, data);
     return NextResponse.json(entry, { status: 201 });
   } catch (error) {
     return handleApiError(error);

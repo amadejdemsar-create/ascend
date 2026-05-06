@@ -19,7 +19,7 @@ export async function PATCH(
     const { viewId } = await params;
     const body = await request.json();
     const data = updateDatabaseViewSchema.parse(body);
-    const result = await databaseViewService.update(auth.userId, viewId, data);
+    const result = await databaseViewService.update(auth.userId, auth.workspaceId, viewId, data);
     return NextResponse.json(result);
   } catch (error) {
     return handleApiError(error);
@@ -40,7 +40,7 @@ export async function DELETE(
 
   try {
     const { viewId } = await params;
-    const result = await databaseViewService.delete(auth.userId, viewId);
+    const result = await databaseViewService.delete(auth.userId, auth.workspaceId, viewId);
     return NextResponse.json(result);
   } catch (error) {
     return handleApiError(error);

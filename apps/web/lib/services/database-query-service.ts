@@ -66,12 +66,13 @@ export const databaseQueryService = {
    */
   async query(
     userId: string,
+    workspaceId: string,
     databaseId: string,
     input: DatabaseQueryInput,
   ): Promise<QueryResult> {
     // Verify ownership
     const database = await prisma.database.findFirst({
-      where: { id: databaseId, userId },
+      where: { id: databaseId, userId, workspaceId },
       include: {
         fields: { orderBy: { position: "asc" } },
       },
@@ -91,7 +92,7 @@ export const databaseQueryService = {
 
     if (input.viewId) {
       const view = await prisma.databaseView.findFirst({
-        where: { id: input.viewId, databaseId, userId },
+        where: { id: input.viewId, databaseId, userId, workspaceId },
       });
       if (view) {
         const viewConfig = view.config as Record<string, unknown>;
@@ -133,6 +134,7 @@ export const databaseQueryService = {
     const whereConditions: Prisma.Sql[] = [
       Prisma.sql`"databaseId" = ${databaseId}`,
       Prisma.sql`"userId" = ${userId}`,
+      Prisma.sql`"workspaceId" = ${workspaceId}`,
     ];
 
     if (filter && !hasFormulaFilter) {
@@ -277,12 +279,13 @@ export const databaseQueryService = {
    */
   async count(
     userId: string,
+    workspaceId: string,
     databaseId: string,
     filter?: FilterSchema,
   ): Promise<number> {
     // Verify ownership
     const database = await prisma.database.findFirst({
-      where: { id: databaseId, userId },
+      where: { id: databaseId, userId, workspaceId },
       include: { fields: true },
     });
     if (!database) throw new Error("Database not found");
@@ -295,6 +298,7 @@ export const databaseQueryService = {
     const whereConditions: Prisma.Sql[] = [
       Prisma.sql`"databaseId" = ${databaseId}`,
       Prisma.sql`"userId" = ${userId}`,
+      Prisma.sql`"workspaceId" = ${workspaceId}`,
     ];
 
     if (filter) {

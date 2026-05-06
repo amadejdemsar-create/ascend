@@ -22,6 +22,7 @@ export async function POST(
     const data = createDatabaseViewSchema.parse(body);
     const result = await databaseViewService.create(
       auth.userId,
+      auth.workspaceId,
       databaseId,
       data,
     );

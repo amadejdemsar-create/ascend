@@ -14,7 +14,7 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
     const input = updateContextLinkSchema.parse(body);
-    const link = await contextLinkService.update(auth.userId, id, input);
+    const link = await contextLinkService.update(auth.userId, auth.workspaceId, id, input);
     return NextResponse.json(link);
   } catch (error) {
     return handleApiError(error);
@@ -34,7 +34,7 @@ export async function DELETE(
     const query = deleteContextLinkQuerySchema.parse(
       Object.fromEntries(url.searchParams),
     );
-    await contextLinkService.delete(auth.userId, id, { force: query.force });
+    await contextLinkService.delete(auth.userId, auth.workspaceId, id, { force: query.force });
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     return handleApiError(error);

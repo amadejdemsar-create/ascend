@@ -22,6 +22,7 @@ export async function POST(
     const { orderedFieldIds } = reorderDatabaseFieldsSchema.parse(body);
     const result = await databaseFieldService.reorder(
       auth.userId,
+      auth.workspaceId,
       databaseId,
       orderedFieldIds,
     );

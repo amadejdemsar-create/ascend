@@ -5,8 +5,8 @@ import { createTestUser, deleteTestUser } from "./helpers";
 describe("goalService", () => {
   // Two users. Tests verify that user B cannot read or mutate user A's
   // goals via the service layer (safety rule 1 + C1 from the review).
-  let userA: { id: string; apiKey: string };
-  let userB: { id: string; apiKey: string };
+  let userA: { id: string; apiKey: string; workspaceId: string };
+  let userB: { id: string; apiKey: string; workspaceId: string };
 
   beforeAll(async () => {
     userA = await createTestUser("goal-a");
@@ -20,12 +20,12 @@ describe("goalService", () => {
 
   describe("update (C1 cross-tenant guard)", () => {
     it("updates a goal owned by the caller", async () => {
-      const goal = await goalService.create(userA.id, {
+      const goal = await goalService.create(userA.id, userA.workspaceId, {
         title: "A's goal",
         horizon: "WEEKLY",
       });
 
-      const updated = await goalService.update(userA.id, goal.id, {
+      const updated = await goalService.update(userA.id, userA.workspaceId, goal.id, {
         title: "A renamed",
       });
 
@@ -34,7 +34,7 @@ describe("goalService", () => {
     });
 
     it("refuses to update goals owned by a different user", async () => {
-      const goal = await goalService.create(userA.id, {
+      const goal = await goalService.create(userA.id, userA.workspaceId, {
         title: "A's goal",
         horizon: "WEEKLY",
       });
@@ -43,17 +43,17 @@ describe("goalService", () => {
       // unconditional findFirst({id, userId}) guard at the top of
       // update() must reject this (C1).
       await expect(
-        goalService.update(userB.id, goal.id, { title: "HIJACKED" }),
+        goalService.update(userB.id, userB.workspaceId, goal.id, { title: "HIJACKED" }),
       ).rejects.toThrow("Goal not found");
 
       // And the original title must be unchanged.
-      const reread = await goalService.getById(userA.id, goal.id);
+      const reread = await goalService.getById(userA.id, userA.workspaceId, goal.id);
       expect(reread?.title).toBe("A's goal");
     });
 
     it("refuses to update a completely non-existent goal", async () => {
       await expect(
-        goalService.update(userA.id, "does-not-exist", { title: "ghost" }),
+        goalService.update(userA.id, userA.workspaceId, "does-not-exist", { title: "ghost" }),
       ).rejects.toThrow("Goal not found");
     });
 
@@ -63,7 +63,7 @@ describe("goalService", () => {
       // other payload (status, priority, description, notes, progress)
       // went straight to prisma.goal.update({where: {id}}) with no
       // userId filter. Verify every non-hierarchy field is guarded.
-      const goal = await goalService.create(userA.id, {
+      const goal = await goalService.create(userA.id, userA.workspaceId, {
         title: "A's goal",
         horizon: "WEEKLY",
       });
@@ -77,7 +77,7 @@ describe("goalService", () => {
       ];
 
       for (const patch of attacks) {
-        await expect(goalService.update(userB.id, goal.id, patch)).rejects.toThrow(
+        await expect(goalService.update(userB.id, userB.workspaceId, goal.id, patch)).rejects.toThrow(
           "Goal not found",
         );
       }
@@ -86,44 +86,44 @@ describe("goalService", () => {
 
   describe("delete (C1 parallel: cross-tenant delete guard)", () => {
     it("deletes a goal owned by the caller", async () => {
-      const goal = await goalService.create(userA.id, {
+      const goal = await goalService.create(userA.id, userA.workspaceId, {
         title: "A's goal",
         horizon: "WEEKLY",
       });
-      await goalService.delete(userA.id, goal.id);
-      const reread = await goalService.getById(userA.id, goal.id);
+      await goalService.delete(userA.id, userA.workspaceId, goal.id);
+      const reread = await goalService.getById(userA.id, userA.workspaceId, goal.id);
       expect(reread).toBeNull();
     });
 
     it("refuses to delete goals owned by a different user", async () => {
-      const goal = await goalService.create(userA.id, {
+      const goal = await goalService.create(userA.id, userA.workspaceId, {
         title: "A's goal",
         horizon: "WEEKLY",
       });
-      await expect(goalService.delete(userB.id, goal.id)).rejects.toThrow(
+      await expect(goalService.delete(userB.id, userB.workspaceId, goal.id)).rejects.toThrow(
         "Goal not found",
       );
-      const reread = await goalService.getById(userA.id, goal.id);
+      const reread = await goalService.getById(userA.id, userA.workspaceId, goal.id);
       expect(reread).not.toBeNull();
     });
   });
 
   describe("getById (cross-tenant read)", () => {
     it("returns the goal for the owning user", async () => {
-      const goal = await goalService.create(userA.id, {
+      const goal = await goalService.create(userA.id, userA.workspaceId, {
         title: "A's goal",
         horizon: "WEEKLY",
       });
-      const fetched = await goalService.getById(userA.id, goal.id);
+      const fetched = await goalService.getById(userA.id, userA.workspaceId, goal.id);
       expect(fetched?.id).toBe(goal.id);
     });
 
     it("returns null for a different user's id", async () => {
-      const goal = await goalService.create(userA.id, {
+      const goal = await goalService.create(userA.id, userA.workspaceId, {
         title: "A's goal",
         horizon: "WEEKLY",
       });
-      const fetched = await goalService.getById(userB.id, goal.id);
+      const fetched = await goalService.getById(userB.id, userB.workspaceId, goal.id);
       expect(fetched).toBeNull();
     });
   });

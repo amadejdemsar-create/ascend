@@ -35,6 +35,7 @@ function fail(message: string): McpContent {
  */
 export async function handleLlmTool(
   userId: string,
+  workspaceId: string,
   name: string,
   args: Record<string, unknown>,
 ): Promise<McpContent> {
@@ -42,20 +43,20 @@ export async function handleLlmTool(
     switch (name) {
       // ── Read-only: current map ──────────────────────────────────
       case "get_context_map": {
-        const map = await contextMapService.getCurrent(userId);
+        const map = await contextMapService.getCurrent(userId, workspaceId);
         return ok(map);
       }
 
       // ── Refresh map (respects cooldown + cost cap) ──────────────
       case "refresh_context_map": {
-        const cooldown = await contextMapService.canRefresh(userId);
+        const cooldown = await contextMapService.canRefresh(userId, workspaceId);
         if (!cooldown.ok) {
           return fail(
             cooldown.reason ??
               `Cooldown active. Retry after ${cooldown.retryAfterSec ?? 0} seconds.`,
           );
         }
-        const map = await contextMapService.refresh(userId);
+        const map = await contextMapService.refresh(userId, workspaceId);
         return ok(map);
       }
 
@@ -65,7 +66,7 @@ export async function handleLlmTool(
           .object({ entryId: z.string().min(1) })
           .parse(args);
 
-        return ok(await suggestConnections(userId, entryId));
+        return ok(await suggestConnections(userId, workspaceId, entryId));
       }
 
       // ── Detect contradictions / tensions ────────────────────────
@@ -74,7 +75,7 @@ export async function handleLlmTool(
           .object({ entryId: z.string().min(1).optional() })
           .parse(args);
 
-        return ok(await detectContradictions(userId, entryId));
+        return ok(await detectContradictions(userId, workspaceId, entryId));
       }
 
       // ── Summarize subgraph ──────────────────────────────────────
@@ -86,7 +87,7 @@ export async function handleLlmTool(
           })
           .parse(args);
 
-        return ok(await summarizeSubgraph(userId, rootEntryId, depth));
+        return ok(await summarizeSubgraph(userId, workspaceId, rootEntryId, depth));
       }
 
       default:
@@ -112,14 +113,15 @@ interface ConnectionSuggestion {
 
 async function suggestConnections(
   userId: string,
+  workspaceId: string,
   entryId: string,
 ): Promise<ConnectionSuggestion[]> {
   // 1. Get the source entry
-  const entry = await contextService.getById(userId, entryId);
+  const entry = await contextService.getById(userId, workspaceId, entryId);
   if (!entry) throw new Error("Context entry not found");
 
   // 2. Get existing links so we can filter them out
-  const existingLinks = await contextLinkService.listForEntry(userId, entryId);
+  const existingLinks = await contextLinkService.listForEntry(userId, workspaceId, entryId);
   const linkedIds = new Set<string>();
   for (const link of existingLinks.outgoing) {
     linkedIds.add(link.toEntryId);
@@ -135,6 +137,7 @@ async function suggestConnections(
 
   const semanticResults = await embeddingService.searchSemantic(
     userId,
+    workspaceId,
     textToSearch,
     20,
   );
@@ -175,6 +178,7 @@ Return ONLY the JSON array, no other text.`;
 
   const chatResult = await llmService.chat(
     userId,
+    workspaceId,
     {
       system:
         "You are a precise knowledge graph assistant. Return only valid JSON arrays.",
@@ -234,6 +238,7 @@ interface Contradiction {
 
 async function detectContradictions(
   userId: string,
+  workspaceId: string,
   entryId?: string,
 ): Promise<Contradiction[]> {
   let entries: Array<{
@@ -245,11 +250,11 @@ async function detectContradictions(
 
   if (entryId) {
     // Scoped: get neighbors of the entry
-    const neighbors = await contextService.getNeighbors(userId, entryId, 2);
+    const neighbors = await contextService.getNeighbors(userId, workspaceId, entryId, 2);
     const nodeIds = neighbors.nodes.map((n) => n.id);
     // Fetch content for these nodes
     const detailed = await Promise.all(
-      nodeIds.map((id) => contextService.getById(userId, id)),
+      nodeIds.map((id) => contextService.getById(userId, workspaceId, id)),
     );
     entries = detailed
       .filter((e): e is NonNullable<typeof e> => e !== null)
@@ -261,7 +266,7 @@ async function detectContradictions(
       }));
   } else {
     // Full graph scan: get all entries (cap at 200 for LLM context)
-    const allEntries = await contextService.list(userId);
+    const allEntries = await contextService.list(userId, workspaceId);
     entries = allEntries.slice(0, 200).map((e) => ({
       id: e.id,
       title: e.title,
@@ -296,6 +301,7 @@ Return ONLY the JSON array, no other text.`;
 
   const chatResult = await llmService.chat(
     userId,
+    workspaceId,
     {
       system:
         "You are a precise knowledge graph analyst. Return only valid JSON arrays.",
@@ -354,19 +360,21 @@ interface SubgraphSummary {
 
 async function summarizeSubgraph(
   userId: string,
+  workspaceId: string,
   rootEntryId: string,
   depth: number,
 ): Promise<SubgraphSummary> {
   // 1. Get the neighborhood
   const neighborhood = await contextService.getNeighbors(
     userId,
+    workspaceId,
     rootEntryId,
     depth,
   );
 
   // 2. Fetch content for each node
   const nodeDetails = await Promise.all(
-    neighborhood.nodes.map((n) => contextService.getById(userId, n.id)),
+    neighborhood.nodes.map((n) => contextService.getById(userId, workspaceId, n.id)),
   );
 
   const entries = nodeDetails.filter(
@@ -404,6 +412,7 @@ Write a clear, concise summary paragraph.`;
 
   const chatResult = await llmService.chat(
     userId,
+    workspaceId,
     {
       system:
         "You are a concise knowledge summarizer. Write clear, factual summaries. No preamble or meta-commentary.",

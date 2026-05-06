@@ -26,11 +26,12 @@ export const edgeEventService = {
    * Log a link creation event. Called by contextLinkService after a
    * successful create/upsert.
    */
-  async logCreated(userId: string, link: ContextLink): Promise<void> {
+  async logCreated(userId: string, workspaceId: string, link: ContextLink): Promise<void> {
     await prisma.edgeEvent
       .create({
         data: {
           userId,
+          workspaceId,
           eventType: "CREATED",
           linkSnapshot: link as never,
           fromEntryId: link.fromEntryId,
@@ -49,11 +50,12 @@ export const edgeEventService = {
    * Log a link removal event. Called by contextLinkService after a
    * successful delete.
    */
-  async logRemoved(userId: string, link: ContextLink): Promise<void> {
+  async logRemoved(userId: string, workspaceId: string, link: ContextLink): Promise<void> {
     await prisma.edgeEvent
       .create({
         data: {
           userId,
+          workspaceId,
           eventType: "REMOVED",
           linkSnapshot: link as never,
           fromEntryId: link.fromEntryId,
@@ -74,6 +76,7 @@ export const edgeEventService = {
    */
   async logUpdated(
     userId: string,
+    workspaceId: string,
     before: ContextLink,
     after: ContextLink,
   ): Promise<void> {
@@ -81,6 +84,7 @@ export const edgeEventService = {
       .create({
         data: {
           userId,
+          workspaceId,
           eventType: "UPDATED",
           linkSnapshot: { before, after } as never,
           fromEntryId: after.fromEntryId,
@@ -101,6 +105,7 @@ export const edgeEventService = {
    */
   async listEventsForEntry(
     userId: string,
+    workspaceId: string,
     entryId: string,
     opts?: { limit?: number },
   ) {
@@ -108,6 +113,7 @@ export const edgeEventService = {
     return prisma.edgeEvent.findMany({
       where: {
         userId,
+        workspaceId,
         OR: [{ fromEntryId: entryId }, { toEntryId: entryId }],
       },
       orderBy: { createdAt: "desc" },
@@ -121,10 +127,11 @@ export const edgeEventService = {
    */
   async listEventsBeforeCutoff(
     userId: string,
+    workspaceId: string,
     cutoff: Date,
   ) {
     return prisma.edgeEvent.findMany({
-      where: { userId, createdAt: { lt: cutoff } },
+      where: { userId, workspaceId, createdAt: { lt: cutoff } },
       orderBy: { createdAt: "asc" },
     });
   },

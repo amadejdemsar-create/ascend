@@ -11,7 +11,7 @@ import {
 const FORMAT_CONFIG: Record<
   string,
   {
-    fn: (userId: string) => Promise<string | Buffer>;
+    fn: (userId: string, workspaceId: string) => Promise<string | Buffer>;
     contentType: string;
     filename: string;
   }
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const data = await config.fn(auth.userId);
+    const data = await config.fn(auth.userId, auth.workspaceId);
     const body = typeof data === "string" ? data : new Uint8Array(data);
 
     return new NextResponse(body, {

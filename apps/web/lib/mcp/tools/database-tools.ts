@@ -71,6 +71,7 @@ const queryDatabaseArgsSchema = z.object({
 
 export async function handleDatabaseTool(
   userId: string,
+  workspaceId: string,
   name: string,
   args: Record<string, unknown>,
 ): Promise<McpContent> {
@@ -78,7 +79,7 @@ export async function handleDatabaseTool(
     switch (name) {
       case "create_database": {
         const data = createDatabaseSchema.parse(args);
-        const result = await databaseService.create(userId, data);
+        const result = await databaseService.create(userId, workspaceId, data);
         return ok({
           databaseId: result.database?.id,
           contextEntryId: result.contextEntry?.id,
@@ -106,7 +107,7 @@ export async function handleDatabaseTool(
             config: z.record(z.string(), z.unknown()).optional(),
           })
           .parse(args);
-        const result = await databaseFieldService.add(userId, databaseId, {
+        const result = await databaseFieldService.add(userId, workspaceId, databaseId, {
           name: fieldData.name,
           type: fieldData.type,
           config: fieldData.config,
@@ -132,6 +133,7 @@ export async function handleDatabaseTool(
           .parse(args);
         const result = await databaseFieldService.update(
           userId,
+          workspaceId,
           fieldId,
           updateData,
         );
@@ -146,7 +148,7 @@ export async function handleDatabaseTool(
 
       case "delete_field": {
         const { fieldId } = deleteFieldArgsSchema.parse(args);
-        await databaseFieldService.delete(userId, fieldId);
+        await databaseFieldService.delete(userId, workspaceId, fieldId);
         return ok({ deleted: true, fieldId });
       }
 
@@ -157,7 +159,7 @@ export async function handleDatabaseTool(
             properties: z.record(z.string(), z.unknown()).optional(),
           })
           .parse(args);
-        const result = await databaseRowService.create(userId, databaseId, properties ?? {});
+        const result = await databaseRowService.create(userId, workspaceId, databaseId, properties ?? {});
         return ok({
           rowId: result.id,
           databaseId: result.databaseId,
@@ -174,7 +176,7 @@ export async function handleDatabaseTool(
             propertiesPatch: z.record(z.string(), z.unknown()),
           })
           .parse(args);
-        const result = await databaseRowService.update(userId, rowId, propertiesPatch);
+        const result = await databaseRowService.update(userId, workspaceId, rowId, propertiesPatch);
         if (!result) return fail("Row not found after update");
         return ok({
           rowId: result.id,
@@ -187,7 +189,7 @@ export async function handleDatabaseTool(
 
       case "delete_row": {
         const { rowId } = deleteRowArgsSchema.parse(args);
-        await databaseRowService.delete(userId, rowId);
+        await databaseRowService.delete(userId, workspaceId, rowId);
         return ok({ deleted: true, rowId });
       }
 
@@ -202,6 +204,7 @@ export async function handleDatabaseTool(
           .parse(args);
         const result = await databaseViewService.create(
           userId,
+          workspaceId,
           databaseId,
           // Config is validated inside the service via databaseViewConfigSchema.parse()
           viewData as unknown as { name: string; type: "TABLE" | "BOARD" | "CALENDAR" | "GALLERY" | "TIMELINE"; config?: undefined },
@@ -225,6 +228,7 @@ export async function handleDatabaseTool(
           .parse(args);
         const result = await databaseViewService.update(
           userId,
+          workspaceId,
           viewId,
           // Config is validated inside the service via databaseViewConfigSchema.parse()
           updateData as unknown as { name?: string; config?: undefined },
@@ -250,6 +254,7 @@ export async function handleDatabaseTool(
         });
         const result = await databaseQueryService.query(
           userId,
+          workspaceId,
           databaseId,
           validated,
         );

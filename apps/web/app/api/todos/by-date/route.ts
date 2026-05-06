@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const { date } = dateQuerySchema.parse({ date: searchParams.get("date") });
-    const todos = await todoService.getByDate(auth.userId, date);
+    const todos = await todoService.getByDate(auth.userId, auth.workspaceId, date);
     return NextResponse.json(todos);
   } catch (error) {
     return handleApiError(error);

@@ -104,6 +104,7 @@ export const extractionService = {
       const result = await Promise.race([
         dispatch(buffer, file.mimeType, {
           userId,
+          workspaceId: file.workspaceId,
           signal: controller.signal,
         }),
         new Promise<never>((_, reject) => {

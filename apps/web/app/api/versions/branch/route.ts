@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { versionId, title } = branchNodeBodySchema.parse(body);
-    const result = await branchService.branch(auth.userId, versionId, title);
+    const result = await branchService.branch(auth.userId, auth.workspaceId, versionId, title);
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
     return handleApiError(error);

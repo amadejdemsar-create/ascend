@@ -24,8 +24,8 @@ import { createTestUser, deleteTestUser } from "./helpers";
  *   4. Cross-tenant uncomplete must fail with "Todo not found".
  */
 describe("todoService complete / uncomplete round trip", () => {
-  let user: { id: string; apiKey: string };
-  let otherUser: { id: string; apiKey: string };
+  let user: { id: string; apiKey: string; workspaceId: string };
+  let otherUser: { id: string; apiKey: string; workspaceId: string };
 
   beforeAll(async () => {
     user = await createTestUser("todo-roundtrip");
@@ -61,14 +61,14 @@ describe("todoService complete / uncomplete round trip", () => {
       });
       await prisma.goal.deleteMany({ where: { userId: user.id } });
 
-      const goal = await goalService.create(user.id, {
+      const goal = await goalService.create(user.id, user.workspaceId, {
         title: "Test goal",
         horizon: "WEEKLY",
         targetValue: 10,
       });
       goalId = goal.id;
 
-      const todo = await todoService.create(user.id, {
+      const todo = await todoService.create(user.id, user.workspaceId, {
         title: "Test todo",
         priority,
         goalId,
@@ -77,28 +77,28 @@ describe("todoService complete / uncomplete round trip", () => {
     });
 
     it("awards exactly expectedXp on first completion", async () => {
-      await todoService.complete(user.id, todoId);
+      await todoService.complete(user.id, user.workspaceId, todoId);
 
       const stats = await readStats(user.id);
       expect(stats?.totalXp).toBe(expectedXp);
       expect(stats?.weeklyScore).toBe(expectedXp);
       expect(await countXpEvents(user.id)).toBe(1);
 
-      const goal = await goalService.getById(user.id, goalId);
+      const goal = await goalService.getById(user.id, user.workspaceId, goalId);
       expect(goal?.currentValue).toBe(1);
       expect(goal?.progress).toBe(10);
     });
 
     it("fully reverses state on uncomplete", async () => {
-      await todoService.complete(user.id, todoId);
-      await todoService.uncomplete(user.id, todoId);
+      await todoService.complete(user.id, user.workspaceId, todoId);
+      await todoService.uncomplete(user.id, user.workspaceId, todoId);
 
       const stats = await readStats(user.id);
       expect(stats?.totalXp).toBe(0);
       expect(stats?.weeklyScore).toBe(0);
       expect(await countXpEvents(user.id)).toBe(0);
 
-      const goal = await goalService.getById(user.id, goalId);
+      const goal = await goalService.getById(user.id, user.workspaceId, goalId);
       expect(goal?.currentValue).toBe(0);
       expect(goal?.progress).toBe(0);
 
@@ -108,25 +108,25 @@ describe("todoService complete / uncomplete round trip", () => {
     });
 
     it("lands on the SAME state after complete → uncomplete → re-complete", async () => {
-      await todoService.complete(user.id, todoId);
-      await todoService.uncomplete(user.id, todoId);
-      await todoService.complete(user.id, todoId);
+      await todoService.complete(user.id, user.workspaceId, todoId);
+      await todoService.uncomplete(user.id, user.workspaceId, todoId);
+      await todoService.complete(user.id, user.workspaceId, todoId);
 
       const stats = await readStats(user.id);
       expect(stats?.totalXp).toBe(expectedXp);
       expect(stats?.weeklyScore).toBe(expectedXp);
       expect(await countXpEvents(user.id)).toBe(1);
 
-      const goal = await goalService.getById(user.id, goalId);
+      const goal = await goalService.getById(user.id, user.workspaceId, goalId);
       expect(goal?.currentValue).toBe(1);
       expect(goal?.progress).toBe(10);
     });
 
     it("never produces negative totals on repeated uncomplete calls", async () => {
-      await todoService.complete(user.id, todoId);
-      await todoService.uncomplete(user.id, todoId);
+      await todoService.complete(user.id, user.workspaceId, todoId);
+      await todoService.uncomplete(user.id, user.workspaceId, todoId);
       // Second uncomplete on a PENDING todo must throw.
-      await expect(todoService.uncomplete(user.id, todoId)).rejects.toThrow(
+      await expect(todoService.uncomplete(user.id, user.workspaceId, todoId)).rejects.toThrow(
         "Todo is not in DONE state",
       );
 
@@ -138,23 +138,23 @@ describe("todoService complete / uncomplete round trip", () => {
 
   describe("cross-tenant guards", () => {
     it("refuses to uncomplete another user's todo", async () => {
-      const todo = await todoService.create(user.id, {
+      const todo = await todoService.create(user.id, user.workspaceId, {
         title: "Mine",
         priority: "MEDIUM",
       });
-      await todoService.complete(user.id, todo.id);
+      await todoService.complete(user.id, user.workspaceId, todo.id);
 
       await expect(
-        todoService.uncomplete(otherUser.id, todo.id),
+        todoService.uncomplete(otherUser.id, otherUser.workspaceId, todo.id),
       ).rejects.toThrow("Todo not found");
     });
 
     it("refuses to complete another user's todo", async () => {
-      const todo = await todoService.create(user.id, {
+      const todo = await todoService.create(user.id, user.workspaceId, {
         title: "Mine",
         priority: "MEDIUM",
       });
-      await expect(todoService.complete(otherUser.id, todo.id)).rejects.toThrow(
+      await expect(todoService.complete(otherUser.id, otherUser.workspaceId, todo.id)).rejects.toThrow(
         "Todo not found",
       );
     });

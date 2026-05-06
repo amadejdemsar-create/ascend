@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
       start: searchParams.get("start"),
       end: searchParams.get("end"),
     });
-    const goals = await goalService.getByDeadlineRange(auth.userId, start, end);
+    const goals = await goalService.getByDeadlineRange(auth.userId, auth.workspaceId, start, end);
     return NextResponse.json(goals);
   } catch (error) {
     return handleApiError(error);

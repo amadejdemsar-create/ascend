@@ -19,6 +19,7 @@ import type { DatabaseFieldType } from "@/lib/validations";
 import { databaseRowPropertiesSchema } from "@/lib/validations";
 import { databaseRelationService } from "@/lib/services/database-relation-service";
 import { versioningService } from "@/lib/services/versioning-service";
+import { permissionService } from "@/lib/services/permission-service";
 import * as Y from "yjs";
 
 // ── Constants ─────────────────────────────────────────────────────────
@@ -63,12 +64,16 @@ export const databaseRowService = {
    */
   async create(
     userId: string,
+    workspaceId: string,
     databaseId: string,
     properties: Record<string, unknown> = {},
   ) {
+    // Permission check (mutating operation: creates a row)
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
     // Verify database ownership and fetch fields
     const database = await prisma.database.findFirst({
-      where: { id: databaseId, userId },
+      where: { id: databaseId, userId, workspaceId },
       include: {
         fields: { orderBy: { position: "asc" } },
         contextEntry: { select: { categoryId: true } },
@@ -102,7 +107,7 @@ export const databaseRowService = {
 
     // Determine position (max + 1)
     const maxRow = await prisma.databaseRow.findFirst({
-      where: { databaseId, userId },
+      where: { databaseId, userId, workspaceId },
       orderBy: { position: "desc" },
       select: { position: true },
     });
@@ -123,6 +128,7 @@ export const databaseRowService = {
       const entry = await tx.contextEntry.create({
         data: {
           userId,
+          workspaceId,
           title: title || "Untitled",
           content: "",
           type: "RECORD",
@@ -135,6 +141,7 @@ export const databaseRowService = {
       const row = await tx.databaseRow.create({
         data: {
           userId,
+          workspaceId,
           databaseId,
           contextEntryId: entry.id,
           position,
@@ -146,6 +153,7 @@ export const databaseRowService = {
       const blockDoc = await tx.blockDocument.create({
         data: {
           userId,
+          workspaceId,
           entryId: entry.id,
           state: Buffer.from(yState),
           snapshot: EMPTY_SNAPSHOT as unknown as Prisma.InputJsonValue,
@@ -171,6 +179,7 @@ export const databaseRowService = {
       if (values && Array.isArray(values) && values.length > 0) {
         await databaseRelationService.diffAndApply(
           userId,
+          workspaceId,
           result.entry.id,
           field.id,
           [],
@@ -189,12 +198,16 @@ export const databaseRowService = {
    */
   async update(
     userId: string,
+    workspaceId: string,
     rowId: string,
     propertiesPatch: Record<string, unknown>,
   ) {
+    // Permission check (mutating operation)
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
     // Verify row ownership
     const existing = await prisma.databaseRow.findFirst({
-      where: { id: rowId, userId },
+      where: { id: rowId, userId, workspaceId },
       include: {
         database: {
           include: {
@@ -285,6 +298,7 @@ export const databaseRowService = {
     for (const diff of relationDiffs) {
       await databaseRelationService.diffAndApply(
         userId,
+        workspaceId,
         existing.contextEntryId,
         diff.fieldId,
         diff.oldValues,
@@ -293,11 +307,11 @@ export const databaseRowService = {
     }
 
     // Wave 7: schedule debounced snapshot after successful update
-    versioningService.scheduleSnapshot(userId, "DATABASE_ROW", rowId, "EDIT_DEBOUNCED");
+    versioningService.scheduleSnapshot(userId, workspaceId, "DATABASE_ROW", rowId, "EDIT_DEBOUNCED");
 
     // Return the updated row
     return prisma.databaseRow.findFirst({
-      where: { id: rowId, userId },
+      where: { id: rowId, userId, workspaceId },
     });
   },
 
@@ -305,15 +319,18 @@ export const databaseRowService = {
    * Delete a row. Cascades via ContextEntry deletion (DatabaseRow has
    * FK CASCADE from contextEntryId). BlockDocument also cascades.
    */
-  async delete(userId: string, rowId: string): Promise<{ id: string }> {
+  async delete(userId: string, workspaceId: string, rowId: string): Promise<{ id: string }> {
+    // Permission check (mutating operation: deletes a row)
+    await permissionService.assertCanPerform(userId, workspaceId, "DELETE_NODE");
+
     const existing = await prisma.databaseRow.findFirst({
-      where: { id: rowId, userId },
+      where: { id: rowId, userId, workspaceId },
       select: { id: true, contextEntryId: true },
     });
     if (!existing) throw new Error("Row not found");
 
     // Wave 7: tombstone snapshot BEFORE cascade-delete so version persists
-    await versioningService.createSnapshot(userId, "DATABASE_ROW", rowId, "EDIT_EXPLICIT");
+    await versioningService.createSnapshot(userId, workspaceId, "DATABASE_ROW", rowId, "EDIT_EXPLICIT");
 
     // Delete via the ContextEntry (cascades to DatabaseRow and BlockDocument)
     await prisma.contextEntry.delete({
@@ -329,18 +346,22 @@ export const databaseRowService = {
    */
   async reorderManual(
     userId: string,
+    workspaceId: string,
     databaseId: string,
     orderedRowIds: string[],
   ) {
+    // Permission check (mutating operation)
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
     // Verify database ownership
     const database = await prisma.database.findFirst({
-      where: { id: databaseId, userId },
+      where: { id: databaseId, userId, workspaceId },
     });
     if (!database) throw new Error("Database not found");
 
     // Validate all row IDs belong to this database
     const rows = await prisma.databaseRow.findMany({
-      where: { databaseId, userId },
+      where: { databaseId, userId, workspaceId },
       select: { id: true },
     });
     const rowIdSet = new Set(rows.map((r) => r.id));
@@ -362,7 +383,7 @@ export const databaseRowService = {
 
     // Return fresh ordered list
     return prisma.databaseRow.findMany({
-      where: { databaseId, userId },
+      where: { databaseId, userId, workspaceId },
       orderBy: { position: "asc" },
     });
   },
@@ -372,9 +393,9 @@ export const databaseRowService = {
    * to self-bootstrap when only the entry ID is known.
    * Returns the row with its parent database (fields, contextEntry).
    */
-  async getByEntryId(userId: string, entryId: string) {
+  async getByEntryId(userId: string, workspaceId: string, entryId: string) {
     return prisma.databaseRow.findFirst({
-      where: { contextEntryId: entryId, userId },
+      where: { contextEntryId: entryId, userId, workspaceId },
       include: {
         database: {
           include: {

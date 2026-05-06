@@ -11,7 +11,7 @@ export async function GET(
 
   try {
     const { id } = await params;
-    const items = await contextService.getRelated(auth.userId, id);
+    const items = await contextService.getRelated(auth.userId, auth.workspaceId, id);
     return NextResponse.json(items);
   } catch (error) {
     return handleApiError(error);

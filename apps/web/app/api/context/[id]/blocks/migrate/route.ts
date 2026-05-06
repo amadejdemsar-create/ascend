@@ -30,10 +30,11 @@ export async function POST(
     // migrateEntryToBlocks is idempotent: returns existing if present.
     // We peek at the entry's blockDocumentId beforehand to know if this
     // is a first-time migration (201) or idempotent re-call (200).
-    const existing = await blockDocumentService_getExisting(auth.userId, id);
+    const existing = await blockDocumentService_getExisting(auth.userId, auth.workspaceId, id);
 
     const result = await blockMigrationService.migrateEntryToBlocks(
       auth.userId,
+      auth.workspaceId,
       id,
     );
 
@@ -51,6 +52,7 @@ export async function POST(
  */
 async function blockDocumentService_getExisting(
   userId: string,
+  workspaceId: string,
   entryId: string,
 ): Promise<boolean> {
   // Import here to avoid circular dependency concerns at the module level.
@@ -58,6 +60,6 @@ async function blockDocumentService_getExisting(
   const { blockDocumentService } = await import(
     "@/lib/services/block-document-service"
   );
-  const doc = await blockDocumentService.getByEntryId(userId, entryId);
+  const doc = await blockDocumentService.getByEntryId(userId, workspaceId, entryId);
   return doc !== null;
 }

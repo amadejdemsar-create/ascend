@@ -22,8 +22,8 @@ export async function GET(
   try {
     const { id } = await params;
 
-    // userId-scoped ownership check (Safety Rule 1)
-    const file = await fileService.getFile(auth.userId, id);
+    // userId + workspaceId scoped ownership check (Safety Rule 1)
+    const file = await fileService.getFile(auth.userId, auth.workspaceId, id);
     if (!file) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }

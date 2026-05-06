@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const data = importDataSchema.parse(body);
-    const summary = await runImport(auth.userId, data);
+    const summary = await runImport(auth.userId, auth.workspaceId, data);
     return NextResponse.json(summary);
   } catch (error) {
     return handleApiError(error);

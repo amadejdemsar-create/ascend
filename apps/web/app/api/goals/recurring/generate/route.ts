@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
   if (!auth.success) return unauthorizedResponse();
 
   try {
-    const instances = await goalRecurringService.generateDueInstances(auth.userId);
+    const instances = await goalRecurringService.generateDueInstances(auth.userId, auth.workspaceId);
     return NextResponse.json({
       count: instances.length,
       instances,

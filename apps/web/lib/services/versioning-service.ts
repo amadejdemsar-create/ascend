@@ -17,6 +17,7 @@
 import { prisma } from "@/lib/db";
 import { createHash } from "node:crypto";
 import type { NodeType, VersionTrigger } from "@/lib/validations";
+import { workspaceContextService } from "./workspace-context-service";
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -43,9 +44,13 @@ export const versioningService = {
    * Schedule a snapshot, debounced 60s. EDIT_BLUR and EDIT_EXPLICIT bypass
    * debounce and fire immediately (still async). Other triggers reset the
    * timer.
+   *
+   * workspaceId is the workspace of the entity being versioned; recorded
+   * on the NodeVersion row.
    */
   scheduleSnapshot(
     userId: string,
+    workspaceId: string,
     nodeType: NodeType,
     nodeId: string,
     trigger: VersionTrigger,
@@ -58,7 +63,7 @@ export const versioningService = {
       debounceMap.delete(key);
       // Fire-and-forget; errors are logged but never thrown to the caller
       void versioningService
-        .createSnapshot(userId, nodeType, nodeId, trigger)
+        .createSnapshot(userId, workspaceId, nodeType, nodeId, trigger)
         .catch((err) => {
           console.error("[versioning] immediate snapshot failed", {
             key,
@@ -72,7 +77,7 @@ export const versioningService = {
     const timer = setTimeout(() => {
       debounceMap.delete(key);
       void versioningService
-        .createSnapshot(userId, nodeType, nodeId, trigger)
+        .createSnapshot(userId, workspaceId, nodeType, nodeId, trigger)
         .catch((err) => {
           console.error("[versioning] debounced snapshot failed", {
             key,
@@ -96,6 +101,7 @@ export const versioningService = {
    */
   async createSnapshot(
     userId: string,
+    workspaceId: string,
     nodeType: NodeType,
     nodeId: string,
     trigger: VersionTrigger,
@@ -123,7 +129,7 @@ export const versioningService = {
 
     // Dedup: skip if latest version has same hash
     const latest = await prisma.nodeVersion.findFirst({
-      where: { userId, nodeType, nodeId },
+      where: { userId, workspaceId, nodeType, nodeId },
       orderBy: { versionNumber: "desc" },
       select: { versionNumber: true, contentHash: true },
     });
@@ -135,6 +141,7 @@ export const versioningService = {
     const created = await prisma.nodeVersion.create({
       data: {
         userId,
+        workspaceId,
         nodeType,
         nodeId,
         versionNumber,
@@ -155,13 +162,14 @@ export const versioningService = {
    */
   async listVersions(
     userId: string,
+    workspaceId: string,
     nodeType: NodeType,
     nodeId: string,
     opts?: { limit?: number; cursor?: string },
   ) {
     const limit = Math.min(opts?.limit ?? 20, 100);
     const versions = await prisma.nodeVersion.findMany({
-      where: { userId, nodeType, nodeId },
+      where: { userId, workspaceId, nodeType, nodeId },
       orderBy: { createdAt: "desc" },
       take: limit + 1,
       ...(opts?.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),
@@ -185,9 +193,9 @@ export const versioningService = {
   /**
    * Get a single version by ID. userId-scoped (safety rule 1).
    */
-  async getVersion(userId: string, versionId: string) {
+  async getVersion(userId: string, workspaceId: string, versionId: string) {
     return prisma.nodeVersion.findFirst({
-      where: { id: versionId, userId },
+      where: { id: versionId, userId, workspaceId },
     });
   },
 
@@ -209,8 +217,18 @@ export const versioningService = {
       const u = parts[0];
       const nodeType = parts[1] as NodeType;
       const nodeId = parts.slice(2).join(":"); // nodeId could theoretically contain ':'
+      // Resolve workspaceId per-user for the flush path (graceful shutdown /
+      // test teardown). Best-effort: if resolution fails, the snapshot is lost
+      // but the debounce guarantee (EDIT_BLUR fires per session) still holds.
+      const wsId = await workspaceContextService
+        .resolveDefaultWorkspaceId(u)
+        .catch(() => null);
+      if (!wsId) {
+        console.error("[versioning] flush skipped: no workspaceId", { key });
+        continue;
+      }
       await versioningService
-        .createSnapshot(u, nodeType, nodeId, "EDIT_BLUR")
+        .createSnapshot(u, wsId, nodeType, nodeId, "EDIT_BLUR")
         .catch((err) => {
           console.error("[versioning] flush failed", { key, err });
         });

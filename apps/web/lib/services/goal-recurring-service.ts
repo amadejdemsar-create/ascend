@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import type { Prisma } from "../../generated/prisma/client";
 import { bumpStreak } from "@/lib/services/recurring-helpers";
+import { permissionService } from "@/lib/services/permission-service";
 
 // Reusable client type so methods can participate in an interactive
 // $transaction or run standalone. Same pattern as the other services.
@@ -104,11 +105,14 @@ export const goalRecurringService = {
    *
    * Returns the array of newly created instances.
    */
-  async generateDueInstances(userId: string) {
+  async generateDueInstances(userId: string, workspaceId: string) {
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
     // Find all recurring templates for the user
     const templates = await prisma.goal.findMany({
       where: {
         userId,
+        workspaceId,
         isRecurring: true,
         recurringSourceId: null,
       },
@@ -121,6 +125,7 @@ export const goalRecurringService = {
       const pendingInstance = await prisma.goal.findFirst({
         where: {
           userId,
+          workspaceId,
           recurringSourceId: template.id,
           status: { in: ["NOT_STARTED", "IN_PROGRESS"] },
         },
@@ -132,7 +137,7 @@ export const goalRecurringService = {
       const interval = template.recurringInterval ?? 1;
 
       // Check if streak is broken. Use updateMany so the mutation is
-      // scoped by userId as defense-in-depth.
+      // scoped by userId + workspaceId as defense-in-depth.
       if (template.lastCompletedInstance) {
         const broken = this.isStreakBroken(
           template.lastCompletedInstance,
@@ -141,7 +146,7 @@ export const goalRecurringService = {
         );
         if (broken && template.currentStreak > 0) {
           await prisma.goal.updateMany({
-            where: { id: template.id, userId },
+            where: { id: template.id, userId, workspaceId },
             data: { currentStreak: 0 },
           });
         }
@@ -156,6 +161,7 @@ export const goalRecurringService = {
       const instance = await prisma.goal.create({
         data: {
           userId,
+          workspaceId,
           title: `${template.title} (${label})`,
           description: template.description,
           horizon: template.horizon,
@@ -225,10 +231,11 @@ export const goalRecurringService = {
   /**
    * List all recurring templates for a user with streak data and latest instance info.
    */
-  async listTemplates(userId: string) {
+  async listTemplates(userId: string, workspaceId: string) {
     const templates = await prisma.goal.findMany({
       where: {
         userId,
+        workspaceId,
         isRecurring: true,
         recurringSourceId: null,
       },

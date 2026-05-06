@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const data = saveReviewSchema.parse(body);
-    const result = await reviewService.saveReview(auth.userId, data);
+    const result = await reviewService.saveReview(auth.userId, auth.workspaceId, data);
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
     return handleApiError(error);

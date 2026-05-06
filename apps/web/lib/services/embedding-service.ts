@@ -74,7 +74,7 @@ export const embeddingService = {
    * 4. Log LlmUsage with purpose="embedding"
    * 5. Return the embedding vector
    */
-  async embed(userId: string, text: string): Promise<number[]> {
+  async embed(userId: string, workspaceId: string, text: string): Promise<number[]> {
     const provider = buildEmbeddingProvider();
 
     // 1. Estimate cost
@@ -99,6 +99,7 @@ export const embeddingService = {
     await prisma.llmUsage.create({
       data: {
         userId,
+        workspaceId,
         provider: "GEMINI",
         model: "gemini-embedding-2",
         purpose: "embedding",
@@ -121,11 +122,12 @@ export const embeddingService = {
    */
   async upsertEmbeddingForEntry(
     userId: string,
+    workspaceId: string,
     entryId: string,
   ): Promise<void> {
     // Read entry with ownership check
     const entry = await prisma.contextEntry.findFirst({
-      where: { id: entryId, userId },
+      where: { id: entryId, userId, workspaceId },
       select: { id: true, title: true, content: true },
     });
 
@@ -142,7 +144,7 @@ export const embeddingService = {
     }
 
     // Generate embedding (budget gate is inside embed())
-    const embedding = await embeddingService.embed(userId, textToEmbed);
+    const embedding = await embeddingService.embed(userId, workspaceId, textToEmbed);
 
     // Write via raw SQL because Prisma cannot handle Unsupported("vector(1536)")
     // Safety rule 1: userId is in the WHERE clause
@@ -150,7 +152,7 @@ export const embeddingService = {
     await prisma.$executeRaw`
       UPDATE "ContextEntry"
       SET embedding = ${vectorLiteral}::vector
-      WHERE id = ${entryId} AND "userId" = ${userId}
+      WHERE id = ${entryId} AND "userId" = ${userId} AND "workspaceId" = ${workspaceId}
     `;
   },
 
@@ -168,6 +170,7 @@ export const embeddingService = {
    */
   async searchSemantic(
     userId: string,
+    workspaceId: string,
     query: string,
     limit: number,
   ): Promise<
@@ -180,7 +183,7 @@ export const embeddingService = {
     }>
   > {
     // Generate query embedding (budget gate is inside embed())
-    const queryEmbedding = await embeddingService.embed(userId, query);
+    const queryEmbedding = await embeddingService.embed(userId, workspaceId, query);
 
     const vectorLiteral = vectorToLiteral(queryEmbedding);
 
@@ -205,6 +208,7 @@ export const embeddingService = {
           1 - (embedding <=> ${vectorLiteral}::vector) AS similarity
         FROM "ContextEntry"
         WHERE "userId" = ${userId}
+          AND "workspaceId" = ${workspaceId}
           AND embedding IS NOT NULL
         ORDER BY embedding <=> ${vectorLiteral}::vector ASC
         LIMIT ${limit}

@@ -1,10 +1,12 @@
 import { prisma } from "@/lib/db";
 import type { CreateCategoryInput, UpdateCategoryInput } from "@/lib/validations";
+import { permissionService } from "@/lib/services/permission-service";
 
 // Type for nested category tree nodes
 interface CategoryTreeNode {
   id: string;
   userId: string;
+  workspaceId: string;
   name: string;
   color: string;
   icon: string | null;
@@ -20,9 +22,9 @@ export const categoryService = {
    * List all categories for a user, ordered by sortOrder.
    * Includes direct children.
    */
-  async list(userId: string) {
+  async list(userId: string, workspaceId: string) {
     return prisma.category.findMany({
-      where: { userId },
+      where: { userId, workspaceId },
       orderBy: { sortOrder: "asc" },
       include: { children: true },
     });
@@ -32,9 +34,9 @@ export const categoryService = {
    * Get all categories as a nested tree structure.
    * Top-level categories (parentId null) contain their children recursively.
    */
-  async listTree(userId: string): Promise<CategoryTreeNode[]> {
+  async listTree(userId: string, workspaceId: string): Promise<CategoryTreeNode[]> {
     const allCategories = await prisma.category.findMany({
-      where: { userId },
+      where: { userId, workspaceId },
       orderBy: { sortOrder: "asc" },
     });
 
@@ -65,9 +67,11 @@ export const categoryService = {
   /**
    * Create a new category for a user.
    */
-  async create(userId: string, data: CreateCategoryInput) {
+  async create(userId: string, workspaceId: string, data: CreateCategoryInput) {
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
     return prisma.category.create({
-      data: { ...data, userId },
+      data: { ...data, userId, workspaceId },
     });
   },
 
@@ -75,9 +79,9 @@ export const categoryService = {
    * Get a single category by ID with a count of associated goals.
    * Returns null if not found or not owned by the user.
    */
-  async getById(userId: string, id: string) {
+  async getById(userId: string, workspaceId: string, id: string) {
     return prisma.category.findFirst({
-      where: { id, userId },
+      where: { id, userId, workspaceId },
       include: {
         _count: { select: { goals: true } },
       },
@@ -87,8 +91,10 @@ export const categoryService = {
   /**
    * Update a category. Verifies ownership before updating.
    */
-  async update(userId: string, id: string, data: UpdateCategoryInput) {
-    const category = await prisma.category.findFirst({ where: { id, userId } });
+  async update(userId: string, workspaceId: string, id: string, data: UpdateCategoryInput) {
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
+    const category = await prisma.category.findFirst({ where: { id, userId, workspaceId } });
     if (!category) throw new Error("Category not found");
 
     return prisma.category.update({
@@ -101,8 +107,10 @@ export const categoryService = {
    * Delete a category. Children cascade (onDelete: Cascade),
    * goals get categoryId set to null (onDelete: SetNull).
    */
-  async delete(userId: string, id: string) {
-    const category = await prisma.category.findFirst({ where: { id, userId } });
+  async delete(userId: string, workspaceId: string, id: string) {
+    await permissionService.assertCanPerform(userId, workspaceId, "DELETE_NODE");
+
+    const category = await prisma.category.findFirst({ where: { id, userId, workspaceId } });
     if (!category) throw new Error("Category not found");
 
     return prisma.category.delete({ where: { id } });

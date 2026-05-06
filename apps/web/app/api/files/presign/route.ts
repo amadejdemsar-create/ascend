@@ -19,17 +19,17 @@ export async function POST(request: NextRequest) {
       // contextService.create requires content with min(1), so we use a
       // minimal placeholder. The extraction pipeline will populate the
       // entry's extractedText once processing completes.
-      const entry = await contextService.create(auth.userId, {
+      const entry = await contextService.create(auth.userId, auth.workspaceId, {
         title: input.filename,
         content: `(file: ${input.filename})`,
       });
       // Set the type to SOURCE (createContextSchema does not include type;
       // the entry defaults to NOTE, so we update immediately).
-      await contextService.updateType(auth.userId, entry.id, "SOURCE");
+      await contextService.updateType(auth.userId, auth.workspaceId, entry.id, "SOURCE");
       contextEntryId = entry.id;
     } else if (input.entryId) {
       // Verify the entry exists and belongs to this user.
-      const entry = await contextService.getById(auth.userId, input.entryId);
+      const entry = await contextService.getById(auth.userId, auth.workspaceId, input.entryId);
       if (!entry) {
         return NextResponse.json(
           { error: "Context entry not found" },
@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
 
     const result = await fileService.createPresignedUpload(
       auth.userId,
+      auth.workspaceId,
       input,
       contextEntryId,
     );

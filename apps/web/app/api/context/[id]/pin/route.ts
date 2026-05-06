@@ -20,7 +20,7 @@ export async function PATCH(
       body = {};
     }
     const data = togglePinSchema.parse(body);
-    const entry = await contextService.togglePin(auth.userId, id, data.isPinned);
+    const entry = await contextService.togglePin(auth.userId, auth.workspaceId, id, data.isPinned);
     return NextResponse.json(entry);
   } catch (error) {
     return handleApiError(error);

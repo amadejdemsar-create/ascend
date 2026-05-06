@@ -70,7 +70,7 @@ export async function GET(
       sort = sortSchema.parse(parsed);
     }
 
-    const result = await databaseQueryService.query(auth.userId, databaseId, {
+    const result = await databaseQueryService.query(auth.userId, auth.workspaceId, databaseId, {
       viewId,
       filter,
       sort,
@@ -103,6 +103,7 @@ export async function POST(
     const data = createDatabaseRowSchema.parse(body);
     const result = await databaseRowService.create(
       auth.userId,
+      auth.workspaceId,
       databaseId,
       data.properties,
     );

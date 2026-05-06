@@ -30,6 +30,7 @@ export const databaseRelationService = {
    */
   async diffAndApply(
     userId: string,
+    workspaceId: string,
     sourceEntryId: string,
     fieldId: string,
     oldRelationIds: string[],
@@ -51,6 +52,7 @@ export const databaseRelationService = {
         await tx.contextLink.createMany({
           data: added.map((targetEntryId) => ({
             userId,
+            workspaceId,
             fromEntryId: sourceEntryId,
             toEntryId: targetEntryId,
             type: "DATABASE_RELATION" as const,
@@ -62,6 +64,7 @@ export const databaseRelationService = {
       }
 
       // 2. DZ-16: Bulk delete removed links via raw SQL
+      //    Defense-in-depth: workspaceId guard on raw SQL (DZ-16)
       if (removed.length > 0) {
         await tx.$queryRaw`
           DELETE FROM "ContextLink"
@@ -69,6 +72,7 @@ export const databaseRelationService = {
             AND "fromEntryId" = ${sourceEntryId}
             AND "toEntryId" IN (${Prisma.join(removed)})
             AND "userId" = ${userId}
+            AND "workspaceId" = ${workspaceId}
         `;
       }
     });
@@ -84,12 +88,13 @@ export const databaseRelationService = {
    * @param userId - Owner user ID (safety rule 1)
    * @param rowEntryId - The ContextEntry ID of the target row
    */
-  async getBacklinks(userId: string, rowEntryId: string) {
+  async getBacklinks(userId: string, workspaceId: string, rowEntryId: string) {
     const links = await prisma.contextLink.findMany({
       where: {
         toEntryId: rowEntryId,
         type: "DATABASE_RELATION",
         userId,
+        workspaceId,
       },
       include: {
         fromEntry: {

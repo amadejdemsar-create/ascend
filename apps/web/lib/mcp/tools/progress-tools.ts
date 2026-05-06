@@ -10,6 +10,7 @@ type McpContent = { content: Array<{ type: "text"; text: string }>; isError?: bo
  */
 export async function handleProgressTool(
   userId: string,
+  workspaceId: string,
   name: string,
   args: Record<string, unknown>,
 ): Promise<McpContent> {
@@ -24,8 +25,8 @@ export async function handleProgressTool(
           };
         }
         const data = addProgressSchema.parse({ value: args.value, note: args.note });
-        const log = await goalService.logProgress(userId, goalId, data);
-        const goal = await goalService.getById(userId, goalId);
+        const log = await goalService.logProgress(userId, workspaceId, goalId, data);
+        const goal = await goalService.getById(userId, workspaceId, goalId);
         const unit = goal?.unit;
         const text = [
           `Progress logged: +${data.value}${unit ? " " + unit : ""}`,
@@ -45,7 +46,7 @@ export async function handleProgressTool(
             isError: true,
           };
         }
-        const entries = await goalService.getProgressHistory(userId, goalId);
+        const entries = await goalService.getProgressHistory(userId, workspaceId, goalId);
         const text = `Progress history for goal (${entries.length} entries):\n\n${JSON.stringify(entries, null, 2)}`;
         return { content: [{ type: "text", text }] };
       }

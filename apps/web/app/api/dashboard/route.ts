@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   if (!auth.success) return unauthorizedResponse();
 
   try {
-    const data = await dashboardService.getDashboardData(auth.userId);
+    const data = await dashboardService.getDashboardData(auth.userId, auth.workspaceId);
     return NextResponse.json(data);
   } catch (error) {
     return handleApiError(error);

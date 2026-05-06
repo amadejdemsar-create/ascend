@@ -13,6 +13,7 @@ export async function POST(request: NextRequest) {
     const input = confirmUploadSchema.parse(body);
     const file = await fileService.confirmUpload(
       auth.userId,
+      auth.workspaceId,
       input.fileId,
       input.sha256,
     );
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
     let extractionEnqueued = true;
     let extractionReason: string | undefined;
     try {
-      await extractionQueueService.enqueue(auth.userId, file.id);
+      await extractionQueueService.enqueue(auth.userId, auth.workspaceId, file.id);
     } catch (err) {
       extractionEnqueued = false;
       extractionReason =

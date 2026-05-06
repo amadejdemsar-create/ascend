@@ -23,15 +23,16 @@ export const diffService = {
    *   against the current live state (fetches the live entity payload).
    * @param toVersionId - The "after" version ID (required).
    *
-   * Both versions must belong to the same user and the same (nodeType, nodeId).
-   * Throws on mismatch.
+   * Both versions must belong to the same user, the same workspace, and
+   * the same (nodeType, nodeId). Throws on mismatch.
    */
   async diffVersions(
     userId: string,
+    workspaceId: string,
     fromVersionId: string | null,
     toVersionId: string,
   ): Promise<DiffResult> {
-    const to = await versioningService.getVersion(userId, toVersionId);
+    const to = await versioningService.getVersion(userId, workspaceId, toVersionId);
     if (!to) throw new Error("Version not found");
 
     const nodeType = to.nodeType as NodeType;
@@ -47,10 +48,14 @@ export const diffService = {
       if (!live) throw new Error("Live entity not found for diff vs current");
       fromPayload = live;
     } else {
-      const from = await versioningService.getVersion(userId, fromVersionId);
+      const from = await versioningService.getVersion(userId, workspaceId, fromVersionId);
       if (!from) throw new Error("Version not found");
       if (from.nodeType !== to.nodeType || from.nodeId !== to.nodeId) {
         throw new Error("Cannot diff versions of different nodes");
+      }
+      // Verify both versions belong to the same workspace
+      if (from.workspaceId !== to.workspaceId) {
+        throw new Error("Cannot diff versions from different workspaces");
       }
       fromPayload = from.payload as Record<string, unknown>;
     }

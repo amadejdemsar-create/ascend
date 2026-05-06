@@ -24,7 +24,7 @@ export async function POST(
     const { id } = await params;
     const body = await request.json();
     const op = blockOpMoveSchema.parse(body);
-    const result = await blockDocumentService.moveBlock(auth.userId, id, op);
+    const result = await blockDocumentService.moveBlock(auth.userId, auth.workspaceId, id, op);
     return NextResponse.json(result);
   } catch (error) {
     return handleApiError(error);

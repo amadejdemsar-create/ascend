@@ -18,6 +18,7 @@ type McpContent = {
  */
 export async function handleGoalTool(
   userId: string,
+  workspaceId: string,
   name: string,
   args: Record<string, unknown>,
 ): Promise<McpContent> {
@@ -25,7 +26,7 @@ export async function handleGoalTool(
     switch (name) {
       case "create_goal": {
         const data = createGoalSchema.parse(args);
-        const goal = await goalService.create(userId, data);
+        const goal = await goalService.create(userId, workspaceId, data);
         return { content: [{ type: "text", text: JSON.stringify(goal, null, 2) }] };
       }
 
@@ -37,7 +38,7 @@ export async function handleGoalTool(
             isError: true,
           };
         }
-        const goal = await goalService.getById(userId, id);
+        const goal = await goalService.getById(userId, workspaceId, id);
         if (!goal) {
           return {
             content: [{ type: "text", text: "Goal not found" }],
@@ -57,7 +58,7 @@ export async function handleGoalTool(
         }
         const { id: _id, ...rest } = args;
         const data = updateGoalSchema.parse(rest);
-        const goal = await goalService.update(userId, id, data);
+        const goal = await goalService.update(userId, workspaceId, id, data);
         return { content: [{ type: "text", text: JSON.stringify(goal, null, 2) }] };
       }
 
@@ -71,7 +72,7 @@ export async function handleGoalTool(
         }
         const cascade = args.cascade === true;
         if (cascade) {
-          await goalService.deleteCascade(userId, id);
+          await goalService.deleteCascade(userId, workspaceId, id);
           return {
             content: [
               {
@@ -81,7 +82,7 @@ export async function handleGoalTool(
             ],
           };
         }
-        await goalService.delete(userId, id);
+        await goalService.delete(userId, workspaceId, id);
         return {
           content: [
             {
@@ -98,7 +99,7 @@ export async function handleGoalTool(
         const offset = typeof args.offset === "number" ? args.offset : 0;
         const { limit: _l, offset: _o, ...filterArgs } = args;
         const filters = goalFiltersSchema.parse(filterArgs);
-        const goals = await goalService.list(userId, filters, {
+        const goals = await goalService.list(userId, workspaceId, filters, {
           skip: offset,
           take: limit,
         });
@@ -118,7 +119,7 @@ export async function handleGoalTool(
             isError: true,
           };
         }
-        const goals = await goalService.search(userId, query);
+        const goals = await goalService.search(userId, workspaceId, query);
         return {
           content: [
             {

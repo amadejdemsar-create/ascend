@@ -142,6 +142,7 @@ const MAX_EXTRACTED_TEXT_CHARS = 100_000;
  */
 export async function handleFileTool(
   userId: string,
+  workspaceId: string,
   name: string,
   args: Record<string, unknown>,
 ): Promise<McpContent> {
@@ -152,7 +153,7 @@ export async function handleFileTool(
 
         // If entryId provided, verify ownership
         if (data.entryId) {
-          const entry = await contextService.getById(userId, data.entryId);
+          const entry = await contextService.getById(userId, workspaceId, data.entryId);
           if (!entry) {
             return fail(`Context entry not found: ${data.entryId}`);
           }
@@ -187,6 +188,7 @@ export async function handleFileTool(
         // Upload bytes directly to R2
         const file = await fileService.uploadBytes(
           userId,
+          workspaceId,
           {
             filename: data.filename,
             mimeType: data.mimeType,
@@ -199,6 +201,7 @@ export async function handleFileTool(
         // Enqueue extraction
         const { jobId } = await extractionQueueService.enqueue(
           userId,
+          workspaceId,
           file.id,
         );
 
@@ -215,7 +218,7 @@ export async function handleFileTool(
       case "get_file_content": {
         const { fileId } = getFileContentToolSchema.parse(args);
 
-        const file = await fileService.getFile(userId, fileId);
+        const file = await fileService.getFile(userId, workspaceId, fileId);
         if (!file) {
           return fail("File not found");
         }
@@ -244,7 +247,7 @@ export async function handleFileTool(
         const { mimeTypePrefix, limit, offset } =
           listFilesByTypeToolSchema.parse(args);
 
-        const { files, total } = await fileService.listFiles(userId, {
+        const { files, total } = await fileService.listFiles(userId, workspaceId, {
           mimeTypePrefix: mimeTypePrefix ?? undefined,
           limit: limit ?? 50,
           offset: offset ?? 0,

@@ -7,6 +7,7 @@ import { gamificationService } from "@/lib/services/gamification-service";
 import { XP_PER_TODO, levelFromXp } from "@/lib/constants";
 import { startOfDay } from "date-fns";
 import { versioningService } from "@/lib/services/versioning-service";
+import { permissionService } from "@/lib/services/permission-service";
 
 export const todoService = {
   /**
@@ -16,10 +17,11 @@ export const todoService = {
    */
   async list(
     userId: string,
+    workspaceId: string,
     filters?: TodoFilters,
     pagination?: { skip?: number; take?: number },
   ) {
-    const where: Prisma.TodoWhereInput = { userId };
+    const where: Prisma.TodoWhereInput = { userId, workspaceId };
 
     if (filters?.status) where.status = filters.status;
     if (filters?.priority) where.priority = filters.priority;
@@ -52,17 +54,19 @@ export const todoService = {
   /**
    * Create a new to-do. Validates goalId and categoryId belong to the user if provided.
    */
-  async create(userId: string, data: CreateTodoInput) {
+  async create(userId: string, workspaceId: string, data: CreateTodoInput) {
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
     if (data.goalId) {
       const goal = await prisma.goal.findFirst({
-        where: { id: data.goalId, userId },
+        where: { id: data.goalId, userId, workspaceId },
       });
       if (!goal) throw new Error("Goal not found");
     }
 
     if (data.categoryId) {
       const category = await prisma.category.findFirst({
-        where: { id: data.categoryId, userId },
+        where: { id: data.categoryId, userId, workspaceId },
       });
       if (!category) throw new Error("Category not found");
     }
@@ -70,6 +74,7 @@ export const todoService = {
     return prisma.todo.create({
       data: {
         userId,
+        workspaceId,
         title: data.title,
         description: data.description,
         priority: data.priority,
@@ -92,9 +97,9 @@ export const todoService = {
    * Get a single to-do by ID with its category and goal.
    * Returns null if not found or not owned by the user.
    */
-  async getById(userId: string, id: string) {
+  async getById(userId: string, workspaceId: string, id: string) {
     return prisma.todo.findFirst({
-      where: { id, userId },
+      where: { id, userId, workspaceId },
       include: {
         category: true,
         goal: { select: { id: true, title: true, progress: true, targetValue: true, currentValue: true } },
@@ -105,8 +110,10 @@ export const todoService = {
   /**
    * Update a to-do. Verifies ownership before updating.
    */
-  async update(userId: string, id: string, data: UpdateTodoInput) {
-    const existing = await prisma.todo.findFirst({ where: { id, userId } });
+  async update(userId: string, workspaceId: string, id: string, data: UpdateTodoInput) {
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
+    const existing = await prisma.todo.findFirst({ where: { id, userId, workspaceId } });
     if (!existing) throw new Error("Todo not found");
 
     const updateData: Record<string, unknown> = { ...data };
@@ -120,7 +127,7 @@ export const todoService = {
     });
 
     // Wave 7: schedule debounced snapshot after successful update
-    versioningService.scheduleSnapshot(userId, "TODO", id, "EDIT_DEBOUNCED");
+    versioningService.scheduleSnapshot(userId, workspaceId, "TODO", id, "EDIT_DEBOUNCED");
 
     return updated;
   },
@@ -128,12 +135,14 @@ export const todoService = {
   /**
    * Delete a to-do. Verifies ownership before deleting.
    */
-  async delete(userId: string, id: string) {
-    const existing = await prisma.todo.findFirst({ where: { id, userId } });
+  async delete(userId: string, workspaceId: string, id: string) {
+    await permissionService.assertCanPerform(userId, workspaceId, "DELETE_NODE");
+
+    const existing = await prisma.todo.findFirst({ where: { id, userId, workspaceId } });
     if (!existing) throw new Error("Todo not found");
 
     // Wave 7: tombstone snapshot BEFORE delete so version history persists
-    await versioningService.createSnapshot(userId, "TODO", id, "EDIT_EXPLICIT");
+    await versioningService.createSnapshot(userId, workspaceId, "TODO", id, "EDIT_EXPLICIT");
 
     return prisma.todo.delete({ where: { id } });
   },
@@ -150,10 +159,12 @@ export const todoService = {
    *
    * Returns the completed to-do with _xp metadata.
    */
-  async complete(userId: string, id: string) {
+  async complete(userId: string, workspaceId: string, id: string) {
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
     const result = await prisma.$transaction(async (tx) => {
       const todo = await tx.todo.findFirst({
-        where: { id, userId },
+        where: { id, userId, workspaceId },
         include: { goal: true },
       });
       if (!todo) throw new Error("Todo not found");
@@ -172,6 +183,7 @@ export const todoService = {
       // paths use one code path for XpEvent + UserStats upkeep. The
       // originating todoId is carried on the XpEvent row so uncomplete
       // can find and reverse it.
+      // gamificationService is userId-only (XP/streaks are user-scoped).
       const xpAmount = XP_PER_TODO[todo.priority] ?? 10;
       const xpResult = await gamificationService.awardXpForTodo(
         userId,
@@ -185,6 +197,7 @@ export const todoService = {
       if (todo.goalId) {
         await goalService.logProgress(
           userId,
+          workspaceId,
           todo.goalId,
           { value: 1, note: `Completed to-do: ${todo.title}` },
           tx,
@@ -205,7 +218,7 @@ export const todoService = {
     });
 
     // Wave 7: schedule snapshot after all completion side effects commit
-    versioningService.scheduleSnapshot(userId, "TODO", id, "EDIT_DEBOUNCED");
+    versioningService.scheduleSnapshot(userId, workspaceId, "TODO", id, "EDIT_DEBOUNCED");
 
     return result;
   },
@@ -225,10 +238,12 @@ export const todoService = {
    *
    * All five steps run inside a single $transaction.
    */
-  async uncomplete(userId: string, id: string) {
+  async uncomplete(userId: string, workspaceId: string, id: string) {
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
     return prisma.$transaction(async (tx) => {
       const todo = await tx.todo.findFirst({
-        where: { id, userId },
+        where: { id, userId, workspaceId },
       });
       if (!todo) throw new Error("Todo not found");
       if (todo.status !== "DONE") {
@@ -266,6 +281,7 @@ export const todoService = {
       if (todo.goalId) {
         await goalService.reverseProgress(
           userId,
+          workspaceId,
           todo.goalId,
           1,
           `Completed to-do: ${todo.title}`,
@@ -295,8 +311,10 @@ export const todoService = {
   /**
    * Skip a to-do. Sets status to SKIPPED without awarding XP or incrementing goal progress.
    */
-  async skip(userId: string, id: string) {
-    const todo = await prisma.todo.findFirst({ where: { id, userId } });
+  async skip(userId: string, workspaceId: string, id: string) {
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
+    const todo = await prisma.todo.findFirst({ where: { id, userId, workspaceId } });
     if (!todo) throw new Error("Todo not found");
     if (todo.status === "SKIPPED") throw new Error("Todo already skipped");
 
@@ -312,10 +330,11 @@ export const todoService = {
   /**
    * Search to-dos by title or description (case insensitive).
    */
-  async search(userId: string, query: string) {
+  async search(userId: string, workspaceId: string, query: string) {
     return prisma.todo.findMany({
       where: {
         userId,
+        workspaceId,
         OR: [
           { title: { contains: query, mode: "insensitive" } },
           { description: { contains: query, mode: "insensitive" } },
@@ -333,11 +352,12 @@ export const todoService = {
    * Get Daily Big 3 to-dos for a given date (defaults to today).
    * Returns up to 3 to-dos marked as Big 3, ordered by sortOrder.
    */
-  async getBig3(userId: string, date?: Date) {
+  async getBig3(userId: string, workspaceId: string, date?: Date) {
     const targetDate = startOfDay(date ?? new Date());
     return prisma.todo.findMany({
       where: {
         userId,
+        workspaceId,
         isBig3: true,
         big3Date: targetDate,
       },
@@ -359,14 +379,16 @@ export const todoService = {
    *   4. Set the new Big 3
    *   5. Return updated Big 3 to-dos
    */
-  async setBig3(userId: string, todoIds: string[], date?: Date) {
+  async setBig3(userId: string, workspaceId: string, todoIds: string[], date?: Date) {
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
     if (todoIds.length > 3) {
       throw new Error("Maximum 3 Daily Big 3 allowed");
     }
 
-    // Verify all todoIds belong to the user
+    // Verify all todoIds belong to the user and workspace
     const found = await prisma.todo.findMany({
-      where: { id: { in: todoIds }, userId },
+      where: { id: { in: todoIds }, userId, workspaceId },
       select: { id: true },
     });
 
@@ -380,6 +402,7 @@ export const todoService = {
     await prisma.todo.updateMany({
       where: {
         userId,
+        workspaceId,
         isBig3: true,
         big3Date: targetDate,
       },
@@ -389,12 +412,13 @@ export const todoService = {
       },
     });
 
-    // Set new Big 3. Scope by userId as defense-in-depth even though the
+    // Set new Big 3. Scope by userId and workspaceId as defense-in-depth even though the
     // ids were already verified against the user via the findMany above.
     await prisma.todo.updateMany({
       where: {
         id: { in: todoIds },
         userId,
+        workspaceId,
       },
       data: {
         isBig3: true,
@@ -403,7 +427,7 @@ export const todoService = {
     });
 
     // Return the updated Big 3 to-dos
-    return this.getBig3(userId, targetDate);
+    return this.getBig3(userId, workspaceId, targetDate);
   },
 
   /**
@@ -411,11 +435,12 @@ export const todoService = {
    * Matches on scheduledDate first, or dueDate if no scheduledDate.
    * Big 3 are sorted first, then by sortOrder.
    */
-  async getByDate(userId: string, date: Date) {
+  async getByDate(userId: string, workspaceId: string, date: Date) {
     const targetDate = startOfDay(date);
     return prisma.todo.findMany({
       where: {
         userId,
+        workspaceId,
         OR: [
           { scheduledDate: targetDate },
           { dueDate: targetDate, scheduledDate: null },
@@ -433,10 +458,11 @@ export const todoService = {
    * Get all to-dos in a date range (calendar month view).
    * Returns a flat list; the caller groups by date.
    */
-  async getByDateRange(userId: string, start: Date, end: Date) {
+  async getByDateRange(userId: string, workspaceId: string, start: Date, end: Date) {
     return prisma.todo.findMany({
       where: {
         userId,
+        workspaceId,
         OR: [
           { scheduledDate: { gte: start, lte: end } },
           { dueDate: { gte: start, lte: end }, scheduledDate: null },
@@ -454,12 +480,12 @@ export const todoService = {
    * Complete multiple to-dos in bulk. Wraps each in try/catch
    * so one failure does not block others.
    */
-  async bulkComplete(userId: string, ids: string[]) {
+  async bulkComplete(userId: string, workspaceId: string, ids: string[]) {
     const results: Array<{ id: string; success: boolean; data?: unknown; error?: string }> = [];
 
     for (const id of ids) {
       try {
-        const result = await this.complete(userId, id);
+        const result = await this.complete(userId, workspaceId, id);
         results.push({ id, success: true, data: result });
       } catch (error) {
         results.push({
@@ -476,11 +502,13 @@ export const todoService = {
   /**
    * Reorder to-dos by updating their sortOrder in a single transaction.
    */
-  async reorder(userId: string, items: { id: string; sortOrder: number }[]) {
+  async reorder(userId: string, workspaceId: string, items: { id: string; sortOrder: number }[]) {
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
     await prisma.$transaction(
       items.map(({ id, sortOrder }) =>
         prisma.todo.update({
-          where: { id, userId },
+          where: { id, userId, workspaceId },
           data: { sortOrder },
         })
       )

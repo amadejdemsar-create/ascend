@@ -46,6 +46,7 @@ export async function POST(
 
     const result = await blockDocumentService.applySync(
       auth.userId,
+      auth.workspaceId,
       id,
       data.update,
       data.expectedVersion,

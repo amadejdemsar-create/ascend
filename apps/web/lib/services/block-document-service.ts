@@ -35,6 +35,7 @@ import type {
 } from "@ascend/core";
 import * as Y from "yjs";
 import { versioningService } from "@/lib/services/versioning-service";
+import { permissionService } from "@/lib/services/permission-service";
 
 // ── Size caps ──────────────────────────────────────────────────────
 const MAX_STATE_BYTES = 1024 * 1024; // 1 MiB
@@ -85,6 +86,7 @@ export const blockDocumentService = {
    */
   async getByEntryId(
     userId: string,
+    workspaceId: string,
     entryId: string,
   ): Promise<{
     id: string;
@@ -93,15 +95,15 @@ export const blockDocumentService = {
     extractedText: string | null;
     updatedAt: Date;
   } | null> {
-    // Verify entry ownership first (safety rule 1: userId in where clause).
+    // Verify entry ownership first (safety rule 1: userId + workspaceId in where clause).
     const entry = await prisma.contextEntry.findFirst({
-      where: { id: entryId, userId },
+      where: { id: entryId, userId, workspaceId },
       select: { id: true, blockDocumentId: true, extractedText: true },
     });
     if (!entry || !entry.blockDocumentId) return null;
 
     const doc = await prisma.blockDocument.findFirst({
-      where: { id: entry.blockDocumentId, userId },
+      where: { id: entry.blockDocumentId, userId, workspaceId },
       select: { id: true, snapshot: true, version: true, updatedAt: true },
     });
     if (!doc) return null;
@@ -129,6 +131,7 @@ export const blockDocumentService = {
    */
   async applySync(
     userId: string,
+    workspaceId: string,
     entryId: string,
     base64Update: string,
     expectedVersion: number,
@@ -157,9 +160,12 @@ export const blockDocumentService = {
       }
     }
 
-    // 2. Verify entry ownership (safety rule 1)
+    // 2. Permission check (mutating operation)
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
+    // 3. Verify entry ownership (safety rule 1)
     const entry = await prisma.contextEntry.findFirst({
-      where: { id: entryId, userId },
+      where: { id: entryId, userId, workspaceId },
       select: { id: true, blockDocumentId: true },
     });
     if (!entry) throw new Error("Entry not found");
@@ -168,9 +174,9 @@ export const blockDocumentService = {
       throw new Error("Block document not initialized; call /migrate first");
     }
 
-    // 3. Load existing block document (userId-scoped)
+    // 4. Load existing block document (userId + workspaceId scoped)
     const existing = await prisma.blockDocument.findFirst({
-      where: { id: entry.blockDocumentId, userId },
+      where: { id: entry.blockDocumentId, userId, workspaceId },
     });
     if (!existing) throw new Error("Block document missing");
 
@@ -233,7 +239,7 @@ export const blockDocumentService = {
 
     // Wave 7: schedule debounced snapshot for the parent ContextEntry.
     // Two-stage debounce (editor 1.5s autosave + versioning 60s) is intentional.
-    versioningService.scheduleSnapshot(userId, "CONTEXT_ENTRY", entryId, "EDIT_DEBOUNCED");
+    versioningService.scheduleSnapshot(userId, workspaceId, "CONTEXT_ENTRY", entryId, "EDIT_DEBOUNCED");
 
     return { version: updated.version, conflict: false };
   },
@@ -251,13 +257,17 @@ export const blockDocumentService = {
    */
   async replaceSnapshot(
     userId: string,
+    workspaceId: string,
     entryId: string,
     newSnapshot: unknown,
     expectedVersion: number,
   ): Promise<{ version: number; conflict: boolean }> {
-    // 1. Verify entry ownership (safety rule 1)
+    // 1. Permission check (mutating operation)
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
+    // 2. Verify entry ownership (safety rule 1)
     const entry = await prisma.contextEntry.findFirst({
-      where: { id: entryId, userId },
+      where: { id: entryId, userId, workspaceId },
       select: { id: true, blockDocumentId: true },
     });
     if (!entry) throw new Error("Entry not found");
@@ -266,9 +276,9 @@ export const blockDocumentService = {
       throw new Error("Block document not initialized; call /migrate first");
     }
 
-    // 2. Load existing block document (userId-scoped)
+    // 3. Load existing block document (userId + workspaceId scoped)
     const existing = await prisma.blockDocument.findFirst({
-      where: { id: entry.blockDocumentId, userId },
+      where: { id: entry.blockDocumentId, userId, workspaceId },
     });
     if (!existing) throw new Error("Block document missing");
 
@@ -319,7 +329,7 @@ export const blockDocumentService = {
     });
 
     // Wave 7: schedule debounced snapshot for the parent ContextEntry.
-    versioningService.scheduleSnapshot(userId, "CONTEXT_ENTRY", entryId, "EDIT_DEBOUNCED");
+    versioningService.scheduleSnapshot(userId, workspaceId, "CONTEXT_ENTRY", entryId, "EDIT_DEBOUNCED");
 
     return { version: updated.version, conflict: false };
   },
@@ -330,10 +340,12 @@ export const blockDocumentService = {
    *
    * userId-scoped via deleteMany where clause (safety rule 1).
    */
-  async deleteByEntryId(userId: string, entryId: string): Promise<void> {
-    // deleteMany is safe with userId scope; returns count=0 if not found.
+  async deleteByEntryId(userId: string, workspaceId: string, entryId: string): Promise<void> {
+    await permissionService.assertCanPerform(userId, workspaceId, "DELETE_NODE");
+
+    // deleteMany is safe with userId + workspaceId scope; returns count=0 if not found.
     await prisma.blockDocument.deleteMany({
-      where: { entryId, userId },
+      where: { entryId, userId, workspaceId },
     });
   },
 
@@ -357,10 +369,11 @@ export const blockDocumentService = {
    */
   async addBlock(
     userId: string,
+    workspaceId: string,
     entryId: string,
     op: BlockOpAddInput,
   ): Promise<{ snapshot: unknown; version: number }> {
-    const doc = await this.getByEntryId(userId, entryId);
+    const doc = await this.getByEntryId(userId, workspaceId, entryId);
     if (!doc) throw new Error("Block document not found");
 
     const snapshot = structuredClone(doc.snapshot) as SnapshotRoot;
@@ -388,7 +401,7 @@ export const blockDocumentService = {
       snapshot.root.children.push(newBlock);
     }
 
-    const result = await this.replaceSnapshot(userId, entryId, snapshot, doc.version);
+    const result = await this.replaceSnapshot(userId, workspaceId, entryId, snapshot, doc.version);
     if (result.conflict) {
       throw new Error("Concurrent modification; retry");
     }
@@ -404,11 +417,12 @@ export const blockDocumentService = {
    */
   async updateBlock(
     userId: string,
+    workspaceId: string,
     entryId: string,
     blockId: string,
     patch: BlockOpUpdateInput["patch"],
   ): Promise<{ snapshot: unknown; version: number }> {
-    const doc = await this.getByEntryId(userId, entryId);
+    const doc = await this.getByEntryId(userId, workspaceId, entryId);
     if (!doc) throw new Error("Block document not found");
 
     const snapshot = structuredClone(doc.snapshot) as SnapshotRoot;
@@ -419,7 +433,7 @@ export const blockDocumentService = {
     const { key: _k, type: _t, children: _c, ...safePatch } = patch as Record<string, unknown>;
     Object.assign(block, safePatch);
 
-    const result = await this.replaceSnapshot(userId, entryId, snapshot, doc.version);
+    const result = await this.replaceSnapshot(userId, workspaceId, entryId, snapshot, doc.version);
     if (result.conflict) {
       throw new Error("Concurrent modification; retry");
     }
@@ -439,10 +453,11 @@ export const blockDocumentService = {
    */
   async moveBlock(
     userId: string,
+    workspaceId: string,
     entryId: string,
     op: BlockOpMoveInput,
   ): Promise<{ snapshot: unknown; version: number }> {
-    const doc = await this.getByEntryId(userId, entryId);
+    const doc = await this.getByEntryId(userId, workspaceId, entryId);
     if (!doc) throw new Error("Block document not found");
 
     const snapshot = structuredClone(doc.snapshot) as SnapshotRoot;
@@ -465,7 +480,7 @@ export const blockDocumentService = {
       parent.children.push(removed);
     }
 
-    const result = await this.replaceSnapshot(userId, entryId, snapshot, doc.version);
+    const result = await this.replaceSnapshot(userId, workspaceId, entryId, snapshot, doc.version);
     if (result.conflict) {
       throw new Error("Concurrent modification; retry");
     }
@@ -480,10 +495,11 @@ export const blockDocumentService = {
    */
   async deleteBlock(
     userId: string,
+    workspaceId: string,
     entryId: string,
     blockId: string,
   ): Promise<{ snapshot: unknown; version: number }> {
-    const doc = await this.getByEntryId(userId, entryId);
+    const doc = await this.getByEntryId(userId, workspaceId, entryId);
     if (!doc) throw new Error("Block document not found");
 
     const snapshot = structuredClone(doc.snapshot) as SnapshotRoot;
@@ -505,7 +521,7 @@ export const blockDocumentService = {
       });
     }
 
-    const result = await this.replaceSnapshot(userId, entryId, snapshot, doc.version);
+    const result = await this.replaceSnapshot(userId, workspaceId, entryId, snapshot, doc.version);
     if (result.conflict) {
       throw new Error("Concurrent modification; retry");
     }

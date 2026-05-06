@@ -19,6 +19,7 @@ export type ExtractionResult = {
 
 export type ExtractionHandlerOpts = {
   userId: string;
+  workspaceId: string;
   signal?: AbortSignal;
 };
 

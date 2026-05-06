@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
     const { date } = graphAtQuerySchema.parse(Object.fromEntries(searchParams));
     const result = await graphHistoryService.getGraphAt(
       auth.userId,
+      auth.workspaceId,
       new Date(date),
     );
     return NextResponse.json(result);

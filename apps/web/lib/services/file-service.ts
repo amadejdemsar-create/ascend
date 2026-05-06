@@ -15,6 +15,7 @@ import {
   PRESIGN_EXPIRES_SECONDS,
   DOWNLOAD_URL_EXPIRES_SECONDS,
 } from "@/lib/validations";
+import { permissionService } from "@/lib/services/permission-service";
 
 // ---------------------------------------------------------------------------
 // S3/R2 client (lazy-init singleton)
@@ -101,6 +102,7 @@ export const fileService = {
    */
   async createPresignedUpload(
     userId: string,
+    workspaceId: string,
     input: PresignUploadInput,
     contextEntryId?: string,
   ): Promise<{
@@ -126,19 +128,21 @@ export const fileService = {
       );
     }
 
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
     const storageKey = buildStorageKey(userId, input.filename);
 
     // Create PENDING file record, optionally linked to a ContextEntry
     const file = await prisma.file.create({
       data: {
         userId,
+        workspaceId,
         storageKey,
         bucket: s3.bucket,
         mimeType: input.mimeType,
         sizeBytes: BigInt(input.sizeBytes),
         filename: input.filename,
         status: "PENDING",
-        workspaceId: null,
         ...(contextEntryId && { contextEntryId }),
       },
     });
@@ -174,11 +178,14 @@ export const fileService = {
    */
   async confirmUpload(
     userId: string,
+    workspaceId: string,
     fileId: string,
     sha256?: string,
   ): Promise<File> {
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
     const existing = await prisma.file.findFirst({
-      where: { id: fileId, userId },
+      where: { id: fileId, userId, workspaceId },
     });
     if (!existing) throw new Error("Not found");
 
@@ -199,9 +206,9 @@ export const fileService = {
   /**
    * Get a File by id, scoped to userId.
    */
-  async getFile(userId: string, id: string): Promise<File | null> {
+  async getFile(userId: string, workspaceId: string, id: string): Promise<File | null> {
     return prisma.file.findFirst({
-      where: { id, userId },
+      where: { id, userId, workspaceId },
     });
   },
 
@@ -237,6 +244,7 @@ export const fileService = {
    */
   async uploadBytes(
     userId: string,
+    workspaceId: string,
     input: { filename: string; mimeType: string; sizeBytes: number },
     buffer: Buffer,
     contextEntryId?: string,
@@ -263,6 +271,8 @@ export const fileService = {
       );
     }
 
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
     const storageKey = buildStorageKey(userId, input.filename);
 
     // Upload directly to R2
@@ -282,6 +292,7 @@ export const fileService = {
       const file = await prisma.file.create({
         data: {
           userId,
+          workspaceId,
           storageKey,
           bucket: s3.bucket,
           mimeType: input.mimeType,
@@ -289,7 +300,6 @@ export const fileService = {
           filename: input.filename,
           status: "UPLOADED",
           uploadedAt: new Date(),
-          workspaceId: null,
           ...(contextEntryId && { contextEntryId }),
         },
       });
@@ -328,13 +338,15 @@ export const fileService = {
    */
   async listFiles(
     userId: string,
+    workspaceId: string,
     opts: { mimeTypePrefix?: string; limit?: number; offset?: number } = {},
   ): Promise<{ files: File[]; total: number }> {
     const limit = Math.min(opts.limit ?? 50, 200);
     const offset = opts.offset ?? 0;
 
-    const where: { userId: string; mimeType?: { startsWith: string } } = {
+    const where: { userId: string; workspaceId: string; mimeType?: { startsWith: string } } = {
       userId,
+      workspaceId,
     };
     if (opts.mimeTypePrefix) {
       where.mimeType = { startsWith: opts.mimeTypePrefix };
@@ -362,9 +374,11 @@ export const fileService = {
    * orphan Prisma rows pointing to deleted R2 objects are harder to
    * detect and clean up.
    */
-  async deleteFile(userId: string, id: string): Promise<void> {
+  async deleteFile(userId: string, workspaceId: string, id: string): Promise<void> {
+    await permissionService.assertCanPerform(userId, workspaceId, "DELETE_NODE");
+
     const existing = await prisma.file.findFirst({
-      where: { id, userId },
+      where: { id, userId, workspaceId },
     });
     if (!existing) throw new Error("Not found");
 
@@ -392,10 +406,11 @@ export const fileService = {
    */
   async createDownloadUrl(
     userId: string,
+    workspaceId: string,
     id: string,
   ): Promise<{ url: string; expiresAt: string }> {
     const file = await prisma.file.findFirst({
-      where: { id, userId },
+      where: { id, userId, workspaceId },
     });
     if (!file) throw new Error("Not found");
 
@@ -434,6 +449,7 @@ export const fileService = {
    */
   async streamFile(
     userId: string,
+    workspaceId: string,
     id: string,
   ): Promise<{
     stream: ReadableStream<Uint8Array>;
@@ -442,7 +458,7 @@ export const fileService = {
     filename: string;
   }> {
     const file = await prisma.file.findFirst({
-      where: { id, userId },
+      where: { id, userId, workspaceId },
     });
     if (!file) throw new Error("Not found");
 
@@ -498,14 +514,14 @@ export const fileService = {
         status: "PENDING",
         createdAt: { lt: cutoff },
       },
-      select: { id: true, userId: true },
+      select: { id: true, userId: true, workspaceId: true },
     });
 
     let deleted = 0;
     for (const orphan of orphans) {
       try {
-        // deleteFile is userId-scoped and handles R2 + Prisma deletion
-        await fileService.deleteFile(orphan.userId, orphan.id);
+        // deleteFile is userId+workspaceId-scoped and handles R2 + Prisma deletion
+        await fileService.deleteFile(orphan.userId, orphan.workspaceId, orphan.id);
         deleted++;
       } catch (err) {
         console.error(

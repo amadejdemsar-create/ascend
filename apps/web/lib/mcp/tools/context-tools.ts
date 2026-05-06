@@ -20,6 +20,7 @@ type McpContent = {
  */
 export async function handleContextTool(
   userId: string,
+  workspaceId: string,
   name: string,
   args: Record<string, unknown>,
 ): Promise<McpContent> {
@@ -30,12 +31,12 @@ export async function handleContextTool(
           // Update existing entry
           const { id, ...rest } = args;
           const data = updateContextSchema.parse(rest);
-          const entry = await contextService.update(userId, id, data);
+          const entry = await contextService.update(userId, workspaceId, id, data);
           return { content: [{ type: "text", text: JSON.stringify(entry, null, 2) }] };
         }
         // Create new entry
         const data = createContextSchema.parse(args);
-        const entry = await contextService.create(userId, data);
+        const entry = await contextService.create(userId, workspaceId, data);
         return { content: [{ type: "text", text: JSON.stringify(entry, null, 2) }] };
       }
 
@@ -47,7 +48,7 @@ export async function handleContextTool(
             isError: true,
           };
         }
-        const entry = await contextService.getById(userId, id);
+        const entry = await contextService.getById(userId, workspaceId, id);
         if (!entry) {
           return {
             content: [{ type: "text", text: `Context entry not found: ${id}` }],
@@ -59,7 +60,7 @@ export async function handleContextTool(
 
       case "list_context": {
         const filters = contextFiltersSchema.parse(args);
-        const entries = await contextService.list(userId, filters);
+        const entries = await contextService.list(userId, workspaceId, filters);
         // Truncate content to 200 chars for overview
         const overview = entries.map((e: Record<string, unknown>) => ({
           ...e,
@@ -78,7 +79,7 @@ export async function handleContextTool(
           mode: args.mode ?? "hybrid",
           limit: args.limit ?? 20,
         });
-        const results = await contextService.search(userId, parsed.q, {
+        const results = await contextService.search(userId, workspaceId, parsed.q, {
           mode: parsed.mode as ContextSearchMode,
           limit: parsed.limit,
         });
@@ -93,7 +94,7 @@ export async function handleContextTool(
             isError: true,
           };
         }
-        await contextService.delete(userId, id);
+        await contextService.delete(userId, workspaceId, id);
         return { content: [{ type: "text", text: `Deleted context entry: ${id}` }] };
       }
 

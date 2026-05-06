@@ -109,16 +109,18 @@ export const extractionQueueService = {
    */
   async enqueue(
     userId: string,
+    workspaceId: string,
     fileId: string,
   ): Promise<{ jobId: string; scheduledAt: Date }> {
     // Verify file ownership (Safety Rule 1)
-    const file = await fileService.getFile(userId, fileId);
+    const file = await fileService.getFile(userId, workspaceId, fileId);
     if (!file) throw new Error("Not found");
 
     const job = await prisma.extractionJob.upsert({
       where: { fileId },
       create: {
         fileId,
+        workspaceId,
         status: "PENDING",
       },
       update: {
@@ -287,7 +289,7 @@ export const extractionQueueService = {
       // at enqueue time when userId was checked.
       const file = await prisma.file.findUnique({
         where: { id: job.fileId },
-        select: { userId: true },
+        select: { userId: true, workspaceId: true },
       });
 
       if (!file) {

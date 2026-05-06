@@ -17,7 +17,7 @@ export async function GET(
 
   try {
     const { id } = await params;
-    const result = await databaseService.getById(auth.userId, id);
+    const result = await databaseService.getById(auth.userId, auth.workspaceId, id);
     if (!result) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
@@ -43,7 +43,7 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
     const data = updateDatabaseSchema.parse(body);
-    const result = await databaseService.update(auth.userId, id, data);
+    const result = await databaseService.update(auth.userId, auth.workspaceId, id, data);
     return NextResponse.json(result);
   } catch (error) {
     return handleApiError(error);
@@ -64,7 +64,7 @@ export async function DELETE(
 
   try {
     const { id } = await params;
-    const result = await databaseService.delete(auth.userId, id);
+    const result = await databaseService.delete(auth.userId, auth.workspaceId, id);
     return NextResponse.json(result);
   } catch (error) {
     return handleApiError(error);

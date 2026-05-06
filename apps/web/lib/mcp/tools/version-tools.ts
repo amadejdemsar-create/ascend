@@ -61,6 +61,7 @@ const getVersionArgsSchema = z.object({
 
 export async function handleVersionTool(
   userId: string,
+  workspaceId: string,
   name: string,
   args: Record<string, unknown>,
 ): Promise<McpContent> {
@@ -70,6 +71,7 @@ export async function handleVersionTool(
         const data = listVersionsArgsSchema.parse(args);
         const result = await versioningService.listVersions(
           userId,
+          workspaceId,
           data.nodeType,
           data.nodeId,
           { limit: data.limit, cursor: data.cursor },
@@ -79,7 +81,7 @@ export async function handleVersionTool(
 
       case "get_version": {
         const data = getVersionArgsSchema.parse(args);
-        const result = await versioningService.getVersion(userId, data.versionId);
+        const result = await versioningService.getVersion(userId, workspaceId, data.versionId);
         if (!result) {
           return fail("Version not found");
         }
@@ -90,6 +92,7 @@ export async function handleVersionTool(
         const data = diffVersionsBodySchema.parse(args);
         const result = await diffService.diffVersions(
           userId,
+          workspaceId,
           data.fromVersionId,
           data.toVersionId,
         );
@@ -100,6 +103,7 @@ export async function handleVersionTool(
         const data = restoreVersionBodySchema.parse(args);
         const result = await restoreService.restore(
           userId,
+          workspaceId,
           data.versionId,
           data.dryRun ?? false,
         );
@@ -110,6 +114,7 @@ export async function handleVersionTool(
         const data = branchNodeBodySchema.parse(args);
         const result = await branchService.branch(
           userId,
+          workspaceId,
           data.versionId,
           data.title,
         );

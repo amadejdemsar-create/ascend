@@ -25,14 +25,16 @@ export async function POST(request: NextRequest) {
     return unauthorizedResponse();
   }
 
-  // For the cron path, we need a userId. Since ContextMap has userId @unique,
-  // the cron job operates on ALL users who have context entries. For the MVP
-  // single-user deployment, look up the first user with context entries.
-  // In the multi-user future, the cron job would iterate all users or accept
-  // userId as a body param.
+  // For the cron path, we need a userId + workspaceId. Since ContextMap has
+  // userId @unique, the cron job operates on ALL users who have context entries.
+  // For the MVP single-user deployment, look up the first user with context
+  // entries. In the multi-user future, the cron job would iterate all users or
+  // accept userId as a body param.
   let userId: string;
+  let workspaceId: string;
   if (auth.success) {
     userId = auth.userId;
+    workspaceId = auth.workspaceId;
   } else {
     // Cron path: find the first user who has context entries.
     // Uses the service layer (safety rule 4: no direct Prisma in routes).
@@ -45,12 +47,22 @@ export async function POST(request: NextRequest) {
       );
     }
     userId = firstUser.id;
+    // Cron path: resolve the user's default workspace
+    const { workspaceService } = await import("@/lib/services/workspace-service");
+    const defaultWsId = await workspaceService.getUserDefaultWorkspaceId(userId);
+    if (!defaultWsId) {
+      return NextResponse.json(
+        { error: "User has no default workspace" },
+        { status: 400 },
+      );
+    }
+    workspaceId = defaultWsId;
   }
 
   try {
     // User-initiated refresh: enforce cooldown
     if (auth.success && !isCron) {
-      const cooldownCheck = await contextMapService.canRefresh(userId);
+      const cooldownCheck = await contextMapService.canRefresh(userId, workspaceId);
       if (!cooldownCheck.ok) {
         return NextResponse.json(
           {
@@ -70,7 +82,7 @@ export async function POST(request: NextRequest) {
 
     // Both paths: refresh goes through llmService.chat which enforces
     // cost cap (DZ-9). No bypass regardless of auth path.
-    const map = await contextMapService.refresh(userId);
+    const map = await contextMapService.refresh(userId, workspaceId);
     return NextResponse.json(map);
   } catch (error) {
     // Surface BudgetExceededError as 429 with structured info

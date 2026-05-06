@@ -32,15 +32,15 @@ export async function GET(
   try {
     const { id } = await params;
 
-    // Ownership check (userId-scoped, Safety Rule 1)
-    const file = await fileService.getFile(auth.userId, id);
+    // Ownership check (userId + workspaceId scoped, Safety Rule 1)
+    const file = await fileService.getFile(auth.userId, auth.workspaceId, id);
     if (!file) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
     // SVG: stream bytes with hardened headers (option c from security note)
     if (file.mimeType === "image/svg+xml") {
-      const result = await fileService.streamFile(auth.userId, id);
+      const result = await fileService.streamFile(auth.userId, auth.workspaceId, id);
 
       return new Response(result.stream, {
         status: 200,
@@ -59,6 +59,7 @@ export async function GET(
     // All other types: presigned download URL (5-min expiry)
     const { url, expiresAt } = await fileService.createDownloadUrl(
       auth.userId,
+      auth.workspaceId,
       id,
     );
 

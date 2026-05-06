@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
       window: searchParams.get("window") ?? undefined,
     });
 
-    const usage = await llmService.usageForUser(auth.userId, query.window);
+    const usage = await llmService.usageForUser(auth.userId, auth.workspaceId, query.window);
     return NextResponse.json(usage);
   } catch (error) {
     return handleApiError(error);

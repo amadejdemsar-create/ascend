@@ -17,7 +17,7 @@ export async function GET(
 
   try {
     const { entryId } = await params;
-    const result = await databaseService.getByEntryId(auth.userId, entryId);
+    const result = await databaseService.getByEntryId(auth.userId, auth.workspaceId, entryId);
     if (!result) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }

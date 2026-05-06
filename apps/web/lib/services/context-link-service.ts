@@ -5,6 +5,7 @@ import type {
   ContextLinkType,
 } from "../../generated/prisma/client";
 import { edgeEventService } from "@/lib/services/edge-event-service";
+import { permissionService } from "@/lib/services/permission-service";
 
 /**
  * Service for typed context link (edge) CRUD.
@@ -24,11 +25,13 @@ export const contextLinkService = {
    */
   async list(
     userId: string,
+    workspaceId: string,
     filters: { fromEntryId?: string; toEntryId?: string } = {},
   ) {
     return prisma.contextLink.findMany({
       where: {
         userId,
+        workspaceId,
         ...(filters.fromEntryId && { fromEntryId: filters.fromEntryId }),
         ...(filters.toEntryId && { toEntryId: filters.toEntryId }),
       },
@@ -47,6 +50,7 @@ export const contextLinkService = {
    */
   async listForEntry(
     userId: string,
+    workspaceId: string,
     entryId: string,
   ): Promise<{
     outgoing: Array<
@@ -60,14 +64,14 @@ export const contextLinkService = {
   }> {
     const [outgoing, incoming] = await Promise.all([
       prisma.contextLink.findMany({
-        where: { userId, fromEntryId: entryId },
+        where: { userId, workspaceId, fromEntryId: entryId },
         include: {
           toEntry: { select: { id: true, title: true, type: true } },
         },
         orderBy: { createdAt: "desc" },
       }),
       prisma.contextLink.findMany({
-        where: { userId, toEntryId: entryId },
+        where: { userId, workspaceId, toEntryId: entryId },
         include: {
           fromEntry: { select: { id: true, title: true, type: true } },
         },
@@ -86,6 +90,7 @@ export const contextLinkService = {
    */
   async create(
     userId: string,
+    workspaceId: string,
     input: {
       fromEntryId: string;
       toEntryId: string;
@@ -93,14 +98,16 @@ export const contextLinkService = {
       source?: ContextLinkSource;
     },
   ): Promise<ContextLink> {
-    // Verify both endpoints belong to the user
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
+    // Verify both endpoints belong to the user in this workspace
     const [from, to] = await Promise.all([
       prisma.contextEntry.findFirst({
-        where: { id: input.fromEntryId, userId },
+        where: { id: input.fromEntryId, userId, workspaceId },
         select: { id: true },
       }),
       prisma.contextEntry.findFirst({
-        where: { id: input.toEntryId, userId },
+        where: { id: input.toEntryId, userId, workspaceId },
         select: { id: true },
       }),
     ]);
@@ -118,6 +125,7 @@ export const contextLinkService = {
       update: {}, // no-op: return existing row unchanged
       create: {
         userId,
+        workspaceId,
         fromEntryId: input.fromEntryId,
         toEntryId: input.toEntryId,
         type: input.type,
@@ -126,7 +134,7 @@ export const contextLinkService = {
     });
 
     // Wave 7: fire-and-forget edge event log (self-catching inside edgeEventService)
-    void edgeEventService.logCreated(userId, link);
+    void edgeEventService.logCreated(userId, workspaceId, link);
 
     return link;
   },
@@ -137,11 +145,14 @@ export const contextLinkService = {
    */
   async update(
     userId: string,
+    workspaceId: string,
     id: string,
     data: { type: ContextLinkType },
   ): Promise<ContextLink> {
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
     const existing = await prisma.contextLink.findFirst({
-      where: { id, userId },
+      where: { id, userId, workspaceId },
     });
     if (!existing) throw new Error("Context link not found");
 
@@ -151,7 +162,7 @@ export const contextLinkService = {
     });
 
     // Wave 7: fire-and-forget edge event log (self-catching inside edgeEventService)
-    void edgeEventService.logUpdated(userId, existing, updated);
+    void edgeEventService.logUpdated(userId, workspaceId, existing, updated);
 
     return updated;
   },
@@ -163,11 +174,14 @@ export const contextLinkService = {
    */
   async delete(
     userId: string,
+    workspaceId: string,
     id: string,
     options?: { force?: boolean },
   ): Promise<void> {
+    await permissionService.assertCanPerform(userId, workspaceId, "DELETE_NODE");
+
     const existing = await prisma.contextLink.findFirst({
-      where: { id, userId },
+      where: { id, userId, workspaceId },
     });
     if (!existing) throw new Error("Context link not found");
 
@@ -180,7 +194,7 @@ export const contextLinkService = {
     await prisma.contextLink.delete({ where: { id } });
 
     // Wave 7: fire-and-forget edge event log (self-catching inside edgeEventService)
-    void edgeEventService.logRemoved(userId, existing);
+    void edgeEventService.logRemoved(userId, workspaceId, existing);
   },
 
   /**
@@ -199,12 +213,13 @@ export const contextLinkService = {
    */
   async syncContentLinks(
     userId: string,
+    workspaceId: string,
     fromEntryId: string,
     parsedLinks: Array<{ relation: ContextLinkType; title: string }>,
   ): Promise<{ created: number; updated: number; deleted: number }> {
-    // Verify the source entry belongs to the user
+    // Verify the source entry belongs to the user in this workspace
     const sourceEntry = await prisma.contextEntry.findFirst({
-      where: { id: fromEntryId, userId },
+      where: { id: fromEntryId, userId, workspaceId },
       select: { id: true },
     });
     if (!sourceEntry) throw new Error("Source entry not found for this user");
@@ -212,7 +227,7 @@ export const contextLinkService = {
     const result = await prisma.$transaction(async (tx) => {
       // 1. Load existing CONTENT-source links from this entry
       const existingContentLinks = await tx.contextLink.findMany({
-        where: { userId, fromEntryId, source: "CONTENT" },
+        where: { userId, workspaceId, fromEntryId, source: "CONTENT" },
       });
 
       // 2. Resolve parsed wikilink titles to entry IDs.
@@ -236,12 +251,13 @@ export const contextLinkService = {
         ),
       ];
 
-      // Resolve titles to entries owned by the same user (case-insensitive)
+      // Resolve titles to entries owned by the same user in this workspace (case-insensitive)
       const targetEntries =
         uniqueTitles.length > 0
           ? await tx.contextEntry.findMany({
               where: {
                 userId,
+                workspaceId,
                 title: { in: uniqueTitles, mode: "insensitive" },
               },
               select: { id: true, title: true },
@@ -314,6 +330,7 @@ export const contextLinkService = {
           update: {}, // no-op if already exists (e.g., manual link with same type)
           create: {
             userId,
+            workspaceId,
             fromEntryId,
             toEntryId: desired.toEntryId,
             type: desired.type,
@@ -335,10 +352,10 @@ export const contextLinkService = {
     // Wave 7: fire-and-forget edge events for content-sync link changes.
     // These calls are self-catching inside edgeEventService.
     for (const link of result._createdLinks) {
-      void edgeEventService.logCreated(userId, link);
+      void edgeEventService.logCreated(userId, workspaceId, link);
     }
     for (const link of result._deletedLinks) {
-      void edgeEventService.logRemoved(userId, link);
+      void edgeEventService.logRemoved(userId, workspaceId, link);
     }
 
     return {
@@ -352,10 +369,11 @@ export const contextLinkService = {
    * Count DERIVED_FROM links pointing TO a given entry.
    * Used by BranchDialog for the soft warning (>5 derivatives).
    */
-  async countDerivatives(userId: string, entryId: string): Promise<number> {
+  async countDerivatives(userId: string, workspaceId: string, entryId: string): Promise<number> {
     return prisma.contextLink.count({
       where: {
         userId,
+        workspaceId,
         type: "DERIVED_FROM",
         toEntryId: entryId,
       },

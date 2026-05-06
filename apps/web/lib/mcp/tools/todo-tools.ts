@@ -18,6 +18,7 @@ type McpContent = {
  */
 export async function handleTodoTool(
   userId: string,
+  workspaceId: string,
   name: string,
   args: Record<string, unknown>,
 ): Promise<McpContent> {
@@ -27,15 +28,15 @@ export async function handleTodoTool(
         // Extract recurrence fields before Zod parsing (not in createTodoSchema)
         const { isRecurring, recurrenceRule, ...rest } = args;
         const data = createTodoSchema.parse(rest);
-        const created = await todoService.create(userId, data);
+        const created = await todoService.create(userId, workspaceId, data);
 
         // If recurrence fields provided, apply via update
         if (isRecurring || recurrenceRule) {
-          await todoService.update(userId, created.id, {
+          await todoService.update(userId, workspaceId, created.id, {
             ...(isRecurring != null && { isRecurring: Boolean(isRecurring) }),
             ...(recurrenceRule != null && { recurrenceRule: String(recurrenceRule) }),
           } as Record<string, unknown>);
-          const final = await todoService.getById(userId, created.id);
+          const final = await todoService.getById(userId, workspaceId, created.id);
           return { content: [{ type: "text", text: JSON.stringify(final, null, 2) }] };
         }
 
@@ -50,7 +51,7 @@ export async function handleTodoTool(
             isError: true,
           };
         }
-        const todo = await todoService.getById(userId, id);
+        const todo = await todoService.getById(userId, workspaceId, id);
         if (!todo) {
           return {
             content: [{ type: "text", text: `To-do not found: ${id}` }],
@@ -69,7 +70,7 @@ export async function handleTodoTool(
           };
         }
         const data = updateTodoSchema.parse(rest);
-        const updated = await todoService.update(userId, id, data);
+        const updated = await todoService.update(userId, workspaceId, id, data);
         return { content: [{ type: "text", text: JSON.stringify(updated, null, 2) }] };
       }
 
@@ -81,7 +82,7 @@ export async function handleTodoTool(
             isError: true,
           };
         }
-        await todoService.delete(userId, id);
+        await todoService.delete(userId, workspaceId, id);
         return { content: [{ type: "text", text: `Deleted to-do: ${id}` }] };
       }
 
@@ -98,7 +99,7 @@ export async function handleTodoTool(
         const limit = typeof args.limit === "number" ? args.limit : 50;
         const offset = typeof args.offset === "number" ? args.offset : 0;
 
-        const todos = await todoService.list(userId, filters, {
+        const todos = await todoService.list(userId, workspaceId, filters, {
           skip: offset,
           take: limit,
         });
@@ -113,7 +114,7 @@ export async function handleTodoTool(
             isError: true,
           };
         }
-        const result = await todoService.complete(userId, id);
+        const result = await todoService.complete(userId, workspaceId, id);
         return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
       }
 
@@ -125,13 +126,13 @@ export async function handleTodoTool(
             isError: true,
           };
         }
-        const results = await todoService.search(userId, query);
+        const results = await todoService.search(userId, workspaceId, query);
         return { content: [{ type: "text", text: JSON.stringify(results, null, 2) }] };
       }
 
       case "get_daily_big3": {
         const date = typeof args.date === "string" ? new Date(args.date) : undefined;
-        const big3 = await todoService.getBig3(userId, date);
+        const big3 = await todoService.getBig3(userId, workspaceId, date);
         return { content: [{ type: "text", text: JSON.stringify(big3, null, 2) }] };
       }
 
@@ -144,7 +145,7 @@ export async function handleTodoTool(
           };
         }
         const date = typeof args.date === "string" ? new Date(args.date) : undefined;
-        const result = await todoService.setBig3(userId, todoIds as string[], date);
+        const result = await todoService.setBig3(userId, workspaceId, todoIds as string[], date);
         return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
       }
 
@@ -156,7 +157,7 @@ export async function handleTodoTool(
             isError: true,
           };
         }
-        const todos = await todoService.getByDate(userId, new Date(date));
+        const todos = await todoService.getByDate(userId, workspaceId, new Date(date));
         return { content: [{ type: "text", text: JSON.stringify(todos, null, 2) }] };
       }
 

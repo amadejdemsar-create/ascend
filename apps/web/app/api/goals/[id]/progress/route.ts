@@ -14,7 +14,7 @@ export async function POST(
     const { id } = await params;
     const body = await request.json();
     const data = addProgressSchema.parse(body);
-    const log = await goalService.logProgress(auth.userId, id, data);
+    const log = await goalService.logProgress(auth.userId, auth.workspaceId, id, data);
     return NextResponse.json(log, { status: 201 });
   } catch (error) {
     return handleApiError(error);
@@ -30,7 +30,7 @@ export async function GET(
 
   try {
     const { id } = await params;
-    const history = await goalService.getProgressHistory(auth.userId, id);
+    const history = await goalService.getProgressHistory(auth.userId, auth.workspaceId, id);
     return NextResponse.json(history);
   } catch (error) {
     return handleApiError(error);

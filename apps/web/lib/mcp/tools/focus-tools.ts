@@ -14,6 +14,7 @@ type McpContent = {
  */
 export async function handleFocusTool(
   userId: string,
+  _workspaceId: string,
   name: string,
   args: Record<string, unknown>,
 ): Promise<McpContent> {

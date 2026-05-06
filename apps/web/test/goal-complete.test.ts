@@ -16,8 +16,8 @@ import { createTestUser, deleteTestUser } from "./helpers";
  *   4. weeklyScore is not double-counted on the first completion.
  */
 describe("goalService.completeWithSideEffects", () => {
-  let user: { id: string; apiKey: string };
-  let otherUser: { id: string; apiKey: string };
+  let user: { id: string; apiKey: string; workspaceId: string };
+  let otherUser: { id: string; apiKey: string; workspaceId: string };
 
   beforeAll(async () => {
     user = await createTestUser("goal-complete");
@@ -36,13 +36,13 @@ describe("goalService.completeWithSideEffects", () => {
   });
 
   it("awards XP and updates stats on a first-time completion", async () => {
-    const goal = await goalService.create(user.id, {
+    const goal = await goalService.create(user.id, user.workspaceId, {
       title: "Complete me",
       horizon: "WEEKLY",
       priority: "HIGH",
     });
 
-    const result = await goalService.completeWithSideEffects(user.id, goal.id, {
+    const result = await goalService.completeWithSideEffects(user.id, user.workspaceId, goal.id, {
       status: "COMPLETED",
     });
 
@@ -60,25 +60,25 @@ describe("goalService.completeWithSideEffects", () => {
   });
 
   it("refuses to complete another user's goal", async () => {
-    const goal = await goalService.create(user.id, {
+    const goal = await goalService.create(user.id, user.workspaceId, {
       title: "Mine",
       horizon: "WEEKLY",
     });
     await expect(
-      goalService.completeWithSideEffects(otherUser.id, goal.id, {
+      goalService.completeWithSideEffects(otherUser.id, otherUser.workspaceId, goal.id, {
         status: "COMPLETED",
       }),
     ).rejects.toThrow("Goal not found");
   });
 
   it("does not double-count weeklyScore on a brand-new user's first completion", async () => {
-    const goal = await goalService.create(user.id, {
+    const goal = await goalService.create(user.id, user.workspaceId, {
       title: "First ever",
       horizon: "WEEKLY",
       priority: "MEDIUM",
     });
 
-    const result = await goalService.completeWithSideEffects(user.id, goal.id, {
+    const result = await goalService.completeWithSideEffects(user.id, user.workspaceId, goal.id, {
       status: "COMPLETED",
     });
 
@@ -89,7 +89,7 @@ describe("goalService.completeWithSideEffects", () => {
   });
 
   it("bumps the recurring template streak when completing an instance", async () => {
-    const template = await goalService.create(user.id, {
+    const template = await goalService.create(user.id, user.workspaceId, {
       title: "Weekly template",
       horizon: "WEEKLY",
       isRecurring: true,
@@ -102,6 +102,7 @@ describe("goalService.completeWithSideEffects", () => {
     const instance = await prisma.goal.create({
       data: {
         userId: user.id,
+        workspaceId: user.workspaceId,
         title: "Instance",
         horizon: "WEEKLY",
         recurringSourceId: template.id,
@@ -110,6 +111,7 @@ describe("goalService.completeWithSideEffects", () => {
 
     const result = await goalService.completeWithSideEffects(
       user.id,
+      user.workspaceId,
       instance.id,
       { status: "COMPLETED" },
     );

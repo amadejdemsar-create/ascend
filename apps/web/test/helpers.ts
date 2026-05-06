@@ -13,25 +13,65 @@
 
 import { prisma } from "@/lib/db";
 
+/**
+ * Create a test user with a default workspace and membership.
+ *
+ * Wave 8 multi-tenancy requires every entity to be scoped to a
+ * workspace. This helper creates the User, Workspace,
+ * WorkspaceMembership (OWNER/ACTIVE), and sets the user's
+ * defaultWorkspaceId so the test user mirrors production state.
+ *
+ * Returns `{ id, apiKey, workspaceId }`.
+ */
 export async function createTestUser(prefix: string) {
   const id = `test-${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const apiKey = `${id}-key`;
-  await prisma.user.create({
+  const user = await prisma.user.create({
     data: {
       id,
       apiKey,
       onboardingComplete: true,
     },
   });
-  return { id, apiKey };
+
+  const workspace = await prisma.workspace.create({
+    data: {
+      slug: `test-${user.id.slice(-8)}`,
+      name: "Test",
+      ownerId: user.id,
+    },
+  });
+
+  await prisma.workspaceMembership.create({
+    data: {
+      workspaceId: workspace.id,
+      userId: user.id,
+      role: "OWNER",
+      status: "ACTIVE",
+    },
+  });
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { defaultWorkspaceId: workspace.id },
+  });
+
+  return { id, apiKey, workspaceId: workspace.id };
 }
 
 /**
- * Hard-delete a test user and everything they own. Uses onDelete:
- * Cascade on the User relation to clean up Goal, Todo, ContextEntry,
- * Category, UserStats, XpEvent in one shot.
+ * Hard-delete a test user and everything they own. Deletes the
+ * workspace first (cascades to memberships and workspace-scoped
+ * entities), then deletes the user (cascades to remaining
+ * user-scoped entities like UserStats, XpEvent).
  */
 export async function deleteTestUser(userId: string) {
+  // Delete workspaces owned by this user first (cascade handles
+  // memberships and workspace-scoped entities).
+  await prisma.workspace
+    .deleteMany({ where: { ownerId: userId } })
+    .catch(() => {});
+
   await prisma.user
     .delete({ where: { id: userId } })
     .catch(() => {
