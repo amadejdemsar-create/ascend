@@ -2,14 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { userService } from "@/lib/services/user-service";
 import { authService } from "@/lib/services/auth-service";
+import { workspaceContextService } from "@/lib/services/workspace-context-service";
 import { ZodError } from "zod";
 
+// ---------------------------------------------------------------------------
+// AuthResult type
+//
+// SUPERSET of the old { success: true; userId: string } shape.
+// Existing callers that destructure { userId } continue to work because
+// workspaceId is an additional field. New callers can also grab workspaceId.
+// ---------------------------------------------------------------------------
+
 type AuthResult =
-  | { success: true; userId: string }
+  | { success: true; userId: string; workspaceId: string }
   | { success: false };
 
 // ---------------------------------------------------------------------------
-// authenticate(request): three-path user resolution
+// authenticate(request): three-path user resolution + workspace resolution
 //
 // Priority order:
 //   1. access_token cookie -> JWT verify (web users post-Phase-6)
@@ -17,6 +26,14 @@ type AuthResult =
 //      a. Try JWT verify FIRST (cheap: in-memory jose verify, no DB call)
 //      b. Fall back to API key DB lookup (MCP tools, scripts, legacy callers)
 //   3. Neither -> unauthenticated
+//
+// Workspace resolution:
+//   - Cookie/Bearer JWT path: read currentWorkspaceId from the JWT payload.
+//     If missing (pre-Phase-3a token), fall back to
+//     workspaceContextService.resolveDefaultWorkspaceId.
+//   - API key path: always resolve via workspaceContextService (API keys
+//     do not carry workspace context).
+//   - If workspace cannot be resolved (null), return { success: false }.
 //
 // Why JWT is tried before API key in the header path: a valid JWT will
 // never collide with an API key (different format). Trying JWT first is
@@ -32,7 +49,12 @@ export async function authenticate(request: NextRequest): Promise<AuthResult> {
   if (accessCookie) {
     const result = await authService.verifyAccessToken(accessCookie);
     if (result) {
-      return { success: true, userId: result.userId };
+      const workspaceId = await _resolveWorkspaceId(
+        result.userId,
+        result.currentWorkspaceId,
+      );
+      if (!workspaceId) return { success: false };
+      return { success: true, userId: result.userId, workspaceId };
     }
     // Fall through on invalid/expired cookie. The user might also have
     // a valid Bearer header (rare edge case during migration), and the
@@ -47,17 +69,41 @@ export async function authenticate(request: NextRequest): Promise<AuthResult> {
     // 2a: Try JWT verification first (cheap, in-memory)
     const jwtResult = await authService.verifyAccessToken(token);
     if (jwtResult) {
-      return { success: true, userId: jwtResult.userId };
+      const workspaceId = await _resolveWorkspaceId(
+        jwtResult.userId,
+        jwtResult.currentWorkspaceId,
+      );
+      if (!workspaceId) return { success: false };
+      return { success: true, userId: jwtResult.userId, workspaceId };
     }
 
     // 2b: Fall back to API key DB lookup (MCP tools, scripts, legacy)
+    // API keys do not carry workspaceId; resolve from the user's default.
     const user = await userService.findByApiKey(token);
     if (user) {
-      return { success: true, userId: user.id };
+      const workspaceId =
+        await workspaceContextService.resolveDefaultWorkspaceId(user.id);
+      if (!workspaceId) return { success: false };
+      return { success: true, userId: user.id, workspaceId };
     }
   }
 
   return { success: false };
+}
+
+/**
+ * Resolve the workspace ID from the JWT claim or by fallback lookup.
+ *
+ * If currentWorkspaceId is present in the JWT, use it directly.
+ * Otherwise (pre-Phase-3a tokens, or null claim), resolve via the
+ * user's defaultWorkspaceId with workspaceContextService.
+ */
+async function _resolveWorkspaceId(
+  userId: string,
+  currentWorkspaceId: string | null,
+): Promise<string | null> {
+  if (currentWorkspaceId) return currentWorkspaceId;
+  return workspaceContextService.resolveDefaultWorkspaceId(userId);
 }
 
 /**
@@ -66,6 +112,10 @@ export async function authenticate(request: NextRequest): Promise<AuthResult> {
  * All existing route handlers (50+ files) call validateApiKey(request).
  * This alias preserves that contract without source changes. Prefer
  * authenticate() in new code.
+ *
+ * The returned shape is a SUPERSET of the old { success, userId } shape.
+ * Existing destructures like { success, userId } = await validateApiKey(req)
+ * continue to work; new callers can also grab workspaceId.
  */
 export const validateApiKey = authenticate;
 
@@ -81,6 +131,24 @@ export function handleApiError(error: unknown) {
     );
   }
   if (error instanceof Error) {
+    // Permission denied errors from permissionService.assertCanPerform
+    // and workspace service methods surface as 403, not 400.
+    if (error.message.startsWith("Permission denied")) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 403 }
+      );
+    }
+
+    // "Cannot delete the only workspace" from workspaceService.delete
+    // also surfaces as 403.
+    if (error.message.startsWith("Cannot delete the only workspace")) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 403 }
+      );
+    }
+
     // Service layer errors (e.g., hierarchy validation, not found)
     return NextResponse.json(
       { error: error.message },

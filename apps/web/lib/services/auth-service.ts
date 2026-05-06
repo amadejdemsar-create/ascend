@@ -3,6 +3,7 @@ import { SignJWT, jwtVerify } from "jose";
 import { prisma } from "@/lib/db";
 import type { Session } from "../../generated/prisma/client";
 import { userService } from "@/lib/services/user-service";
+import { workspaceContextService } from "@/lib/services/workspace-context-service";
 
 // ---------------------------------------------------------------------------
 // Module-init guard: validate AUTH_JWT_SECRET at load time.
@@ -177,10 +178,23 @@ export const authService = {
   /**
    * Sign a short-lived access token (15 minutes).
    *
-   * Claims: { sub: userId, email, iat, exp, iss: "ascend", aud: "ascend-web" }
+   * Claims: { sub: userId, email, currentWorkspaceId, iat, exp, iss: "ascend", aud: "ascend-web" }
+   *
+   * The currentWorkspaceId parameter is optional for backward compatibility
+   * with the login route (which Phase 3b will update to pass the workspace).
+   * When omitted or null, the claim is set to null in the token; the
+   * authenticate() resolver in lib/auth.ts will resolve it at request time.
    */
-  async signAccessToken(userId: string, email: string): Promise<string> {
-    return new SignJWT({ sub: userId, email })
+  async signAccessToken(
+    userId: string,
+    email: string,
+    currentWorkspaceId?: string | null,
+  ): Promise<string> {
+    return new SignJWT({
+      sub: userId,
+      email,
+      currentWorkspaceId: currentWorkspaceId ?? null,
+    })
       .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt()
       .setExpirationTime(`${ACCESS_TOKEN_TTL_SECONDS}s`)
@@ -193,12 +207,21 @@ export const authService = {
    * Verify an access token JWT.
    *
    * Validates signature, expiry, issuer ("ascend"), and audience ("ascend-web").
-   * Returns the userId and email on success, or null on any failure (bad
-   * signature, wrong issuer/audience, expired). Never throws.
+   * Returns the userId, email, and currentWorkspaceId on success, or null
+   * on any failure (bad signature, wrong issuer/audience, expired).
+   * Never throws.
+   *
+   * currentWorkspaceId may be null for tokens issued before Phase 3a
+   * deployed (backward compatibility). The caller must resolve the
+   * workspace via workspaceContextService if null.
    */
   async verifyAccessToken(
     token: string,
-  ): Promise<{ userId: string; email: string } | null> {
+  ): Promise<{
+    userId: string;
+    email: string;
+    currentWorkspaceId: string | null;
+  } | null> {
     try {
       const { payload } = await jwtVerify(token, JWT_SECRET, {
         issuer: "ascend",
@@ -210,7 +233,11 @@ export const authService = {
 
       if (!userId || !email) return null;
 
-      return { userId, email };
+      // currentWorkspaceId may be absent in pre-Phase-3a tokens
+      const currentWorkspaceId =
+        (payload.currentWorkspaceId as string | undefined) ?? null;
+
+      return { userId, email, currentWorkspaceId };
     } catch {
       // Any jose error (expired, bad sig, wrong iss/aud) results in null
       return null;
@@ -245,7 +272,13 @@ export const authService = {
    * Create a new session (login flow).
    *
    * Generates a fresh refresh token family (new familyId), signs an access
-   * token, and persists the session row with the hashed refresh token.
+   * token (with currentWorkspaceId embedded), and persists the session row
+   * with the hashed refresh token.
+   *
+   * The workspace is resolved from User.defaultWorkspaceId at login time.
+   * If the user has no default workspace (pre-backfill edge case), the
+   * token is issued with currentWorkspaceId=null and the authenticate()
+   * resolver will resolve it at request time.
    */
   async createSession(
     userId: string,
@@ -260,7 +293,16 @@ export const authService = {
     refreshTokenRaw: string;
     session: Session;
   }> {
-    const accessToken = await this.signAccessToken(userId, userEmail);
+    // Resolve the user's default workspace for the JWT claim.
+    // This is a single indexed read; adds negligible latency to login.
+    const currentWorkspaceId =
+      await workspaceContextService.resolveDefaultWorkspaceId(userId);
+
+    const accessToken = await this.signAccessToken(
+      userId,
+      userEmail,
+      currentWorkspaceId,
+    );
     const refreshTokenRaw = this.generateRefreshTokenRaw();
     const refreshTokenHash = this.hashRefreshToken(refreshTokenRaw);
 
@@ -376,9 +418,16 @@ export const authService = {
       }),
     ]);
 
+    // Re-resolve the workspace on every rotation. Today this always
+    // returns the same workspace (single-workspace system), but Wave 8b
+    // workspace switching may change the default between rotations.
+    const currentWorkspaceId =
+      await workspaceContextService.resolveDefaultWorkspaceId(user.id);
+
     const accessToken = await this.signAccessToken(
       user.id,
       user.email,
+      currentWorkspaceId,
     );
 
     return {
