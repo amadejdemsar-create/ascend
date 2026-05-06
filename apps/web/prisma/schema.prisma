@@ -108,6 +108,9 @@ model User {
   // Wave 0: workspace scaffolding (nullable until Wave 8 backfill)
   workspaceId String?
 
+  // Wave 8: default workspace for auth context resolution
+  defaultWorkspaceId String?
+
   goals          Goal[]
   categories     Category[]
   todos          Todo[]
@@ -131,6 +134,13 @@ model User {
   nodeVersions        NodeVersion[]
   edgeEvents          EdgeEvent[]
   graphDailySnapshots GraphDailySnapshot[]
+
+  // Wave 8: Workspaces and collaboration
+  ownedWorkspaces      Workspace[]           @relation("WorkspaceOwner")
+  workspaceMemberships WorkspaceMembership[]
+  activityEvents       ActivityEvent[]
+
+  @@index([defaultWorkspaceId])
 }
 
 model Goal {
@@ -537,7 +547,7 @@ model File {
   thumbnailKey        String?
   pageCount           Int?
   durationSec         Float?
-  tags                String[]               @default([])
+  tags                String[]                     @default([])
   extractionStatus    ExtractionStatus             @default(PENDING)
   extractionError     String?
   extractedAt         DateTime?
@@ -726,6 +736,36 @@ enum EdgeEventType {
 }
 
 // =====================================================================
+//  Wave 8: Workspace + collaboration enums
+// =====================================================================
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum MembershipStatus {
+  PENDING
+  ACTIVE
+  REMOVED
+}
+
+enum ActivityEventType {
+  WORKSPACE_CREATED
+  MEMBER_ADDED
+  MEMBER_REMOVED
+  MEMBER_ROLE_CHANGED
+  NODE_CREATED
+  NODE_DELETED
+  NODE_RESTORED
+  NODE_BRANCHED
+  LINK_CREATED
+  LINK_REMOVED
+}
+
+// =====================================================================
 //  Wave 5: Database system models
 //
 //  Each Database is backed by a ContextEntry of type DATABASE. Each row
@@ -883,4 +923,68 @@ model GraphDailySnapshot {
   @@unique([userId, snapshotDate])
   @@index([snapshotDate])
   @@index([workspaceId])
+}
+
+// =====================================================================
+//  Wave 8: Workspace + collaboration models
+//
+//  Workspace is the top-level multi-tenant container. Every user gets a
+//  personal workspace via the backfill migration. WorkspaceMembership is
+//  the join table between User and Workspace with role-based access.
+//  ActivityEvent is a workspace-level event log for the activity feed.
+//
+//  Phase 1 creates the tables; Phase 2 adds workspaceId to every existing
+//  entity and backfills it.
+//
+//  DZ-2 SAFE: Does NOT touch search_vector, the GIN index, or the trigger.
+// =====================================================================
+
+model Workspace {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner       User                  @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  memberships WorkspaceMembership[]
+  activity    ActivityEvent[]
+
+  @@index([ownerId])
+}
+
+model WorkspaceMembership {
+  id          String           @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        WorkspaceRole
+  status      MembershipStatus @default(ACTIVE)
+  invitedAt   DateTime?
+  acceptedAt  DateTime?
+  removedAt   DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId, status])
+}
+
+model ActivityEvent {
+  id          String            @id @default(cuid())
+  workspaceId String
+  userId      String?
+  eventType   ActivityEventType
+  payload     Json
+  createdAt   DateTime          @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([workspaceId, eventType, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
 }

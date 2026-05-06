@@ -252,3 +252,59 @@ export {
   type ReorderDatabaseFieldsInput,
   type DatabaseQueryInput,
 } from "./databases";
+
+// Workspace schemas and types (Wave 8)
+export {
+  WORKSPACE_ROLE_VALUES,
+  workspaceRoleEnum,
+  MEMBERSHIP_STATUS_VALUES,
+  membershipStatusEnum,
+  workspaceSchema,
+  createWorkspaceSchema,
+  updateWorkspaceSchema,
+  workspaceMembershipSchema,
+  type WorkspaceRole,
+  type MembershipStatus,
+  type Workspace,
+  type CreateWorkspaceInput,
+  type UpdateWorkspaceInput,
+  type WorkspaceMembership,
+} from "./workspaces";
+
+// Activity event schemas and types (Wave 8)
+export {
+  ACTIVITY_EVENT_TYPE_VALUES,
+  activityEventTypeEnum,
+  workspaceCreatedPayloadSchema,
+  memberAddedPayloadSchema,
+  memberRemovedPayloadSchema,
+  memberRoleChangedPayloadSchema,
+  nodeCreatedPayloadSchema,
+  nodeDeletedPayloadSchema,
+  nodeRestoredPayloadSchema,
+  nodeBranchedPayloadSchema,
+  linkCreatedPayloadSchema,
+  linkRemovedPayloadSchema,
+  activityEventPayloadSchema,
+  activityEventSchema,
+  type ActivityEventType,
+  type WorkspaceCreatedPayload,
+  type MemberAddedPayload,
+  type MemberRemovedPayload,
+  type MemberRoleChangedPayload,
+  type NodeCreatedPayload,
+  type NodeDeletedPayload,
+  type NodeRestoredPayload,
+  type NodeBranchedPayload,
+  type LinkCreatedPayload,
+  type LinkRemovedPayload,
+  type ActivityEventPayload,
+  type ActivityEvent,
+} from "./activity";
+
+// Permission schemas and types (Wave 8)
+export {
+  PERMISSION_ACTION_VALUES,
+  permissionActionEnum,
+  type PermissionAction,
+} from "./permissions";
