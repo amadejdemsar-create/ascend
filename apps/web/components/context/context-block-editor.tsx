@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
@@ -18,6 +18,10 @@ import type { Klass, LexicalNode } from "lexical";
 import { toast } from "sonner";
 
 import { AutosavePlugin } from "@/components/editor/autosave-plugin";
+import {
+  CollaborationPluginWrapper,
+  type CollaborationStatus,
+} from "@/components/editor/collaboration-plugin";
 import { SlashMenuPlugin } from "@/components/editor/slash-menu-plugin";
 import { InlineToolbarPlugin } from "@/components/editor/inline-toolbar-plugin";
 import { WikiLinkAutocompletePlugin } from "@/components/editor/wikilink-autocomplete-plugin";
@@ -42,8 +46,10 @@ import { ContextBlockEditorErrorBoundary } from "./context-block-editor-error-bo
  * document exists (entry not yet migrated), fires useMigrateBlockDocument
  * to perform the one-time markdown-to-blocks conversion.
  *
- * Autosave: snapshot-only sync (Phase 6a simplification). Real Yjs
- * binary updates deferred to Wave 8.
+ * Real-time mode (Wave 8 Phase 5): connects to the Hocuspocus CRDT
+ * server via CollaborationPluginWrapper. If the WS connection fails
+ * or times out (5s), falls back to the legacy AutosavePlugin with
+ * a one-time warning toast.
  *
  * DZ-7: wrapped in ContextBlockEditorErrorBoundary.
  */
@@ -140,6 +146,11 @@ export function ContextBlockEditor({ entryId, fallbackContent }: Props) {
 /**
  * Inner editor component. Separated so LexicalComposer can be keyed
  * and re-mounted cleanly when the entry changes or migration completes.
+ *
+ * Manages the realtime vs. fallback decision: starts by attempting a
+ * CRDT connection. If the connection succeeds, mounts CollaborationPlugin
+ * (and omits AutosavePlugin). If the connection fails or times out (5s),
+ * mounts AutosavePlugin as the fallback persistence layer.
  */
 function EditorInner({
   entryId,
@@ -152,6 +163,39 @@ function EditorInner({
   version: number;
   sync: ReturnType<typeof useSyncBlockDocument>;
 }) {
+  // ── Realtime vs. fallback state machine ─────────────────────────
+  // "pending"  : waiting for CollaborationPluginWrapper to report
+  // "realtime" : CRDT connection established
+  // "fallback" : CRDT failed or timed out, using AutosavePlugin
+  const [mode, setMode] = useState<"pending" | "realtime" | "fallback">(
+    "pending",
+  );
+  const fallbackToastFiredRef = useRef(false);
+
+  const handleCollaborationStatus = useCallback(
+    (status: CollaborationStatus) => {
+      if (status === "connected") {
+        setMode("realtime");
+      } else if (status === "error") {
+        setMode("fallback");
+        // Show warning toast ONCE per editor session
+        if (!fallbackToastFiredRef.current) {
+          fallbackToastFiredRef.current = true;
+          toast.warning(
+            "Real-time disabled, edits will save on a delay",
+          );
+        }
+      }
+      // "connecting" keeps mode as "pending"
+    },
+    [],
+  );
+
+  // ── LexicalComposer config ──────────────────────────────────────
+  // When CollaborationPlugin is active (or pending), editorState MUST
+  // be undefined per @lexical/react docs; otherwise the bootstrap
+  // conflicts with CollaborationPlugin's Yjs-based state init.
+  // When in fallback mode, we provide the snapshot as initial state.
   const initialConfig = useMemo(
     () => ({
       namespace: `context-entry-${entryId}`,
@@ -159,53 +203,142 @@ function EditorInner({
       nodes: EDITOR_NODES,
       onError: (error: Error) => {
         console.error("[Lexical] Editor error:", error);
-        // Let the error boundary catch this
         throw error;
       },
-      editorState: snapshot ? JSON.stringify(snapshot) : undefined,
+      editorState:
+        mode === "fallback"
+          ? snapshot
+            ? JSON.stringify(snapshot)
+            : undefined
+          : undefined,
     }),
-    // initialConfig should only be computed once for this editor instance
+    // initialConfig should only be computed once for this editor instance,
+    // or when the mode settles to "fallback" (which triggers a re-mount
+    // via the key change below).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [entryId],
+    [entryId, mode],
   );
 
+  // When switching to fallback mode, the editor needs to re-mount so
+  // LexicalComposer picks up the editorState from the snapshot.
+  // We key on mode to force this re-mount.
+  const composerKey = `${entryId}-${mode}`;
+
   return (
-    <LexicalComposer initialConfig={initialConfig}>
-      <div className="editor-shell relative">
-        <RichTextPlugin
-          contentEditable={
-            <ContentEditable
-              className="editor-content outline-none min-h-[200px]"
-              aria-label="Document editor"
+    <div className="relative">
+      <LexicalComposer key={composerKey} initialConfig={initialConfig}>
+        <div className="editor-shell relative">
+          <RichTextPlugin
+            contentEditable={
+              <ContentEditable
+                className="editor-content outline-none min-h-[200px]"
+                aria-label="Document editor"
+              />
+            }
+            placeholder={
+              <div className="editor-placeholder absolute top-0 left-0 pointer-events-none text-muted-foreground text-sm">
+                Start writing...
+              </div>
+            }
+            ErrorBoundary={LexicalErrorBoundary}
+          />
+          {/* HistoryPlugin is NOT mounted when CollaborationPlugin
+              is active: CollaborationPlugin provides its own Yjs-based
+              undo manager. Mount only in fallback or pending-before-fallback. */}
+          {mode === "fallback" && <HistoryPlugin />}
+          <ListPlugin />
+          <CheckListPlugin />
+          <LinkPlugin />
+          <HorizontalRulePlugin />
+          <TabIndentationPlugin />
+          <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
+
+          {/* ── Persistence layer: realtime or legacy ───────────── */}
+          {mode !== "fallback" && (
+            <CollaborationPluginWrapper
+              entryId={entryId}
+              snapshot={snapshot}
+              onStatusChange={handleCollaborationStatus}
             />
-          }
-          placeholder={
-            <div className="editor-placeholder absolute top-0 left-0 pointer-events-none text-muted-foreground text-sm">
-              Start writing...
-            </div>
-          }
-          ErrorBoundary={LexicalErrorBoundary}
+          )}
+          {mode === "fallback" && (
+            <AutosavePlugin
+              entryId={entryId}
+              version={version}
+              sync={sync}
+            />
+          )}
+
+          <SlashMenuPlugin entryId={entryId} />
+          <InlineToolbarPlugin />
+          <WikiLinkAutocompletePlugin />
+          <MentionAutocompletePlugin />
+          <KeyboardShortcutsPlugin />
+          <DecoratorPlugin entryId={entryId} />
+          <FileDropPlugin entryId={entryId} />
+        </div>
+      </LexicalComposer>
+
+      {/* ── Connection status indicator ──────────────────────────── */}
+      <ConnectionStatusIndicator mode={mode} />
+    </div>
+  );
+}
+
+/**
+ * Inline connection status indicator rendered at the bottom-right
+ * of the editor shell. Shows a colored dot with label text.
+ *
+ * Accessibility: the indicator is a status region (role="status")
+ * so screen readers announce changes. The dot is decorative
+ * (aria-hidden), and the text label conveys the state.
+ */
+function ConnectionStatusIndicator({
+  mode,
+}: {
+  mode: "pending" | "realtime" | "fallback";
+}) {
+  if (mode === "pending") {
+    return (
+      <div
+        role="status"
+        className="absolute bottom-2 right-2 flex items-center gap-1.5 text-xs text-muted-foreground select-none"
+      >
+        <span
+          aria-hidden="true"
+          className="inline-block h-2 w-2 rounded-full bg-muted-foreground/50 motion-safe:animate-pulse"
         />
-        <HistoryPlugin />
-        <ListPlugin />
-        <CheckListPlugin />
-        <LinkPlugin />
-        <HorizontalRulePlugin />
-        <TabIndentationPlugin />
-        <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
-        <AutosavePlugin
-          entryId={entryId}
-          version={version}
-          sync={sync}
-        />
-        <SlashMenuPlugin entryId={entryId} />
-        <InlineToolbarPlugin />
-        <WikiLinkAutocompletePlugin />
-        <MentionAutocompletePlugin />
-        <KeyboardShortcutsPlugin />
-        <DecoratorPlugin entryId={entryId} />
-        <FileDropPlugin entryId={entryId} />
+        <span>Connecting</span>
       </div>
-    </LexicalComposer>
+    );
+  }
+
+  if (mode === "realtime") {
+    return (
+      <div
+        role="status"
+        className="absolute bottom-2 right-2 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 select-none"
+      >
+        <span
+          aria-hidden="true"
+          className="inline-block h-2 w-2 rounded-full bg-emerald-500"
+        />
+        <span>Live</span>
+      </div>
+    );
+  }
+
+  // fallback
+  return (
+    <div
+      role="status"
+      className="absolute bottom-2 right-2 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 select-none"
+    >
+      <span
+        aria-hidden="true"
+        className="inline-block h-2 w-2 rounded-full bg-amber-500"
+      />
+      <span>Offline (autosave)</span>
+    </div>
   );
 }

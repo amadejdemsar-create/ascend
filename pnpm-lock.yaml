@@ -86,6 +86,9 @@ importers:
       '@dnd-kit/sortable':
         specifier: ^10.0.0
         version: 10.0.0(@dnd-kit/core@6.3.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4)
+      '@hocuspocus/provider':
+        specifier: 4.0.0
+        version: 4.0.0(y-protocols@1.0.7(yjs@13.6.30))(yjs@13.6.30)
       '@lexical/code':
         specifier: 0.43.0
         version: 0.43.0
@@ -113,6 +116,9 @@ importers:
       '@lexical/utils':
         specifier: 0.43.0
         version: 0.43.0
+      '@lexical/yjs':
+        specifier: 0.43.0
+        version: 0.43.0(yjs@13.6.30)
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
         version: 1.29.0(zod@4.3.6)
@@ -230,6 +236,9 @@ importers:
       xlsx:
         specifier: 0.18.5
         version: 0.18.5
+      y-indexeddb:
+        specifier: 9.0.12
+        version: 9.0.12(yjs@13.6.30)
       yjs:
         specifier: 13.6.30
         version: 13.6.30
@@ -1049,6 +1058,12 @@ packages:
   '@hocuspocus/extension-logger@4.0.0':
     resolution: {integrity: sha512-9eWfWx5VE/Ef9rWfHWhUC26aMrGKwNcLy2D/Uxf5tIBdcW2ohQpeWlriz1uTCHahyOogu6uRFKaAddZnEZDlJA==}
 
+  '@hocuspocus/provider@4.0.0':
+    resolution: {integrity: sha512-08gpeNZ6x2pmRD6m4XwRD52yQKnTl32a0HS9VSXZ5A1dIBVqxMz/x8Z06XbkKM2X8sp6vWEUCZCtzAGFSsofgg==}
+    peerDependencies:
+      y-protocols: ^1.0.6
+      yjs: ^13.6.8
+
   '@hocuspocus/server@4.0.0':
     resolution: {integrity: sha512-Pgm+kVtTrVvybIJUVot5XumSzD8rPLQglUV0QAAiN6J64dkYc2wWNdGcMwJz3q3yJPV0dO+eRU9JEck+iVdgzQ==}
     engines: {node: '>=22'}
@@ -1377,6 +1392,9 @@ packages:
     resolution: {integrity: sha512-3ghY9BYZVo3Hg2TmY2+H3Q6+AhhGwNIhnr6mvCbdLBEsnSTXr4VZSPMXN2ae5phCPrI19eHrx4MvFNYodQcqrA==}
     peerDependencies:
       yjs: '>=13.5.22'
+
+  '@lifeomic/attempt@3.1.0':
+    resolution: {integrity: sha512-QZqem4QuAnAyzfz+Gj5/+SLxqwCAw2qmt7732ZXodr6VDWGeYLG6w1i/vYLa55JQM9wRuBKLmXmiZ2P0LtE5rw==}
 
   '@modelcontextprotocol/sdk@1.29.0':
     resolution: {integrity: sha512-zo37mZA9hJWpULgkRpowewez1y6ML5GsXJPY8FI0tBBCd77HEvza4jDqRKOXgHNn867PVGCyTdzqpz0izu5ZjQ==}
@@ -5511,6 +5529,12 @@ packages:
     resolution: {integrity: sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==}
     engines: {node: '>=0.4'}
 
+  y-indexeddb@9.0.12:
+    resolution: {integrity: sha512-9oCFRSPPzBK7/w5vOkJBaVCQZKHXB/v6SIT+WYhnJxlEC61juqG0hBrAf+y3gmSMLFLwICNH9nQ53uscuse6Hg==}
+    engines: {node: '>=16.0.0', npm: '>=8.0.0'}
+    peerDependencies:
+      yjs: ^13.0.0
+
   y-protocols@1.0.7:
     resolution: {integrity: sha512-YSVsLoXxO67J6eE/nV4AtFtT3QEotZf5sK5BHxFBXso7VDUT3Tx07IfA6hsu5Q5OmBdMkQVmFZ9QOA7fikWvnw==}
     engines: {node: '>=16.0.0', npm: '>=8.0.0'}
@@ -6583,6 +6607,18 @@ snapshots:
       - y-protocols
       - yjs
 
+  '@hocuspocus/provider@4.0.0(y-protocols@1.0.7(yjs@13.6.30))(yjs@13.6.30)':
+    dependencies:
+      '@hocuspocus/common': 4.0.0
+      '@lifeomic/attempt': 3.1.0
+      lib0: 0.2.117
+      ws: 8.20.0
+      y-protocols: 1.0.7(yjs@13.6.30)
+      yjs: 13.6.30
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
   '@hocuspocus/server@4.0.0(y-protocols@1.0.7(yjs@13.6.30))(yjs@13.6.30)':
     dependencies:
       '@hocuspocus/common': 4.0.0
@@ -6940,6 +6976,8 @@ snapshots:
       '@lexical/selection': 0.43.0
       lexical: 0.43.0
       yjs: 13.6.30
+
+  '@lifeomic/attempt@3.1.0': {}
 
   '@modelcontextprotocol/sdk@1.29.0(zod@3.25.76)':
     dependencies:
@@ -11379,6 +11417,11 @@ snapshots:
   xml@1.0.1: {}
 
   xtend@4.0.2: {}
+
+  y-indexeddb@9.0.12(yjs@13.6.30):
+    dependencies:
+      lib0: 0.2.117
+      yjs: 13.6.30
 
   y-protocols@1.0.7(yjs@13.6.30):
     dependencies:
