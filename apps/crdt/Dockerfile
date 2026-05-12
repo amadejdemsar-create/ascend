@@ -39,8 +39,17 @@ WORKDIR /app/apps/crdt
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nodejs
 
-# Copy built output and production dependencies
+# Copy built output and production dependencies.
+#
+# pnpm stores packages in a content-addressable store at
+# /app/node_modules/.pnpm/<pkg>@<ver>/node_modules/<pkg>. The
+# apps/crdt/node_modules folder contains only symlinks pointing INTO
+# that store. Both must be copied for `import "@hocuspocus/server"`
+# to resolve at runtime; copying only apps/crdt/node_modules leaves
+# the symlinks dangling. Mirrors the pattern in the repo-root web
+# Dockerfile.
 COPY --from=builder --chown=nodejs:nodejs /app/apps/crdt/dist ./dist
+COPY --from=deps --chown=nodejs:nodejs /app/node_modules /app/node_modules
 COPY --from=deps --chown=nodejs:nodejs /app/apps/crdt/node_modules ./node_modules
 
 USER nodejs
