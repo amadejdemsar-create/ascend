@@ -86,6 +86,17 @@ export const EDITOR_THEME: EditorThemeClasses = {
   // ── Links ───────────────────────────────────────────────────
   link: "editor-link",
 
+  // ── Collaboration (cursors + selections) ────────────────────
+  // @lexical/yjs reads these class names from theme.collaboration
+  // to style remote cursors and selection highlights. The CSS
+  // variable --lexical-cursor-color is set inline per cursor.
+  collaboration: {
+    cursor: "editor-collab-cursor",
+    cursorName: "editor-collab-cursor-name",
+    selection: "editor-collab-selection",
+    selectionBg: "editor-collab-selection-bg",
+  },
+
   // ── Custom nodes (Ascend-specific) ──────────────────────────
   // EditorThemeClasses allows extra keys via index signature.
   wikilink: "editor-wikilink",

@@ -82,6 +82,8 @@ interface UIStore {
   versionHistoryExpanded: Record<string, boolean>;
   /** Transient: ISO date string for graph time-travel. null = live state. NOT persisted. */
   graphViewAtDate: string | null;
+  /** Whether to show presence avatars and remote cursors in the editor. */
+  presenceOverlayEnabled: boolean;
   setTodoDateTab: (tab: TodoDateTab) => void;
   setTodoHideCompleted: (hide: boolean) => void;
   setContextTagFilter: (tag: string | null) => void;
@@ -100,6 +102,7 @@ interface UIStore {
   setTimelineMonth: (month: number) => void;
   setVersionHistoryExpanded: (key: string, expanded: boolean) => void;
   setGraphViewAtDate: (date: string | null) => void;
+  setPresenceOverlayEnabled: (enabled: boolean) => void;
   resetFilters: () => void;
 }
 
@@ -125,6 +128,7 @@ export const useUIStore = create<UIStore>()(
       contextSearchMode: "hybrid",
       versionHistoryExpanded: {},
       graphViewAtDate: null,
+      presenceOverlayEnabled: true,
       setTodoDateTab: (tab) => set({ todoDateTab: tab }),
       setTodoHideCompleted: (hide) => set({ todoHideCompleted: hide }),
       setContextTagFilter: (tag) =>
@@ -157,11 +161,12 @@ export const useUIStore = create<UIStore>()(
           versionHistoryExpanded: { ...s.versionHistoryExpanded, [key]: expanded },
         })),
       setGraphViewAtDate: (date) => set({ graphViewAtDate: date }),
+      setPresenceOverlayEnabled: (enabled) => set({ presenceOverlayEnabled: enabled }),
       resetFilters: () => set({ activeFilters: {}, activeSorting: [] }),
     }),
     {
       name: "ascend-ui",
-      version: 11,
+      version: 12,
       storage: createAdapterStorage(),
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as Record<string, unknown>;
@@ -227,6 +232,12 @@ export const useUIStore = create<UIStore>()(
             versionHistoryExpanded: {},
           };
         }
+        if (version === 11) {
+          return {
+            ...state,
+            presenceOverlayEnabled: true,
+          };
+        }
         return state;
       },
       partialize: (state) => ({
@@ -243,6 +254,7 @@ export const useUIStore = create<UIStore>()(
         contextActiveView: state.contextActiveView,
         contextSearchMode: state.contextSearchMode,
         versionHistoryExpanded: state.versionHistoryExpanded,
+        presenceOverlayEnabled: state.presenceOverlayEnabled,
       }),
     }
   )

@@ -12,14 +12,27 @@
  *   - The parent is responsible for falling back to AutosavePlugin
  *     when this component reports an error or connection timeout.
  *
- * Phase 5 scope: no cursor rendering (cursors land in Phase 6).
+ * Phase 6 refactor: the parent (EditorInner) now owns the
+ * useRealtimeDocument hook call and passes doc, provider, isConnected,
+ * and error as props. This avoids creating two providers (two WS
+ * connections) and allows the parent to also pass awareness to the
+ * PresenceAvatars component.
+ *
+ * Cursor rendering: the parent passes username, cursorColor, and
+ * cursorsContainerRef. CollaborationPlugin renders cursors natively
+ * via @lexical/yjs's awareness protocol + theme.collaboration CSS.
  */
 
+import type React from "react";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { CollaborationPlugin } from "@lexical/react/LexicalCollaborationPlugin";
 import type { Provider } from "@lexical/yjs";
 import type { Doc } from "yjs";
-import { useRealtimeDocument } from "@/lib/realtime/use-realtime-document";
+import type { HocuspocusProvider } from "@hocuspocus/provider";
+
+// CursorsContainerRef type from @lexical/react (not re-exported from
+// the public API, so we replicate the definition here).
+type CursorsContainerRef = React.RefObject<HTMLElement | null>;
 
 // ── Connection timeout (ms) ──────────────────────────────────────
 const CONNECTION_TIMEOUT_MS = 5_000;
@@ -30,11 +43,25 @@ export type CollaborationStatus = "connecting" | "connected" | "error";
 interface Props {
   entryId: string;
   snapshot: unknown;
+  /** Y.Doc from useRealtimeDocument */
+  doc: Doc | null;
+  /** HocuspocusProvider from useRealtimeDocument */
+  provider: HocuspocusProvider | null;
+  /** Whether the WS connection is established */
+  isConnected: boolean;
+  /** Error message from the CRDT connection */
+  connectionError: string | null;
+  /** Display name for the remote cursor label */
+  username?: string;
+  /** HSL color string for the remote cursor */
+  cursorColor?: string;
+  /** Container ref for Lexical to portal cursor decorations into */
+  cursorsContainerRef?: CursorsContainerRef;
   onStatusChange?: (status: CollaborationStatus) => void;
 }
 
 /**
- * Wraps useRealtimeDocument + Lexical CollaborationPlugin.
+ * Wraps doc + provider + Lexical CollaborationPlugin.
  *
  * Returns null (renders nothing) when the CRDT connection fails or
  * times out. The parent detects this via onStatusChange and mounts
@@ -43,16 +70,22 @@ interface Props {
 export function CollaborationPluginWrapper({
   entryId,
   snapshot,
+  doc,
+  provider,
+  isConnected,
+  connectionError,
+  username,
+  cursorColor,
+  cursorsContainerRef,
   onStatusChange,
 }: Props) {
-  const { doc, provider, isConnected, error } = useRealtimeDocument(entryId);
   const [timedOut, setTimedOut] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const statusRef = useRef<CollaborationStatus>("connecting");
 
   // ── Connection timeout logic ────────────────────────────────────
   useEffect(() => {
-    if (isConnected || error) {
+    if (isConnected || connectionError) {
       // Connection resolved; cancel timeout
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
@@ -75,12 +108,12 @@ export function CollaborationPluginWrapper({
         timeoutRef.current = null;
       }
     };
-  }, [isConnected, error, timedOut]);
+  }, [isConnected, connectionError, timedOut]);
 
   // ── Notify parent of status changes ─────────────────────────────
   useEffect(() => {
     let newStatus: CollaborationStatus;
-    if (error || timedOut) {
+    if (connectionError || timedOut) {
       newStatus = "error";
     } else if (isConnected && doc && provider) {
       newStatus = "connected";
@@ -92,7 +125,7 @@ export function CollaborationPluginWrapper({
       statusRef.current = newStatus;
       onStatusChange?.(newStatus);
     }
-  }, [error, timedOut, isConnected, doc, provider, onStatusChange]);
+  }, [connectionError, timedOut, isConnected, doc, provider, onStatusChange]);
 
   // ── providerFactory for CollaborationPlugin ─────────────────────
   // CollaborationPlugin calls this synchronously during render.
@@ -117,7 +150,7 @@ export function CollaborationPluginWrapper({
   );
 
   // ── If errored or timed out, render nothing ─────────────────────
-  if (error || timedOut) {
+  if (connectionError || timedOut) {
     return null;
   }
 
@@ -144,6 +177,9 @@ export function CollaborationPluginWrapper({
       providerFactory={providerFactory}
       shouldBootstrap={true}
       initialEditorState={initialEditorState}
+      username={username}
+      cursorColor={cursorColor}
+      cursorsContainerRef={cursorsContainerRef}
     />
   );
 }

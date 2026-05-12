@@ -16,6 +16,7 @@ import { HorizontalRulePlugin } from "@lexical/react/LexicalHorizontalRulePlugin
 import { ALL_NODES, EDITOR_THEME, TRANSFORMERS } from "@ascend/editor";
 import type { Klass, LexicalNode } from "lexical";
 import { toast } from "sonner";
+import { Eye, EyeOff } from "lucide-react";
 
 import { AutosavePlugin } from "@/components/editor/autosave-plugin";
 import {
@@ -34,6 +35,11 @@ import {
   useMigrateBlockDocument,
   useSyncBlockDocument,
 } from "@/lib/hooks/use-block-document";
+import { useMe } from "@/lib/hooks/use-me";
+import { useRealtimeDocument } from "@/lib/realtime/use-realtime-document";
+import { getUserColor } from "@/lib/realtime/awareness-color";
+import { useUIStore } from "@/lib/stores/ui-store";
+import { PresenceAvatars } from "@/components/realtime/presence-avatars";
 import { ContextBlockEditorErrorBoundary } from "./context-block-editor-error-boundary";
 
 /**
@@ -50,6 +56,11 @@ import { ContextBlockEditorErrorBoundary } from "./context-block-editor-error-bo
  * server via CollaborationPluginWrapper. If the WS connection fails
  * or times out (5s), falls back to the legacy AutosavePlugin with
  * a one-time warning toast.
+ *
+ * Phase 6: presence avatars and collaborative cursors wired via
+ * useMe + getUserColor + PresenceAvatars. The useRealtimeDocument
+ * hook is lifted to EditorInner so awareness can be passed to both
+ * the CollaborationPluginWrapper and the PresenceAvatars component.
  *
  * DZ-7: wrapped in ContextBlockEditorErrorBoundary.
  */
@@ -151,6 +162,10 @@ export function ContextBlockEditor({ entryId, fallbackContent }: Props) {
  * CRDT connection. If the connection succeeds, mounts CollaborationPlugin
  * (and omits AutosavePlugin). If the connection fails or times out (5s),
  * mounts AutosavePlugin as the fallback persistence layer.
+ *
+ * Phase 6: owns the useRealtimeDocument hook call and passes results
+ * to both CollaborationPluginWrapper (for Yjs sync) and PresenceAvatars
+ * (for awareness rendering). Also owns the cursors container ref.
  */
 function EditorInner({
   entryId,
@@ -163,6 +178,28 @@ function EditorInner({
   version: number;
   sync: ReturnType<typeof useSyncBlockDocument>;
 }) {
+  // ── Current user identity ──────────────────────────────────────
+  const me = useMe();
+  const username = me.data?.name ?? me.data?.email ?? "Anonymous";
+  const cursorColor = me.data?.id ? getUserColor(me.data.id) : "hsl(220, 70%, 55%)";
+  const currentUserId = me.data?.id ?? null;
+
+  // ── Presence overlay toggle from UI store ──────────────────────
+  const presenceOverlayEnabled = useUIStore((s) => s.presenceOverlayEnabled);
+  const setPresenceOverlayEnabled = useUIStore((s) => s.setPresenceOverlayEnabled);
+
+  // ── Realtime document (lifted from CollaborationPluginWrapper) ─
+  const {
+    doc: realtimeDoc,
+    provider: realtimeProvider,
+    isConnected: realtimeConnected,
+    error: realtimeError,
+    awareness,
+  } = useRealtimeDocument(entryId);
+
+  // ── Cursors container ref ──────────────────────────────────────
+  const cursorsContainerRef = useRef<HTMLDivElement>(null);
+
   // ── Realtime vs. fallback state machine ─────────────────────────
   // "pending"  : waiting for CollaborationPluginWrapper to report
   // "realtime" : CRDT connection established
@@ -226,8 +263,42 @@ function EditorInner({
 
   return (
     <div className="relative">
+      {/* ── Presence avatars + overlay toggle (above editor) ──────── */}
+      <div className="flex items-center justify-end gap-2 mb-1 min-h-[28px]">
+        {presenceOverlayEnabled && (
+          <PresenceAvatars
+            awareness={awareness}
+            currentUserId={currentUserId}
+          />
+        )}
+        <button
+          type="button"
+          onClick={() => setPresenceOverlayEnabled(!presenceOverlayEnabled)}
+          className="inline-flex items-center justify-center h-6 w-6 rounded text-muted-foreground hover:text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-colors"
+          aria-label={presenceOverlayEnabled ? "Hide presence indicators" : "Show presence indicators"}
+          title={presenceOverlayEnabled ? "Hide presence indicators" : "Show presence indicators"}
+        >
+          {presenceOverlayEnabled ? (
+            <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+          ) : (
+            <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />
+          )}
+        </button>
+      </div>
+
       <LexicalComposer key={composerKey} initialConfig={initialConfig}>
         <div className="editor-shell relative">
+          {/* Cursors container: positioned overlay for Lexical to
+              portal remote cursor decorations into. Must be inside
+              the editor-shell so offsetParent calculations work. */}
+          {presenceOverlayEnabled && (
+            <div
+              ref={cursorsContainerRef}
+              className="lexical-cursors-container absolute inset-0 pointer-events-none z-10"
+              aria-hidden="true"
+            />
+          )}
+
           <RichTextPlugin
             contentEditable={
               <ContentEditable
@@ -258,6 +329,13 @@ function EditorInner({
             <CollaborationPluginWrapper
               entryId={entryId}
               snapshot={snapshot}
+              doc={realtimeDoc}
+              provider={realtimeProvider}
+              isConnected={realtimeConnected}
+              connectionError={realtimeError}
+              username={username}
+              cursorColor={cursorColor}
+              cursorsContainerRef={presenceOverlayEnabled ? cursorsContainerRef : undefined}
               onStatusChange={handleCollaborationStatus}
             />
           )}

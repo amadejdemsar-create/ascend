@@ -90,5 +90,8 @@ export const queryKeys = {
   og: {
     image: (url: string) => ["og", "image", url] as const,
   },
+  auth: {
+    me: () => ["auth", "me"] as const,
+  },
   dashboard: () => ["dashboard"] as const,
 };

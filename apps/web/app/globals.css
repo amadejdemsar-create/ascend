@@ -706,6 +706,63 @@
   margin: 1rem 0;
 }
 
+/* ── Collaborative cursors and selections ───────────────────────── */
+/* Styled via theme.collaboration class names set in @ascend/editor.
+   @lexical/yjs sets --lexical-cursor-color inline per cursor element. */
+
+.editor-collab-cursor {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -1px;
+  width: 2px;
+  background-color: var(--lexical-cursor-color, currentColor);
+  z-index: 10;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .editor-collab-cursor {
+    transition: opacity 150ms ease;
+  }
+}
+
+.editor-collab-cursor-name {
+  position: absolute;
+  left: -2px;
+  top: -18px;
+  background-color: var(--lexical-cursor-color, currentColor);
+  color: #fff;
+  line-height: 14px;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 4px 4px 4px 0;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 11;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .editor-collab-cursor-name {
+    transition: opacity 150ms ease;
+  }
+}
+
+.editor-collab-selection {
+  pointer-events: none;
+}
+
+.editor-collab-selection-bg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--lexical-cursor-color, currentColor);
+  opacity: 0.2;
+}
+
 /* ── Dark mode token adjustments ────────────────────────────────── */
 
 .dark .editor-token-keyword { color: oklch(0.75 0.15 280); }
