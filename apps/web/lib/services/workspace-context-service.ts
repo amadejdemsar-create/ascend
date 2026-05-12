@@ -17,20 +17,16 @@ import { prisma } from "@/lib/db";
 // ---------------------------------------------------------------------------
 // CRDT_JWT_SECRET: env check at module import time.
 //
-// Phase 3a does not require the CRDT server to be running, so a missing
-// secret logs a warning rather than crashing the process. Phase 4 will
-// enforce presence (throw on missing).
+// Module-level init is side-effect-free: a missing or short secret sets
+// the encoded key to null. The hard throw happens at call sites
+// (generateCrdtToken, verifyCrdtToken) so that other code importing
+// this module (e.g., resolveDefaultWorkspaceId) still works without
+// CRDT_JWT_SECRET configured.
 // ---------------------------------------------------------------------------
 const CRDT_JWT_SECRET_RAW = process.env.CRDT_JWT_SECRET;
 let CRDT_JWT_SECRET: Uint8Array | null = null;
 
-if (!CRDT_JWT_SECRET_RAW || CRDT_JWT_SECRET_RAW.length < 32) {
-  console.warn(
-    "[workspace-context-service] CRDT_JWT_SECRET is not set or too short. " +
-      "CRDT token issuance and verification will fail until configured. " +
-      "This is expected during Phase 3a development.",
-  );
-} else {
+if (CRDT_JWT_SECRET_RAW && CRDT_JWT_SECRET_RAW.length >= 32) {
   CRDT_JWT_SECRET = new TextEncoder().encode(CRDT_JWT_SECRET_RAW);
 }
 
@@ -113,7 +109,8 @@ export const workspaceContextService = {
   }> {
     if (!CRDT_JWT_SECRET) {
       throw new Error(
-        "CRDT_JWT_SECRET is not configured. Cannot issue CRDT tokens.",
+        "CRDT_JWT_SECRET is not configured or is shorter than 32 characters. " +
+          "Set the CRDT_JWT_SECRET environment variable to issue CRDT tokens.",
       );
     }
 
@@ -152,7 +149,8 @@ export const workspaceContextService = {
   }> {
     if (!CRDT_JWT_SECRET) {
       throw new Error(
-        "CRDT_JWT_SECRET is not configured. Cannot verify CRDT tokens.",
+        "CRDT_JWT_SECRET is not configured or is shorter than 32 characters. " +
+          "Set the CRDT_JWT_SECRET environment variable to verify CRDT tokens.",
       );
     }
 

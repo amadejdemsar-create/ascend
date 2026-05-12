@@ -190,3 +190,32 @@ export function verifyCronSecret(request: NextRequest): boolean {
     return false;
   }
 }
+
+// ---------------------------------------------------------------------------
+// verifyCrdtPersistSecret(request): timing-safe CRDT persist secret validation
+//
+// Used by the internal /api/blockdocs/[entryId]/persist endpoint, called
+// exclusively by the Hocuspocus CRDT server to persist Yjs document state.
+// Verifies the x-crdt-secret header matches the CRDT_PERSIST_SECRET env var
+// using timing-safe comparison to prevent side-channel attacks. Separate from
+// CRON_SECRET so compromise of one does not cascade to the other.
+//
+// Returns false if CRDT_PERSIST_SECRET is not set or header is missing.
+// ---------------------------------------------------------------------------
+
+export function verifyCrdtPersistSecret(request: NextRequest): boolean {
+  const expected = process.env.CRDT_PERSIST_SECRET;
+  if (!expected) return false;
+
+  const provided = request.headers.get("x-crdt-secret");
+  if (!provided) return false;
+
+  try {
+    const a = Buffer.from(provided, "utf-8");
+    const b = Buffer.from(expected, "utf-8");
+    if (a.length !== b.length) return false;
+    return timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}

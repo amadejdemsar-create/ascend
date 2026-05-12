@@ -1,0 +1,27 @@
+{
+  "name": "@ascend/crdt",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p .",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hocuspocus/extension-database": "^4.0.0",
+    "@hocuspocus/extension-logger": "^4.0.0",
+    "@hocuspocus/server": "^4.0.0",
+    "jose": "^6.2.3",
+    "yjs": "^13.6.30"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "tsx": "^4.19.4",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

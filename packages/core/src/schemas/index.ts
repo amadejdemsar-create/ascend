@@ -308,3 +308,11 @@ export {
   permissionActionEnum,
   type PermissionAction,
 } from "./permissions";
+
+// CRDT schemas and types (Wave 8 Phase 4)
+export {
+  crdtTokenRequestSchema,
+  crdtPersistBodySchema,
+  type CrdtTokenRequestInput,
+  type CrdtPersistBodyInput,
+} from "./crdt";

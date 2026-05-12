@@ -278,4 +278,9 @@ export {
   PERMISSION_ACTION_VALUES,
   permissionActionEnum,
   type PermissionAction,
+  // CRDT schemas and types (Wave 8 Phase 4)
+  crdtTokenRequestSchema,
+  crdtPersistBodySchema,
+  type CrdtTokenRequestInput,
+  type CrdtPersistBodyInput,
 } from "@ascend/core";

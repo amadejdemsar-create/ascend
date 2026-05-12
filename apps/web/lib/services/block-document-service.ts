@@ -349,6 +349,143 @@ export const blockDocumentService = {
     });
   },
 
+  /**
+   * Assert that a user can edit the BlockDocument for a given entry.
+   *
+   * Checks:
+   *   1. Entry exists and belongs to the user + workspace (safety rule 1).
+   *   2. User has WRITE_NODE permission in the workspace.
+   *
+   * Throws on failure (403 from permissionService, 404 from not found).
+   * Used by the /api/crdt/token route to gate token issuance.
+   */
+  async assertCanEditBlockDocument(
+    userId: string,
+    workspaceId: string,
+    entryId: string,
+  ): Promise<void> {
+    await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
+
+    const entry = await prisma.contextEntry.findFirst({
+      where: { id: entryId, userId, workspaceId },
+      select: { id: true },
+    });
+    if (!entry) {
+      throw new Error("Entry not found or not accessible");
+    }
+  },
+
+  /**
+   * Persist Yjs state from the Hocuspocus CRDT server.
+   *
+   * IMPORTANT: This method intentionally does NOT require userId or
+   * workspaceId in the where clause. The route-level auth boundary is
+   * the CRDT_PERSIST_SECRET header (timing-safe compare), which
+   * authenticates the Hocuspocus server as a trusted internal caller.
+   * This is documented as DZ-23/DZ-24 confirmation. Do NOT propagate
+   * this pattern to user-facing endpoints.
+   *
+   * Steps:
+   *   1. Look up the ContextEntry by entryId (no userId filter).
+   *   2. Decode base64 state and enforce DZ-10 1 MiB cap.
+   *   3. Upsert the BlockDocument (create if not exists, update if exists).
+   *   4. If snapshot is provided, update extractedText from the snapshot.
+   *   5. Wrap in prisma.$transaction for atomicity.
+   *   6. Schedule a versioning snapshot (EDIT_DEBOUNCED).
+   *
+   * Returns the new version number.
+   */
+  async persistFromCrdt(
+    entryId: string,
+    base64State: string,
+    snapshot?: unknown,
+  ): Promise<{ version: number }> {
+    // 1. Look up entry (no userId/workspaceId filter; trusted internal caller)
+    const entry = await prisma.contextEntry.findFirst({
+      where: { id: entryId },
+      select: { id: true, userId: true, workspaceId: true, blockDocumentId: true },
+    });
+    if (!entry) {
+      throw new Error("Entry not found");
+    }
+
+    // 2. Decode base64 and enforce DZ-10 1 MiB cap
+    const rawState = Buffer.from(base64State, "base64");
+    if (rawState.length > MAX_STATE_BYTES) {
+      throw new BlockDocumentSizeError(rawState.length, MAX_STATE_BYTES);
+    }
+
+    // 3 + 4 + 5. Upsert BlockDocument in a transaction
+    const result = await prisma.$transaction(async (tx) => {
+      if (entry.blockDocumentId) {
+        // Update existing BlockDocument
+        const updated = await tx.blockDocument.update({
+          where: { id: entry.blockDocumentId },
+          data: {
+            state: rawState,
+            ...(snapshot !== undefined && snapshot !== null
+              ? { snapshot: snapshot as never }
+              : {}),
+            version: { increment: 1 },
+          },
+          select: { version: true },
+        });
+
+        // Update extractedText only if a snapshot was provided
+        if (snapshot !== undefined && snapshot !== null) {
+          const text = extractText(snapshot);
+          await tx.contextEntry.update({
+            where: { id: entryId },
+            data: { extractedText: text },
+          });
+        }
+
+        return { version: updated.version };
+      } else {
+        // Create new BlockDocument (mirrors init logic from block-migration-service)
+        const newDoc = await tx.blockDocument.create({
+          data: {
+            userId: entry.userId,
+            workspaceId: entry.workspaceId,
+            entryId: entry.id,
+            state: rawState,
+            snapshot: (snapshot as never) ?? {},
+            version: 1,
+          },
+          select: { id: true, version: true },
+        });
+
+        // Link the ContextEntry to the new BlockDocument
+        await tx.contextEntry.update({
+          where: { id: entryId },
+          data: { blockDocumentId: newDoc.id },
+        });
+
+        // Update extractedText if snapshot was provided
+        if (snapshot !== undefined && snapshot !== null) {
+          const text = extractText(snapshot);
+          await tx.contextEntry.update({
+            where: { id: entryId },
+            data: { extractedText: text },
+          });
+        }
+
+        return { version: newDoc.version };
+      }
+    });
+
+    // 6. Schedule versioning snapshot (fire-and-forget)
+    versioningService.scheduleSnapshot(
+      entry.userId,
+      entry.workspaceId,
+      "CONTEXT_ENTRY",
+      entryId,
+      "EDIT_DEBOUNCED",
+    );
+
+    return result;
+  },
+
   // ── LLM-friendly block manipulation methods ─────────────────────
   //
   // These methods operate on the snapshot JSON tree directly (no headless
