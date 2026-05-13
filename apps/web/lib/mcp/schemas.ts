@@ -19,11 +19,13 @@ import {
   DATABASE_FIELD_TYPE_VALUES,
   DATABASE_VIEW_TYPE_VALUES,
   NODE_TYPE_VALUES,
+  ACTIVITY_EVENT_TYPE_VALUES,
 } from "@ascend/core";
 
 const DATABASE_FIELD_TYPE_ENUM = [...DATABASE_FIELD_TYPE_VALUES];
 const DATABASE_VIEW_TYPE_ENUM = [...DATABASE_VIEW_TYPE_VALUES];
 const NODE_TYPE_ENUM = [...NODE_TYPE_VALUES];
+const ACTIVITY_EVENT_TYPE_ENUM = [...ACTIVITY_EVENT_TYPE_VALUES];
 
 export interface ToolDefinition {
   name: string;
@@ -1494,6 +1496,68 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         },
       },
       required: ["versionId", "title"],
+    },
+  },
+
+  // ── Workspace + Activity Feed (Wave 8) ──────────────────────────────
+
+  {
+    name: "list_workspaces",
+    description:
+      "List the workspaces the current user is a member of. In Wave 8 single-user this returns exactly one workspace.",
+    inputSchema: {
+      type: "object",
+      properties: {},
+    },
+  },
+
+  {
+    name: "get_workspace",
+    description:
+      "Get a workspace by ID. Omit `id` to get the current workspace. Returns { id, slug, name, ownerId, createdAt, updatedAt }.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: {
+          type: "string",
+          description:
+            "Workspace ID. Defaults to the current workspace if omitted.",
+        },
+      },
+    },
+  },
+
+  {
+    name: "get_activity_events",
+    description:
+      "Paginated workspace activity feed (newest first). Returns NODE_CREATED, NODE_DELETED, NODE_RESTORED, NODE_BRANCHED, LINK_CREATED, LINK_REMOVED, and (Wave 8b) MEMBER_* events. Use `cursor` from the previous response's `nextCursor` to fetch the next page.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        eventType: {
+          type: "array",
+          items: { type: "string", enum: ACTIVITY_EVENT_TYPE_ENUM },
+          description: "Filter to these event types.",
+        },
+        since: {
+          type: "string",
+          format: "date-time",
+          description:
+            "ISO 8601 datetime; only return events after this.",
+        },
+        cursor: {
+          type: "string",
+          description: "Pagination cursor from previous response.",
+        },
+        limit: {
+          type: "integer",
+          minimum: 1,
+          maximum: 100,
+          description:
+            "Maximum number of events to return (default 50).",
+          default: 50,
+        },
+      },
     },
   },
 ];

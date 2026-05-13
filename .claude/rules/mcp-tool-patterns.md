@@ -7,7 +7,7 @@ globs: lib/mcp/**
 
 ## Overview
 
-Ascend exposes 73 MCP tools via Streamable HTTP at `/api/mcp`. The server uses the low-level `Server` class from `@modelcontextprotocol/sdk` with raw JSON Schema tool definitions (not Zod) because of Zod v3/v4 type incompatibilities with the high-level McpServer API. Runtime validation of arguments happens inside handlers using Zod v4 schemas from `lib/validations.ts`.
+Ascend exposes 76 MCP tools via Streamable HTTP at `/api/mcp`. The server uses the low-level `Server` class from `@modelcontextprotocol/sdk` with raw JSON Schema tool definitions (not Zod) because of Zod v3/v4 type incompatibilities with the high-level McpServer API. Runtime validation of arguments happens inside handlers using Zod v4 schemas from `lib/validations.ts`.
 
 ## Adding a New Tool
 
@@ -132,3 +132,4 @@ if (MY_NEW_TOOLS.has(name)) {
 | BLOCK_TOOL_NAMES | `tools/block-tools.ts` | get_blocks, add_block, update_block, move_block, delete_block |
 | FILE_TOOL_NAMES | `tools/file-tools.ts` | upload_file, get_file_content, list_files_by_type |
 | VERSION_TOOL_NAMES | `tools/version-tools.ts` | list_versions, get_version, diff_versions, restore_version, branch_node |
+| WORKSPACE_TOOL_NAMES | `tools/workspace-tools.ts` | list_workspaces, get_workspace, get_activity_events |

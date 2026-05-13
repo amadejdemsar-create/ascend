@@ -1,6 +1,6 @@
 # Ascend
 
-Personal operating system built on the inputs/outputs framework. Goals are outputs (results you want), todos are inputs (actions that drive results), context is your AI knowledge base as a typed-edge graph, and the calendar ties it all into daily planning. The entire system is exposed via 73 MCP tools.
+Personal operating system built on the inputs/outputs framework. Goals are outputs (results you want), todos are inputs (actions that drive results), context is your AI knowledge base as a typed-edge graph, and the calendar ties it all into daily planning. The entire system is exposed via 76 MCP tools.
 
 ## Tech Stack
 
@@ -142,7 +142,7 @@ Thin wrappers: authenticate via `authenticate()` (3-path resolver: cookie JWT, B
 One hook file per domain. `useQuery` for reads, `useMutation` for writes with `onSuccess` cache invalidation. Query key factory in `apps/web/lib/queries/keys.ts`. Cache config in `apps/web/lib/offline/cache-config.ts`. All fetches go through `apiFetch` from `apps/web/lib/api-client.ts`.
 
 ### MCP Server (`apps/web/lib/mcp/`)
-73 tools across handler files (40 CRUD/dashboard + 7 Wave 1 graph tools: `get_context_graph`, `get_node_neighbors`, `get_related_context`, `list_nodes_by_type`, `create_typed_link`, `remove_typed_link`, `update_context_type` + 3 Wave 2 AI tools: `get_context_map`, `refresh_context_map`, `suggest_connections` + `detect_contradictions` and `summarize_subgraph` routed to `llm-tools.ts` = 50, + 5 Wave 3 block tools: `get_blocks`, `add_block`, `update_block`, `move_block`, `delete_block` = 55, + 3 Wave 4 file tools: `upload_file`, `get_file_content`, `list_files_by_type` = 58, + 10 Wave 5 database tools: `create_database`, `add_field`, `update_field`, `delete_field`, `create_row`, `update_row`, `delete_row`, `create_view`, `update_view`, `query_database` = 68, + 5 Wave 7 versioning tools: `list_versions`, `get_version`, `diff_versions`, `restore_version`, `branch_node` = 73). Schemas in `apps/web/lib/mcp/schemas.ts` as raw JSON Schema (not Zod) for SDK compatibility. Handlers in `apps/web/lib/mcp/tools/` call the service layer. Routing in `apps/web/lib/mcp/server.ts` uses Set-based name matching to dispatch to handlers. Transport: Streamable HTTP at `/api/mcp`. Authenticated via API key through `authenticate()` — the API key path of the three.
+76 tools across handler files (40 CRUD/dashboard + 7 Wave 1 graph tools: `get_context_graph`, `get_node_neighbors`, `get_related_context`, `list_nodes_by_type`, `create_typed_link`, `remove_typed_link`, `update_context_type` + 3 Wave 2 AI tools: `get_context_map`, `refresh_context_map`, `suggest_connections` + `detect_contradictions` and `summarize_subgraph` routed to `llm-tools.ts` = 50, + 5 Wave 3 block tools: `get_blocks`, `add_block`, `update_block`, `move_block`, `delete_block` = 55, + 3 Wave 4 file tools: `upload_file`, `get_file_content`, `list_files_by_type` = 58, + 10 Wave 5 database tools: `create_database`, `add_field`, `update_field`, `delete_field`, `create_row`, `update_row`, `delete_row`, `create_view`, `update_view`, `query_database` = 68, + 5 Wave 7 versioning tools: `list_versions`, `get_version`, `diff_versions`, `restore_version`, `branch_node` = 73, + 3 Wave 8 workspace tools: `list_workspaces`, `get_workspace`, `get_activity_events` = 76). Schemas in `apps/web/lib/mcp/schemas.ts` as raw JSON Schema (not Zod) for SDK compatibility. Handlers in `apps/web/lib/mcp/tools/` call the service layer. Routing in `apps/web/lib/mcp/server.ts` uses Set-based name matching to dispatch to handlers. Transport: Streamable HTTP at `/api/mcp`. Authenticated via API key through `authenticate()` — the API key path of the three.
 
 ### AI Layer (Wave 2)
 - **`@ascend/llm`** (`packages/llm/`): platform-agnostic provider abstraction. Exports `EmbeddingProvider` (Gemini-only) and `ChatProvider` (Gemini, OpenAI, Anthropic) interfaces, a pricing table (`pricing.ts`), a cost estimator (`cost.ts`), a retry helper (`retry.ts`, capped exponential backoff, never retries 4xx), and a model catalog (`listModels(provider)`). No Next.js, React, or Prisma imports.
@@ -360,6 +360,7 @@ Board/Kanban view components exist (`goal-board-*.tsx`) but are dead code; remov
 | Cron: graph daily snapshot precompute | `.github/workflows/graph-daily-snapshot.yml` |
 | Version backfill script | `apps/web/scripts/backfill-versions.ts` |
 | Versioning MCP tools (5 handlers) | `apps/web/lib/mcp/tools/version-tools.ts` |
+| Workspace MCP tools (3 handlers) | `apps/web/lib/mcp/tools/workspace-tools.ts` |
 
 ## Cross-Platform Rules (Wave 0+)
 
