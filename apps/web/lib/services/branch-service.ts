@@ -106,12 +106,14 @@ export const branchService = {
     }
 
     // Cycle detection: walk DERIVED_FROM ancestors backward from source
-    await this._cycleCheck(userId, sourceEntryId);
+    await this._cycleCheck(userId, workspaceId, sourceEntryId);
 
-    // Derivative cap: count existing DERIVED_FROM links pointing TO the source
+    // Derivative cap: count existing DERIVED_FROM links pointing TO the source.
+    // Safety Rule 1: workspaceId in the where clause (DZ-22 mitigation).
     const derivativeCount = await prisma.contextLink.count({
       where: {
         userId,
+        workspaceId,
         type: "DERIVED_FROM",
         toEntryId: sourceEntryId,
       },
@@ -228,15 +230,25 @@ export const branchService = {
    * - A cycle is detected (walking backward reaches the source again)
    * - The chain exceeds 100 hops (likely a cycle or pathological depth)
    */
-  async _cycleCheck(userId: string, sourceEntryId: string): Promise<void> {
+  async _cycleCheck(
+    userId: string,
+    workspaceId: string,
+    sourceEntryId: string,
+  ): Promise<void> {
     let current = sourceEntryId;
     const visited = new Set<string>();
     visited.add(current);
 
     for (let i = 0; i < CYCLE_DETECTION_MAX_HOPS; i++) {
-      // Find the DERIVED_FROM link FROM this entry (this entry was derived from something)
+      // Find the DERIVED_FROM link FROM this entry (this entry was derived from something).
+      // Safety Rule 1: workspaceId in the where clause (DZ-22 mitigation).
       const parentLink = await prisma.contextLink.findFirst({
-        where: { userId, type: "DERIVED_FROM", fromEntryId: current },
+        where: {
+          userId,
+          workspaceId,
+          type: "DERIVED_FROM",
+          fromEntryId: current,
+        },
         select: { toEntryId: true },
       });
       if (!parentLink || !parentLink.toEntryId) return; // reached a root; no cycle

@@ -192,13 +192,13 @@ export function ActivityFilters({
               <select
                 disabled
                 className="w-full text-sm bg-muted/50 border rounded px-2 py-1.5 text-muted-foreground cursor-not-allowed"
-                aria-label="Actor filter (coming in Wave 8b)"
+                aria-label="Actor filter (not yet available)"
               >
                 <option>All actors</option>
               </select>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Multi-user actor filter coming in Wave 8b</p>
+              <p>Filtering by actor will be available when collaboration launches</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

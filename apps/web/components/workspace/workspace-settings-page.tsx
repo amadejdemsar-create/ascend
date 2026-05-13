@@ -127,7 +127,7 @@ export function WorkspaceSettingsPage() {
                     Delete
                   </TooltipTrigger>
                   <TooltipContent>
-                    Sole workspace cannot be deleted in Wave 8.
+                    You need at least one workspace. Create another before deleting this one.
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>

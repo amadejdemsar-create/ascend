@@ -21,7 +21,7 @@ interface MemberListProps {
  * Displays workspace members in a simple table.
  *
  * Columns: Member (avatar + name + email), Role, Joined.
- * Includes a disabled "Invite member" button for Wave 8b.
+ * Includes a disabled "Invite member" button until invitations ship.
  */
 export function MemberList({ workspaceId }: MemberListProps) {
   const members = useWorkspaceMembers(workspaceId);
@@ -49,7 +49,7 @@ export function MemberList({ workspaceId }: MemberListProps) {
               <UserPlus className="mr-2 size-4" />
               Invite
             </TooltipTrigger>
-            <TooltipContent>Coming in Wave 8b</TooltipContent>
+            <TooltipContent>Invitations are not yet available</TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>
