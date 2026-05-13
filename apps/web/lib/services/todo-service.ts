@@ -8,6 +8,7 @@ import { XP_PER_TODO, levelFromXp } from "@/lib/constants";
 import { startOfDay } from "date-fns";
 import { versioningService } from "@/lib/services/versioning-service";
 import { permissionService } from "@/lib/services/permission-service";
+import { activityEventService } from "@/lib/services/activity-event-service";
 
 export const todoService = {
   /**
@@ -71,7 +72,7 @@ export const todoService = {
       if (!category) throw new Error("Category not found");
     }
 
-    return prisma.todo.create({
+    const todo = await prisma.todo.create({
       data: {
         userId,
         workspaceId,
@@ -91,6 +92,16 @@ export const todoService = {
         recurrenceRule: data.recurrenceRule,
       },
     });
+
+    // Wave 8: fire-and-forget activity event
+    void activityEventService.log(workspaceId, userId, "NODE_CREATED", {
+      eventType: "NODE_CREATED",
+      nodeType: "TODO",
+      nodeId: todo.id,
+      title: todo.title,
+    });
+
+    return todo;
   },
 
   /**
@@ -144,7 +155,17 @@ export const todoService = {
     // Wave 7: tombstone snapshot BEFORE delete so version history persists
     await versioningService.createSnapshot(userId, workspaceId, "TODO", id, "EDIT_EXPLICIT");
 
-    return prisma.todo.delete({ where: { id } });
+    const result = await prisma.todo.delete({ where: { id } });
+
+    // Wave 8: fire-and-forget activity event (only on hard delete, not soft complete)
+    void activityEventService.log(workspaceId, userId, "NODE_DELETED", {
+      eventType: "NODE_DELETED",
+      nodeType: "TODO",
+      nodeId: id,
+      title: existing.title,
+    });
+
+    return result;
   },
 
   /**

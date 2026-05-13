@@ -1,4 +1,4 @@
-import type { GoalFilters, TodoFilters, ContextFilters, ContextGraphFilters, NodeType } from "@/lib/validations";
+import type { GoalFilters, TodoFilters, ContextFilters, ContextGraphFilters, NodeType, ActivityEventType } from "@/lib/validations";
 
 export const queryKeys = {
   goals: {
@@ -92,6 +92,13 @@ export const queryKeys = {
   },
   auth: {
     me: () => ["auth", "me"] as const,
+  },
+  activity: {
+    all: () => ["activity"] as const,
+    feed: (
+      workspaceId: string | null,
+      filters?: { eventTypes?: ActivityEventType[]; since?: Date },
+    ) => ["activity", "feed", workspaceId ?? null, filters ?? {}] as const,
   },
   dashboard: () => ["dashboard"] as const,
 };

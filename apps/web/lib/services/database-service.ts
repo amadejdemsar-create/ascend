@@ -22,6 +22,7 @@ import type {
   UpdateDatabaseInput,
 } from "@/lib/validations";
 import { permissionService } from "@/lib/services/permission-service";
+import { activityEventService } from "@/lib/services/activity-event-service";
 
 export const databaseService = {
   /**
@@ -118,6 +119,14 @@ export const databaseService = {
         views: [defaultView],
         contextEntry: entry,
       };
+    });
+
+    // Wave 8: fire-and-forget activity event
+    void activityEventService.log(workspaceId, userId, "NODE_CREATED", {
+      eventType: "NODE_CREATED",
+      nodeType: "DATABASE",
+      nodeId: result.contextEntry?.id ?? result.database?.id ?? "",
+      title: input.name,
     });
 
     return {
@@ -280,9 +289,12 @@ export const databaseService = {
 
     const existing = await prisma.database.findFirst({
       where: { id: databaseId, userId, workspaceId },
-      select: { id: true, contextEntryId: true },
+      select: { id: true, contextEntryId: true, contextEntry: { select: { title: true } } },
     });
     if (!existing) throw new Error("Database not found");
+
+    // Capture title before cascade-delete for the activity event
+    const deletedTitle = existing.contextEntry?.title ?? "Untitled database";
 
     await prisma.$transaction(async (tx) => {
       // 1. Get all field IDs
@@ -320,6 +332,14 @@ export const databaseService = {
       await tx.contextEntry.delete({
         where: { id: existing.contextEntryId },
       });
+    });
+
+    // Wave 8: fire-and-forget activity event (title captured pre-delete)
+    void activityEventService.log(workspaceId, userId, "NODE_DELETED", {
+      eventType: "NODE_DELETED",
+      nodeType: "DATABASE",
+      nodeId: existing.contextEntryId,
+      title: deletedTitle,
     });
 
     return { id: databaseId };

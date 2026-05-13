@@ -133,3 +133,25 @@ export const activityEventSchema = z.object({
   createdAt: z.coerce.date(),
 });
 export type ActivityEvent = z.infer<typeof activityEventSchema>;
+
+// ── Activity feed query params schema ─────────────────────────────
+
+export const activityFeedQuerySchema = z.object({
+  eventType: z
+    .union([activityEventTypeEnum, z.array(activityEventTypeEnum)])
+    .optional()
+    .transform((v) => {
+      if (v === undefined) return undefined;
+      return Array.isArray(v) ? v : [v];
+    }),
+  since: z.coerce.date().optional(),
+  cursor: z.string().optional(),
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .default(50)
+    .optional(),
+});
+export type ActivityFeedQuery = z.infer<typeof activityFeedQuerySchema>;

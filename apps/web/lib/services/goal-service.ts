@@ -6,6 +6,7 @@ import { gamificationService } from "@/lib/services/gamification-service";
 import { goalRecurringService } from "@/lib/services/goal-recurring-service";
 import { versioningService } from "@/lib/services/versioning-service";
 import { permissionService } from "@/lib/services/permission-service";
+import { activityEventService } from "@/lib/services/activity-event-service";
 
 // A Prisma client suitable for either standalone use or inside an
 // interactive transaction. Service methods that perform multiple
@@ -51,7 +52,7 @@ export const goalService = {
       await validateHierarchy(userId, workspaceId, data.parentId, data.horizon);
     }
 
-    return prisma.goal.create({
+    const goal = await prisma.goal.create({
       data: {
         ...data,
         userId,
@@ -60,6 +61,16 @@ export const goalService = {
         deadline: data.deadline ? new Date(data.deadline) : undefined,
       },
     });
+
+    // Wave 8: fire-and-forget activity event
+    void activityEventService.log(workspaceId, userId, "NODE_CREATED", {
+      eventType: "NODE_CREATED",
+      nodeType: "GOAL",
+      nodeId: goal.id,
+      title: goal.title,
+    });
+
+    return goal;
   },
 
   /**
@@ -216,7 +227,17 @@ export const goalService = {
     // Wave 7: tombstone snapshot BEFORE delete so version history persists
     await versioningService.createSnapshot(userId, workspaceId, "GOAL", id, "EDIT_EXPLICIT");
 
-    return prisma.goal.delete({ where: { id } });
+    const result = await prisma.goal.delete({ where: { id } });
+
+    // Wave 8: fire-and-forget activity event (title captured pre-delete)
+    void activityEventService.log(workspaceId, userId, "NODE_DELETED", {
+      eventType: "NODE_DELETED",
+      nodeType: "GOAL",
+      nodeId: id,
+      title: goal.title,
+    });
+
+    return result;
   },
 
   /**
@@ -226,7 +247,13 @@ export const goalService = {
    * Tombstone snapshots are created for every node before deletion so the
    * version history records the moment of deletion.
    */
-  async deleteCascade(userId: string, workspaceId: string, id: string): Promise<void> {
+  async deleteCascade(
+    userId: string,
+    workspaceId: string,
+    id: string,
+    /** Internal flag: suppresses activity logging for recursive child deletes. */
+    _isChildDelete = false,
+  ): Promise<void> {
     await permissionService.assertCanPerform(userId, workspaceId, "DELETE_NODE");
 
     const goal = await prisma.goal.findFirst({
@@ -236,13 +263,24 @@ export const goalService = {
     if (!goal) throw new Error("Goal not found");
 
     for (const child of goal.children) {
-      await goalService.deleteCascade(userId, workspaceId, child.id);
+      await goalService.deleteCascade(userId, workspaceId, child.id, true);
     }
 
     // Tombstone snapshot before delete so version history persists
     await versioningService.createSnapshot(userId, workspaceId, "GOAL", id, "EDIT_EXPLICIT");
 
     await prisma.goal.delete({ where: { id } });
+
+    // Wave 8: fire-and-forget activity event for the ROOT goal only.
+    // Child deletes are suppressed to avoid feed noise.
+    if (!_isChildDelete) {
+      void activityEventService.log(workspaceId, userId, "NODE_DELETED", {
+        eventType: "NODE_DELETED",
+        nodeType: "GOAL",
+        nodeId: id,
+        title: goal.title,
+      });
+    }
   },
 
   /**

@@ -178,6 +178,7 @@ export function useCreateContext() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.context.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity.all() });
     },
   });
 }
@@ -204,6 +205,7 @@ export function useDeleteContext() {
       fetchJson(`/api/context/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.context.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity.all() });
     },
   });
 }
@@ -275,6 +277,7 @@ export function useCreateContextLink() {
       }),
     onSuccess: (result) => {
       invalidateLinkCaches(queryClient, result.fromEntryId, result.toEntryId);
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity.all() });
     },
   });
 }
@@ -330,6 +333,7 @@ export function useDeleteContextLink() {
         variables.fromEntryId,
         variables.toEntryId,
       );
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity.all() });
     },
   });
 }

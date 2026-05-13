@@ -259,6 +259,9 @@ export function useRestore() {
       // Graph may reflect changed node payload regardless of type.
       queryClient.invalidateQueries({ queryKey: ["context", "graph"] });
 
+      // Activity feed: restore logs a NODE_RESTORED event.
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity.all() });
+
       // Surface warnings via toast if present.
       const result = data as RestoreResult;
       if (result.warnings && result.warnings.length > 0) {
@@ -306,6 +309,9 @@ export function useBranch() {
 
       // New node + new edge in the graph.
       queryClient.invalidateQueries({ queryKey: ["context", "graph"] });
+
+      // Activity feed: branch logs a NODE_BRANCHED event.
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity.all() });
 
       // Success toast with the new node ID for navigation.
       if (result.warning) {

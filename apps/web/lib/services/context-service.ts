@@ -16,6 +16,7 @@ import { embeddingService } from "@/lib/services/embedding-service";
 import { blockMigrationService } from "@/lib/services/block-migration-service";
 import { versioningService } from "@/lib/services/versioning-service";
 import { permissionService } from "@/lib/services/permission-service";
+import { activityEventService } from "@/lib/services/activity-event-service";
 
 export const contextService = {
   /**
@@ -89,6 +90,14 @@ export const contextService = {
           err instanceof Error ? err.message : err,
         ),
       );
+
+    // Wave 8: fire-and-forget activity event
+    void activityEventService.log(workspaceId, userId, "NODE_CREATED", {
+      eventType: "NODE_CREATED",
+      nodeType: "CONTEXT_ENTRY",
+      nodeId: entry.id,
+      title: entry.title,
+    });
 
     return entry;
   },
@@ -224,7 +233,17 @@ export const contextService = {
     // Wave 7: tombstone snapshot BEFORE cascade-delete so the version persists
     await versioningService.createSnapshot(userId, workspaceId, "CONTEXT_ENTRY", id, "EDIT_EXPLICIT");
 
-    return prisma.contextEntry.delete({ where: { id } });
+    const result = await prisma.contextEntry.delete({ where: { id } });
+
+    // Wave 8: fire-and-forget activity event (title captured pre-delete)
+    void activityEventService.log(workspaceId, userId, "NODE_DELETED", {
+      eventType: "NODE_DELETED",
+      nodeType: "CONTEXT_ENTRY",
+      nodeId: id,
+      title: existing.title,
+    });
+
+    return result;
   },
 
   /**

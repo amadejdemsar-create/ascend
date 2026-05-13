@@ -5,6 +5,7 @@ import {
   CalendarDays,
   ClipboardCheck,
   TrendingUp,
+  Activity,
   Brain,
   Settings,
   type LucideIcon,
@@ -28,6 +29,7 @@ export const navGroups: NavGroup[] = [
     items: [
       { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
       { label: "Calendar", href: "/calendar", icon: CalendarDays },
+      { label: "Activity", href: "/activity", icon: Activity },
       { label: "Review", href: "/review", icon: ClipboardCheck },
       { label: "Analytics", href: "/analytics", icon: TrendingUp },
     ],

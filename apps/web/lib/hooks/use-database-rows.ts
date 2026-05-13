@@ -178,6 +178,7 @@ export function useCreateRow(databaseId: string) {
       // Rows ARE ContextEntries (type RECORD), so list/search caches must refresh.
       queryClient.invalidateQueries({ queryKey: ["context", "list"] });
       queryClient.invalidateQueries({ queryKey: ["context", "search"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity.all() });
     },
   });
 }
@@ -259,6 +260,7 @@ export function useDeleteRow(databaseId: string) {
         queryKey: queryKeys.context.links.all(),
       });
       queryClient.invalidateQueries({ queryKey: ["context", "graph"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity.all() });
     },
   });
 }

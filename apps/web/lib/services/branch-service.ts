@@ -20,6 +20,7 @@ import { databaseRowService } from "./database-row-service";
 import { contextLinkService } from "./context-link-service";
 import { versioningService } from "./versioning-service";
 import { permissionService } from "./permission-service";
+import { activityEventService } from "./activity-event-service";
 import type { NodeType } from "@/lib/validations";
 import type { ContextEntryType } from "../../generated/prisma/client";
 
@@ -203,6 +204,15 @@ export const branchService = {
       "BRANCH",
       versionId,
     );
+
+    // Wave 8: fire-and-forget activity event
+    void activityEventService.log(workspaceId, userId, "NODE_BRANCHED", {
+      eventType: "NODE_BRANCHED",
+      sourceNodeType: nodeType,
+      sourceNodeId: nodeId,
+      newNodeId: newEntryId,
+      title,
+    });
 
     return {
       newNodeId: newEntryId,

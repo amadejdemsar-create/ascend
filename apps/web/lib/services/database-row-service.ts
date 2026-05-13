@@ -20,6 +20,7 @@ import { databaseRowPropertiesSchema } from "@/lib/validations";
 import { databaseRelationService } from "@/lib/services/database-relation-service";
 import { versioningService } from "@/lib/services/versioning-service";
 import { permissionService } from "@/lib/services/permission-service";
+import { activityEventService } from "@/lib/services/activity-event-service";
 import * as Y from "yjs";
 
 // ── Constants ─────────────────────────────────────────────────────────
@@ -188,6 +189,14 @@ export const databaseRowService = {
       }
     }
 
+    // Wave 8: fire-and-forget activity event
+    void activityEventService.log(workspaceId, userId, "NODE_CREATED", {
+      eventType: "NODE_CREATED",
+      nodeType: "DATABASE_ROW",
+      nodeId: result.entry.id,
+      title: result.entry.title,
+    });
+
     return result.row;
   },
 
@@ -325,16 +334,27 @@ export const databaseRowService = {
 
     const existing = await prisma.databaseRow.findFirst({
       where: { id: rowId, userId, workspaceId },
-      select: { id: true, contextEntryId: true },
+      select: { id: true, contextEntryId: true, contextEntry: { select: { title: true } } },
     });
     if (!existing) throw new Error("Row not found");
 
     // Wave 7: tombstone snapshot BEFORE cascade-delete so version persists
     await versioningService.createSnapshot(userId, workspaceId, "DATABASE_ROW", rowId, "EDIT_EXPLICIT");
 
+    // Capture title before cascade-delete for the activity event
+    const deletedTitle = existing.contextEntry?.title ?? "Untitled row";
+
     // Delete via the ContextEntry (cascades to DatabaseRow and BlockDocument)
     await prisma.contextEntry.delete({
       where: { id: existing.contextEntryId },
+    });
+
+    // Wave 8: fire-and-forget activity event (title captured pre-delete)
+    void activityEventService.log(workspaceId, userId, "NODE_DELETED", {
+      eventType: "NODE_DELETED",
+      nodeType: "DATABASE_ROW",
+      nodeId: existing.contextEntryId,
+      title: deletedTitle,
     });
 
     return { id: rowId };

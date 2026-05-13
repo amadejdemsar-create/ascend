@@ -300,6 +300,8 @@ export {
   type LinkRemovedPayload,
   type ActivityEventPayload,
   type ActivityEvent,
+  activityFeedQuerySchema,
+  type ActivityFeedQuery,
 } from "./activity";
 
 // Permission schemas and types (Wave 8)

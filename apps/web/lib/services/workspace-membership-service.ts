@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import type { WorkspaceRole, MembershipStatus } from "@/lib/validations";
 import { permissionService } from "@/lib/services/permission-service";
+import { activityEventService } from "@/lib/services/activity-event-service";
 
 // ---------------------------------------------------------------------------
 // Workspace membership service
@@ -24,7 +25,7 @@ export const workspaceMembershipService = {
     role: WorkspaceRole,
     options?: { status?: MembershipStatus },
   ) {
-    return prisma.workspaceMembership.create({
+    const membership = await prisma.workspaceMembership.create({
       data: {
         workspaceId,
         userId,
@@ -32,7 +33,18 @@ export const workspaceMembershipService = {
         status: options?.status ?? "ACTIVE",
         acceptedAt: options?.status === "ACTIVE" ? new Date() : undefined,
       },
+      include: { user: { select: { name: true, email: true } } },
     });
+
+    // Wave 8: fire-and-forget activity event
+    void activityEventService.log(workspaceId, userId, "MEMBER_ADDED", {
+      eventType: "MEMBER_ADDED",
+      memberUserId: userId,
+      memberDisplayName: membership.user?.name ?? membership.user?.email ?? userId,
+      role,
+    });
+
+    return membership;
   },
 
   /**
@@ -136,10 +148,24 @@ export const workspaceMembershipService = {
       );
     }
 
-    return prisma.workspaceMembership.update({
+    const previousRole = targetMembership.role as WorkspaceRole;
+
+    const updated = await prisma.workspaceMembership.update({
       where: { id: targetMembership.id },
       data: { role: newRole },
+      include: { user: { select: { name: true, email: true } } },
     });
+
+    // Wave 8: fire-and-forget activity event
+    void activityEventService.log(workspaceId, actorUserId, "MEMBER_ROLE_CHANGED", {
+      eventType: "MEMBER_ROLE_CHANGED",
+      memberUserId: targetUserId,
+      memberDisplayName: updated.user?.name ?? updated.user?.email ?? targetUserId,
+      role: newRole,
+      previousRole,
+    });
+
+    return updated;
   },
 
   /**
@@ -179,12 +205,20 @@ export const workspaceMembershipService = {
       );
     }
 
-    await prisma.workspaceMembership.update({
+    const removedMembership = await prisma.workspaceMembership.update({
       where: { id: targetMembership.id },
       data: {
         status: "REMOVED",
         removedAt: new Date(),
       },
+      include: { user: { select: { name: true, email: true } } },
+    });
+
+    // Wave 8: fire-and-forget activity event
+    void activityEventService.log(workspaceId, actorUserId, "MEMBER_REMOVED", {
+      eventType: "MEMBER_REMOVED",
+      memberUserId: targetUserId,
+      memberDisplayName: removedMembership.user?.name ?? removedMembership.user?.email ?? targetUserId,
     });
   },
 };

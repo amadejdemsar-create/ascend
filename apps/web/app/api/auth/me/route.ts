@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       user: { id: user.id, email: user.email, name: user.name },
+      workspaceId: auth.workspaceId,
     });
   } catch (error) {
     return handleApiError(error);

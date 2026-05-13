@@ -274,6 +274,8 @@ export {
   type LinkRemovedPayload,
   type ActivityEventPayload,
   type ActivityEvent,
+  activityFeedQuerySchema,
+  type ActivityFeedQuery,
   // Permission schemas and types (Wave 8)
   PERMISSION_ACTION_VALUES,
   permissionActionEnum,

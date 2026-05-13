@@ -129,6 +129,7 @@ export function useCreateDatabase() {
       }
       // Celebration: gentle confetti burst on database creation.
       fireDatabaseCreatedConfetti();
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity.all() });
     },
   });
 }
@@ -183,6 +184,7 @@ export function useDeleteDatabase() {
       });
       // Graph: nodes removed.
       queryClient.invalidateQueries({ queryKey: ["context", "graph"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity.all() });
     },
   });
 }

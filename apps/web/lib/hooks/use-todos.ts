@@ -85,6 +85,7 @@ export function useCreateTodo() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.todos.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity.all() });
     },
   });
 }
@@ -113,6 +114,7 @@ export function useDeleteTodo() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.todos.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity.all() });
     },
   });
 }

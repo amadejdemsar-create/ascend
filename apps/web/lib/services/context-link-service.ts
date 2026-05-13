@@ -6,6 +6,7 @@ import type {
 } from "../../generated/prisma/client";
 import { edgeEventService } from "@/lib/services/edge-event-service";
 import { permissionService } from "@/lib/services/permission-service";
+import { activityEventService } from "@/lib/services/activity-event-service";
 
 /**
  * Service for typed context link (edge) CRUD.
@@ -136,6 +137,14 @@ export const contextLinkService = {
     // Wave 7: fire-and-forget edge event log (self-catching inside edgeEventService)
     void edgeEventService.logCreated(userId, workspaceId, link);
 
+    // Wave 8: fire-and-forget activity event
+    void activityEventService.log(workspaceId, userId, "LINK_CREATED", {
+      eventType: "LINK_CREATED",
+      linkType: link.type,
+      fromEntryId: link.fromEntryId,
+      toEntryId: link.toEntryId,
+    });
+
     return link;
   },
 
@@ -195,6 +204,14 @@ export const contextLinkService = {
 
     // Wave 7: fire-and-forget edge event log (self-catching inside edgeEventService)
     void edgeEventService.logRemoved(userId, workspaceId, existing);
+
+    // Wave 8: fire-and-forget activity event (captured pre-delete)
+    void activityEventService.log(workspaceId, userId, "LINK_REMOVED", {
+      eventType: "LINK_REMOVED",
+      linkType: existing.type,
+      fromEntryId: existing.fromEntryId,
+      toEntryId: existing.toEntryId,
+    });
   },
 
   /**

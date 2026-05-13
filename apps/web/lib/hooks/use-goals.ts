@@ -86,6 +86,7 @@ export function useCreateGoal() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity.all() });
     },
   });
 }
@@ -116,6 +117,7 @@ export function useDeleteGoal() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity.all() });
     },
   });
 }

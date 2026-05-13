@@ -24,6 +24,7 @@ import { databaseFieldService } from "./database-field-service";
 import { blockDocumentService } from "./block-document-service";
 import { versioningService } from "./versioning-service";
 import { permissionService } from "./permission-service";
+import { activityEventService } from "./activity-event-service";
 import type { NodeType } from "@/lib/validations";
 import type {
   UpdateContextInput,
@@ -133,6 +134,16 @@ export const restoreService = {
       "RESTORE",
       versionId,
     );
+
+    // Wave 8: fire-and-forget activity event
+    const restoreTitle = typeof payload.title === "string" ? payload.title : "Untitled";
+    void activityEventService.log(workspaceId, userId, "NODE_RESTORED", {
+      eventType: "NODE_RESTORED",
+      nodeType,
+      nodeId,
+      restoredFromVersionId: versionId,
+      title: restoreTitle,
+    });
 
     return {
       restoredVersionId: versionId,
