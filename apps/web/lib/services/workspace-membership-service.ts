@@ -73,8 +73,9 @@ export const workspaceMembershipService = {
   /**
    * List all members of a workspace with enriched user data.
    *
-   * Returns displayName (from User.name), role, status, and joinedAt.
-   * Per PRD Open Question 4, email is NOT returned.
+   * Returns user sub-object (id, email, name), role, status, and joinedAt.
+   * The email is included so the workspace settings UI can display it
+   * alongside the member's name in the member list table.
    */
   async listMembers(
     workspaceId: string,
@@ -82,6 +83,7 @@ export const workspaceMembershipService = {
     Array<{
       userId: string;
       displayName: string | null;
+      email: string | null;
       role: WorkspaceRole;
       status: MembershipStatus;
       joinedAt: Date;
@@ -91,7 +93,7 @@ export const workspaceMembershipService = {
       where: { workspaceId },
       include: {
         user: {
-          select: { id: true, name: true },
+          select: { id: true, name: true, email: true },
         },
       },
       orderBy: { createdAt: "asc" },
@@ -100,6 +102,7 @@ export const workspaceMembershipService = {
     return memberships.map((m) => ({
       userId: m.user.id,
       displayName: m.user.name,
+      email: m.user.email,
       role: m.role as WorkspaceRole,
       status: m.status as MembershipStatus,
       joinedAt: m.createdAt,

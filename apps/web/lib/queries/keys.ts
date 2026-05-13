@@ -93,6 +93,12 @@ export const queryKeys = {
   auth: {
     me: () => ["auth", "me"] as const,
   },
+  workspaces: {
+    all: () => ["workspaces"] as const,
+    list: () => ["workspaces", "list"] as const,
+    detail: (id: string | null) => ["workspaces", "detail", id ?? null] as const,
+    members: (id: string | null) => ["workspaces", "members", id ?? null] as const,
+  },
   activity: {
     all: () => ["activity"] as const,
     feed: (

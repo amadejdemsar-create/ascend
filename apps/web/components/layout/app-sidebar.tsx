@@ -20,6 +20,7 @@ import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { SidebarCategoryTree } from "@/components/categories/sidebar-category-tree";
 import { navGroups, secondaryNavItems } from "@/components/layout/nav-config";
+import { WorkspaceSwitcher } from "@/components/workspace/workspace-switcher";
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -31,6 +32,7 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
+        <WorkspaceSwitcher />
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" render={<Link href="/dashboard" />} tooltip="Ascend" className="transition-opacity hover:opacity-80">
