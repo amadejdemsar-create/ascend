@@ -137,13 +137,39 @@ export const contextLinkService = {
     // Wave 7: fire-and-forget edge event log (self-catching inside edgeEventService)
     void edgeEventService.logCreated(userId, workspaceId, link);
 
-    // Wave 8: fire-and-forget activity event
-    void activityEventService.log(workspaceId, userId, "LINK_CREATED", {
-      eventType: "LINK_CREATED",
-      linkType: link.type,
-      fromEntryId: link.fromEntryId,
-      toEntryId: link.toEntryId,
-    });
+    // Wave 8b: fetch titles for the activity event payload.
+    // The endpoint entries were already verified above (userId + workspaceId scoped);
+    // we just need the title field. Fire-and-forget pattern preserved.
+    void (async () => {
+      try {
+        const [fromEntry, toEntry] = await Promise.all([
+          prisma.contextEntry.findFirst({
+            where: { id: link.fromEntryId, userId, workspaceId },
+            select: { title: true },
+          }),
+          prisma.contextEntry.findFirst({
+            where: { id: link.toEntryId, userId, workspaceId },
+            select: { title: true },
+          }),
+        ]);
+        void activityEventService.log(workspaceId, userId, "LINK_CREATED", {
+          eventType: "LINK_CREATED",
+          linkType: link.type,
+          fromEntryId: link.fromEntryId,
+          toEntryId: link.toEntryId,
+          fromTitle: fromEntry?.title ?? "Unknown",
+          toTitle: toEntry?.title ?? "Unknown",
+        });
+      } catch {
+        // Fall back to logging without titles rather than losing the event
+        void activityEventService.log(workspaceId, userId, "LINK_CREATED", {
+          eventType: "LINK_CREATED",
+          linkType: link.type,
+          fromEntryId: link.fromEntryId,
+          toEntryId: link.toEntryId,
+        });
+      }
+    })();
 
     return link;
   },
@@ -200,17 +226,33 @@ export const contextLinkService = {
       );
     }
 
+    // Wave 8b: capture titles BEFORE deleting the link. The entries persist
+    // (only the edge is removed), so we can safely query them here.
+    // Both queries are userId + workspaceId scoped per Safety Rule 1.
+    const [fromEntry, toEntry] = await Promise.all([
+      prisma.contextEntry.findFirst({
+        where: { id: existing.fromEntryId, userId, workspaceId },
+        select: { title: true },
+      }),
+      prisma.contextEntry.findFirst({
+        where: { id: existing.toEntryId, userId, workspaceId },
+        select: { title: true },
+      }),
+    ]);
+
     await prisma.contextLink.delete({ where: { id } });
 
     // Wave 7: fire-and-forget edge event log (self-catching inside edgeEventService)
     void edgeEventService.logRemoved(userId, workspaceId, existing);
 
-    // Wave 8: fire-and-forget activity event (captured pre-delete)
+    // Wave 8b: fire-and-forget activity event with titles (captured pre-delete)
     void activityEventService.log(workspaceId, userId, "LINK_REMOVED", {
       eventType: "LINK_REMOVED",
       linkType: existing.type,
       fromEntryId: existing.fromEntryId,
       toEntryId: existing.toEntryId,
+      fromTitle: fromEntry?.title ?? "Unknown",
+      toTitle: toEntry?.title ?? "Unknown",
     });
   },
 

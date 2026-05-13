@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Brain } from "lucide-react";
+import { Brain, SlidersHorizontal } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
 import { useMe } from "@/lib/hooks/use-me";
 import { useActivityFeed } from "@/lib/hooks/use-activity";
@@ -13,8 +13,16 @@ import {
   type DateRange,
 } from "./activity-filters";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
+import {
+  Sheet,
+  SheetTrigger,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import type { ActivityEventType } from "@/lib/validations";
 
 // ── Date grouping ────────────────────────────────────────────────────
@@ -86,9 +94,13 @@ export function ActivityFeedView() {
 
   const dayGroups = useMemo(() => groupByDay(allEvents), [allEvents]);
 
+  // Count active filters for the mobile badge
+  const activeFilterCount =
+    selectedEventTypes.length + (dateRange !== "all" ? 1 : 0);
+
   return (
     <div className="flex h-full">
-      {/* Filters sidebar */}
+      {/* Filters sidebar (desktop only) */}
       <div className="hidden md:block w-[240px] border-r overflow-y-auto p-4">
         <ActivityFilters
           selectedEventTypes={selectedEventTypes}
@@ -102,13 +114,57 @@ export function ActivityFeedView() {
       <div className="flex-1 flex flex-col overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 z-10 border-b bg-background p-4">
-          <PageHeader
-            title="Activity"
-            className="mb-0"
-          />
-          <p className="text-sm text-muted-foreground mt-1">
-            Everything that happened in this workspace.
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <PageHeader
+                title="Activity"
+                className="mb-0"
+              />
+              <p className="text-sm text-muted-foreground mt-1">
+                Everything that happened in this workspace.
+              </p>
+            </div>
+
+            {/* Mobile filter trigger */}
+            <div className="md:hidden">
+              <Sheet>
+                <SheetTrigger
+                  render={
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5"
+                      aria-label="Open activity filters"
+                    />
+                  }
+                >
+                  <SlidersHorizontal className="size-3.5" />
+                  Filters
+                  {activeFilterCount > 0 && (
+                    <Badge
+                      variant="secondary"
+                      className="ml-1 h-5 min-w-5 px-1 text-[10px]"
+                    >
+                      {activeFilterCount}
+                    </Badge>
+                  )}
+                </SheetTrigger>
+                <SheetContent>
+                  <SheetHeader>
+                    <SheetTitle>Activity Filters</SheetTitle>
+                  </SheetHeader>
+                  <div className="mt-4 px-1 overflow-y-auto">
+                    <ActivityFilters
+                      selectedEventTypes={selectedEventTypes}
+                      onEventTypesChange={setSelectedEventTypes}
+                      dateRange={dateRange}
+                      onDateRangeChange={setDateRange}
+                    />
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
+          </div>
         </div>
 
         {/* Content */}

@@ -3,10 +3,66 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { validateApiKey } from "@/lib/auth";
 import { createAscendMcpServer } from "@/lib/mcp/server";
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
+// ── MCP CORS allowlist ──────────────────────────────────────────────
+//
+// MCP_ALLOWED_ORIGINS: comma-separated list of allowed origins.
+// If unset, defaults to "*" for backward compatibility in dev.
+// In production, set to the specific origins that should be allowed
+// (e.g., "https://ascend.nativeai.agency,https://claude.ai").
+//
+// When the allowlist is configured, the server echoes back the
+// request's Origin header if it matches; otherwise it omits the
+// Access-Control-Allow-Origin header entirely (browser blocks the
+// cross-origin request).
+
+const MCP_ALLOWED_ORIGINS_RAW = process.env.MCP_ALLOWED_ORIGINS;
+const MCP_ALLOWED_ORIGINS: Set<string> | null = MCP_ALLOWED_ORIGINS_RAW
+  ? new Set(
+      MCP_ALLOWED_ORIGINS_RAW.split(",")
+        .map((o) => o.trim())
+        .filter(Boolean),
+    )
+  : null;
+
+if (!MCP_ALLOWED_ORIGINS) {
+  console.warn(
+    "[MCP] MCP_ALLOWED_ORIGINS is not set. Defaulting to wildcard (*) CORS. " +
+      "Set MCP_ALLOWED_ORIGINS in production to restrict cross-origin access.",
+  );
+}
+
+/**
+ * Build CORS headers for a given request. If the allowlist is configured,
+ * echo the request Origin when it matches; otherwise use wildcard.
+ */
+function buildCorsHeaders(request: NextRequest): Record<string, string> {
+  const base: Record<string, string> = {
+    "Access-Control-Allow-Methods": "POST, GET, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, Mcp-Session-Id",
+  };
+
+  if (!MCP_ALLOWED_ORIGINS) {
+    // No allowlist configured: wildcard for dev backward compat
+    base["Access-Control-Allow-Origin"] = "*";
+    return base;
+  }
+
+  const requestOrigin = request.headers.get("origin");
+  if (requestOrigin && MCP_ALLOWED_ORIGINS.has(requestOrigin)) {
+    base["Access-Control-Allow-Origin"] = requestOrigin;
+    base["Vary"] = "Origin";
+  }
+  // If origin is not in the allowlist, omit Access-Control-Allow-Origin
+  // entirely. The browser will block the cross-origin response.
+
+  return base;
+}
+
+// Keep a static fallback for error responses where no request is available
+const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Methods": "POST, GET, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization, Mcp-Session-Id",
+  ...(MCP_ALLOWED_ORIGINS ? {} : { "Access-Control-Allow-Origin": "*" }),
 };
 
 function jsonRpcError(
@@ -14,10 +70,12 @@ function jsonRpcError(
   message: string,
   status: number,
   id: string | number | null = null,
+  request?: NextRequest,
 ): NextResponse {
+  const headers = request ? buildCorsHeaders(request) : CORS_HEADERS;
   return NextResponse.json(
     { jsonrpc: "2.0", error: { code, message }, id },
-    { status, headers: CORS_HEADERS },
+    { status, headers },
   );
 }
 
@@ -65,13 +123,13 @@ export async function POST(request: NextRequest): Promise<Response> {
     // 1. Authenticate first
     const auth = await validateApiKey(request);
     if (!auth.success) {
-      return jsonRpcError(-32000, "Unauthorized", 401);
+      return jsonRpcError(-32000, "Unauthorized", 401, null, request);
     }
 
     // 2. Validate Content-Type
     const contentType = request.headers.get("content-type") ?? "";
     if (!contentType.includes("application/json")) {
-      return jsonRpcError(-32700, "Parse error: Content-Type must be application/json", 400);
+      return jsonRpcError(-32700, "Parse error: Content-Type must be application/json", 400, null, request);
     }
 
     // 3. Parse JSON body
@@ -79,7 +137,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     try {
       body = await request.json();
     } catch {
-      return jsonRpcError(-32700, "Parse error: malformed JSON", 400);
+      return jsonRpcError(-32700, "Parse error: malformed JSON", 400, null, request);
     }
 
     // 4. Handle batch requests (array of JSON-RPC messages)
@@ -128,7 +186,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       );
       const filtered = results.filter((r) => r !== null);
 
-      return NextResponse.json(filtered, { headers: CORS_HEADERS });
+      return NextResponse.json(filtered, { headers: buildCorsHeaders(request) });
     }
 
     // 5. Single request validation
@@ -174,9 +232,10 @@ export async function POST(request: NextRequest): Promise<Response> {
     await server.close();
 
     // 11. Merge CORS headers into the response
+    const corsHeaders = buildCorsHeaders(request);
     if (response) {
       const mergedHeaders = new Headers(response.headers);
-      for (const [key, value] of Object.entries(CORS_HEADERS)) {
+      for (const [key, value] of Object.entries(corsHeaders)) {
         mergedHeaders.set(key, value);
       }
       return new Response(response.body, {
@@ -187,36 +246,36 @@ export async function POST(request: NextRequest): Promise<Response> {
     }
 
     // Notification with no response expected (204)
-    return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
+    return new NextResponse(null, { status: 204, headers: corsHeaders });
   } catch (error) {
     console.error("[MCP] Unhandled error:", error);
-    return jsonRpcError(-32603, "Internal server error", 500);
+    return jsonRpcError(-32603, "Internal server error", 500, null, request);
   }
 }
 
 /**
  * GET is not supported in stateless mode (no SSE stream).
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   return NextResponse.json(
     { error: "Method not allowed. Use POST for MCP requests." },
-    { status: 405, headers: { ...CORS_HEADERS, Allow: "POST" } },
+    { status: 405, headers: { ...buildCorsHeaders(request), Allow: "POST" } },
   );
 }
 
 /**
  * DELETE is not supported in stateless mode (no sessions to terminate).
  */
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
   return NextResponse.json(
     { error: "Method not allowed. This is a stateless MCP server." },
-    { status: 405, headers: { ...CORS_HEADERS, Allow: "POST" } },
+    { status: 405, headers: { ...buildCorsHeaders(request), Allow: "POST" } },
   );
 }
 
 /**
  * OPTIONS preflight handler for CORS.
  */
-export async function OPTIONS() {
-  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, { status: 204, headers: buildCorsHeaders(request) });
 }

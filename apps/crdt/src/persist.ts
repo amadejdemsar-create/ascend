@@ -22,6 +22,13 @@ if (!CRDT_PERSIST_SECRET) {
     "[crdt] CRDT_PERSIST_SECRET is not set. Cannot authenticate with the web app.",
   );
 }
+if (CRDT_PERSIST_SECRET.length < 32) {
+  throw new Error(
+    "[crdt] CRDT_PERSIST_SECRET is shorter than 32 characters. " +
+      "The CRDT server cannot start without a sufficiently strong secret. " +
+      "Generate one via: openssl rand -hex 32",
+  );
+}
 
 /** Maximum retry attempts on 5xx responses. */
 const MAX_RETRIES = 3;

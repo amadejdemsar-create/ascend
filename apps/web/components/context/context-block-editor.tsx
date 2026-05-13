@@ -416,7 +416,7 @@ function ConnectionStatusIndicator({
         aria-hidden="true"
         className="inline-block h-2 w-2 rounded-full bg-amber-500"
       />
-      <span>Offline (autosave)</span>
+      <span>Saving locally</span>
     </div>
   );
 }

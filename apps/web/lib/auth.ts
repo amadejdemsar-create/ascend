@@ -207,6 +207,16 @@ export function verifyCrdtPersistSecret(request: NextRequest): boolean {
   const expected = process.env.CRDT_PERSIST_SECRET;
   if (!expected) return false;
 
+  // Defense in depth: reject secrets shorter than 32 characters.
+  // The CRDT server itself enforces this at startup, but a misconfigured
+  // web app env should also refuse to accept weak secrets.
+  if (expected.length < 32) {
+    console.warn(
+      "[auth] CRDT_PERSIST_SECRET is set but shorter than 32 characters. Rejecting CRDT persist requests.",
+    );
+    return false;
+  }
+
   const provided = request.headers.get("x-crdt-secret");
   if (!provided) return false;
 

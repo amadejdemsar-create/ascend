@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { Suspense, useState, useCallback, useMemo, useEffect } from "react";
+import { useSelectionSync } from "@/lib/hooks/use-selection-sync";
 import { toast } from "sonner";
 import { endOfDay, addDays, endOfWeek, isBefore } from "date-fns";
 import { useTodos, useBulkCompleteTodos, useCompleteTodo, useUncompleteTodo, useDeleteTodo } from "@/lib/hooks/use-todos";
@@ -31,8 +32,18 @@ const DATE_TABS: { value: TodoDateTab; label: string }[] = [
 ];
 
 export default function TodosPage() {
+  return (
+    <Suspense>
+      <TodosPageInner />
+    </Suspense>
+  );
+}
+
+function TodosPageInner() {
   const [filters, setFilters] = useState<TodoFilters>({});
   const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null);
+  useSelectionSync({ selectedId: selectedTodoId, setSelectedId: setSelectedTodoId });
+
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const todoDateTab = useUIStore((s) => s.todoDateTab);
   const todoHideCompleted = useUIStore((s) => s.todoHideCompleted);

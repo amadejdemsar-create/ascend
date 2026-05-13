@@ -20,15 +20,13 @@ import type {
 // ── Helpers ──────────────────────────────────────────────────────────
 
 /**
- * Build a link to the entity detail page based on node type.
+ * Build a deep-link URL to the entity detail panel based on node type.
  *
  * Context entries (NOTE, SOURCE, PROJECT, etc.), databases, and database
- * rows all live at `/context/${nodeId}`. Goals use `/goals` with a store
- * selection. Todos use `/todos`. The current app navigates to detail
- * panels via clicking a list item, which sets a local state or store
- * value. Since these pages do not support direct deep links via URL
- * params today, we link to the domain page. When deep linking is added,
- * these paths will work directly.
+ * rows all live at `/context?id=<nodeId>`. Goals use `/goals?id=<nodeId>`.
+ * Todos use `/todos?id=<nodeId>`. The `?id=` param is consumed by
+ * `useSelectionSync` on each page, which opens the detail panel for the
+ * specified entity.
  */
 function entityPath(
   nodeType: string,
@@ -36,13 +34,20 @@ function entityPath(
 ): string | null {
   switch (nodeType) {
     case "CONTEXT_ENTRY":
+    case "NOTE":
+    case "SOURCE":
+    case "PROJECT":
+    case "PERSON":
+    case "DECISION":
+    case "QUESTION":
+    case "AREA":
     case "DATABASE":
     case "DATABASE_ROW":
-      return `/context`;
+      return `/context?id=${encodeURIComponent(nodeId)}`;
     case "GOAL":
-      return `/goals`;
+      return `/goals?id=${encodeURIComponent(nodeId)}`;
     case "TODO":
-      return `/todos`;
+      return `/todos?id=${encodeURIComponent(nodeId)}`;
     default:
       return null;
   }
@@ -212,22 +217,38 @@ function VerbFragment({ event }: { event: ActivityEventItem }) {
 
     case "LINK_CREATED": {
       const p = payload as LinkCreatedPayload;
+      const fromLabel = p.fromTitle ?? "entry";
+      const toLabel = p.toTitle ?? "entry";
+      const fromPath = entityPath("CONTEXT_ENTRY", p.fromEntryId);
+      const toPath = entityPath("CONTEXT_ENTRY", p.toEntryId);
       return (
         <span className="text-muted-foreground">
           linked{" "}
-          <Link
-            href="/context"
-            className="font-medium text-foreground hover:underline"
-          >
-            entry
-          </Link>{" "}
+          {fromPath ? (
+            <Link
+              href={fromPath}
+              className="font-medium text-foreground hover:underline"
+            >
+              &ldquo;{fromLabel}&rdquo;
+            </Link>
+          ) : (
+            <span className="font-medium text-foreground">
+              &ldquo;{fromLabel}&rdquo;
+            </span>
+          )}{" "}
           to{" "}
-          <Link
-            href="/context"
-            className="font-medium text-foreground hover:underline"
-          >
-            entry
-          </Link>{" "}
+          {toPath ? (
+            <Link
+              href={toPath}
+              className="font-medium text-foreground hover:underline"
+            >
+              &ldquo;{toLabel}&rdquo;
+            </Link>
+          ) : (
+            <span className="font-medium text-foreground">
+              &ldquo;{toLabel}&rdquo;
+            </span>
+          )}{" "}
           <span className="text-xs">({p.linkType})</span>
         </span>
       );
@@ -235,9 +256,38 @@ function VerbFragment({ event }: { event: ActivityEventItem }) {
 
     case "LINK_REMOVED": {
       const p = payload as LinkRemovedPayload;
+      const fromLabel = p.fromTitle ?? "entry";
+      const toLabel = p.toTitle ?? "entry";
+      const fromPath = entityPath("CONTEXT_ENTRY", p.fromEntryId);
+      const toPath = entityPath("CONTEXT_ENTRY", p.toEntryId);
       return (
         <span className="text-muted-foreground">
-          unlinked entries{" "}
+          unlinked{" "}
+          {fromPath ? (
+            <Link
+              href={fromPath}
+              className="font-medium text-foreground hover:underline"
+            >
+              &ldquo;{fromLabel}&rdquo;
+            </Link>
+          ) : (
+            <span className="font-medium text-foreground">
+              &ldquo;{fromLabel}&rdquo;
+            </span>
+          )}{" "}
+          from{" "}
+          {toPath ? (
+            <Link
+              href={toPath}
+              className="font-medium text-foreground hover:underline"
+            >
+              &ldquo;{toLabel}&rdquo;
+            </Link>
+          ) : (
+            <span className="font-medium text-foreground">
+              &ldquo;{toLabel}&rdquo;
+            </span>
+          )}{" "}
           <span className="text-xs">({p.linkType})</span>
         </span>
       );

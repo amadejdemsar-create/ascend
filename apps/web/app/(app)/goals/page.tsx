@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback } from "react";
+import { Suspense, useCallback } from "react";
+import { useSelectionSync } from "@/lib/hooks/use-selection-sync";
 import { useGoals, useGoalTree, useReorderGoals } from "@/lib/hooks/use-goals";
 import { useUIStore } from "@/lib/stores/ui-store";
 import { HORIZON_ORDER } from "@/lib/constants";
@@ -31,12 +32,22 @@ const HORIZON_FILTERS = [
 ];
 
 export default function GoalsPage() {
+  return (
+    <Suspense>
+      <GoalsPageInner />
+    </Suspense>
+  );
+}
+
+function GoalsPageInner() {
   const activeView = useUIStore((s) => s.activeView);
   const activeFilters = useUIStore((s) => s.activeFilters);
   const setActiveFilters = useUIStore((s) => s.setActiveFilters);
   const activeSorting = useUIStore((s) => s.activeSorting);
   const selectedGoalId = useUIStore((s) => s.selectedGoalId);
   const selectGoal = useUIStore((s) => s.selectGoal);
+  useSelectionSync({ selectedId: selectedGoalId, setSelectedId: selectGoal });
+
   const openGoalModal = useUIStore((s) => s.openGoalModal);
 
   // Build GoalFilters from store activeFilters

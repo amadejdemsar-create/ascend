@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSelectionSync } from "@/lib/hooks/use-selection-sync";
 import { toast } from "sonner";
 import { Plus, Upload, FileText, Database } from "lucide-react";
 import { useUploadFile } from "@/lib/hooks/use-files";
@@ -43,7 +44,17 @@ interface ContextEntry {
 }
 
 export default function ContextPage() {
+  return (
+    <Suspense>
+      <ContextPageInner />
+    </Suspense>
+  );
+}
+
+function ContextPageInner() {
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
+  useSelectionSync({ selectedId: selectedEntryId, setSelectedId: setSelectedEntryId });
+
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
     null,
   );

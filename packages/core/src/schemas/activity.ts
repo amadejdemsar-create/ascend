@@ -95,6 +95,8 @@ export const linkCreatedPayloadSchema = z.object({
   linkType: z.string(),
   fromEntryId: z.string(),
   toEntryId: z.string(),
+  fromTitle: z.string().optional(),
+  toTitle: z.string().optional(),
 });
 export type LinkCreatedPayload = z.infer<typeof linkCreatedPayloadSchema>;
 
@@ -103,6 +105,8 @@ export const linkRemovedPayloadSchema = z.object({
   linkType: z.string(),
   fromEntryId: z.string(),
   toEntryId: z.string(),
+  fromTitle: z.string().optional(),
+  toTitle: z.string().optional(),
 });
 export type LinkRemovedPayload = z.infer<typeof linkRemovedPayloadSchema>;
 
