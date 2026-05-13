@@ -2,7 +2,53 @@
 
 Deferred features and initiatives that have been explicitly scoped but not yet implemented. When you want to pick one up, run `/ax:plan <slug>` to create a full PRD + TASKS.md.
 
-Last updated: 5. 5. 2026
+Last updated: 13. 5. 2026
+
+---
+
+## Wave 8 (Workspaces + collaboration foundation) — SHIPPED 13. 5. 2026
+
+Multi-tenant substrate + real-time editing foundation shipped across 11 phase commits + 2 Phase-4 hotfixes + 1 close-out fix on `main`. The Workspace + WorkspaceMembership + ActivityEvent tables landed in Phase 1 (2 migrations, idempotent). Phase 2 added `workspaceId String` (NOT NULL after backfill) to every entity table (18 tables, 2 migrations gated by a pre-flight NULL-count check). Phase 3a introduced workspaceService, workspaceMembershipService, workspaceContextService, permissionService and extended the auth flow with `currentWorkspaceId` on the JWT. Phase 3b mass-refactored every service method + every API route + every MCP handler to take `(userId, workspaceId, ...)`. Phase 4 deployed a standalone Hocuspocus CRDT server (`apps/crdt/`) to `crdt.ascend.nativeai.agency` with JWT-protected token issuance + server-to-server persist endpoint. Phase 5 wired the Lexical block editor to the live server via `@lexical/react`'s stable `CollaborationPlugin`. Phase 6 added presence avatars + collaborative cursors via Yjs awareness. Phase 7 added an activity feed at `/activity` with cursor pagination + filters; 8 services fire-and-forget log to ActivityEvent. Phase 8 surfaced the workspace switcher in the sidebar and the `/settings/workspace` page. Phase 9 added 3 MCP workspace tools, bringing the count to 76.
+
+Two production incidents during the wave: a wget-based Docker HEALTHCHECK that failed because `node:22-alpine` lacks wget (fixed in `408f456`), and a pnpm `.pnpm` content-addressable store that wasn't copied to the runner stage, causing `ERR_MODULE_NOT_FOUND` on `@hocuspocus/server` (fixed in `c684c35`). Both were caught and resolved during prod verification; the second was the actual root cause of the initial CRDT 502s. One DNS incident during smoke testing: the user's `ascend` GoDaddy A record got accidentally replaced when adding `crdt.ascend`; restored mid-session. Commits: `75abf6e`, `baf7ef8`, `006a8ec`, `f7d05e8`, `cf72972`, `408f456`, `c684c35`, `fb43f3e`, `fd0a136`, `eda338b`, `698afc9`, `5c2f375`, `ea2ba04`, plus the wave-close commit. Close-out at `.ascendflow/features/context-v2/wave-8-workspaces-and-collaboration/CLOSE-OUT.md`.
+
+## Wave 8 carry-overs (tracked here until picked up by Wave 8b)
+
+### HIGH (prerequisite for multi-user)
+
+- **Deep-linking infrastructure.** Activity feed entity links currently land on the domain page (`/context`, `/goals`, `/todos`) without selecting the specific entity. Every entity page needs URL-param-based direct navigation. Critic flagged this as Wave 8b priority #1 because it unblocks not just the activity feed but also browser history, link sharing, and mobile deep links.
+- **`LINK_CREATED` / `LINK_REMOVED` event titles.** Renderer currently shows generic "entry to entry"; payload carries `fromEntryId` + `toEntryId` but the row should fetch + display the actual titles.
+- **Activity feed mobile filter affordance.** Filter sidebar is `hidden md:block`; add a sheet / drawer trigger for mobile.
+- **`CRDT_PERSIST_SECRET` minimum length guard.** `apps/crdt/src/persist.ts:20` and `lib/auth.ts:verifyCrdtPersistSecret` only check presence. Add `>= 32 chars` enforcement before Wave 8b multi-user exposes the CRDT server more broadly.
+- **MCP CORS allowlist.** `apps/web/app/api/mcp/route.ts:7` allows all origins. Header-based auth makes this low-risk in Wave 8, but tighten to an env-configurable allowlist for Wave 8b.
+- **Membership revocation should clear access tokens.** `_resolveWorkspaceId` trusts the JWT claim without re-checking membership. In Wave 8b, removing a user from a workspace should revoke their access token immediately (currently they retain access until next JWT refresh, up to 15 min).
+
+### MEDIUM (Wave 8b features and enrichment)
+
+- **Invite flow.** Wave 8 ships the data model + disabled UI; Wave 8b implements the email, accept-link, and role-assignment flow.
+- **Multi-member workspaces and second-user UX.** The schema supports it; the UI is single-user today.
+- **Per-node permission overrides** (private to me / shared with X / open to workspace).
+- **Branching merge UI.** Wave 7 created the DERIVED_FROM substrate; Wave 8 deferred the merge flow.
+- **Public publishing.** No `(public)` route group, no `/public/<workspaceSlug>/<pageSlug>` endpoint, no reader-mode renderer, no password gating, no sitemap.
+- **Comments + threads anchored to block IDs.**
+- **`@mentions` + notification fanout.**
+- **In-app + email notifications.** No Notification table, no email infrastructure today.
+- **NODE_UPDATED in the activity feed.** Currently only create/delete/restore/branch fire; edit events are the most frequent user action and would make the feed more useful.
+- **Jump-to-cursor for presence.** Click a presence avatar to scroll the editor to that user's cursor. Essential for actual collaboration.
+- **Rate limiting on `/api/crdt/token`.** Currently unlimited; a compromised API key could request tokens at high volume. Add the login route's in-process rate limiter pattern.
+- **`User.role` admin routes** (carried over from Waves 4 + 7; still pending).
+
+### LOW (post-close polish)
+
+- **Connection indicator copy.** "Offline (autosave)" is slightly misleading when the user is online but Hocuspocus is unreachable. Consider "Local save" or "Saving locally".
+- **Workspace switcher behavior with a single workspace.** Currently shown as a disabled dropdown row with a check mark. Notion and Linear hide the switcher entirely for single-workspace accounts; either approach is defensible.
+- **Secret distinctness check at startup.** Add a module-level guard that `AUTH_JWT_SECRET`, `CRDT_JWT_SECRET`, and `CRDT_PERSIST_SECRET` are distinct strings.
+- **Goal completion should fire NODE_UPDATED.** `goalService.completeWithSideEffects` does not log to ActivityEvent today; the feed misses goal completions.
+- **`useUpdateGoal` invalidation.** Does not invalidate `queryKeys.activity.all()`; once goal updates log activity, the hook needs to invalidate.
+
+### Wave 7 carry-overs (no change)
+
+Wave 7 carryovers remain as previously tracked. The MEDIUM tier items (User.role admin routes, per-user retention customization, time slider beyond 90 days, edge history viewer, cron slot staggering, retention compactor full-history memory, graph snapshot replay memory) are still open and have largely overlap with Wave 8b's hardening goals.
 
 ---
 
