@@ -13,23 +13,36 @@ import "@excalidraw/excalidraw/index.css";
 import {
   useCanvasLayout,
   useDefaultCanvasLayout,
+  useUpdateLayout,
   useUpsertNodes,
   type CanvasLayoutDetail,
-  type CanvasNodeItem,
 } from "@/lib/hooks/use-canvas";
-import { useContextEntries } from "@/lib/hooks/use-context";
+import {
+  useContextEntries,
+  useContextGraph,
+  useDeleteContextLink,
+} from "@/lib/hooks/use-context";
 import { useUIStore } from "@/lib/stores/ui-store";
+import type { CanvasViewport } from "@/lib/validations";
+import type { ContextLinkType } from "@ascend/core";
 import { Button } from "@/components/ui/button";
 import { Clock } from "lucide-react";
 import { CanvasLoadingSkeleton } from "./canvas-loading-skeleton";
 import { ContextCanvasEmptyState } from "./context-canvas-empty-state";
 import { CanvasCardOverlay } from "./canvas-card-overlay";
 import { CanvasSaveStatus } from "./canvas-save-status";
+import { CanvasEdgeToggle } from "./canvas-edge-toggle";
+import { CanvasLinkTypePicker } from "./canvas-link-type-picker";
 import {
   buildNodeCardRect,
   isCardRect,
   makeCardElementId,
 } from "./canvas-scene-utils";
+import {
+  buildEdgeArrow,
+  diffArrows,
+  isManagedEdgeArrow,
+} from "./canvas-edge-sync";
 import { useCanvasAutosave } from "@/lib/hooks/use-canvas-autosave";
 
 const Excalidraw = dynamic(
@@ -99,33 +112,61 @@ interface MountedProps {
 
 function ContextCanvasViewMounted({ layout, isReadOnly }: MountedProps) {
   const upsertNodes = useUpsertNodes();
+  const updateLayout = useUpdateLayout();
   const recentEntries = useContextEntries();
+  const graphQuery = useContextGraph();
+  const deleteLink = useDeleteContextLink();
   const apiRef = useRef<ExcalidrawAPILite | null>(null);
   const [apiReady, setApiReady] = useState(false);
+  const openPicker = useUIStore((s) => s.openCanvasLinkTypePicker);
+
+  const viewport = (layout.viewport ?? {}) as Partial<CanvasViewport>;
+  const showEdges = viewport.showEdges !== false;
 
   const autosave = useCanvasAutosave({
     layoutId: layout.id,
     initialNodes: layout.nodes,
   });
 
-  // Build initial Excalidraw scene from the server-side canvas blob.
-  // Ensure every CanvasNode has a matching rectangle element (defensive:
-  // if a node was added via the API without scene sync, we synthesize
-  // its rect on first mount so the overlay has something to anchor to).
+  // Map contextEntryId -> CanvasNode for arrow geometry lookups.
+  const nodesByEntryId = useMemo(() => {
+    const map = new Map(layout.nodes.map((n) => [n.contextEntryId, n]));
+    return map;
+  }, [layout.nodes]);
+
+  // Set of card element IDs for quick membership checks in the diff.
+  const cardElementIds = useMemo(
+    () => new Set(layout.nodes.map((n) => n.excalidrawElementId)),
+    [layout.nodes],
+  );
+
+  // Build initial Excalidraw scene from server canvas blob, synthesize
+  // missing card rects, then merge edge arrows from the graph.
   const initialData = useMemo(() => {
     const scene = layout.canvas as
       | { elements?: unknown; appState?: unknown; files?: unknown }
       | undefined;
     const existingElements = Array.isArray(scene?.elements)
-      ? (scene.elements as Array<{ id?: string; customData?: { kind?: string } }>)
+      ? (scene.elements as Array<{
+          id?: string;
+          customData?: { kind?: string };
+        }>)
       : [];
     const existingCardIds = new Set(
       existingElements.filter(isCardRect).map((el) => el.id ?? ""),
     );
-    const synthesized: unknown[] = [];
+    const existingEdgeIds = new Set(
+      existingElements
+        .filter(isManagedEdgeArrow)
+        .map((el) => (el as { id: string }).id),
+    );
+
+    // 1) Synthesize missing card rectangles for any CanvasNode that
+    //    lacks one in the scene blob.
+    const synthesizedCards: unknown[] = [];
     for (const node of layout.nodes) {
       if (!existingCardIds.has(node.excalidrawElementId)) {
-        synthesized.push(
+        synthesizedCards.push(
           buildNodeCardRect({
             elementId: node.excalidrawElementId,
             x: node.x,
@@ -137,16 +178,56 @@ function ContextCanvasViewMounted({ layout, isReadOnly }: MountedProps) {
         );
       }
     }
+
+    // 2) For every graph edge whose both endpoints sit on this layout,
+    //    synthesize an edge arrow (unless already present).
+    const synthesizedEdges: unknown[] = [];
+    const edges = graphQuery.data?.edges ?? [];
+    for (const edge of edges) {
+      const fromNode = nodesByEntryId.get(edge.fromId);
+      const toNode = nodesByEntryId.get(edge.toId);
+      if (!fromNode || !toNode) continue;
+      const arrowId = `edge-${edge.id}`;
+      if (existingEdgeIds.has(arrowId)) continue;
+      synthesizedEdges.push(
+        buildEdgeArrow({
+          linkId: edge.id,
+          linkType: edge.type,
+          fromElementId: fromNode.excalidrawElementId,
+          toElementId: toNode.excalidrawElementId,
+          fromX: fromNode.x,
+          fromY: fromNode.y,
+          fromW: fromNode.w,
+          fromH: fromNode.h,
+          toX: toNode.x,
+          toY: toNode.y,
+          toW: toNode.w,
+          toH: toNode.h,
+          hidden: !showEdges,
+        }),
+      );
+    }
+
     const appState =
       typeof scene?.appState === "object" && scene.appState !== null
         ? (scene.appState as Record<string, unknown>)
         : {};
     return {
-      elements: [...existingElements, ...synthesized] as never,
+      elements: [
+        ...existingElements,
+        ...synthesizedCards,
+        ...synthesizedEdges,
+      ] as never,
       appState: appState as never,
       files: scene?.files as never,
     };
-  }, [layout.canvas, layout.nodes]);
+  }, [
+    layout.canvas,
+    layout.nodes,
+    nodesByEntryId,
+    graphQuery.data?.edges,
+    showEdges,
+  ]);
 
   const handleQuickAddRecent = useCallback(() => {
     if (!Array.isArray(recentEntries.data) || !apiRef.current) return;
@@ -181,9 +262,6 @@ function ContextCanvasViewMounted({ layout, isReadOnly }: MountedProps) {
     });
   }, [layout.id, recentEntries.data, upsertNodes]);
 
-  // Drag-from-sidebar: convert a screen-coord drop into canvas coords
-  // using the live appState scrollX/Y/zoom, append a card rect, and
-  // upsert the CanvasNode.
   const handleDrop = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
       const payload = event.dataTransfer.getData(DRAG_MIME);
@@ -196,15 +274,11 @@ function ContextCanvasViewMounted({ layout, isReadOnly }: MountedProps) {
       }
       const entryId = parsed.id;
       if (!entryId) return;
-
-      // Don't accept drops twice for the same entry; the unique
-      // constraint will catch it server-side too.
       const existingNode = layout.nodes.find(
         (n) => n.contextEntryId === entryId,
       );
       if (existingNode) return;
 
-      // Convert clientX/Y to canvas coords.
       const target = event.currentTarget;
       const rect = target.getBoundingClientRect();
       const ax = apiRef.current.getAppState() as {
@@ -260,21 +334,160 @@ function ContextCanvasViewMounted({ layout, isReadOnly }: MountedProps) {
     [],
   );
 
-  // Wire Excalidraw onChange to the autosave hook.
+  // Track previous element set so onChange can diff new+removed arrows.
+  const prevElementsRef = useRef<readonly unknown[]>([]);
+
   const onSceneChange = useCallback(
     (
       elements: readonly unknown[],
       appState: unknown,
       files?: unknown,
     ) => {
+      const prev = prevElementsRef.current;
+      prevElementsRef.current = elements;
+
+      // 1) Detect newly drawn user arrows bound to two cards.
+      const { newBoundArrows, removedLinkIds } = diffArrows(
+        prev,
+        elements,
+        cardElementIds,
+      );
+      for (const arrow of newBoundArrows) {
+        // Map element ids back to contextEntryIds.
+        const fromNode = layout.nodes.find(
+          (n) => n.excalidrawElementId === arrow.fromElementId,
+        );
+        const toNode = layout.nodes.find(
+          (n) => n.excalidrawElementId === arrow.toElementId,
+        );
+        if (!fromNode || !toNode) continue;
+        openPicker({
+          pendingArrowId: arrow.id,
+          fromEntryId: fromNode.contextEntryId,
+          toEntryId: toNode.contextEntryId,
+        });
+        break; // one picker at a time
+      }
+
+      // 2) For arrows removed since last tick that had a linkId, fire
+      //    a ContextLink delete (debounced via mutate; the autosave
+      //    will persist the scene shape too).
+      for (const linkId of removedLinkIds) {
+        // We need the from/to entry IDs for invalidation. Look them
+        // up from the prev scene's arrow that had this linkId.
+        for (const el of prev) {
+          if (!isManagedEdgeArrow(el)) continue;
+          if (el.customData.linkId !== linkId) continue;
+          const startElId = (el as { startBinding?: { elementId?: string } })
+            .startBinding?.elementId;
+          const endElId = (el as { endBinding?: { elementId?: string } })
+            .endBinding?.elementId;
+          const fromNode = layout.nodes.find(
+            (n) => n.excalidrawElementId === startElId,
+          );
+          const toNode = layout.nodes.find(
+            (n) => n.excalidrawElementId === endElId,
+          );
+          if (!fromNode || !toNode) break;
+          deleteLink.mutate({
+            id: linkId,
+            fromEntryId: fromNode.contextEntryId,
+            toEntryId: toNode.contextEntryId,
+          });
+          break;
+        }
+      }
+
+      // 3) Forward to autosave for the scene blob + node position deltas.
       autosave.onChange(
         elements,
         (appState ?? {}) as Record<string, unknown>,
         files as Record<string, unknown> | undefined,
       );
     },
-    [autosave],
+    [autosave, cardElementIds, deleteLink, layout.nodes, openPicker],
   );
+
+  // Picker confirm: patch the pending arrow's customData.linkId.
+  const handlePickerConfirmed = useCallback(
+    ({
+      pendingArrowId,
+      linkId,
+      linkType,
+    }: {
+      pendingArrowId: string;
+      linkId: string;
+      linkType: ContextLinkType;
+    }) => {
+      const api = apiRef.current;
+      if (!api) return;
+      const current = api.getSceneElements();
+      const next = current.map((el) => {
+        const elObj = el as { id?: unknown };
+        if (elObj.id === pendingArrowId) {
+          return {
+            ...(el as Record<string, unknown>),
+            customData: {
+              kind: "edge" as const,
+              linkId,
+              linkType,
+            },
+            id: `edge-${linkId}`,
+          };
+        }
+        return el;
+      });
+      api.updateScene({ elements: next });
+    },
+    [],
+  );
+
+  // Picker cancel: drop the pending arrow from the scene.
+  const handlePickerCancelled = useCallback(
+    (pendingArrowId: string) => {
+      const api = apiRef.current;
+      if (!api) return;
+      const current = api.getSceneElements();
+      const next = current.filter((el) => {
+        const elObj = el as { id?: unknown };
+        return elObj.id !== pendingArrowId;
+      });
+      api.updateScene({ elements: next });
+    },
+    [],
+  );
+
+  // Toggle edge visibility. Updates viewport.showEdges via the layout
+  // PATCH AND rewrites every managed-edge arrow's opacity in place.
+  const handleToggleEdges = useCallback(() => {
+    const api = apiRef.current;
+    if (!api) return;
+    const nextShow = !showEdges;
+    const current = api.getSceneElements();
+    const next = current.map((el) => {
+      if (isManagedEdgeArrow(el)) {
+        return {
+          ...(el as Record<string, unknown>),
+          opacity: nextShow ? 100 : 0,
+          locked: !nextShow,
+        };
+      }
+      return el;
+    });
+    api.updateScene({ elements: next });
+    updateLayout.mutate({
+      id: layout.id,
+      input: {
+        viewport: {
+          x: viewport.x ?? 0,
+          y: viewport.y ?? 0,
+          zoom: viewport.zoom ?? 1,
+          showEdges: nextShow,
+          cardSize: viewport.cardSize ?? "default",
+        },
+      },
+    });
+  }, [layout.id, showEdges, updateLayout, viewport]);
 
   const hasContent =
     layout.nodes.length > 0 ||
@@ -288,7 +501,12 @@ function ContextCanvasViewMounted({ layout, isReadOnly }: MountedProps) {
       onDrop={handleDrop}
     >
       {isReadOnly && <TimeTravelBanner />}
-      <div className="pointer-events-auto absolute right-4 top-4 z-30">
+      <div className="pointer-events-auto absolute right-4 top-4 z-30 flex items-center gap-2">
+        <CanvasEdgeToggle
+          showEdges={showEdges}
+          onToggle={handleToggleEdges}
+          disabled={isReadOnly || updateLayout.isPending}
+        />
         <CanvasSaveStatus
           status={autosave.status}
           lastSavedAt={autosave.lastSavedAt}
@@ -310,6 +528,10 @@ function ContextCanvasViewMounted({ layout, isReadOnly }: MountedProps) {
           nodes={layout.nodes}
         />
       )}
+      <CanvasLinkTypePicker
+        onConfirmed={handlePickerConfirmed}
+        onCancelled={handlePickerCancelled}
+      />
       {!hasContent && !isReadOnly && (
         <ContextCanvasEmptyState
           onQuickAddRecent={handleQuickAddRecent}
