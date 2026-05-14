@@ -16,6 +16,10 @@ export const ACTIVITY_EVENT_TYPE_VALUES = [
   "NODE_BRANCHED",
   "LINK_CREATED",
   "LINK_REMOVED",
+  "CANVAS_LAYOUT_CREATED",
+  "CANVAS_LAYOUT_DELETED",
+  "CANVAS_NODE_ADDED",
+  "CANVAS_NODE_REMOVED",
 ] as const;
 
 export type ActivityEventType = (typeof ACTIVITY_EVENT_TYPE_VALUES)[number];
@@ -121,6 +125,48 @@ export const linkRemovedPayloadSchema = z.object({
 });
 export type LinkRemovedPayload = z.infer<typeof linkRemovedPayloadSchema>;
 
+// ── Wave 9: Canvas activity payloads ────────────────────────────────
+
+export const canvasLayoutCreatedPayloadSchema = z.object({
+  eventType: z.literal("CANVAS_LAYOUT_CREATED"),
+  layoutId: z.string(),
+  layoutName: z.string(),
+});
+export type CanvasLayoutCreatedPayload = z.infer<
+  typeof canvasLayoutCreatedPayloadSchema
+>;
+
+export const canvasLayoutDeletedPayloadSchema = z.object({
+  eventType: z.literal("CANVAS_LAYOUT_DELETED"),
+  layoutId: z.string(),
+  layoutName: z.string(),
+});
+export type CanvasLayoutDeletedPayload = z.infer<
+  typeof canvasLayoutDeletedPayloadSchema
+>;
+
+export const canvasNodeAddedPayloadSchema = z.object({
+  eventType: z.literal("CANVAS_NODE_ADDED"),
+  layoutId: z.string(),
+  layoutName: z.string(),
+  contextEntryId: z.string(),
+  entryTitle: z.string(),
+});
+export type CanvasNodeAddedPayload = z.infer<
+  typeof canvasNodeAddedPayloadSchema
+>;
+
+export const canvasNodeRemovedPayloadSchema = z.object({
+  eventType: z.literal("CANVAS_NODE_REMOVED"),
+  layoutId: z.string(),
+  layoutName: z.string(),
+  contextEntryId: z.string(),
+  entryTitle: z.string(),
+});
+export type CanvasNodeRemovedPayload = z.infer<
+  typeof canvasNodeRemovedPayloadSchema
+>;
+
 // ── Discriminated union of all event payloads ───────────────────────
 
 export const activityEventPayloadSchema = z.discriminatedUnion("eventType", [
@@ -135,6 +181,10 @@ export const activityEventPayloadSchema = z.discriminatedUnion("eventType", [
   nodeBranchedPayloadSchema,
   linkCreatedPayloadSchema,
   linkRemovedPayloadSchema,
+  canvasLayoutCreatedPayloadSchema,
+  canvasLayoutDeletedPayloadSchema,
+  canvasNodeAddedPayloadSchema,
+  canvasNodeRemovedPayloadSchema,
 ]);
 export type ActivityEventPayload = z.infer<typeof activityEventPayloadSchema>;
 

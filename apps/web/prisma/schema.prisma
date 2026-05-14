@@ -812,6 +812,10 @@ enum ActivityEventType {
   NODE_BRANCHED
   LINK_CREATED
   LINK_REMOVED
+  CANVAS_LAYOUT_CREATED
+  CANVAS_LAYOUT_DELETED
+  CANVAS_NODE_ADDED
+  CANVAS_NODE_REMOVED
 }
 
 // =====================================================================
