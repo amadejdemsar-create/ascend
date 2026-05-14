@@ -34,6 +34,9 @@ import { CanvasSaveStatus } from "./canvas-save-status";
 import { CanvasEdgeToggle } from "./canvas-edge-toggle";
 import { CanvasLinkTypePicker } from "./canvas-link-type-picker";
 import { CanvasLayoutSwitcher } from "./canvas-layout-switcher";
+import { CanvasImportDialog } from "./canvas-import-dialog";
+import { exportLayoutAsExcalidraw } from "./canvas-export";
+import { Upload as UploadIcon, Download } from "lucide-react";
 import {
   buildNodeCardRect,
   isCardRect,
@@ -59,6 +62,8 @@ const DRAG_MIME = "application/x-ascend-entry";
 interface ExcalidrawAPILite {
   getAppState: () => unknown;
   getSceneElements: () => readonly unknown[];
+  getSceneElementsIncludingDeleted: () => readonly unknown[];
+  getFiles?: () => Record<string, unknown>;
   updateScene: (input: { elements?: unknown }) => void;
 }
 
@@ -119,6 +124,7 @@ function ContextCanvasViewMounted({ layout, isReadOnly }: MountedProps) {
   const deleteLink = useDeleteContextLink();
   const apiRef = useRef<ExcalidrawAPILite | null>(null);
   const [apiReady, setApiReady] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const openPicker = useUIStore((s) => s.openCanvasLinkTypePicker);
 
   const viewport = (layout.viewport ?? {}) as Partial<CanvasViewport>;
@@ -509,6 +515,28 @@ function ContextCanvasViewMounted({ layout, isReadOnly }: MountedProps) {
         />
       </div>
       <div className="pointer-events-auto absolute right-4 top-4 z-30 flex items-center gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setImportOpen(true)}
+          disabled={isReadOnly}
+          className="gap-1.5"
+        >
+          <UploadIcon className="size-3.5" aria-hidden="true" />
+          <span className="text-xs">Import</span>
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() =>
+            apiRef.current && exportLayoutAsExcalidraw(apiRef.current, layout.name)
+          }
+          disabled={!apiReady}
+          className="gap-1.5"
+        >
+          <Download className="size-3.5" aria-hidden="true" />
+          <span className="text-xs">Export</span>
+        </Button>
         <CanvasEdgeToggle
           showEdges={showEdges}
           onToggle={handleToggleEdges}
@@ -520,6 +548,11 @@ function ContextCanvasViewMounted({ layout, isReadOnly }: MountedProps) {
           onRetry={() => void autosave.flush()}
         />
       </div>
+      <CanvasImportDialog
+        layoutId={layout.id}
+        open={importOpen}
+        onOpenChange={setImportOpen}
+      />
       <Excalidraw
         initialData={initialData}
         viewModeEnabled={isReadOnly}
