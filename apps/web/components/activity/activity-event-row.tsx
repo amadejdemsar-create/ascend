@@ -16,6 +16,10 @@ import type {
   MemberRemovedPayload,
   MemberRoleChangedPayload,
   WorkspaceCreatedPayload,
+  CanvasLayoutCreatedPayload,
+  CanvasLayoutDeletedPayload,
+  CanvasNodeAddedPayload,
+  CanvasNodeRemovedPayload,
 } from "@/lib/validations";
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -318,6 +322,82 @@ function VerbFragment({ event }: { event: ActivityEventItem }) {
             </span>
           )}{" "}
           <span className="text-xs">({p.linkType})</span>
+        </span>
+      );
+    }
+
+    case "CANVAS_LAYOUT_CREATED": {
+      const p = payload as CanvasLayoutCreatedPayload;
+      return (
+        <span className="text-muted-foreground">
+          created canvas layout{" "}
+          <span className="font-medium text-foreground">
+            &ldquo;{p.layoutName}&rdquo;
+          </span>
+        </span>
+      );
+    }
+
+    case "CANVAS_LAYOUT_DELETED": {
+      const p = payload as CanvasLayoutDeletedPayload;
+      return (
+        <span className="text-muted-foreground">
+          deleted canvas layout{" "}
+          <span className="font-medium text-foreground">
+            &ldquo;{p.layoutName}&rdquo;
+          </span>
+        </span>
+      );
+    }
+
+    case "CANVAS_NODE_ADDED": {
+      const p = payload as CanvasNodeAddedPayload;
+      const entryPath = entityPath("CONTEXT_ENTRY", p.contextEntryId);
+      return (
+        <span className="text-muted-foreground">
+          added{" "}
+          {entryPath ? (
+            <Link
+              href={entryPath}
+              className="font-medium text-foreground hover:underline"
+            >
+              &ldquo;{p.entryTitle}&rdquo;
+            </Link>
+          ) : (
+            <span className="font-medium text-foreground">
+              &ldquo;{p.entryTitle}&rdquo;
+            </span>
+          )}{" "}
+          to canvas{" "}
+          <span className="font-medium text-foreground">
+            &ldquo;{p.layoutName}&rdquo;
+          </span>
+        </span>
+      );
+    }
+
+    case "CANVAS_NODE_REMOVED": {
+      const p = payload as CanvasNodeRemovedPayload;
+      const entryPath = entityPath("CONTEXT_ENTRY", p.contextEntryId);
+      return (
+        <span className="text-muted-foreground">
+          removed{" "}
+          {entryPath ? (
+            <Link
+              href={entryPath}
+              className="font-medium text-foreground hover:underline"
+            >
+              &ldquo;{p.entryTitle}&rdquo;
+            </Link>
+          ) : (
+            <span className="font-medium text-foreground">
+              &ldquo;{p.entryTitle}&rdquo;
+            </span>
+          )}{" "}
+          from canvas{" "}
+          <span className="font-medium text-foreground">
+            &ldquo;{p.layoutName}&rdquo;
+          </span>
         </span>
       );
     }

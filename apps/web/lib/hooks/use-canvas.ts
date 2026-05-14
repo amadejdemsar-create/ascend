@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queries/keys";
 import { apiFetch } from "@/lib/api-client";
+import { fireDatabaseCreatedConfetti } from "@/lib/confetti";
 import type {
   CreateCanvasLayoutInput,
   UpdateCanvasLayoutInput,
@@ -148,6 +149,8 @@ export function useCreateLayout() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.canvas.layouts() });
       qc.invalidateQueries({ queryKey: queryKeys.activity.all() });
+      // Small delight burst. Reduced-motion respected inside the helper.
+      fireDatabaseCreatedConfetti();
     },
     onError: (err: Error) => toast.error(err.message),
   });

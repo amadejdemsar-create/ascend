@@ -26,6 +26,15 @@ const EVENT_TYPE_GROUPS: EventTypeGroup[] = [
     types: ["LINK_CREATED", "LINK_REMOVED"],
   },
   {
+    label: "Canvas",
+    types: [
+      "CANVAS_LAYOUT_CREATED",
+      "CANVAS_LAYOUT_DELETED",
+      "CANVAS_NODE_ADDED",
+      "CANVAS_NODE_REMOVED",
+    ],
+  },
+  {
     label: "Members",
     types: ["MEMBER_ADDED", "MEMBER_REMOVED", "MEMBER_ROLE_CHANGED"],
   },
