@@ -78,12 +78,17 @@ export const CONTEXT_LINK_TYPE_ENUM: string[] = [...CONTEXT_LINK_TYPE_VALUES];
 export const ContextLinkSource = {
   CONTENT: "CONTENT",
   MANUAL: "MANUAL",
+  CANVAS: "CANVAS",
 } as const;
 
 export type ContextLinkSource =
   (typeof ContextLinkSource)[keyof typeof ContextLinkSource];
 
-export const CONTEXT_LINK_SOURCE_VALUES = ["CONTENT", "MANUAL"] as const;
+export const CONTEXT_LINK_SOURCE_VALUES = [
+  "CONTENT",
+  "MANUAL",
+  "CANVAS",
+] as const;
 
 export const CONTEXT_LINK_SOURCE_ENUM: string[] = [
   ...CONTEXT_LINK_SOURCE_VALUES,

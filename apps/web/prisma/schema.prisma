@@ -85,6 +85,7 @@ enum ContextLinkType {
 enum ContextLinkSource {
   CONTENT
   MANUAL
+  CANVAS // Wave 9: link created by drawing an arrow on the spatial canvas
 }
 
 enum ChatProviderKind {
@@ -137,6 +138,10 @@ model User {
   ownedWorkspaces      Workspace[]           @relation("WorkspaceOwner")
   workspaceMemberships WorkspaceMembership[]
   activityEvents       ActivityEvent[]
+
+  // Wave 9: Spatial canvas
+  canvasLayouts CanvasLayout[]
+  canvasNodes   CanvasNode[]
 
   @@index([defaultWorkspaceId])
 }
@@ -462,6 +467,10 @@ model ContextEntry {
   // have contextEntryId @unique pointing here).
   database    Database?
   databaseRow DatabaseRow?
+
+  // Wave 9: back-relation from CanvasNode (one entry can appear in many
+  // canvas layouts, but at most once per layout via the composite unique).
+  canvasNodes CanvasNode[]
 
   // Graph edges
   outgoingLinks ContextLink[] @relation("ContextLinkFrom")
@@ -1037,6 +1046,10 @@ model Workspace {
   edgeEvents          EdgeEvent[]
   graphDailySnapshots GraphDailySnapshot[]
 
+  // Wave 9: Spatial canvas
+  canvasLayouts CanvasLayout[]
+  canvasNodes   CanvasNode[]
+
   @@index([ownerId])
 }
 
@@ -1073,4 +1086,64 @@ model ActivityEvent {
   @@index([workspaceId, createdAt(sort: Desc)])
   @@index([workspaceId, eventType, createdAt(sort: Desc)])
   @@index([userId, createdAt(sort: Desc)])
+}
+
+// =====================================================================
+//  Wave 9: Spatial canvas (Map view)
+//
+//  Each CanvasLayout is a per-user named arrangement of context entries
+//  on an infinite Excalidraw canvas. The `canvas` field stores the full
+//  Excalidraw scene as JSONB (elements + appState + files) capped at
+//  2 MiB by a DB CHECK constraint (DZ-25).
+//
+//  Each CanvasNode binds a ContextEntry to a position within one layout.
+//  Position changes do NOT trigger NodeVersion snapshots (canvas position
+//  is layout metadata, not entity content).
+// =====================================================================
+
+model CanvasLayout {
+  id          String   @id @default(cuid())
+  userId      String
+  workspaceId String
+  name        String
+  slug        String
+  isDefault   Boolean  @default(false)
+  viewport    Json // { x, y, zoom, showEdges, cardSize }
+  canvas      Json // Excalidraw scene: { elements, appState, files }
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  nodes     CanvasNode[]
+
+  @@unique([userId, slug])
+  @@index([userId, updatedAt(sort: Desc)])
+  @@index([workspaceId])
+}
+
+model CanvasNode {
+  id                  String   @id @default(cuid())
+  canvasLayoutId      String
+  userId              String
+  workspaceId         String
+  contextEntryId      String
+  x                   Float
+  y                   Float
+  w                   Float    @default(240)
+  h                   Float    @default(140)
+  excalidrawElementId String
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  canvasLayout CanvasLayout @relation(fields: [canvasLayoutId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace    Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contextEntry ContextEntry @relation(fields: [contextEntryId], references: [id], onDelete: Cascade)
+
+  @@unique([canvasLayoutId, contextEntryId])
+  @@unique([canvasLayoutId, excalidrawElementId])
+  @@index([userId])
+  @@index([workspaceId])
+  @@index([contextEntryId])
 }
