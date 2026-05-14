@@ -170,11 +170,20 @@ export function useUpdateLayout() {
           body: JSON.stringify(input),
         },
       ),
-    onSuccess: (_res, { id }) => {
+    onSuccess: (_res, { id, input }) => {
       qc.invalidateQueries({ queryKey: queryKeys.canvas.layout(id) });
-      // The list endpoint excludes the canvas blob; opportunistic
-      // refetch on next list mount is sufficient. Skip the list
-      // invalidation for autosave-heavy update flows.
+      // If a metadata field changed (name/slug/isDefault), the switcher
+      // dropdown needs to refresh. Skip the list invalidation for
+      // pure-canvas/viewport updates (the autosave path) so high-
+      // frequency drag-save doesn't thrash the list cache.
+      const isMetadataChange =
+        input.name !== undefined ||
+        input.slug !== undefined ||
+        input.isDefault !== undefined;
+      if (isMetadataChange) {
+        qc.invalidateQueries({ queryKey: queryKeys.canvas.layouts() });
+        qc.invalidateQueries({ queryKey: queryKeys.activity.all() });
+      }
     },
     onError: (err: Error) => toast.error(err.message),
   });

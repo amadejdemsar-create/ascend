@@ -33,6 +33,7 @@ import { CanvasCardOverlay } from "./canvas-card-overlay";
 import { CanvasSaveStatus } from "./canvas-save-status";
 import { CanvasEdgeToggle } from "./canvas-edge-toggle";
 import { CanvasLinkTypePicker } from "./canvas-link-type-picker";
+import { CanvasLayoutSwitcher } from "./canvas-layout-switcher";
 import {
   buildNodeCardRect,
   isCardRect,
@@ -501,6 +502,12 @@ function ContextCanvasViewMounted({ layout, isReadOnly }: MountedProps) {
       onDrop={handleDrop}
     >
       {isReadOnly && <TimeTravelBanner />}
+      <div className="pointer-events-auto absolute left-4 top-4 z-30">
+        <CanvasLayoutSwitcher
+          activeLayoutId={layout.id}
+          activeLayoutName={layout.name}
+        />
+      </div>
       <div className="pointer-events-auto absolute right-4 top-4 z-30 flex items-center gap-2">
         <CanvasEdgeToggle
           showEdges={showEdges}
