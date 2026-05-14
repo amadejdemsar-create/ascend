@@ -20,12 +20,14 @@ import {
   DATABASE_VIEW_TYPE_VALUES,
   NODE_TYPE_VALUES,
   ACTIVITY_EVENT_TYPE_VALUES,
+  ANNOTATION_KIND_VALUES,
 } from "@ascend/core";
 
 const DATABASE_FIELD_TYPE_ENUM = [...DATABASE_FIELD_TYPE_VALUES];
 const DATABASE_VIEW_TYPE_ENUM = [...DATABASE_VIEW_TYPE_VALUES];
 const NODE_TYPE_ENUM = [...NODE_TYPE_VALUES];
 const ACTIVITY_EVENT_TYPE_ENUM = [...ACTIVITY_EVENT_TYPE_VALUES];
+const ANNOTATION_KIND_ENUM = [...ANNOTATION_KIND_VALUES];
 
 export interface ToolDefinition {
   name: string;
@@ -1558,6 +1560,108 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
           default: 50,
         },
       },
+    },
+  },
+
+  // ── Canvas (Wave 9) ──────────────────────────────────────────────────
+
+  {
+    name: "get_canvas_layout",
+    description:
+      "Get a spatial canvas layout including the full Excalidraw scene (elements, appState, files) and the list of CanvasNodes (each binds a ContextEntry to an x/y position on the canvas). Omit `layoutId` to fetch the user's default layout (lazily created on first call). Use this before set_node_position or create_annotation to inspect current canvas state.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        layoutId: {
+          type: "string",
+          description:
+            "CanvasLayout ID. Defaults to the user's default layout if omitted.",
+        },
+      },
+    },
+  },
+
+  {
+    name: "set_node_position",
+    description:
+      "Move a context entry's card on a canvas layout. Upserts the CanvasNode at (x, y) with optional width/height. Coordinates are in canvas-space (Excalidraw uses arbitrary numeric coords; positive x is right, positive y is down). w defaults to 240, h defaults to 140. The Excalidraw rectangle in the scene is also patched so the next render shows the card at the new position.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        layoutId: {
+          type: "string",
+          description: "CanvasLayout ID.",
+        },
+        contextEntryId: {
+          type: "string",
+          description:
+            "ContextEntry ID to position. Must belong to the same user + workspace.",
+        },
+        x: { type: "number", description: "Canvas-space x coordinate." },
+        y: { type: "number", description: "Canvas-space y coordinate." },
+        w: {
+          type: "number",
+          minimum: 0.01,
+          description: "Card width (default 240).",
+        },
+        h: {
+          type: "number",
+          minimum: 0.01,
+          description: "Card height (default 140).",
+        },
+      },
+      required: ["layoutId", "contextEntryId", "x", "y"],
+    },
+  },
+
+  {
+    name: "create_annotation",
+    description:
+      "Append a free-form annotation (freehand stroke, shape, sticky note, frame, or text label) to a canvas layout. Annotations live only on the canvas; they are NOT new ContextEntries. Use this to highlight cards, add notes, or sketch around the visual graph.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        layoutId: {
+          type: "string",
+          description: "CanvasLayout ID to append the annotation to.",
+        },
+        kind: {
+          type: "string",
+          enum: ANNOTATION_KIND_ENUM,
+          description:
+            "Annotation type. 'freehand' requires geometry.points; 'text' and 'sticky' require content.",
+        },
+        geometry: {
+          type: "object",
+          description: "Annotation position + size in canvas-space.",
+          properties: {
+            x: { type: "number" },
+            y: { type: "number" },
+            w: { type: "number", minimum: 0.01 },
+            h: { type: "number", minimum: 0.01 },
+            points: {
+              type: "array",
+              description:
+                "For freehand: list of {x, y} points relative to (geometry.x, geometry.y).",
+              items: {
+                type: "object",
+                properties: {
+                  x: { type: "number" },
+                  y: { type: "number" },
+                },
+                required: ["x", "y"],
+              },
+            },
+          },
+          required: ["x", "y"],
+        },
+        content: {
+          type: "string",
+          maxLength: 10000,
+          description: "Text content for 'text' or 'sticky' annotations.",
+        },
+      },
+      required: ["layoutId", "kind", "geometry"],
     },
   },
 ];

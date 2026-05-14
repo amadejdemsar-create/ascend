@@ -22,6 +22,7 @@ import { handleFileTool } from "./tools/file-tools";
 import { handleDatabaseTool } from "./tools/database-tools";
 import { handleVersionTool } from "./tools/version-tools";
 import { handleWorkspaceTool } from "./tools/workspace-tools";
+import { handleCanvasTool } from "./tools/canvas-tools";
 import { contextService } from "@/lib/services/context-service";
 import { categoryService } from "@/lib/services/category-service";
 
@@ -98,6 +99,11 @@ const WORKSPACE_TOOL_NAMES = new Set([
   "list_workspaces",
   "get_workspace",
   "get_activity_events",
+]);
+const CANVAS_TOOL_NAMES = new Set([
+  "get_canvas_layout",
+  "set_node_position",
+  "create_annotation",
 ]);
 
 /**
@@ -186,7 +192,11 @@ export function createAscendMcpServer(userId: string, workspaceId: string): Serv
       return handleWorkspaceTool(userId, workspaceId, name, args ?? {});
     }
 
-    // All 76 tool definitions are now routed. This fallback should never be reached.
+    if (CANVAS_TOOL_NAMES.has(name)) {
+      return handleCanvasTool(userId, workspaceId, name, args ?? {});
+    }
+
+    // All 79 tool definitions are now routed. This fallback should never be reached.
     return {
       content: [{ type: "text" as const, text: `Unknown tool: ${name}` }],
       isError: true,
