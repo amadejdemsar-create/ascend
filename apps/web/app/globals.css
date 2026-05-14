@@ -749,6 +749,40 @@
   }
 }
 
+/* ── Jump-to-cursor highlight animation ────────────────────────── */
+/* Applied briefly (~1.5s) when a user clicks a presence avatar.
+   Draws attention to the remote cursor location with a pulse
+   that radiates outward from the 2px caret line. */
+
+@media (prefers-reduced-motion: no-preference) {
+  .editor-collab-cursor.editor-collab-cursor-highlighted {
+    animation: editor-collab-cursor-pulse 1.5s ease-out forwards;
+  }
+
+  @keyframes editor-collab-cursor-pulse {
+    0% {
+      box-shadow: 0 0 0 0 var(--lexical-cursor-color, currentColor);
+      opacity: 1;
+    }
+    40% {
+      box-shadow: 0 0 0 8px transparent;
+      opacity: 1;
+    }
+    100% {
+      box-shadow: 0 0 0 0 transparent;
+      opacity: 1;
+    }
+  }
+}
+
+/* Reduced-motion fallback: brief opacity flash instead of pulse */
+@media (prefers-reduced-motion: reduce) {
+  .editor-collab-cursor.editor-collab-cursor-highlighted {
+    opacity: 0.4;
+    transition: opacity 300ms ease-out;
+  }
+}
+
 .editor-collab-selection {
   pointer-events: none;
 }

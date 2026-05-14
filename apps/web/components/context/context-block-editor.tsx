@@ -269,6 +269,9 @@ function EditorInner({
           <PresenceAvatars
             awareness={awareness}
             currentUserId={currentUserId}
+            cursorsContainerRef={
+              mode === "realtime" ? cursorsContainerRef : undefined
+            }
           />
         )}
         <button

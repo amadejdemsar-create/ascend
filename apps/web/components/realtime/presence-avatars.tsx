@@ -10,15 +10,24 @@
  * Each avatar shows the user's initials inside a colored ring that
  * matches their cursor color. Tooltip on hover shows the full name.
  *
+ * Jump-to-cursor (Wave 8b): when `cursorsContainerRef` is provided,
+ * clicking an avatar scrolls the editor to the remote user's cursor
+ * and briefly highlights it with a pulse animation. The cursor DOM
+ * element is located by matching the name text content inside the
+ * `.editor-collab-cursor-name` span rendered by @lexical/yjs, then
+ * walking up to the parent `.editor-collab-cursor` caret element.
+ *
  * Accessibility:
  *   - role="group" with aria-label="Active editors"
- *   - Each avatar has aria-label="{name} is editing"
+ *   - Each avatar has aria-label="{name} is editing" (non-clickable)
+ *     or aria-label="Jump to {name}'s cursor" (clickable)
  *
  * Returns null when awareness is null, currentUserId is null,
  * or there are no other connected clients.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import type React from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Tooltip,
   TooltipContent,
@@ -52,6 +61,18 @@ interface ConnectedClient {
 const MAX_VISIBLE_AVATARS = 5;
 
 /**
+ * Duration (ms) for the highlight class on the cursor element
+ * after a jump-to-cursor click.
+ */
+const HIGHLIGHT_DURATION_MS = 1_500;
+
+/**
+ * CSS class added to the cursor caret element during the highlight.
+ * Styled in globals.css alongside the existing .editor-collab-cursor rules.
+ */
+const HIGHLIGHT_CLASS = "editor-collab-cursor-highlighted";
+
+/**
  * Extract up to two initials from a display name.
  * Falls back to "?" if the name is empty or undefined.
  */
@@ -62,6 +83,30 @@ function getInitials(name: string | undefined): string {
     return parts[0].slice(0, 2).toUpperCase();
   }
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+/**
+ * Find the remote cursor caret DOM element for a given display name
+ * inside the cursors container. @lexical/yjs does not set data-*
+ * attributes on cursor elements, so we match by the textContent of
+ * the `.editor-collab-cursor-name` span and walk up to its parent
+ * `.editor-collab-cursor` caret element.
+ */
+function findCursorElementByName(
+  container: HTMLElement,
+  name: string,
+): HTMLElement | null {
+  const namePills = container.querySelectorAll(".editor-collab-cursor-name");
+  for (const pill of namePills) {
+    if (pill.textContent === name) {
+      // The caret element is the parent of the name pill
+      const caret = pill.parentElement;
+      if (caret?.classList.contains("editor-collab-cursor")) {
+        return caret;
+      }
+    }
+  }
+  return null;
 }
 
 /**
@@ -95,11 +140,16 @@ function collectRemoteClients(
 export function PresenceAvatars({
   awareness,
   currentUserId,
+  cursorsContainerRef,
 }: {
   awareness: AwarenessLike | null;
   currentUserId: string | null;
+  /** When provided, avatars become clickable and scroll/highlight the
+   *  corresponding remote cursor in the editor. */
+  cursorsContainerRef?: React.RefObject<HTMLElement | null>;
 }) {
   const [clients, setClients] = useState<ConnectedClient[]>([]);
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const syncClients = useCallback(() => {
     if (!awareness) {
@@ -126,6 +176,79 @@ export function PresenceAvatars({
     };
   }, [awareness, syncClients]);
 
+  // Clean up highlight timer on unmount
+  useEffect(() => {
+    return () => {
+      if (highlightTimerRef.current) {
+        clearTimeout(highlightTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Whether clicking avatars should trigger jump-to-cursor
+  const isClickable = !!cursorsContainerRef;
+
+  /**
+   * Scroll the editor to the remote cursor for the given client
+   * and briefly highlight it with a pulse animation.
+   */
+  const jumpToCursor = useCallback(
+    (client: ConnectedClient) => {
+      if (!cursorsContainerRef?.current) return;
+
+      const caretElement = findCursorElementByName(
+        cursorsContainerRef.current,
+        client.name,
+      );
+      if (!caretElement) {
+        if (process.env.NODE_ENV === "development") {
+          console.debug(
+            `[PresenceAvatars] Cursor element not found for "${client.name}"`,
+          );
+        }
+        return;
+      }
+
+      // Scroll to the cursor. Use the selection wrapper (parent of the
+      // caret) if available, since it represents the full selection rect
+      // and is more likely to be correctly positioned.
+      const scrollTarget = caretElement.parentElement ?? caretElement;
+
+      // Detect prefers-reduced-motion for smooth vs instant scroll
+      const prefersReducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+
+      scrollTarget.scrollIntoView({
+        behavior: prefersReducedMotion ? "auto" : "smooth",
+        block: "center",
+      });
+
+      // Clear any existing highlight timer
+      if (highlightTimerRef.current) {
+        clearTimeout(highlightTimerRef.current);
+        highlightTimerRef.current = null;
+      }
+
+      // Remove highlight from any previously highlighted cursor
+      const previouslyHighlighted =
+        cursorsContainerRef.current.querySelectorAll(`.${HIGHLIGHT_CLASS}`);
+      previouslyHighlighted.forEach((el) => el.classList.remove(HIGHLIGHT_CLASS));
+
+      // Add highlight class on the next animation frame so the browser
+      // can register the initial state before starting the animation
+      requestAnimationFrame(() => {
+        caretElement.classList.add(HIGHLIGHT_CLASS);
+
+        highlightTimerRef.current = setTimeout(() => {
+          caretElement.classList.remove(HIGHLIGHT_CLASS);
+          highlightTimerRef.current = null;
+        }, HIGHLIGHT_DURATION_MS);
+      });
+    },
+    [cursorsContainerRef],
+  );
+
   // Don't render when there's nothing to show
   if (!awareness || !currentUserId || clients.length === 0) {
     return null;
@@ -144,8 +267,17 @@ export function PresenceAvatars({
         {visible.map((client) => (
           <Tooltip key={client.clientID}>
             <TooltipTrigger
-              aria-label={`${client.name} is editing`}
-              className="relative -ml-2 first:ml-0 flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-semibold text-white select-none cursor-default"
+              aria-label={
+                isClickable
+                  ? `Jump to ${client.name}'s cursor`
+                  : `${client.name} is editing`
+              }
+              onClick={isClickable ? () => jumpToCursor(client) : undefined}
+              className={
+                isClickable
+                  ? "relative -ml-2 first:ml-0 flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-semibold text-white select-none cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 motion-safe:transition-transform motion-safe:hover:scale-110"
+                  : "relative -ml-2 first:ml-0 flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-semibold text-white select-none cursor-default"
+              }
               style={{
                 backgroundColor: client.color,
                 boxShadow: `0 0 0 2px var(--color-background, white)`,
@@ -154,7 +286,9 @@ export function PresenceAvatars({
               {client.initials}
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              {client.name} is editing
+              {isClickable
+                ? `Jump to ${client.name}'s cursor`
+                : `${client.name} is editing`}
             </TooltipContent>
           </Tooltip>
         ))}
