@@ -1530,7 +1530,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: "get_activity_events",
     description:
-      "Paginated workspace activity feed (newest first). Returns NODE_CREATED, NODE_DELETED, NODE_RESTORED, NODE_BRANCHED, LINK_CREATED, LINK_REMOVED, and (Wave 8b) MEMBER_* events. Use `cursor` from the previous response's `nextCursor` to fetch the next page.",
+      "Paginated workspace activity feed (newest first). Returns NODE_CREATED, NODE_UPDATED, NODE_DELETED, NODE_RESTORED, NODE_BRANCHED, LINK_CREATED, LINK_REMOVED, and MEMBER_* events. Use `cursor` from the previous response's `nextCursor` to fetch the next page.",
     inputSchema: {
       type: "object",
       properties: {

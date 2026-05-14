@@ -11,6 +11,7 @@ export const ACTIVITY_EVENT_TYPE_VALUES = [
   "MEMBER_ROLE_CHANGED",
   "NODE_CREATED",
   "NODE_DELETED",
+  "NODE_UPDATED",
   "NODE_RESTORED",
   "NODE_BRANCHED",
   "LINK_CREATED",
@@ -72,6 +73,16 @@ export const nodeDeletedPayloadSchema = z.object({
 });
 export type NodeDeletedPayload = z.infer<typeof nodeDeletedPayloadSchema>;
 
+export const nodeUpdatedPayloadSchema = z.object({
+  eventType: z.literal("NODE_UPDATED"),
+  nodeType: z.string(),
+  nodeId: z.string(),
+  title: z.string(),
+  /** Optional summary of what changed, e.g. "status", "title", "completed". */
+  summary: z.string().optional(),
+});
+export type NodeUpdatedPayload = z.infer<typeof nodeUpdatedPayloadSchema>;
+
 export const nodeRestoredPayloadSchema = z.object({
   eventType: z.literal("NODE_RESTORED"),
   nodeType: z.string(),
@@ -119,6 +130,7 @@ export const activityEventPayloadSchema = z.discriminatedUnion("eventType", [
   memberRoleChangedPayloadSchema,
   nodeCreatedPayloadSchema,
   nodeDeletedPayloadSchema,
+  nodeUpdatedPayloadSchema,
   nodeRestoredPayloadSchema,
   nodeBranchedPayloadSchema,
   linkCreatedPayloadSchema,

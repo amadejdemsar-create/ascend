@@ -140,6 +140,15 @@ export const todoService = {
     // Wave 7: schedule debounced snapshot after successful update
     versioningService.scheduleSnapshot(userId, workspaceId, "TODO", id, "EDIT_DEBOUNCED");
 
+    // Wave 8b: fire-and-forget activity event for todo update
+    void activityEventService.log(workspaceId, userId, "NODE_UPDATED", {
+      eventType: "NODE_UPDATED",
+      nodeType: "TODO",
+      nodeId: id,
+      title: updated.title,
+      ...(data.status ? { summary: `status: ${data.status}` } : {}),
+    });
+
     return updated;
   },
 
@@ -241,6 +250,15 @@ export const todoService = {
     // Wave 7: schedule snapshot after all completion side effects commit
     versioningService.scheduleSnapshot(userId, workspaceId, "TODO", id, "EDIT_DEBOUNCED");
 
+    // Wave 8b: fire-and-forget activity event for todo completion
+    void activityEventService.log(workspaceId, userId, "NODE_UPDATED", {
+      eventType: "NODE_UPDATED",
+      nodeType: "TODO",
+      nodeId: id,
+      title: result.title,
+      summary: "completed",
+    });
+
     return result;
   },
 
@@ -262,7 +280,7 @@ export const todoService = {
   async uncomplete(userId: string, workspaceId: string, id: string) {
     await permissionService.assertCanPerform(userId, workspaceId, "WRITE_NODE");
 
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const todo = await tx.todo.findFirst({
         where: { id, userId, workspaceId },
       });
@@ -327,6 +345,17 @@ export const todoService = {
 
       return reverted;
     });
+
+    // Wave 8b: fire-and-forget activity event for todo reopening
+    void activityEventService.log(workspaceId, userId, "NODE_UPDATED", {
+      eventType: "NODE_UPDATED",
+      nodeType: "TODO",
+      nodeId: id,
+      title: result.title,
+      summary: "reopened",
+    });
+
+    return result;
   },
 
   /**

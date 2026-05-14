@@ -102,6 +102,7 @@ export function useUpdateTodo() {
       queryClient.invalidateQueries({ queryKey: queryKeys.todos.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.todos.detail(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity.all() });
     },
   });
 }
@@ -128,6 +129,7 @@ export function useCompleteTodo() {
       queryClient.invalidateQueries({ queryKey: queryKeys.todos.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard() });
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity.all() });
     },
   });
 }
@@ -143,6 +145,7 @@ export function useUncompleteTodo() {
       queryClient.invalidateQueries({ queryKey: queryKeys.todos.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard() });
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity.all() });
     },
   });
 }

@@ -7,6 +7,7 @@ import {
 import { crdtTokenRequestSchema } from "@/lib/validations";
 import { blockDocumentService } from "@/lib/services/block-document-service";
 import { workspaceContextService } from "@/lib/services/workspace-context-service";
+import { crdtRateLimit } from "@/lib/services/crdt-rate-limit-service";
 
 export const maxDuration = 15;
 
@@ -28,6 +29,19 @@ export const maxDuration = 15;
 export async function POST(request: NextRequest) {
   const auth = await authenticate(request);
   if (!auth.success) return unauthorizedResponse();
+
+  // Rate limiting: 60 token requests per user per minute
+  const rateCheck = crdtRateLimit.check(auth.userId);
+  if (!rateCheck.allowed) {
+    const retryAfterSeconds = Math.ceil(rateCheck.retryAfterMs / 1000);
+    return NextResponse.json(
+      { error: "Too many token requests. Try again shortly." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(retryAfterSeconds) },
+      },
+    );
+  }
 
   try {
     const body = await request.json();
@@ -82,6 +96,9 @@ export async function POST(request: NextRequest) {
       );
     }
     const resolvedWsUrl = wsUrl ?? "ws://localhost:1234";
+
+    // Record the successful token issuance for rate limiting
+    crdtRateLimit.record(auth.userId);
 
     return NextResponse.json({
       token,

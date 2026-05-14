@@ -229,6 +229,7 @@ export function useUpdateRow(databaseId: string) {
         });
         queryClient.invalidateQueries({ queryKey: ["context", "graph"] });
       }
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity.all() });
     },
   });
 }

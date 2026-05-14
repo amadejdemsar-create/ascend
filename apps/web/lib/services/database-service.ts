@@ -252,7 +252,7 @@ export const databaseService = {
     }
 
     // Return the fresh database with includes
-    return prisma.database.findFirst({
+    const result = await prisma.database.findFirst({
       where: { id: databaseId, userId, workspaceId },
       include: {
         fields: { orderBy: { position: "asc" } },
@@ -271,6 +271,18 @@ export const databaseService = {
         },
       },
     });
+
+    // Wave 8b: fire-and-forget activity event for database update
+    const title = result?.contextEntry?.title ?? "Untitled";
+    void activityEventService.log(workspaceId, userId, "NODE_UPDATED", {
+      eventType: "NODE_UPDATED",
+      nodeType: "DATABASE",
+      nodeId: databaseId,
+      title,
+      ...(data.name ? { summary: "renamed" } : {}),
+    });
+
+    return result;
   },
 
   /**

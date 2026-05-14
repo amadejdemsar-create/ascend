@@ -7,6 +7,7 @@ import type { ActivityEventItem } from "@/lib/hooks/use-activity";
 import type {
   NodeCreatedPayload,
   NodeDeletedPayload,
+  NodeUpdatedPayload,
   NodeRestoredPayload,
   NodeBranchedPayload,
   LinkCreatedPayload,
@@ -154,6 +155,34 @@ function VerbFragment({ event }: { event: ActivityEventItem }) {
           <span className="font-medium text-foreground">
             &ldquo;{p.title}&rdquo;
           </span>
+        </span>
+      );
+    }
+
+    case "NODE_UPDATED": {
+      const p = payload as NodeUpdatedPayload;
+      const path = entityPath(p.nodeType, p.nodeId);
+      return (
+        <span className="text-muted-foreground">
+          updated {nodeTypeLabel(p.nodeType)}{" "}
+          {path ? (
+            <Link
+              href={path}
+              className="font-medium text-foreground hover:underline"
+            >
+              &ldquo;{p.title}&rdquo;
+            </Link>
+          ) : (
+            <span className="font-medium text-foreground">
+              &ldquo;{p.title}&rdquo;
+            </span>
+          )}
+          {p.summary && (
+            <span className="text-xs text-muted-foreground">
+              {" "}
+              ({p.summary})
+            </span>
+          )}
         </span>
       );
     }

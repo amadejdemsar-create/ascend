@@ -141,6 +141,19 @@ export const goalService = {
     // Wave 7: schedule debounced snapshot after successful update
     versioningService.scheduleSnapshot(userId, workspaceId, "GOAL", id, "EDIT_DEBOUNCED");
 
+    // Wave 8b: fire-and-forget activity event for standalone updates.
+    // When called from inside a transaction (client !== prisma), the
+    // caller (e.g. completeWithSideEffects) fires its own event.
+    if (client === prisma) {
+      void activityEventService.log(workspaceId, userId, "NODE_UPDATED", {
+        eventType: "NODE_UPDATED",
+        nodeType: "GOAL",
+        nodeId: id,
+        title: updated.title,
+        ...(data.status ? { summary: `status: ${data.status}` } : {}),
+      });
+    }
+
     return updated;
   },
 
@@ -211,6 +224,15 @@ export const goalService = {
 
     // Wave 7: schedule snapshot after successful completion transaction
     versioningService.scheduleSnapshot(userId, workspaceId, "GOAL", id, "EDIT_DEBOUNCED");
+
+    // Wave 8b: fire-and-forget activity event for goal completion
+    void activityEventService.log(workspaceId, userId, "NODE_UPDATED", {
+      eventType: "NODE_UPDATED",
+      nodeType: "GOAL",
+      nodeId: id,
+      title: result.title,
+      summary: "completed",
+    });
 
     return result;
   },

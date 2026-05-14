@@ -105,6 +105,7 @@ export function useUpdateGoal() {
         queryKey: queryKeys.goals.detail(id),
       });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity.all() });
     },
   });
 }

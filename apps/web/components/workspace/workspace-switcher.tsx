@@ -113,40 +113,45 @@ export function WorkspaceSwitcher() {
             side="bottom"
             sideOffset={4}
           >
-            <DropdownMenuLabel>
-              Switch workspace
-            </DropdownMenuLabel>
+            {/* When multiple workspaces exist, show the full switcher */}
+            {workspaceList.length > 1 && (
+              <>
+                <DropdownMenuLabel>
+                  Switch workspace
+                </DropdownMenuLabel>
 
-            <DropdownMenuGroup>
-              {workspaceList.map((workspace) => {
-                const isCurrent = workspace.id === currentWorkspaceId;
-                return (
-                  <DropdownMenuItem
-                    key={workspace.id}
-                    className="gap-2"
-                    disabled={isCurrent}
-                    onClick={(e) => {
-                      if (!isCurrent) {
-                        // Wave 8b: would trigger workspace switch here
-                        e.preventDefault();
-                      }
-                    }}
-                  >
-                    <div className="flex size-6 items-center justify-center rounded bg-primary/10 text-primary">
-                      <span className="text-[10px] font-semibold">
-                        {workspace.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <span className="truncate">{workspace.name}</span>
-                    {isCurrent && (
-                      <Check className="ml-auto size-4 text-primary" />
-                    )}
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuGroup>
+                <DropdownMenuGroup>
+                  {workspaceList.map((workspace) => {
+                    const isCurrent = workspace.id === currentWorkspaceId;
+                    return (
+                      <DropdownMenuItem
+                        key={workspace.id}
+                        className="gap-2"
+                        disabled={isCurrent}
+                        onClick={(e) => {
+                          if (!isCurrent) {
+                            // Wave 8b: would trigger workspace switch here
+                            e.preventDefault();
+                          }
+                        }}
+                      >
+                        <div className="flex size-6 items-center justify-center rounded bg-primary/10 text-primary">
+                          <span className="text-[10px] font-semibold">
+                            {workspace.name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <span className="truncate">{workspace.name}</span>
+                        {isCurrent && (
+                          <Check className="ml-auto size-4 text-primary" />
+                        )}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuGroup>
 
-            <DropdownMenuSeparator />
+                <DropdownMenuSeparator />
+              </>
+            )}
 
             <DropdownMenuItem
               render={<Link href="/settings/workspace" />}

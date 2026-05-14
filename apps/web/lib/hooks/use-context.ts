@@ -194,6 +194,7 @@ export function useUpdateContext() {
     onSuccess: (_result, { id }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.context.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.context.detail(id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity.all() });
     },
   });
 }

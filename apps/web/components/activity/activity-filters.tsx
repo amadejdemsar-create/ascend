@@ -19,7 +19,7 @@ interface EventTypeGroup {
 const EVENT_TYPE_GROUPS: EventTypeGroup[] = [
   {
     label: "Nodes",
-    types: ["NODE_CREATED", "NODE_DELETED", "NODE_RESTORED", "NODE_BRANCHED"],
+    types: ["NODE_CREATED", "NODE_UPDATED", "NODE_DELETED", "NODE_RESTORED", "NODE_BRANCHED"],
   },
   {
     label: "Links",

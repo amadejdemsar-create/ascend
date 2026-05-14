@@ -215,6 +215,15 @@ export const contextService = {
     // Wave 7: schedule a debounced snapshot after successful update
     versioningService.scheduleSnapshot(userId, workspaceId, "CONTEXT_ENTRY", id, "EDIT_DEBOUNCED");
 
+    // Wave 8b: fire-and-forget activity event for entity update
+    void activityEventService.log(workspaceId, userId, "NODE_UPDATED", {
+      eventType: "NODE_UPDATED",
+      nodeType: updated.type ?? "CONTEXT_ENTRY",
+      nodeId: id,
+      title: updated.title,
+      ...(titleChanged ? { summary: "title" } : {}),
+    });
+
     return updated;
   },
 

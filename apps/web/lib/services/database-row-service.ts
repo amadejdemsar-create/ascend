@@ -223,6 +223,7 @@ export const databaseRowService = {
             fields: { orderBy: { position: "asc" } },
           },
         },
+        contextEntry: { select: { title: true } },
       },
     });
     if (!existing) throw new Error("Row not found");
@@ -317,6 +318,17 @@ export const databaseRowService = {
 
     // Wave 7: schedule debounced snapshot after successful update
     versioningService.scheduleSnapshot(userId, workspaceId, "DATABASE_ROW", rowId, "EDIT_DEBOUNCED");
+
+    // Wave 8b: fire-and-forget activity event for row update.
+    // Use the newTitle if primary field changed, otherwise fall back to
+    // the contextEntry title that existed before the update.
+    const rowTitle = newTitle ?? existing.contextEntry?.title ?? "row";
+    void activityEventService.log(workspaceId, userId, "NODE_UPDATED", {
+      eventType: "NODE_UPDATED",
+      nodeType: "DATABASE_ROW",
+      nodeId: existing.contextEntryId,
+      title: rowTitle,
+    });
 
     // Return the updated row
     return prisma.databaseRow.findFirst({

@@ -156,6 +156,7 @@ export function useUpdateDatabase(id: string) {
         queryKey: queryKeys.databases.detail(id),
       });
       queryClient.invalidateQueries({ queryKey: queryKeys.databases.lists() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity.all() });
     },
   });
 }
