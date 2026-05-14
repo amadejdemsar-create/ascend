@@ -43,6 +43,14 @@ export interface CanvasNodeItem {
   excalidrawElementId: string;
   createdAt: string;
   updatedAt: string;
+  /** Denormalized from ContextEntry for inline card rendering (Phase 5). */
+  contextEntry?: {
+    id: string;
+    title: string;
+    type: string;
+    isPinned: boolean;
+    tags: string[];
+  };
 }
 
 export interface CanvasLayoutDetail {

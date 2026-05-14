@@ -123,6 +123,17 @@ export const canvasLayoutService = {
       include: {
         nodes: {
           orderBy: { createdAt: "asc" },
+          include: {
+            contextEntry: {
+              select: {
+                id: true,
+                title: true,
+                type: true,
+                isPinned: true,
+                tags: true,
+              },
+            },
+          },
         },
       },
     });
@@ -135,7 +146,22 @@ export const canvasLayoutService = {
   async getBySlug(userId: string, workspaceId: string, slug: string) {
     const layout = await prisma.canvasLayout.findFirst({
       where: { userId, workspaceId, slug },
-      include: { nodes: { orderBy: { createdAt: "asc" } } },
+      include: {
+        nodes: {
+          orderBy: { createdAt: "asc" },
+          include: {
+            contextEntry: {
+              select: {
+                id: true,
+                title: true,
+                type: true,
+                isPinned: true,
+                tags: true,
+              },
+            },
+          },
+        },
+      },
     });
     return layout;
   },
@@ -157,7 +183,22 @@ export const canvasLayoutService = {
 
     const existing = await prisma.canvasLayout.findFirst({
       where: { userId, workspaceId, isDefault: true },
-      include: { nodes: { orderBy: { createdAt: "asc" } } },
+      include: {
+        nodes: {
+          orderBy: { createdAt: "asc" },
+          include: {
+            contextEntry: {
+              select: {
+                id: true,
+                title: true,
+                type: true,
+                isPinned: true,
+                tags: true,
+              },
+            },
+          },
+        },
+      },
     });
     if (existing) return existing;
 
@@ -202,7 +243,22 @@ export const canvasLayoutService = {
       // Re-fetch with nodes to match getById's shape.
       const full = await prisma.canvasLayout.findUnique({
         where: { id: result.row.id },
-        include: { nodes: { orderBy: { createdAt: "asc" } } },
+        include: {
+        nodes: {
+          orderBy: { createdAt: "asc" },
+          include: {
+            contextEntry: {
+              select: {
+                id: true,
+                title: true,
+                type: true,
+                isPinned: true,
+                tags: true,
+              },
+            },
+          },
+        },
+      },
       });
       // Cannot be null: we just created or raced-into it.
       if (!full)
@@ -215,7 +271,22 @@ export const canvasLayoutService = {
       if (code === "P2002") {
         const winner = await prisma.canvasLayout.findFirst({
           where: { userId, workspaceId, isDefault: true },
-          include: { nodes: { orderBy: { createdAt: "asc" } } },
+          include: {
+        nodes: {
+          orderBy: { createdAt: "asc" },
+          include: {
+            contextEntry: {
+              select: {
+                id: true,
+                title: true,
+                type: true,
+                isPinned: true,
+                tags: true,
+              },
+            },
+          },
+        },
+      },
         });
         if (winner) return winner;
       }

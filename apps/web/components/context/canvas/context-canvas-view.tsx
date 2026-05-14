@@ -1,7 +1,13 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import "@excalidraw/excalidraw/index.css";
 
 import {
@@ -9,6 +15,7 @@ import {
   useDefaultCanvasLayout,
   useUpsertNodes,
   type CanvasLayoutDetail,
+  type CanvasNodeItem,
 } from "@/lib/hooks/use-canvas";
 import { useContextEntries } from "@/lib/hooks/use-context";
 import { useUIStore } from "@/lib/stores/ui-store";
@@ -16,6 +23,14 @@ import { Button } from "@/components/ui/button";
 import { Clock } from "lucide-react";
 import { CanvasLoadingSkeleton } from "./canvas-loading-skeleton";
 import { ContextCanvasEmptyState } from "./context-canvas-empty-state";
+import { CanvasCardOverlay } from "./canvas-card-overlay";
+import { CanvasSaveStatus } from "./canvas-save-status";
+import {
+  buildNodeCardRect,
+  isCardRect,
+  makeCardElementId,
+} from "./canvas-scene-utils";
+import { useCanvasAutosave } from "@/lib/hooks/use-canvas-autosave";
 
 const Excalidraw = dynamic(
   async () => (await import("@excalidraw/excalidraw")).Excalidraw,
@@ -25,26 +40,18 @@ const Excalidraw = dynamic(
 const NODE_W = 240;
 const NODE_H = 140;
 const QUICK_ADD_GAP = 40;
+const DRAG_MIME = "application/x-ascend-entry";
 
-/**
- * Wave 9: Map view. Embeds Excalidraw with the user's active canvas
- * layout. Phase 4 ships the mount + empty state + time-travel banner;
- * Phase 5 adds card overlay sync, drag-from-sidebar, and autosave;
- * Phase 6 adds edge rendering + arrow-to-create-link flow.
- *
- * Mounting strategy:
- *   - If useUIStore.canvasActiveLayoutId is null (first visit or after
- *     a layout delete), call useDefaultCanvasLayout which lazily
- *     creates "Personal" on the server.
- *   - Otherwise call useCanvasLayout with the persisted id.
- *   - After either resolves, persist the id so refresh restores the
- *     same layout.
- */
+interface ExcalidrawAPILite {
+  getAppState: () => unknown;
+  getSceneElements: () => readonly unknown[];
+  updateScene: (input: { elements?: unknown }) => void;
+}
+
 export function ContextCanvasView() {
   const activeLayoutId = useUIStore((s) => s.canvasActiveLayoutId);
   const setActiveLayoutId = useUIStore((s) => s.setCanvasActiveLayoutId);
   const graphViewAtDate = useUIStore((s) => s.graphViewAtDate);
-
   const isReadOnly = !!graphViewAtDate;
 
   const explicitQuery = useCanvasLayout(activeLayoutId);
@@ -59,8 +66,6 @@ export function ContextCanvasView() {
     : defaultQuery.isError;
   const error = activeLayoutId ? explicitQuery.error : defaultQuery.error;
 
-  // After the default loads, persist its id so future visits skip the
-  // /default endpoint and go straight to /[id].
   useEffect(() => {
     if (!activeLayoutId && data?.layout?.id) {
       setActiveLayoutId(data.layout.id);
@@ -94,43 +99,72 @@ interface MountedProps {
 
 function ContextCanvasViewMounted({ layout, isReadOnly }: MountedProps) {
   const upsertNodes = useUpsertNodes();
-  // Pull entries (already ordered by updatedAt desc server-side); the
-  // quick-add button slices the first 5.
   const recentEntries = useContextEntries();
+  const apiRef = useRef<ExcalidrawAPILite | null>(null);
+  const [apiReady, setApiReady] = useState(false);
 
-  // Excalidraw expects its own `initialData` shape. The `canvas` blob
-  // from the server is opaque JSONB; we narrow it just enough to pass
-  // through.
+  const autosave = useCanvasAutosave({
+    layoutId: layout.id,
+    initialNodes: layout.nodes,
+  });
+
+  // Build initial Excalidraw scene from the server-side canvas blob.
+  // Ensure every CanvasNode has a matching rectangle element (defensive:
+  // if a node was added via the API without scene sync, we synthesize
+  // its rect on first mount so the overlay has something to anchor to).
   const initialData = useMemo(() => {
     const scene = layout.canvas as
       | { elements?: unknown; appState?: unknown; files?: unknown }
       | undefined;
-    if (!scene) return null;
-    // `elements` must be an array; cast through unknown because the
-    // ElementType union from @excalidraw/excalidraw is too large to
-    // import for a v0.18 typecheck.
-    const elements = Array.isArray(scene.elements) ? scene.elements : [];
-    // appState is partial; Excalidraw fills defaults. Pass through.
+    const existingElements = Array.isArray(scene?.elements)
+      ? (scene.elements as Array<{ id?: string; customData?: { kind?: string } }>)
+      : [];
+    const existingCardIds = new Set(
+      existingElements.filter(isCardRect).map((el) => el.id ?? ""),
+    );
+    const synthesized: unknown[] = [];
+    for (const node of layout.nodes) {
+      if (!existingCardIds.has(node.excalidrawElementId)) {
+        synthesized.push(
+          buildNodeCardRect({
+            elementId: node.excalidrawElementId,
+            x: node.x,
+            y: node.y,
+            w: node.w,
+            h: node.h,
+            contextEntryId: node.contextEntryId,
+          }),
+        );
+      }
+    }
     const appState =
-      typeof scene.appState === "object" && scene.appState !== null
+      typeof scene?.appState === "object" && scene.appState !== null
         ? (scene.appState as Record<string, unknown>)
         : {};
     return {
-      elements: elements as never,
+      elements: [...existingElements, ...synthesized] as never,
       appState: appState as never,
-      files: scene.files as never,
+      files: scene?.files as never,
     };
-  }, [layout.canvas]);
+  }, [layout.canvas, layout.nodes]);
 
-  const hasContent =
-    layout.nodes.length > 0 ||
-    (Array.isArray((layout.canvas as { elements?: unknown[] })?.elements) &&
-      ((layout.canvas as { elements: unknown[] }).elements.length ?? 0) > 0);
-
-  function handleQuickAddRecent() {
-    if (!Array.isArray(recentEntries.data)) return;
+  const handleQuickAddRecent = useCallback(() => {
+    if (!Array.isArray(recentEntries.data) || !apiRef.current) return;
     const entries = (recentEntries.data as Array<{ id: string }>).slice(0, 5);
+    if (entries.length === 0) return;
     const stride = NODE_W + QUICK_ADD_GAP;
+    const newRects = entries.map((entry, i) =>
+      buildNodeCardRect({
+        elementId: makeCardElementId(entry.id),
+        x: i * stride,
+        y: 0,
+        w: NODE_W,
+        h: NODE_H,
+        contextEntryId: entry.id,
+      }),
+    );
+    const current = apiRef.current.getSceneElements();
+    apiRef.current.updateScene({ elements: [...current, ...newRects] });
     upsertNodes.mutate({
       layoutId: layout.id,
       body: {
@@ -140,20 +174,142 @@ function ContextCanvasViewMounted({ layout, isReadOnly }: MountedProps) {
           y: 0,
           w: NODE_W,
           h: NODE_H,
-          excalidrawElementId: `el-${entry.id}`,
+          excalidrawElementId: makeCardElementId(entry.id),
         })),
         remove: [],
       },
     });
-  }
+  }, [layout.id, recentEntries.data, upsertNodes]);
+
+  // Drag-from-sidebar: convert a screen-coord drop into canvas coords
+  // using the live appState scrollX/Y/zoom, append a card rect, and
+  // upsert the CanvasNode.
+  const handleDrop = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      const payload = event.dataTransfer.getData(DRAG_MIME);
+      if (!payload || !apiRef.current) return;
+      let parsed: { id?: string };
+      try {
+        parsed = JSON.parse(payload);
+      } catch {
+        return;
+      }
+      const entryId = parsed.id;
+      if (!entryId) return;
+
+      // Don't accept drops twice for the same entry; the unique
+      // constraint will catch it server-side too.
+      const existingNode = layout.nodes.find(
+        (n) => n.contextEntryId === entryId,
+      );
+      if (existingNode) return;
+
+      // Convert clientX/Y to canvas coords.
+      const target = event.currentTarget;
+      const rect = target.getBoundingClientRect();
+      const ax = apiRef.current.getAppState() as {
+        scrollX?: number;
+        scrollY?: number;
+        zoom?: number | { value?: number };
+      };
+      const zoom =
+        typeof ax.zoom === "number" ? ax.zoom : (ax.zoom?.value ?? 1);
+      const scrollX = ax.scrollX ?? 0;
+      const scrollY = ax.scrollY ?? 0;
+      const cx = (event.clientX - rect.left) / zoom - scrollX - NODE_W / 2;
+      const cy = (event.clientY - rect.top) / zoom - scrollY - NODE_H / 2;
+
+      const elementId = makeCardElementId(entryId);
+      const newRect = buildNodeCardRect({
+        elementId,
+        x: cx,
+        y: cy,
+        w: NODE_W,
+        h: NODE_H,
+        contextEntryId: entryId,
+      });
+      const current = apiRef.current.getSceneElements();
+      apiRef.current.updateScene({ elements: [...current, newRect] });
+      upsertNodes.mutate({
+        layoutId: layout.id,
+        body: {
+          upsert: [
+            {
+              contextEntryId: entryId,
+              x: cx,
+              y: cy,
+              w: NODE_W,
+              h: NODE_H,
+              excalidrawElementId: elementId,
+            },
+          ],
+          remove: [],
+        },
+      });
+    },
+    [layout.id, layout.nodes, upsertNodes],
+  );
+
+  const handleDragOver = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      if (event.dataTransfer.types.includes(DRAG_MIME)) {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "copy";
+      }
+    },
+    [],
+  );
+
+  // Wire Excalidraw onChange to the autosave hook.
+  const onSceneChange = useCallback(
+    (
+      elements: readonly unknown[],
+      appState: unknown,
+      files?: unknown,
+    ) => {
+      autosave.onChange(
+        elements,
+        (appState ?? {}) as Record<string, unknown>,
+        files as Record<string, unknown> | undefined,
+      );
+    },
+    [autosave],
+  );
+
+  const hasContent =
+    layout.nodes.length > 0 ||
+    (Array.isArray((layout.canvas as { elements?: unknown[] })?.elements) &&
+      ((layout.canvas as { elements: unknown[] }).elements.length ?? 0) > 0);
 
   return (
-    <div className="relative h-full w-full">
+    <div
+      className="relative h-full w-full"
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
       {isReadOnly && <TimeTravelBanner />}
+      <div className="pointer-events-auto absolute right-4 top-4 z-30">
+        <CanvasSaveStatus
+          status={autosave.status}
+          lastSavedAt={autosave.lastSavedAt}
+          onRetry={() => void autosave.flush()}
+        />
+      </div>
       <Excalidraw
-        initialData={initialData ?? undefined}
+        initialData={initialData}
         viewModeEnabled={isReadOnly}
+        onChange={onSceneChange}
+        excalidrawAPI={(api) => {
+          apiRef.current = api as ExcalidrawAPILite;
+          setApiReady(true);
+        }}
       />
+      {apiReady && (
+        <CanvasCardOverlay
+          excalidrawAPI={apiRef.current}
+          nodes={layout.nodes}
+        />
+      )}
       {!hasContent && !isReadOnly && (
         <ContextCanvasEmptyState
           onQuickAddRecent={handleQuickAddRecent}

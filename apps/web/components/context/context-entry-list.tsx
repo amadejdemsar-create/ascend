@@ -89,6 +89,16 @@ function ContextRow({
     <button
       type="button"
       data-list-item-id={entry.id}
+      draggable
+      onDragStart={(e) => {
+        // Wave 9: drag-to-canvas payload. Map view's onDrop reads
+        // this MIME and creates a CanvasNode at the drop position.
+        e.dataTransfer.setData(
+          "application/x-ascend-entry",
+          JSON.stringify({ id: entry.id }),
+        );
+        e.dataTransfer.effectAllowed = "copy";
+      }}
       onClick={() => onSelect(entry.id)}
       className={cn(
         "flex flex-col gap-1.5 w-full rounded-lg border p-3 text-left transition-colors",
