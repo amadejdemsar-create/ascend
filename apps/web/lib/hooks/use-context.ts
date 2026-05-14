@@ -266,6 +266,11 @@ function invalidateLinkCaches(
   queryClient.invalidateQueries({
     queryKey: queryKeys.context.related(toEntryId),
   });
+  // Wave 9: canvas scene may render this link as an arrow. Broad
+  // invalidation: refetches whatever layout(s) are currently cached
+  // so the customData.linkId tag (set after CANVAS-source create)
+  // propagates into the next read.
+  queryClient.invalidateQueries({ queryKey: queryKeys.canvas.all() });
 }
 
 export function useCreateContextLink() {

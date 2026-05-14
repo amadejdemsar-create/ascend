@@ -137,12 +137,18 @@ export type RemoveCanvasNodeParams = z.infer<
 >;
 
 // ── Import ────────────────────────────────────────────────────────────
-// Multipart body. The file binary is validated server-side after
-// parsing; this schema covers the JSON fields.
+// JSON body, not multipart. The client parses the .excalidraw file
+// (which is already JSON) and POSTs the parsed scene. The server
+// re-validates the scene shape and applies the merge/replace.
+//
+// .tldr was dropped from W9 (Phase 0 spike). The `format` field exists
+// for forward-compat but currently only accepts "excalidraw".
 
 export const canvasImportBodySchema = z.object({
+  layoutId: z.string().min(1),
   format: canvasImportFormatSchema,
   mode: z.enum(["replace", "merge"]),
+  scene: excalidrawSceneSchema,
 });
 export type CanvasImportBody = z.infer<typeof canvasImportBodySchema>;
 

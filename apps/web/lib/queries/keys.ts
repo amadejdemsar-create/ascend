@@ -106,5 +106,11 @@ export const queryKeys = {
       filters?: { eventTypes?: ActivityEventType[]; since?: Date },
     ) => ["activity", "feed", workspaceId ?? null, filters ?? {}] as const,
   },
+  canvas: {
+    all: () => ["canvas"] as const,
+    layouts: () => ["canvas", "layouts"] as const,
+    layout: (id: string | null) => ["canvas", "layout", id ?? null] as const,
+    nodes: (layoutId: string) => ["canvas", "nodes", layoutId] as const,
+  },
   dashboard: () => ["dashboard"] as const,
 };
