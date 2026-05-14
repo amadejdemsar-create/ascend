@@ -29,6 +29,7 @@
     "@dnd-kit/helpers": "^0.3.2",
     "@dnd-kit/react": "^0.3.2",
     "@dnd-kit/sortable": "^10.0.0",
+    "@excalidraw/excalidraw": "^0.18.1",
     "@hocuspocus/provider": "4.0.0",
     "@lexical/code": "0.43.0",
     "@lexical/extension": "0.43.0",
