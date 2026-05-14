@@ -110,6 +110,21 @@ export function useCanvasLayout(id: string | null) {
   });
 }
 
+/**
+ * Fetch the user's default canvas layout, lazily creating "Personal"
+ * on first visit. Used by the canvas view on initial mount when no
+ * `canvasActiveLayoutId` is persisted yet.
+ */
+export function useDefaultCanvasLayout(enabled: boolean = true) {
+  return useQuery({
+    queryKey: queryKeys.canvas.layout("__default__"),
+    queryFn: () =>
+      apiFetch<DetailResponse>("/api/canvas/layouts/default"),
+    enabled,
+    staleTime: 30 * 1000,
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Mutations
 // ---------------------------------------------------------------------------

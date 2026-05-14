@@ -28,7 +28,19 @@ function createAdapterStorage<S>(): PersistStorage<S> {
 }
 
 export type ViewType = "list" | "tree" | "timeline";
-export type ContextViewType = "list" | "graph" | "pinned" | "backlinks";
+export type ContextViewType =
+  | "list"
+  | "graph"
+  | "pinned"
+  | "backlinks"
+  | "canvas";
+
+/** Wave 9: in-flight canvas edge creation. */
+export interface CanvasLinkTypePickerState {
+  fromEntryId: string;
+  toEntryId: string;
+  pendingArrowId: string;
+}
 export type ContextSearchMode = "text" | "semantic" | "hybrid";
 export type TodoDateTab = "today" | "week" | "all";
 
@@ -84,6 +96,10 @@ interface UIStore {
   graphViewAtDate: string | null;
   /** Whether to show presence avatars and remote cursors in the editor. */
   presenceOverlayEnabled: boolean;
+  /** Wave 9: last-opened canvas layout id. Restored on /context revisit. */
+  canvasActiveLayoutId: string | null;
+  /** Wave 9: transient in-flight edge-creation state. NOT persisted. */
+  canvasLinkTypePickerOpen: CanvasLinkTypePickerState | null;
   setTodoDateTab: (tab: TodoDateTab) => void;
   setTodoHideCompleted: (hide: boolean) => void;
   setContextTagFilter: (tag: string | null) => void;
@@ -103,6 +119,9 @@ interface UIStore {
   setVersionHistoryExpanded: (key: string, expanded: boolean) => void;
   setGraphViewAtDate: (date: string | null) => void;
   setPresenceOverlayEnabled: (enabled: boolean) => void;
+  setCanvasActiveLayoutId: (id: string | null) => void;
+  openCanvasLinkTypePicker: (state: CanvasLinkTypePickerState) => void;
+  closeCanvasLinkTypePicker: () => void;
   resetFilters: () => void;
 }
 
@@ -129,6 +148,8 @@ export const useUIStore = create<UIStore>()(
       versionHistoryExpanded: {},
       graphViewAtDate: null,
       presenceOverlayEnabled: true,
+      canvasActiveLayoutId: null,
+      canvasLinkTypePickerOpen: null,
       setTodoDateTab: (tab) => set({ todoDateTab: tab }),
       setTodoHideCompleted: (hide) => set({ todoHideCompleted: hide }),
       setContextTagFilter: (tag) =>
@@ -162,11 +183,16 @@ export const useUIStore = create<UIStore>()(
         })),
       setGraphViewAtDate: (date) => set({ graphViewAtDate: date }),
       setPresenceOverlayEnabled: (enabled) => set({ presenceOverlayEnabled: enabled }),
+      setCanvasActiveLayoutId: (id) => set({ canvasActiveLayoutId: id }),
+      openCanvasLinkTypePicker: (state) =>
+        set({ canvasLinkTypePickerOpen: state }),
+      closeCanvasLinkTypePicker: () =>
+        set({ canvasLinkTypePickerOpen: null }),
       resetFilters: () => set({ activeFilters: {}, activeSorting: [] }),
     }),
     {
       name: "ascend-ui",
-      version: 12,
+      version: 13,
       storage: createAdapterStorage(),
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as Record<string, unknown>;
@@ -238,6 +264,12 @@ export const useUIStore = create<UIStore>()(
             presenceOverlayEnabled: true,
           };
         }
+        if (version === 12) {
+          return {
+            ...state,
+            canvasActiveLayoutId: null,
+          };
+        }
         return state;
       },
       partialize: (state) => ({
@@ -255,6 +287,7 @@ export const useUIStore = create<UIStore>()(
         contextSearchMode: state.contextSearchMode,
         versionHistoryExpanded: state.versionHistoryExpanded,
         presenceOverlayEnabled: state.presenceOverlayEnabled,
+        canvasActiveLayoutId: state.canvasActiveLayoutId,
       }),
     }
   )

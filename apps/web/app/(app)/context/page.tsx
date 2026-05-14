@@ -17,6 +17,7 @@ import { ContextViewSwitcher } from "@/components/context/context-view-switcher"
 import type { ContextEntryType } from "@ascend/core";
 import { ContextGraphView } from "@/components/context/context-graph-view";
 import { ContextBacklinksView } from "@/components/context/context-backlinks-view";
+import { ContextCanvasView } from "@/components/context/canvas";
 import { ContextMapCard, ContextMapFilterPill } from "@/components/context/context-map-card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
@@ -273,9 +274,12 @@ function ContextPageInner() {
   }
 
   // For graph view, the left panel is replaced by the graph canvas.
+  // For canvas view (Wave 9 Map), same full-bleed treatment.
   // For pinned view, the left panel shows only pinned entries.
   // For backlinks view, placeholder for now.
   const isGraphView = contextActiveView === "graph";
+  const isCanvasView = contextActiveView === "canvas";
+  const isFullBleedView = isGraphView || isCanvasView;
 
   // Escape closes the open detail/editor panel. Scoped to this page because
   // the global handler only owns selectedGoalId. Skips when focus is in a
@@ -315,6 +319,9 @@ function ContextPageInner() {
     switch (contextActiveView) {
       case "graph":
         return <ContextGraphView />;
+
+      case "canvas":
+        return <ContextCanvasView />;
 
       case "pinned":
         return (
@@ -478,12 +485,12 @@ function ContextPageInner() {
 
       {/* Left panel: view content */}
       <div
-        className={`flex-1 flex flex-col ${isGraphView ? "" : "border-r overflow-y-auto"} ${
-          !isGraphView && (showDetail || showEditor) ? "hidden md:flex" : "flex"
+        className={`flex-1 flex flex-col ${isFullBleedView ? "" : "border-r overflow-y-auto"} ${
+          !isFullBleedView && (showDetail || showEditor) ? "hidden md:flex" : "flex"
         }`}
       >
-        {/* Graph view gets its own header inline */}
-        {isGraphView && (
+        {/* Graph + Canvas full-bleed views share the inline header. */}
+        {isFullBleedView && (
           <div className="sticky top-0 z-10 border-b bg-background p-4 space-y-3">
             <PageHeader
               title="Context"
@@ -499,10 +506,14 @@ function ContextPageInner() {
                 </>
               }
             />
-            {/* Map card in graph header */}
-            <ContextMapCard />
-            {mapFilterEntryIds && (
-              <ContextMapFilterPill onClear={handleClearMapFilter} />
+            {/* Map card only on graph view; canvas has its own toolbar. */}
+            {isGraphView && (
+              <>
+                <ContextMapCard />
+                {mapFilterEntryIds && (
+                  <ContextMapFilterPill onClear={handleClearMapFilter} />
+                )}
+              </>
             )}
           </div>
         )}

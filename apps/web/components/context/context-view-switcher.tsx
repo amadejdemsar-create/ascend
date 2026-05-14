@@ -1,6 +1,6 @@
 "use client";
 
-import { List, Network, Pin, ArrowLeftRight } from "lucide-react";
+import { List, Network, Pin, ArrowLeftRight, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUIStore, type ContextViewType } from "@/lib/stores/ui-store";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,7 @@ const VIEW_OPTIONS: Array<{
 }> = [
   { value: "list", label: "List", icon: List },
   { value: "graph", label: "Graph", icon: Network },
+  { value: "canvas", label: "Map", icon: Map },
   { value: "pinned", label: "Pinned", icon: Pin },
   { value: "backlinks", label: "Backlinks", icon: ArrowLeftRight },
 ];
