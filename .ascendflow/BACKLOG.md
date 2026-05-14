@@ -2,7 +2,40 @@
 
 Deferred features and initiatives that have been explicitly scoped but not yet implemented. When you want to pick one up, run `/ax:plan <slug>` to create a full PRD + TASKS.md.
 
-Last updated: 13. 5. 2026
+Last updated: 14. 5. 2026
+
+---
+
+## Wave 9 (Spatial canvas) — SHIPPED 14. 5. 2026
+
+The Map view ships an infinite Excalidraw canvas with persistent per-layout node positions, drag-from-sidebar card creation, debounced autosave with status pill, edge rendering + draw-to-create-link with an 8-option type picker, multiple named layouts with switcher + rename + delete, `.excalidraw` import (replace/merge) + export, 3 MCP tools (count 76 → 79), and activity feed integration for 4 new event types.
+
+Schema added 2 tables + 1 enum extension across 4 hand-written migrations (all DZ-2 safe, additive, search_vector intact). Service layer added `canvas-layout-service`, `canvas-node-service`, `canvas-import-service`. 7 API endpoints under `/api/canvas/`. Excalidraw v0.18.1 (MIT, React 19 supported as of 0.18.0). `.tldr` import was dropped in the Phase 0 spike: no maintained standalone parser exists.
+
+Audit verdicts: `ascend-migration-auditor` PASS (Phase 1, 4 migrations clean), `ascend-reviewer` PASS post-fix (Phase 2, 3 permission-action fixes WRITE_NODE → DELETE_NODE on delete paths), `ascend-security` PASS (Phase 3, zero findings on the 5 route files). Phase 0 perf measurement was deferred at the spike: the spike page had layout-math bugs that weren't worth iterating on prod for; the real card-overlay perf rides on the live canvas via Phase 5+.
+
+Commits: `a56d68f` (Phase 0 install + spike), `071fcb4` (Phase 0 close), `14fead2` (Phase 1 schema), `5c6a84e` (Phase 2 services), `f5be38a` (Phase 3 routes + hooks), `ae5bc31` (Phase 4 Map mount + empty state), `1abc185` (Phase 5 cards + drag + autosave), `81e989c` (Phase 6 edges + type picker), `5958893` (Phase 7 layout switcher), `123752d` (Phase 8 import + export), `a8c2eb9` (Phase 9 MCP tools), `7f48e6d` (Phase 10 activity events + confetti), wave-close commit. Close-out at `.ascendflow/features/context-v2/wave-9-spatial-canvas/CLOSE-OUT.md`.
+
+## Wave 9 carry-overs
+
+### MEDIUM (polish that didn't make the wave)
+
+- **Per-card-size toggle in the toolbar.** The Zustand viewport stores `cardSize` (compact / default / expanded) and the overlay renders all three regimes already; Phase 7 deferred the toggle button itself.
+- **Card hover affordance for edge preview.** When edges are off, hovering a card should briefly fade in its outgoing arrows. The Phase 10 task spec had this; deferred for time.
+- **Click-to-open-entry-detail wiring on cards.** The overlay buttons fire `onCardClick` with the contextEntryId, but the canvas-view currently has no detail-panel-open handler bound. Phase 10 plan called for this; deferred. Workaround: switch to List view + selection persists via URL.
+- **Optimistic delete-via-keyboard-Delete on selected cards.** Excalidraw's native Delete key removes the rectangle from the scene; we need to also fire `useRemoveNode` so the CanvasNode row goes away. Currently the rect disappears but the DB row lingers until manual sidebar removal.
+
+### LOW (Wave 9 PRD "Out of Scope")
+
+- **Realtime collaborative canvas.** Wave 9 ships single-user / last-write-wins; Yjs binding to Excalidraw's scene format is real engineering. Defer until multi-user demand surfaces.
+- **Per-canvas time travel.** Adding `CanvasLayout` / `CanvasNode` to the Wave 7 NodeVersion polymorphic table. Defer.
+- **Mobile canvas.** Excalidraw on touch is functional but not great; Wave 6 (when shipped) will ship a read-only Map thumbnail with full editing in a later polish wave.
+- **Embedded canvases inside notes.** EmbedNode Lexical placeholder remains a stub.
+- **AI-generated layouts.** "Lay out my workspace as a graph" via LLM. Adds prompt + token cost considerations.
+- **Per-link annotations on the canvas.** Sticky notes attached to an arrow with persistence.
+- **Snap-to-grid / alignment guides.** Excalidraw has none natively.
+- **Layout sharing / public publishing.** Wave 8b carryover covers this for all entity types.
+- **`.tldr` import revisit.** If a community-maintained standalone parser emerges, reopen.
 
 ---
 

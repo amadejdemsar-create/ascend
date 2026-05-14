@@ -2,7 +2,7 @@
 
 **Slug:** `context-v2` / `wave-9-spatial-canvas`
 **Created:** 14. 5. 2026
-**Status:** in-progress
+**Status:** done
 **Parent vision:** [.ascendflow/features/context-v2/VISION.md](../VISION.md) (W9 section, ~line 414)
 **Wave sizing:** 2-3 weeks per VISION; target 10-13 working days at the cadence Waves 5, 7, and 8 hit.
 
