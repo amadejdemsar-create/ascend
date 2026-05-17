@@ -87,7 +87,7 @@ Two production incidents during the wave: a wget-based Docker HEALTHCHECK that f
 
 ### LOW (post-close polish)
 
-- **Connection indicator copy.** "Offline (autosave)" is slightly misleading when the user is online but Hocuspocus is unreachable. Consider "Local save" or "Saving locally".
+- ~~**Connection indicator copy.**~~ ALREADY SHIPPED. `context-block-editor.tsx:422` reads "Saving locally" in the fallback state. BACKLOG entry was stale.
 - **Workspace switcher behavior with a single workspace.** Currently shown as a disabled dropdown row with a check mark. Notion and Linear hide the switcher entirely for single-workspace accounts; either approach is defensible.
 - ~~**Secret distinctness check at startup.**~~ SHIPPED 17. 5. 2026. `apps/web/lib/services/workspace-context-service.ts` runs a module-load assertion that throws if any pair of `AUTH_JWT_SECRET`, `CRDT_JWT_SECRET`, `CRDT_PERSIST_SECRET` share the same string. Pairs are only checked when both are set; missing secrets surface their own clearer errors at call sites.
 - **Goal completion should fire NODE_UPDATED.** `goalService.completeWithSideEffects` does not log to ActivityEvent today; the feed misses goal completions.
