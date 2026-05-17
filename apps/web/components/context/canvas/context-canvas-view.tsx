@@ -13,6 +13,7 @@ import "@excalidraw/excalidraw/index.css";
 import {
   useCanvasLayout,
   useDefaultCanvasLayout,
+  useRemoveNode,
   useUpdateLayout,
   useUpsertNodes,
   type CanvasLayoutDetail,
@@ -24,7 +25,7 @@ import {
 } from "@/lib/hooks/use-context";
 import { useUIStore } from "@/lib/stores/ui-store";
 import type { CanvasViewport } from "@/lib/validations";
-import type { ContextLinkType } from "@ascend/core";
+import type { CardSize, ContextLinkType } from "@ascend/core";
 import { Button } from "@/components/ui/button";
 import { Clock, Plus } from "lucide-react";
 import {
@@ -40,6 +41,7 @@ import { ContextCanvasEmptyState } from "./context-canvas-empty-state";
 import { CanvasCardOverlay } from "./canvas-card-overlay";
 import { CanvasSaveStatus } from "./canvas-save-status";
 import { CanvasEdgeToggle } from "./canvas-edge-toggle";
+import { CanvasCardSizeToggle } from "./canvas-card-size-toggle";
 import { CanvasLinkTypePicker } from "./canvas-link-type-picker";
 import { CanvasLayoutSwitcher } from "./canvas-layout-switcher";
 import { CanvasImportDialog } from "./canvas-import-dialog";
@@ -180,6 +182,7 @@ export function ContextCanvasViewMounted({
   const b = bisection ?? {};
   const upsertNodes = useUpsertNodes();
   const updateLayout = useUpdateLayout();
+  const removeNode = useRemoveNode();
   const recentEntries = useContextEntries();
   const graphQuery = useContextGraph();
   const deleteLink = useDeleteContextLink();
@@ -194,6 +197,7 @@ export function ContextCanvasViewMounted({
 
   const viewport = (layout.viewport ?? {}) as Partial<CanvasViewport>;
   const showEdges = viewport.showEdges !== false;
+  const cardSize: CardSize = viewport.cardSize ?? "default";
 
   const autosave = useCanvasAutosave({
     layoutId: layout.id,
@@ -481,14 +485,58 @@ export function ContextCanvasViewMounted({
         }
       }
 
-      // 3) Forward to autosave for the scene blob + node position deltas.
+      // 3) Detect card-rect deletions (user selected a card on canvas
+      //    and pressed Delete). Excalidraw removes the rectangle from
+      //    the scene's elements list immediately. Diff prev vs next by
+      //    element id, and for each card rect missing from `elements`,
+      //    fire useRemoveNode so the underlying CanvasNode row goes
+      //    away. Without this the rect disappears from the canvas but
+      //    the DB row lingers (Wave 9 MEDIUM carry-over).
+      const nextIds = new Set<string>();
+      for (const el of elements) {
+        if (typeof el !== "object" || el === null) continue;
+        const id = (el as { id?: unknown }).id;
+        if (typeof id === "string") nextIds.add(id);
+      }
+      for (const rawEl of prev) {
+        if (typeof rawEl !== "object" || rawEl === null) continue;
+        const el = rawEl as {
+          id?: string;
+          customData?: { kind?: string; contextEntryId?: string };
+        };
+        if (!isCardRect(el)) continue;
+        const elementId = el.id;
+        const entryId = el.customData?.contextEntryId;
+        if (!elementId || !entryId) continue;
+        if (nextIds.has(elementId)) continue;
+        // Only fire the mutation if the CanvasNode row still exists
+        // server-side; otherwise this is a stale React re-render and
+        // we'd fire a 404. Use existingEntryIds (computed from
+        // layout.nodes) as the source of truth.
+        if (!existingEntryIds.has(entryId)) continue;
+        removeNode.mutate({
+          layoutId: layout.id,
+          contextEntryId: entryId,
+        });
+      }
+
+      // 4) Forward to autosave for the scene blob + node position deltas.
       autosave.onChange(
         elements,
         (appState ?? {}) as Record<string, unknown>,
         files as Record<string, unknown> | undefined,
       );
     },
-    [autosave, cardElementIds, deleteLink, layout.nodes, openPicker],
+    [
+      autosave,
+      cardElementIds,
+      deleteLink,
+      existingEntryIds,
+      layout.id,
+      layout.nodes,
+      openPicker,
+      removeNode,
+    ],
   );
 
   // ── Excalidraw prop identity stabilization (Wave 9 crash fix) ──────
@@ -576,6 +624,28 @@ export function ContextCanvasViewMounted({
       api.updateScene({ elements: next });
     },
     [],
+  );
+
+  // Update viewport.cardSize. The overlay re-renders cards via the
+  // cardSize prop on the next React tick; the rectangle dimensions on
+  // canvas do not change (the overlay just renders different content).
+  const handleChangeCardSize = useCallback(
+    (next: CardSize) => {
+      if (next === cardSize) return;
+      updateLayout.mutate({
+        id: layout.id,
+        input: {
+          viewport: {
+            x: viewport.x ?? 0,
+            y: viewport.y ?? 0,
+            zoom: viewport.zoom ?? 1,
+            showEdges,
+            cardSize: next,
+          },
+        },
+      });
+    },
+    [cardSize, layout.id, showEdges, updateLayout, viewport.x, viewport.y, viewport.zoom],
   );
 
   // Toggle edge visibility. Updates viewport.showEdges via the layout
@@ -783,6 +853,11 @@ export function ContextCanvasViewMounted({
             <Download className="size-3.5" aria-hidden="true" />
             <span className="text-xs">Export</span>
           </Button>
+          <CanvasCardSizeToggle
+            cardSize={cardSize}
+            onChange={handleChangeCardSize}
+            disabled={isReadOnly || updateLayout.isPending}
+          />
           <CanvasEdgeToggle
             showEdges={showEdges}
             onToggle={handleToggleEdges}
@@ -829,6 +904,7 @@ export function ContextCanvasViewMounted({
           nodes={layout.nodes}
           onCardClick={handleCardClick}
           selectedEntryId={selectedEntryId}
+          cardSize={cardSize}
         />
       )}
       {!b.noTypePicker && (

@@ -2,11 +2,25 @@
 
 Deferred features and initiatives that have been explicitly scoped but not yet implemented. When you want to pick one up, run `/ax:plan <slug>` to create a full PRD + TASKS.md.
 
-Last updated: 14. 5. 2026
+Last updated: 17. 5. 2026
 
 ---
 
-## Wave 9 (Spatial canvas) — SHIPPED 14. 5. 2026
+## Wave 9 (Spatial canvas) — INFRASTRUCTURE SHIPPED 14. 5. 2026, REAL CLOSE 17. 5. 2026
+
+The 14. 5. close shipped infrastructure but never ran the closing manual smoke or `ascend-critic`. Step 1 of the smoke ("open `/context` → click Map") would have caught immediately that **the Map view crashed on production with "Maximum update depth exceeded"** from Excalidraw's internal tunnel-rat `useSyncExternalStore` loop. Wave 9 was silently broken on prod from 14. 5. → 17. 5. 2026.
+
+17. 5. close (real) shipped:
+
+- **Crash fix** — `onSceneChange` + `excalidrawAPI` had a new function identity every render. Stable ref-pattern wrappers in `context-canvas-view.tsx` solve it (`stableOnSceneChange` + `stableExcalidrawAPI`). Documented as DZ-27 in CLAUDE.md with inline comments at the fix site.
+- **Must-fix items from 15. 5. `ascend-critic` NEEDS WORK verdict** all shipped: card drag (`locked: false` + rAF live position tracking), card click → detail `<Sheet>` (`selectedEntryId` + `ContextEntryDetail`), `+ Add card` toolbar picker (`CanvasAddCardDialog` with search + keyboard nav + pan-to-existing + viewport-center placement).
+- **Should-fix copy + polish** — empty state points to "+ Add card", "Edges" → "Connections", "Deleted layout" → "Layout removed", view-switcher tooltips, dot-grid loading skeleton, `COMPONENT_CATALOG.md` gains 17-entry Wave 9 section (total 87 → 104 components).
+- **Defense in depth** — `sanitizeAppStateForPersist` strips 19 Map/Set/transient appState keys, `rehydrateAppStateForExcalidraw` rebuilds Map+Set on restore, `CanvasViewErrorBoundary` auto-resets `useUIStore.contextActiveView` to `"list"` on render failure (eliminates "permanently locked out of /context" footgun).
+- **Diagnostic scaffolding kept in tree** — exported `ContextCanvasViewMounted` + optional `CanvasBisectionFlags` (13 flags, all default off), `/test-canvas-full` page mounts the full tree with fake QueryClient + Zustand state and URL-flag bisection, `/test-canvas` retained as bare-Excalidraw regression baseline.
+
+`ax:verify-ui` PASS WITH NOTES (7/7 scenarios), `ax:critique` verdict moved NEEDS WORK → **GOOD**. Wave 9 success criteria C11 (card movement), C12 (click-to-open-detail), C13 (critic verdict) now DONE. Commits: `0cc09d8` (fix), `b15168a` (docs).
+
+### Wave 9 original close (14. 5. 2026)
 
 The Map view ships an infinite Excalidraw canvas with persistent per-layout node positions, drag-from-sidebar card creation, debounced autosave with status pill, edge rendering + draw-to-create-link with an 8-option type picker, multiple named layouts with switcher + rename + delete, `.excalidraw` import (replace/merge) + export, 3 MCP tools (count 76 → 79), and activity feed integration for 4 new event types.
 
@@ -22,7 +36,7 @@ Commits: `a56d68f` (Phase 0 install + spike), `071fcb4` (Phase 0 close), `14fead
 
 - **Per-card-size toggle in the toolbar.** The Zustand viewport stores `cardSize` (compact / default / expanded) and the overlay renders all three regimes already; Phase 7 deferred the toggle button itself.
 - **Card hover affordance for edge preview.** When edges are off, hovering a card should briefly fade in its outgoing arrows. The Phase 10 task spec had this; deferred for time.
-- **Click-to-open-entry-detail wiring on cards.** The overlay buttons fire `onCardClick` with the contextEntryId, but the canvas-view currently has no detail-panel-open handler bound. Phase 10 plan called for this; deferred. Workaround: switch to List view + selection persists via URL.
+- ~~**Click-to-open-entry-detail wiring on cards.**~~ SHIPPED 17. 5. 2026 as Wave 9 close must-fix #2. `onCardClick` now opens a right-side `<Sheet>` with `ContextEntryDetail` (full content + version history + click-to-edit), selection ring on card while Sheet is open, Escape closes.
 - **Optimistic delete-via-keyboard-Delete on selected cards.** Excalidraw's native Delete key removes the rectangle from the scene; we need to also fire `useRemoveNode` so the CanvasNode row goes away. Currently the rect disappears but the DB row lingers until manual sidebar removal.
 
 ### LOW (Wave 9 PRD "Out of Scope")
@@ -52,9 +66,9 @@ Two production incidents during the wave: a wget-based Docker HEALTHCHECK that f
 - **Deep-linking infrastructure.** Activity feed entity links currently land on the domain page (`/context`, `/goals`, `/todos`) without selecting the specific entity. Every entity page needs URL-param-based direct navigation. Critic flagged this as Wave 8b priority #1 because it unblocks not just the activity feed but also browser history, link sharing, and mobile deep links.
 - **`LINK_CREATED` / `LINK_REMOVED` event titles.** Renderer currently shows generic "entry to entry"; payload carries `fromEntryId` + `toEntryId` but the row should fetch + display the actual titles.
 - **Activity feed mobile filter affordance.** Filter sidebar is `hidden md:block`; add a sheet / drawer trigger for mobile.
-- **`CRDT_PERSIST_SECRET` minimum length guard.** `apps/crdt/src/persist.ts:20` and `lib/auth.ts:verifyCrdtPersistSecret` only check presence. Add `>= 32 chars` enforcement before Wave 8b multi-user exposes the CRDT server more broadly.
-- **MCP CORS allowlist.** `apps/web/app/api/mcp/route.ts:7` allows all origins. Header-based auth makes this low-risk in Wave 8, but tighten to an env-configurable allowlist for Wave 8b.
-- **Membership revocation should clear access tokens.** `_resolveWorkspaceId` trusts the JWT claim without re-checking membership. In Wave 8b, removing a user from a workspace should revoke their access token immediately (currently they retain access until next JWT refresh, up to 15 min).
+- ~~**`CRDT_PERSIST_SECRET` minimum length guard.**~~ SHIPPED. `apps/crdt/src/persist.ts:25-31` throws on startup if <32 chars. `apps/web/lib/auth.ts:213-218` logs warning + returns false on persist requests if <32 chars. Both sides enforce the 32-char floor at module load + at every persist request.
+- ~~**MCP CORS allowlist.**~~ SHIPPED. `apps/web/app/api/mcp/route.ts:6-66` reads comma-separated `MCP_ALLOWED_ORIGINS` env var; when set, echoes back matching request `Origin` with `Vary: Origin`; when unset, defaults to wildcard with a console.warn at module load. Production: set `MCP_ALLOWED_ORIGINS=https://ascend.nativeai.agency,https://claude.ai` in Dokploy env.
+- **Membership revocation should clear access tokens.** `_resolveWorkspaceId` (`apps/web/lib/auth.ts:101-107`) trusts the JWT claim without re-checking membership. In Wave 8b, removing a user from a workspace should revoke their access token immediately (currently they retain access until next JWT refresh, up to 15 min). Implementation options: (a) per-request DB round-trip to verify `ACTIVE` membership (~5-10ms overhead per authenticated request), (b) invalidate refresh tokens on member removal so next refresh fails, (c) shorten access JWT TTL from 15min to 5min to bound the staleness window. (b) is the most accurate; (c) is the simplest. Defer until multi-user.
 
 ### MEDIUM (Wave 8b features and enrichment)
 

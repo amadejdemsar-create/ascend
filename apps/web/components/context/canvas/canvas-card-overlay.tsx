@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { CanvasNodeItem } from "@/lib/hooks/use-canvas";
+import type { CardSize } from "@ascend/core";
 
 interface Props {
   /** Excalidraw API ref. Lazily resolved by the parent. */
@@ -14,6 +15,14 @@ interface Props {
   onCardClick?: (contextEntryId: string) => void;
   /** Entry ID currently selected (highlighted on the canvas). */
   selectedEntryId?: string | null;
+  /**
+   * User-controlled override of the zoom-based detail regime.
+   * "compact" forces title-only at any zoom; "default" uses the zoom
+   * thresholds (mini-dot < 0.35x, compact < 0.6x, full at >= 0.6x);
+   * "expanded" always shows full detail (title + type + tags).
+   * Persisted per-layout in `viewport.cardSize`.
+   */
+  cardSize?: CardSize;
 }
 
 interface Viewport {
@@ -50,6 +59,7 @@ export function CanvasCardOverlay({
   nodes,
   onCardClick,
   selectedEntryId,
+  cardSize = "default",
 }: Props) {
   const [viewport, setViewport] = useState<Viewport>({
     scrollX: 0,
@@ -168,6 +178,7 @@ export function CanvasCardOverlay({
             w={w}
             h={h}
             zoom={viewport.zoom}
+            cardSize={cardSize}
             onClick={() => onCardClick?.(node.contextEntryId)}
             isSelected={selectedEntryId === node.contextEntryId}
           />
@@ -184,6 +195,7 @@ interface CanvasCardProps {
   w: number;
   h: number;
   zoom: number;
+  cardSize: CardSize;
   onClick: () => void;
   isSelected: boolean;
 }
@@ -207,15 +219,26 @@ function CanvasCard({
   w,
   h,
   zoom,
+  cardSize,
   onClick,
   isSelected,
 }: CanvasCardProps) {
   const entry = node.contextEntry;
   const title = entry?.title ?? "Untitled";
   const typeLabel = ENTRY_TYPE_LABEL[entry?.type ?? "NOTE"] ?? "Note";
-  // Below 0.6x zoom show only the title; below 0.35x render a dot only.
-  const isCompact = zoom < 0.6;
-  const isMini = zoom < 0.35;
+  // Detail regime: combine zoom thresholds with the user's cardSize
+  // preference. "expanded" forces full detail (overrides zoom-based
+  // mini-dot and compact). "compact" forces compact mode at any zoom.
+  // "default" is the original zoom-based behavior.
+  let isMini = zoom < 0.35;
+  let isCompact = zoom < 0.6;
+  if (cardSize === "expanded") {
+    isMini = false;
+    isCompact = false;
+  } else if (cardSize === "compact") {
+    isMini = false;
+    isCompact = true;
+  }
 
   return (
     <button
