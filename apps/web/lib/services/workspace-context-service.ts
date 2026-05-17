@@ -30,6 +30,40 @@ if (CRDT_JWT_SECRET_RAW && CRDT_JWT_SECRET_RAW.length >= 32) {
   CRDT_JWT_SECRET = new TextEncoder().encode(CRDT_JWT_SECRET_RAW);
 }
 
+// ---------------------------------------------------------------------------
+// Secret distinctness check.
+//
+// AUTH_JWT_SECRET, CRDT_JWT_SECRET, and CRDT_PERSIST_SECRET MUST be three
+// different strings. If two of them collide, compromise of one cascades
+// to the other: a leaked CRDT JWT could be used to forge auth tokens, or
+// a leaked persist secret could be used to mint CRDT JWTs.
+//
+// Throws at module load when any pair matches AND both are set. We do not
+// throw when one of the pair is unset; missing secrets surface clearer
+// errors at their own call sites (e.g., generateCrdtToken throws "CRDT
+// JWT secret is not configured"). The intent of THIS check is specifically
+// "you set them but reused the same string."
+// ---------------------------------------------------------------------------
+{
+  const auth = process.env.AUTH_JWT_SECRET;
+  const crdtJwt = CRDT_JWT_SECRET_RAW;
+  const crdtPersist = process.env.CRDT_PERSIST_SECRET;
+  const pairs: Array<[string, string | undefined, string, string | undefined]> = [
+    ["AUTH_JWT_SECRET", auth, "CRDT_JWT_SECRET", crdtJwt],
+    ["AUTH_JWT_SECRET", auth, "CRDT_PERSIST_SECRET", crdtPersist],
+    ["CRDT_JWT_SECRET", crdtJwt, "CRDT_PERSIST_SECRET", crdtPersist],
+  ];
+  for (const [nameA, valA, nameB, valB] of pairs) {
+    if (valA && valB && valA === valB) {
+      throw new Error(
+        `[workspace-context-service] ${nameA} and ${nameB} share the same value. ` +
+          "Each secret MUST be a distinct string so compromise of one does not " +
+          "cascade to the others. Generate fresh values with: openssl rand -hex 32",
+      );
+    }
+  }
+}
+
 /** Default CRDT token TTL in seconds (5 minutes) */
 const DEFAULT_CRDT_TOKEN_TTL_SECONDS = 300;
 
