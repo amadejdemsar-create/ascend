@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { validateApiKey } from "@/lib/auth";
 import { createAscendMcpServer } from "@/lib/mcp/server";
+import { mcpFederationService } from "@/lib/services/mcp-federation-service";
+import { federationProxy } from "@/lib/mcp/federation-proxy";
 
 // ── MCP CORS allowlist ──────────────────────────────────────────────
 //
@@ -112,6 +114,119 @@ function validateJsonRpcRequest(
   return { valid: true };
 }
 
+// ── Wave 10: MCP federation helpers ─────────────────────────────────
+//
+// The slug__toolName prefix delimiter is `__` (double underscore). No
+// native Ascend tool name contains `__`, verified by grep at wave
+// close. If a future native tool ever needs `__`, change FED_DELIM
+// here AND grep again.
+const FED_DELIM = "__";
+
+function splitFederatedName(name: unknown): {
+  slug: string;
+  toolName: string;
+} | null {
+  if (typeof name !== "string") return null;
+  const idx = name.indexOf(FED_DELIM);
+  if (idx <= 0) return null;
+  const slug = name.slice(0, idx);
+  const toolName = name.slice(idx + FED_DELIM.length);
+  if (!slug || !toolName) return null;
+  return { slug, toolName };
+}
+
+/**
+ * Handle a `tools/call` request whose tool name is federated. Bypasses
+ * the SDK entirely; never throws. Returns the JSON-RPC response shape
+ * that the client expects.
+ */
+async function handleFederatedToolCall(args: {
+  userId: string;
+  workspaceId: string;
+  jsonRpcId: string | number | null;
+  slug: string;
+  toolName: string;
+  toolArgs: unknown;
+}): Promise<{ jsonrpc: "2.0"; id: string | number | null; result?: unknown; error?: { code: number; message: string } }> {
+  const internal = await mcpFederationService._getInternalBySlug(
+    args.userId,
+    args.workspaceId,
+    args.slug,
+  );
+  if (!internal) {
+    return {
+      jsonrpc: "2.0",
+      id: args.jsonRpcId,
+      error: {
+        code: -32601,
+        message: `Federated server "${args.slug}" not found or disabled`,
+      },
+    };
+  }
+  const result = await federationProxy.callTool(
+    internal.connection,
+    internal.decryptedCredentials,
+    args.toolName,
+    args.toolArgs,
+  );
+  if (!result.ok) {
+    return {
+      jsonrpc: "2.0",
+      id: args.jsonRpcId,
+      error: { code: -32603, message: result.error },
+    };
+  }
+  return {
+    jsonrpc: "2.0",
+    id: args.jsonRpcId,
+    result: result.result,
+  };
+}
+
+/**
+ * Merge federated tools into a `tools/list` response. Parses the
+ * SDK's response body, appends federated tools, re-serializes. Returns
+ * a new Response with the same headers/status.
+ *
+ * On any parse failure, returns the original response unchanged so the
+ * native tool list still reaches the client.
+ */
+async function mergeFederatedToolsIntoResponse(args: {
+  response: Response;
+  userId: string;
+  workspaceId: string;
+}): Promise<Response> {
+  try {
+    const cloned = args.response.clone();
+    const body = (await cloned.json()) as {
+      jsonrpc?: string;
+      id?: string | number | null;
+      result?: { tools?: unknown[] };
+    };
+    if (!body || !body.result || !Array.isArray(body.result.tools)) {
+      return args.response;
+    }
+    const federated = await mcpFederationService.listCachedToolsForUser(
+      args.userId,
+      args.workspaceId,
+    );
+    const merged = {
+      ...body,
+      result: {
+        ...body.result,
+        tools: [...body.result.tools, ...federated],
+      },
+    };
+    return new Response(JSON.stringify(merged), {
+      status: args.response.status,
+      statusText: args.response.statusText,
+      headers: args.response.headers,
+    });
+  } catch {
+    return args.response;
+  }
+}
+
 /**
  * MCP endpoint using Streamable HTTP transport (stateless mode).
  *
@@ -204,6 +319,32 @@ export async function POST(request: NextRequest): Promise<Response> {
       console.log(`[MCP] ${method} ${toolName}`);
     }
 
+    // 6b. Wave 10: federated tools/call short-circuit. If the tool
+    // name has the `<slug>__<toolName>` shape, proxy to the upstream
+    // server directly without running the SDK. Native tools never
+    // contain `__` in their names.
+    {
+      const obj = body as Record<string, unknown>;
+      if (obj.method === "tools/call") {
+        const params = obj.params as { name?: unknown; arguments?: unknown } | undefined;
+        const split = splitFederatedName(params?.name);
+        if (split) {
+          const fedResponse = await handleFederatedToolCall({
+            userId: auth.userId,
+            workspaceId: auth.workspaceId,
+            jsonRpcId: (obj.id as string | number | null | undefined) ?? null,
+            slug: split.slug,
+            toolName: split.toolName,
+            toolArgs: params?.arguments,
+          });
+          return NextResponse.json(fedResponse, {
+            status: 200,
+            headers: buildCorsHeaders(request),
+          });
+        }
+      }
+    }
+
     // 7. Create a per-request server scoped to this user
     const server = createAscendMcpServer(auth.userId, auth.workspaceId);
 
@@ -223,13 +364,24 @@ export async function POST(request: NextRequest): Promise<Response> {
       body: JSON.stringify(body),
     });
 
-    const response = await transport.handleRequest(
+    let response = await transport.handleRequest(
       reconstructed as unknown as Request,
     );
 
     // 10. Clean up after the response is produced
     await transport.close();
     await server.close();
+
+    // 10b. Wave 10: merge federated tools into tools/list responses.
+    // The SDK doesn't know about external connections; we splice them
+    // into the result.tools array after the SDK has built its response.
+    if (response && (body as { method?: string }).method === "tools/list") {
+      response = await mergeFederatedToolsIntoResponse({
+        response,
+        userId: auth.userId,
+        workspaceId: auth.workspaceId,
+      });
+    }
 
     // 11. Merge CORS headers into the response
     const corsHeaders = buildCorsHeaders(request);

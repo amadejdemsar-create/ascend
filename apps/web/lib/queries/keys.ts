@@ -112,5 +112,19 @@ export const queryKeys = {
     layout: (id: string | null) => ["canvas", "layout", id ?? null] as const,
     nodes: (layoutId: string) => ["canvas", "nodes", layoutId] as const,
   },
+  // Wave 10: MCP federation
+  mcpServers: {
+    all: () => ["mcpServers"] as const,
+    list: () => ["mcpServers", "list"] as const,
+    detail: (id: string) => ["mcpServers", "detail", id] as const,
+  },
+  // Wave 10: External data (GitHub, ...)
+  externalData: {
+    all: () => ["externalData"] as const,
+    sources: () => ["externalData", "sources"] as const,
+    source: (id: string) => ["externalData", "source", id] as const,
+    rows: (sourceId: string, shape: string, params: unknown) =>
+      ["externalData", "rows", sourceId, shape, params] as const,
+  },
   dashboard: () => ["dashboard"] as const,
 };
