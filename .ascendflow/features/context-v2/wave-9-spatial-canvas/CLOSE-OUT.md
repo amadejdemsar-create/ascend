@@ -130,3 +130,104 @@ Not blocking for "done" but worth doing soon:
 2. **Manual smoke (above) on prod.** Confirm the 18 checks pass end to end.
 3. **Measure card-overlay perf** with the real Map view + ~50 cards using Chrome DevTools performance trace. Target: median ≥ 55 fps during pan. PRD documented the two fallback strategies (useSyncExternalStore subscription, or render cards as Excalidraw custom shapes) if perf is poor.
 4. **Address any of the MEDIUM Wave 9 carry-overs** that bite in real use (per-card-size toggle, hover edge preview, click-to-open-detail, optimistic delete-via-Delete-key).
+
+---
+
+## Addendum (17. 5. 2026): Real close
+
+The 14. 5. close above shipped infrastructure but never ran the manual smoke checklist or the closing `ascend-critic`. Step 1 of that checklist (open `/context` → click Map) would have caught immediately that **the Map view crashed on production** with `Maximum update depth exceeded` from Excalidraw's internal `tunnel.useIsomorphicLayoutEffect`. Wave 9 was silently broken from 14. 5. to 17. 5.
+
+This addendum records the actual close after the crash was diagnosed, the must-fix items shipped, and the critic re-run.
+
+### Crash root cause
+
+`onSceneChange` and the `excalidrawAPI` callback had a new function identity on every render of `ContextCanvasViewMounted`. `onSceneChange`'s `useCallback` depended on `autosave`, which is the return value of `useCanvasAutosave` — a fresh `{ status, lastSavedAt, onChange, flush }` object literal every render. The `excalidrawAPI` callback was an inline arrow. Excalidraw's internal tunnel-rat portal uses `useSyncExternalStore`; when a prop callback's identity changes between renders, tunnel-rat's `useIsomorphicLayoutEffect` re-subscribes inside the commit phase and forces every consumer to re-render via `forceStoreRerender`. Each forced re-render fires the layout effect again, producing an infinite loop that React bails out of with "Maximum update depth exceeded" (the `Set.forEach` → `forceStoreRerender` → `tunnel.useIsomorphicLayoutEffect` chain in the trace).
+
+### Crash fix
+
+`apps/web/components/context/canvas/context-canvas-view.tsx`: keep the latest closure in `onSceneChangeRef`, expose a `stableOnSceneChange` via `useCallback` with empty deps. Same pattern for `stableExcalidrawAPI`. Excalidraw sees the same function references on every render, so the layout-effect loop never fires. Inline comment documents the ref pattern + tunnel-rat behaviour.
+
+### Bisection scaffolding (kept in tree)
+
+For future Excalidraw debugging:
+
+- `apps/web/app/test-canvas-full/page.tsx`: auth-gated diagnostic route. Mounts `ContextCanvasViewMounted` with fake QueryClient + Zustand state. Wrapped in `<Suspense>` so the production build prerenders cleanly.
+- `ContextCanvasViewMounted` is now **exported** and accepts an optional `CanvasBisectionFlags` prop (`noOverlay`, `noSaveStatus`, `noSheet`, `noOnChange`, etc., 13 flags). All flags default to false (full production behavior); the `ContextCanvasView` wrapper never threads bisection through. Zero production behavior change.
+- URL-flag bisection: `?noOverlay&noSheet&noTypePicker&noOnChange` disables sibling components one at a time to isolate the trigger of any future crash.
+
+### Must-fix items from the 15. 5. critique (all shipped)
+
+1. **Card repositioning was broken.** Cards were `locked: true`; overlay had no drag handler.
+   Fix: `locked: false` on card rects + rewrote `CanvasCardOverlay` rAF loop to read live element positions from `getSceneElements()`. Cards follow native Excalidraw drag in real time. Autosave detects position deltas and persists. Position survival verified via page reload.
+
+2. **Card click did nothing.** `onCardClick` was accepted but the parent never wired it.
+   Fix: parent wires `setSelectedEntryId(contextEntryId)` → opens a right-side `<Sheet>` with the full `ContextEntryDetail` (click-to-edit fields, type selector, block editor, version history, backlinks). Selection ring on card while Sheet is open. Escape closes.
+
+3. **No way to add a specific entry from full-bleed Map.** Sidebar entry list was hidden; no toolbar picker.
+   Fix: `+ Add card` toolbar button + new `CanvasAddCardDialog`. Search via `useContextEntries` + `useSearchContext`. Keyboard nav (ArrowDown/Up/Enter), auto-focus on open, `"On canvas"` indicator preventing duplicates, viewport-center placement for new entries, pan-to-existing with toast for already-placed entries. MAX_VISIBLE=50 with footer count.
+
+### Pre-existing bugs cleaned up alongside
+
+- **`appState.collaborators` Map / `followedBy` Set JSON round-trip.** `sanitizeAppStateForPersist` strips 19 transient/Map/Set keys before persist; `rehydrateAppStateForExcalidraw` rebuilds Map + Set on restore. Handles existing bad data in the DB without a backfill migration.
+- **No error boundary on canvas (DZ-7).** New `CanvasViewErrorBoundary` class boundary auto-resets `useUIStore.contextActiveView` to `"list"` on render failure, eliminating the production footgun where one Map view crash permanently locked the user out of `/context`.
+
+### Should-fix items from the 15. 5. critique (all shipped)
+
+1. **Empty state copy was misleading.** "Drag entries from the sidebar" → "Use the &quot;+ Add card&quot; button above to place specific entries, or quick-add your 5 most recent." (`context-canvas-empty-state.tsx`)
+2. **"Edges on/off" → "Connections on/off"** to match the existing `title` attribute. (`canvas-edge-toggle.tsx`)
+3. **"Deleted layout" toast wording** softened to `'Layout "X" removed.'` (`canvas-layout-delete-dialog.tsx`)
+4. **View switcher icon buttons** now have descriptive `title` tooltips on all 5 buttons. (`context-view-switcher.tsx`)
+5. **Loading skeleton** replaced centered spinner with a faint dot-grid background matching Excalidraw's empty canvas + bottom-anchored loading pill. No visual pop on mount. (`canvas-loading-skeleton.tsx`)
+6. **`COMPONENT_CATALOG.md`** updated: added "Context Canvas Components (Wave 9)" section with 17 entries, updated total component count from 87 to 104.
+
+### Audit verdicts (this session)
+
+| Audit | Verdict | Notes |
+|---|---|---|
+| `tsc --noEmit` | PASS | zero errors after all 6 should-fix edits |
+| `pnpm build` (production) | PASS | 79 routes, `/test-canvas-full` prerenders statically |
+| `ax:verify-ui` | PASS WITH NOTES | 7/7 scenarios PASS, notes are Playwright-only limitations on synthetic drag |
+| `ax:critique` | **GOOD** | 7 PASS, 6 WARN, 0 FAIL of 13 checks (was 4/7/2) |
+
+Wave 9 success criteria from the 14. 5. close, re-audited:
+
+| ID | Criterion | 14. 5. status | 17. 5. status |
+|---|---|---|---|
+| C11 | Card movement | NOT VERIFIED | **DONE** (`locked: false` + rAF tracking + position survival on reload) |
+| C12 | Click-to-open-detail | NOT DONE | **DONE** (Sheet with full `ContextEntryDetail`, selection ring, Escape close) |
+| C13 | `ascend-critic` GOOD or WORLD-CLASS | NOT RUN | **DONE** — verdict GOOD |
+
+### What is NOT in this addendum (deferred to Wave 10+)
+
+- Inline card editing (Obsidian Canvas parity)
+- Manual card resize per-card
+- Right-click context menu for "Add card"
+- Keyboard-first canvas navigation (Tab cycling through cards in spatial order)
+- Yjs realtime canvas
+
+### Files touched this session
+
+Modified:
+- `apps/web/components/context/canvas/context-canvas-view.tsx` (stable wrappers, bisection flags, "+ Add card" + Sheet wiring)
+- `apps/web/components/context/canvas/canvas-card-overlay.tsx` (rAF live position read, click handler, selection ring)
+- `apps/web/components/context/canvas/canvas-scene-utils.ts` (`locked: false`, sanitize + rehydrate helpers)
+- `apps/web/components/context/canvas/context-canvas-empty-state.tsx` (copy)
+- `apps/web/components/context/canvas/canvas-edge-toggle.tsx` (label)
+- `apps/web/components/context/canvas/canvas-layout-delete-dialog.tsx` (toast wording)
+- `apps/web/components/context/canvas/canvas-loading-skeleton.tsx` (dot-grid)
+- `apps/web/components/context/context-view-switcher.tsx` (tooltips)
+- `apps/web/lib/hooks/use-canvas-autosave.ts` (sanitize on persist)
+- `.claude/COMPONENT_CATALOG.md` (new section)
+
+New:
+- `apps/web/components/context/canvas/canvas-add-card-dialog.tsx`
+- `apps/web/components/context/canvas/canvas-view-error-boundary.tsx`
+- `apps/web/app/test-canvas-full/page.tsx`
+
+Reports:
+- `.ascendflow/critiques/2026-05-15-wave9-map-view-close.md` (prior NEEDS WORK)
+- `.ascendflow/verification/2026-05-15-wave9-map-view-must-fix.md` (prior blocked verifier + bisection)
+- `.ascendflow/verification/2026-05-17-wave9-map-view-must-fix-after-onchange-fix.md` (today's PASS WITH NOTES)
+- `.ascendflow/sessions/2026-05-15-2210-wave9-map-view-debugging.md` (prior session resume note)
+
+Process lesson: **the 14. 5. CLOSE-OUT explicitly noted the manual smoke was NOT RUN and the closing critic was NOT RUN, and shipped anyway.** Both gates would have caught the crash. Future waves close only after both have run.
