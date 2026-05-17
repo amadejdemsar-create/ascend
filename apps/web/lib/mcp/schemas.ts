@@ -1664,4 +1664,119 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       required: ["layoutId", "kind", "geometry"],
     },
   },
+
+  // ── Wave 10: MCP federation control ────────────────────────────
+  {
+    name: "list_mcp_connections",
+    description:
+      "List the user's federated MCP server connections. Each row includes name, slug (the tool prefix used by federated tools), endpoint, enabled status, and last-test result.",
+    inputSchema: {
+      type: "object",
+      properties: {},
+    },
+  },
+  {
+    name: "test_mcp_connection",
+    description:
+      "Run a live health check against an MCP connection: calls initialize and tools/list against the upstream, refreshes the cached tool list on success, records the error message on failure. Returns { healthy, toolCount?, error? }.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "McpServerConnection id" },
+      },
+      required: ["id"],
+    },
+  },
+  {
+    name: "enable_mcp_connection",
+    description:
+      "Enable a federated MCP connection. Its tools start appearing in /api/mcp tools/list responses again.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "McpServerConnection id" },
+      },
+      required: ["id"],
+    },
+  },
+  {
+    name: "disable_mcp_connection",
+    description:
+      "Disable a federated MCP connection. Its tools stop appearing in /api/mcp tools/list responses; the connection row + credentials are kept.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "McpServerConnection id" },
+      },
+      required: ["id"],
+    },
+  },
+
+  // ── Wave 10: External data ────────────────────────────────────
+  {
+    name: "list_external_sources",
+    description:
+      "List the user's external data sources (e.g., GitHub). Each row includes provider, name, scope config, enabled status, and last-refresh timestamp.",
+    inputSchema: {
+      type: "object",
+      properties: {},
+    },
+  },
+  {
+    name: "query_external_data",
+    description:
+      "Query an external data source for rows of a given shape (e.g., GitHub Issues or PRs). Returns paginated rows + next cursor. Filter clauses support equality + contains on common fields like state, author, labels, milestone, repo.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        sourceId: { type: "string", description: "ExternalDataSource id" },
+        shape: {
+          type: "string",
+          description:
+            "Shape id from the source's listShapes (e.g., 'issues', 'pulls').",
+        },
+        filter: {
+          type: "array",
+          description:
+            "Array of filter clauses: { field, op, value? }. ops: eq, ne, in, contains, gt, gte, lt, lte, isEmpty.",
+          items: {
+            type: "object",
+            properties: {
+              field: { type: "string" },
+              op: { type: "string" },
+              value: {},
+            },
+            required: ["field", "op"],
+          },
+        },
+        sort: {
+          type: "array",
+          description: "Sort clauses: { field, direction }.",
+          items: {
+            type: "object",
+            properties: {
+              field: { type: "string" },
+              direction: { type: "string", enum: ["asc", "desc"] },
+            },
+            required: ["field", "direction"],
+          },
+        },
+        cursor: { type: "string", description: "Opaque pagination cursor." },
+        perPage: { type: "integer", minimum: 1, maximum: 100 },
+      },
+      required: ["sourceId", "shape"],
+    },
+  },
+  {
+    name: "refresh_external_schema",
+    description:
+      "Re-fetch the per-shape field schemas for an external data source and cache them on the source row. Use after the upstream adds new labels, milestones, or other enumerated values.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        sourceId: { type: "string", description: "ExternalDataSource id" },
+      },
+      required: ["sourceId"],
+    },
+  },
 ];

@@ -23,6 +23,8 @@ import { handleDatabaseTool } from "./tools/database-tools";
 import { handleVersionTool } from "./tools/version-tools";
 import { handleWorkspaceTool } from "./tools/workspace-tools";
 import { handleCanvasTool } from "./tools/canvas-tools";
+import { handleMcpFederationTool } from "./tools/mcp-federation-tools";
+import { handleExternalDataTool } from "./tools/external-data-tools";
 import { contextService } from "@/lib/services/context-service";
 import { categoryService } from "@/lib/services/category-service";
 
@@ -104,6 +106,17 @@ const CANVAS_TOOL_NAMES = new Set([
   "get_canvas_layout",
   "set_node_position",
   "create_annotation",
+]);
+const MCP_FEDERATION_TOOL_NAMES = new Set([
+  "list_mcp_connections",
+  "test_mcp_connection",
+  "enable_mcp_connection",
+  "disable_mcp_connection",
+]);
+const EXTERNAL_DATA_TOOL_NAMES = new Set([
+  "list_external_sources",
+  "query_external_data",
+  "refresh_external_schema",
 ]);
 
 /**
@@ -196,7 +209,15 @@ export function createAscendMcpServer(userId: string, workspaceId: string): Serv
       return handleCanvasTool(userId, workspaceId, name, args ?? {});
     }
 
-    // All 79 tool definitions are now routed. This fallback should never be reached.
+    if (MCP_FEDERATION_TOOL_NAMES.has(name)) {
+      return handleMcpFederationTool(userId, workspaceId, name, args ?? {});
+    }
+
+    if (EXTERNAL_DATA_TOOL_NAMES.has(name)) {
+      return handleExternalDataTool(userId, workspaceId, name, args ?? {});
+    }
+
+    // All 86 tool definitions are now routed. This fallback should never be reached.
     return {
       content: [{ type: "text" as const, text: `Unknown tool: ${name}` }],
       isError: true,

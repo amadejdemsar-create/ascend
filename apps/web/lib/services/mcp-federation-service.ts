@@ -17,6 +17,7 @@
 import type { Prisma } from "../../generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { permissionService } from "@/lib/services/permission-service";
+import { activityEventService } from "@/lib/services/activity-event-service";
 import { encryptSecret, decryptSecret } from "@/lib/services/secrets-service";
 import { federationProxy } from "@/lib/mcp/federation-proxy";
 import type {
@@ -264,6 +265,15 @@ export const mcpFederationService = {
       });
     });
 
+    // Fire-and-forget activity event (never blocks the response).
+    void activityEventService.log(workspaceId, userId, "MCP_SERVER_CONNECTED", {
+      eventType: "MCP_SERVER_CONNECTED",
+      connectionId: row.id,
+      name: row.name,
+      slug: row.slug,
+      transport: row.transport,
+    });
+
     return toPublic({ ...row, _count: { toolCache: 0 } });
   },
 
@@ -339,11 +349,23 @@ export const mcpFederationService = {
 
     const existing = await prisma.mcpServerConnection.findFirst({
       where: { id, userId, workspaceId },
-      select: { id: true },
+      select: { id: true, name: true, slug: true },
     });
     if (!existing) throw new Error("MCP connection not found");
 
     await prisma.mcpServerConnection.delete({ where: { id } });
+
+    void activityEventService.log(
+      workspaceId,
+      userId,
+      "MCP_SERVER_DISCONNECTED",
+      {
+        eventType: "MCP_SERVER_DISCONNECTED",
+        connectionId: existing.id,
+        name: existing.name,
+        slug: existing.slug,
+      },
+    );
   },
 
   /**

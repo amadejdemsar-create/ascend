@@ -31,6 +31,7 @@ import { ContextTypeSelect } from "@/components/context/context-type-select";
 import { ContextBlockEditor } from "@/components/context/context-block-editor";
 import { DatabaseDetail } from "@/components/databases/database-detail";
 import { DatabaseRowProperties } from "@/components/databases/database-row-properties";
+import { ExternalDatabaseDetail } from "@/components/databases/external-database-detail";
 import { VersionHistoryPanel, BranchDialog } from "@/components/versioning";
 import {
   AlertDialog,
@@ -432,7 +433,15 @@ export function ContextEntryDetail({
 
       {/* Content: type-based dispatch */}
       <div className="flex-1 space-y-5 p-4">
-        {entry.type === "DATABASE" ? (
+        {entry.type === "EXTERNAL_DATABASE" &&
+        "externalDataSourceId" in entry &&
+        typeof (entry as { externalDataSourceId?: string }).externalDataSourceId === "string" ? (
+          <ExternalDatabaseDetail
+            externalDataSourceId={
+              (entry as { externalDataSourceId: string }).externalDataSourceId
+            }
+          />
+        ) : entry.type === "DATABASE" ? (
           <DatabaseDetail
             entryId={entryId}
             onOpenRow={(rowEntryId) => onNavigate?.(rowEntryId)}

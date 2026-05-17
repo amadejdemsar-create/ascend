@@ -20,6 +20,11 @@ export const ACTIVITY_EVENT_TYPE_VALUES = [
   "CANVAS_LAYOUT_DELETED",
   "CANVAS_NODE_ADDED",
   "CANVAS_NODE_REMOVED",
+  // Wave 10: Extensibility
+  "MCP_SERVER_CONNECTED",
+  "MCP_SERVER_DISCONNECTED",
+  "EXTERNAL_SOURCE_CONNECTED",
+  "EXTERNAL_SOURCE_DISCONNECTED",
 ] as const;
 
 export type ActivityEventType = (typeof ACTIVITY_EVENT_TYPE_VALUES)[number];
@@ -167,6 +172,49 @@ export type CanvasNodeRemovedPayload = z.infer<
   typeof canvasNodeRemovedPayloadSchema
 >;
 
+// Wave 10: Extensibility payloads
+
+export const mcpServerConnectedPayloadSchema = z.object({
+  eventType: z.literal("MCP_SERVER_CONNECTED"),
+  connectionId: z.string(),
+  name: z.string(),
+  slug: z.string(),
+  transport: z.string(),
+});
+export type McpServerConnectedPayload = z.infer<
+  typeof mcpServerConnectedPayloadSchema
+>;
+
+export const mcpServerDisconnectedPayloadSchema = z.object({
+  eventType: z.literal("MCP_SERVER_DISCONNECTED"),
+  connectionId: z.string(),
+  name: z.string(),
+  slug: z.string(),
+});
+export type McpServerDisconnectedPayload = z.infer<
+  typeof mcpServerDisconnectedPayloadSchema
+>;
+
+export const externalSourceConnectedPayloadSchema = z.object({
+  eventType: z.literal("EXTERNAL_SOURCE_CONNECTED"),
+  sourceId: z.string(),
+  provider: z.string(),
+  name: z.string(),
+});
+export type ExternalSourceConnectedPayload = z.infer<
+  typeof externalSourceConnectedPayloadSchema
+>;
+
+export const externalSourceDisconnectedPayloadSchema = z.object({
+  eventType: z.literal("EXTERNAL_SOURCE_DISCONNECTED"),
+  sourceId: z.string(),
+  provider: z.string(),
+  name: z.string(),
+});
+export type ExternalSourceDisconnectedPayload = z.infer<
+  typeof externalSourceDisconnectedPayloadSchema
+>;
+
 // ── Discriminated union of all event payloads ───────────────────────
 
 export const activityEventPayloadSchema = z.discriminatedUnion("eventType", [
@@ -185,6 +233,10 @@ export const activityEventPayloadSchema = z.discriminatedUnion("eventType", [
   canvasLayoutDeletedPayloadSchema,
   canvasNodeAddedPayloadSchema,
   canvasNodeRemovedPayloadSchema,
+  mcpServerConnectedPayloadSchema,
+  mcpServerDisconnectedPayloadSchema,
+  externalSourceConnectedPayloadSchema,
+  externalSourceDisconnectedPayloadSchema,
 ]);
 export type ActivityEventPayload = z.infer<typeof activityEventPayloadSchema>;
 

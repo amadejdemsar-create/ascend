@@ -828,6 +828,11 @@ enum ActivityEventType {
   CANVAS_LAYOUT_DELETED
   CANVAS_NODE_ADDED
   CANVAS_NODE_REMOVED
+  // Wave 10: Extensibility
+  MCP_SERVER_CONNECTED
+  MCP_SERVER_DISCONNECTED
+  EXTERNAL_SOURCE_CONNECTED
+  EXTERNAL_SOURCE_DISCONNECTED
 }
 
 // =====================================================================
