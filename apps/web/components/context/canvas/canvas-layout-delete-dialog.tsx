@@ -39,7 +39,7 @@ export function CanvasLayoutDeleteDialog({
       await deleteLayout.mutateAsync(layout.id);
       onDeleted(layout.id);
       onOpenChange(false);
-      toast.success(`Deleted layout "${layout.name}".`);
+      toast.success(`Layout "${layout.name}" removed.`);
     } catch (err) {
       // The service refuses to delete the only layout with a clear
       // error message. Surface inline rather than rethrowing.

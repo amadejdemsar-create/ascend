@@ -8,13 +8,39 @@ import { cn } from "@/lib/utils";
 const VIEW_OPTIONS: Array<{
   value: ContextViewType;
   label: string;
+  tooltip: string;
   icon: typeof List;
 }> = [
-  { value: "list", label: "List", icon: List },
-  { value: "graph", label: "Graph", icon: Network },
-  { value: "canvas", label: "Map", icon: Map },
-  { value: "pinned", label: "Pinned", icon: Pin },
-  { value: "backlinks", label: "Backlinks", icon: ArrowLeftRight },
+  {
+    value: "list",
+    label: "List",
+    tooltip: "List view — browse entries linearly",
+    icon: List,
+  },
+  {
+    value: "graph",
+    label: "Graph",
+    tooltip: "Graph view — see how entries connect",
+    icon: Network,
+  },
+  {
+    value: "canvas",
+    label: "Map",
+    tooltip: "Map view — arrange entries spatially",
+    icon: Map,
+  },
+  {
+    value: "pinned",
+    label: "Pinned",
+    tooltip: "Pinned view — your starred entries",
+    icon: Pin,
+  },
+  {
+    value: "backlinks",
+    label: "Backlinks",
+    tooltip: "Backlinks — entries sorted by incoming links",
+    icon: ArrowLeftRight,
+  },
 ];
 
 export function ContextViewSwitcher() {
@@ -44,6 +70,7 @@ export function ContextViewSwitcher() {
             )}
             onClick={() => setContextActiveView(opt.value)}
             aria-label={opt.label}
+            title={opt.tooltip}
           >
             <Icon className="size-4" />
           </Button>

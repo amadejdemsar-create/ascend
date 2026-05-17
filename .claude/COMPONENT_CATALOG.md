@@ -2,7 +2,7 @@
 
 > **Monorepo note:** Components currently live in `components/`. After Wave 0 (monorepo conversion), they will live under `apps/web/components/`. Shared UI primitives (raw design tokens only) will live in `packages/ui-tokens/` and are NOT listed here. This catalog covers application-level components, not token definitions.
 
-**Total**: 87 reusable components across 13 directories.
+**Total**: 104 reusable components across 14 directories.
 
 Use this catalog before creating any new component. Duplicating existing components is the most common UI mistake in Ascend. Check here first, then grep for similar implementations.
 
@@ -15,6 +15,7 @@ For each component: file path, one-line purpose, where it is used, and key props
 - [Todo Components](#todo-components) (7)
 - [Calendar Components](#calendar-components) (3)
 - [Context Components](#context-components) (6)
+- [Context Canvas Components (Wave 9)](#context-canvas-components-wave-9) (17)
 - [Dashboard Components](#dashboard-components) (6)
 - [Category Components](#category-components) (6)
 - [Layout Components](#layout-components) (5)
@@ -133,6 +134,32 @@ Location: `components/context/`. Six components for the context knowledge base (
 | ContextEntryList | `components/context/context-entry-list.tsx` | Scrollable list of context entries with preview | Context page | `entries: ContextEntry[]`, `selectedId?`, `onSelect(id)` |
 | ContextSearch | `components/context/context-search.tsx` | Hybrid search input (tsvector + pgvector) with mode toggle. Reads `contextSearchMode` from Zustand | Context page header | `onSelect(id)` |
 | SemanticSearchToggle | `components/context/semantic-search-toggle.tsx` | Segmented control for search mode (Text / Semantic / Hybrid). Reads/writes `contextSearchMode` in Zustand | `context-search.tsx` | None (reads/writes store) |
+
+---
+
+## Context Canvas Components (Wave 9)
+
+Location: `apps/web/components/context/canvas/`. The spatial canvas (Map view on `/context`). Excalidraw is the underlying engine; a React overlay layer renders typed cards synced to scene element positions via rAF. Every CanvasNode binds a `ContextEntry` to a position within one `CanvasLayout`. Edges are typed `ContextLink` rows rendered as Excalidraw arrows; drawing an arrow between two cards opens a type picker.
+
+| Component | File | Purpose | Used by | Key Props |
+|-----------|------|---------|---------|-----------|
+| ContextCanvasView | `apps/web/components/context/canvas/context-canvas-view.tsx` | Orchestrator. Loads layout via `useCanvasLayout` / `useDefaultCanvasLayout`, mounts Excalidraw, wires autosave, renders toolbar + Sheet detail panel. Exports `ContextCanvasViewMounted` + `CanvasBisectionFlags` for diagnostics. | `app/(app)/context/page.tsx` (when `contextActiveView === "canvas"`) | None (reads layout from React Query + Zustand) |
+| ContextCanvasEmptyState | `apps/web/components/context/canvas/context-canvas-empty-state.tsx` | Centered card on empty canvas. Quick-add CTA drops 5 most-recent entries. | `context-canvas-view.tsx` | `onQuickAddRecent`, `isQuickAddPending` |
+| CanvasCardOverlay | `apps/web/components/context/canvas/canvas-card-overlay.tsx` | React overlay of clickable card buttons. rAF reads live element positions from `getSceneElements()` so overlays follow native Excalidraw drag. Click opens detail Sheet. | `context-canvas-view.tsx` | `excalidrawAPI`, `nodes`, `onCardClick?`, `selectedEntryId?` |
+| CanvasSaveStatus | `apps/web/components/context/canvas/canvas-save-status.tsx` | Autosave status pill (idle / saving / saved / failed). `role="status"`, `aria-live="polite"`, Retry on failure, `formatDistanceToNow` timestamp. Hides in idle. | `context-canvas-view.tsx` | `status`, `lastSavedAt`, `onRetry` |
+| CanvasEdgeToggle | `apps/web/components/context/canvas/canvas-edge-toggle.tsx` | Toolbar pill flipping `viewport.showEdges`. Sets `opacity: 0` + `locked: true` on every managed-edge arrow when off. | `context-canvas-view.tsx` | `showEdges`, `onToggle`, `disabled?` |
+| CanvasLayoutSwitcher | `apps/web/components/context/canvas/canvas-layout-switcher.tsx` | Top-left dropdown listing user's layouts. Active checkmark, per-row node count, kebab → Rename/Delete. Footer "+ New layout". | `context-canvas-view.tsx` | `activeLayoutId`, `activeLayoutName` |
+| CanvasLayoutDeleteDialog | `apps/web/components/context/canvas/canvas-layout-delete-dialog.tsx` | AlertDialog confirming layout deletion. Explicit copy: removes the arrangement, NOT the underlying entries or typed links. | `canvas-layout-switcher.tsx` | `layout`, `open`, `onOpenChange`, `onDeleted` |
+| CanvasLayoutRenameDialog | `apps/web/components/context/canvas/canvas-layout-rename-dialog.tsx` | Dialog with inline input for renaming a layout. | `canvas-layout-switcher.tsx` | `layout`, `open`, `onOpenChange` |
+| CanvasAddCardDialog | `apps/web/components/context/canvas/canvas-add-card-dialog.tsx` | Search picker for "+ Add card". `useContextEntries` + `useSearchContext`, keyboard nav (ArrowDown/Up/Enter), "On canvas" indicator, MAX_VISIBLE=50, auto-focus on open. Selecting an existing entry pans to it; selecting a new one places at viewport center. | `context-canvas-view.tsx` | `open`, `onOpenChange`, `existingEntryIds`, `onAddEntry(id)`, `onFocusExisting(id)` |
+| CanvasImportDialog | `apps/web/components/context/canvas/canvas-import-dialog.tsx` | Import `.excalidraw` file. Replace vs Merge mode picker. `.tldr` rejected with help-link tip. 4 MiB pre-parse cap, 5000-element cap. | `context-canvas-view.tsx` | `layoutId`, `open`, `onOpenChange` |
+| CanvasLinkTypePicker | `apps/web/components/context/canvas/canvas-link-type-picker.tsx` | Dialog that fires when a user draws an arrow between two cards. Pick a `ContextLinkType`, creates the `ContextLink`, patches the arrow's `customData.linkId`. Subscribes to `useUIStore.canvasLinkTypePickerOpen`. | `context-canvas-view.tsx` | `onConfirmed`, `onCancelled` |
+| CanvasViewErrorBoundary | `apps/web/components/context/canvas/canvas-view-error-boundary.tsx` | Class error boundary wrapping the canvas mount. On render failure, shows "The canvas didn't load" fallback + auto-resets `useUIStore.contextActiveView` to `"list"` so the user is not permanently locked out of `/context`. DZ-7 mitigation. | `context-canvas-view.tsx` | `children` |
+| CanvasLoadingSkeleton | `apps/web/components/context/canvas/canvas-loading-skeleton.tsx` | Loading state with faint dot-grid matching Excalidraw's empty canvas + bottom-anchored loading pill. Prevents visual pop on canvas mount. | `context-canvas-view.tsx` (via `next/dynamic` `loading`) | None |
+| `canvas-edge-sync.ts` | `apps/web/components/context/canvas/canvas-edge-sync.ts` | Helpers: `buildEdgeArrow`, `diffArrows(prev, next, cardElementIds)`, `isManagedEdgeArrow`. Used by `onSceneChange` to detect newly drawn / removed arrows binding two cards. Not a component; pure functions. | `context-canvas-view.tsx`, `canvas-export.ts` | n/a |
+| `canvas-export.ts` | `apps/web/components/context/canvas/canvas-export.ts` | `exportLayoutAsExcalidraw(api, name)` serializes the current scene via `getSceneElementsIncludingDeleted` + `getAppState` + `getFiles` and triggers a Blob download. Not a component. | `context-canvas-view.tsx` (Export button) | n/a |
+| `canvas-scene-utils.ts` | `apps/web/components/context/canvas/canvas-scene-utils.ts` | `buildNodeCardRect`, `makeCardElementId`, `isCardRect`, `sanitizeAppStateForPersist` (strips 19 transient/Map/Set keys), `rehydrateAppStateForExcalidraw` (rebuilds `collaborators` Map + `followedBy` Set on restore). Pure functions. | `context-canvas-view.tsx`, `use-canvas-autosave.ts` | n/a |
+| `index.ts` | `apps/web/components/context/canvas/index.ts` | Barrel re-exports. | App-level imports | n/a |
 
 ---
 

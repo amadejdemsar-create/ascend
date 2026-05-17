@@ -31,7 +31,9 @@ export function CanvasEdgeToggle({ showEdges, onToggle, disabled }: Props) {
       ) : (
         <Link2Off className="size-3.5" aria-hidden="true" />
       )}
-      <span className="text-xs">{showEdges ? "Edges on" : "Edges off"}</span>
+      <span className="text-xs">
+        {showEdges ? "Connections on" : "Connections off"}
+      </span>
     </Button>
   );
 }

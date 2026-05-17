@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useUIStore } from "@/lib/stores/ui-store";
 import { cn } from "@/lib/utils";
 import type { CanvasNodeItem } from "@/lib/hooks/use-canvas";
 
@@ -9,9 +8,12 @@ interface Props {
   /** Excalidraw API ref. Lazily resolved by the parent. */
   excalidrawAPI: {
     getAppState: () => unknown;
+    getSceneElements: () => readonly unknown[];
   } | null;
   nodes: CanvasNodeItem[];
   onCardClick?: (contextEntryId: string) => void;
+  /** Entry ID currently selected (highlighted on the canvas). */
+  selectedEntryId?: string | null;
 }
 
 interface Viewport {
@@ -20,37 +22,50 @@ interface Viewport {
   zoom: number;
 }
 
+/** Per-card position resolved from the live Excalidraw scene element. */
+interface CardPosition {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
 /**
- * Wave 9 Phase 5: card overlay synced to Excalidraw scroll/zoom.
+ * Wave 9 Phase 5: card overlay synced to Excalidraw scroll/zoom AND
+ * live element positions.
  *
  * For each CanvasNode, renders an absolutely-positioned <div> whose
  * `transform: translate3d(x, y, 0)` is recomputed every animation frame
- * from `excalidrawAPI.getAppState()` so cards stay glued to their
- * rectangles during pan + zoom.
+ * from BOTH `excalidrawAPI.getAppState()` (viewport) and
+ * `excalidrawAPI.getSceneElements()` (element x/y) so cards stay glued
+ * to their rectangles during pan, zoom, AND user drag.
  *
  * Card body uses the denormalized `node.contextEntry` (title, type, tags)
  * to avoid a second fetch per render.
  *
- * Click selects the entry detail (sets selectedContextEntryId in Zustand).
+ * Click selects the entry detail (via onCardClick callback).
  */
 export function CanvasCardOverlay({
   excalidrawAPI,
   nodes,
   onCardClick,
+  selectedEntryId,
 }: Props) {
-  const setContextActiveView = useUIStore((s) => s.setContextActiveView);
-  void setContextActiveView; // reserved for future click-to-back-to-list
   const [viewport, setViewport] = useState<Viewport>({
     scrollX: 0,
     scrollY: 0,
     zoom: 1,
   });
+  // Live element positions keyed by excalidrawElementId.
+  const [elementPositions, setElementPositions] = useState<
+    Map<string, CardPosition>
+  >(new Map());
   const rafRef = useRef<number | null>(null);
   const apiRef = useRef(excalidrawAPI);
   apiRef.current = excalidrawAPI;
 
-  // Continuous rAF loop: read appState, update viewport state only on
-  // meaningful change to avoid wasteful re-renders.
+  // Continuous rAF loop: read appState + scene elements, update state
+  // only on meaningful change to avoid wasteful re-renders.
   useEffect(() => {
     function tick() {
       const api = apiRef.current;
@@ -58,6 +73,8 @@ export function CanvasCardOverlay({
         rafRef.current = requestAnimationFrame(tick);
         return;
       }
+
+      // 1) Read viewport state.
       const ax = api.getAppState() as {
         scrollX?: number;
         scrollY?: number;
@@ -79,6 +96,44 @@ export function CanvasCardOverlay({
         }
         return { scrollX: nextScrollX, scrollY: nextScrollY, zoom: nextZoom };
       });
+
+      // 2) Read live element positions for card rectangles.
+      const elements = api.getSceneElements();
+      setElementPositions((prev) => {
+        let changed = false;
+        const next = new Map(prev);
+        for (const el of elements) {
+          const elObj = el as {
+            id?: string;
+            x?: number;
+            y?: number;
+            width?: number;
+            height?: number;
+            customData?: { kind?: string };
+          };
+          if (elObj.customData?.kind !== "node-card") continue;
+          const id = elObj.id;
+          if (!id) continue;
+          const ex = elObj.x ?? 0;
+          const ey = elObj.y ?? 0;
+          const ew = elObj.width ?? 240;
+          const eh = elObj.height ?? 140;
+          const existing = prev.get(id);
+          if (
+            existing &&
+            Math.abs(existing.x - ex) < 0.5 &&
+            Math.abs(existing.y - ey) < 0.5 &&
+            Math.abs(existing.w - ew) < 0.5 &&
+            Math.abs(existing.h - eh) < 0.5
+          ) {
+            continue;
+          }
+          changed = true;
+          next.set(id, { x: ex, y: ey, w: ew, h: eh });
+        }
+        return changed ? next : prev;
+      });
+
       rafRef.current = requestAnimationFrame(tick);
     }
     rafRef.current = requestAnimationFrame(tick);
@@ -93,10 +148,17 @@ export function CanvasCardOverlay({
       aria-hidden="false"
     >
       {nodes.map((node) => {
-        const screenX = (node.x + viewport.scrollX) * viewport.zoom;
-        const screenY = (node.y + viewport.scrollY) * viewport.zoom;
-        const w = node.w * viewport.zoom;
-        const h = node.h * viewport.zoom;
+        // Use live element position if available, fall back to server-persisted.
+        const livePos = elementPositions.get(node.excalidrawElementId);
+        const cardX = livePos?.x ?? node.x;
+        const cardY = livePos?.y ?? node.y;
+        const cardW = livePos?.w ?? node.w;
+        const cardH = livePos?.h ?? node.h;
+
+        const screenX = (cardX + viewport.scrollX) * viewport.zoom;
+        const screenY = (cardY + viewport.scrollY) * viewport.zoom;
+        const w = cardW * viewport.zoom;
+        const h = cardH * viewport.zoom;
         return (
           <CanvasCard
             key={node.id}
@@ -107,6 +169,7 @@ export function CanvasCardOverlay({
             h={h}
             zoom={viewport.zoom}
             onClick={() => onCardClick?.(node.contextEntryId)}
+            isSelected={selectedEntryId === node.contextEntryId}
           />
         );
       })}
@@ -122,6 +185,7 @@ interface CanvasCardProps {
   h: number;
   zoom: number;
   onClick: () => void;
+  isSelected: boolean;
 }
 
 const ENTRY_TYPE_LABEL: Record<string, string> = {
@@ -144,6 +208,7 @@ function CanvasCard({
   h,
   zoom,
   onClick,
+  isSelected,
 }: CanvasCardProps) {
   const entry = node.contextEntry;
   const title = entry?.title ?? "Untitled";
@@ -158,6 +223,7 @@ function CanvasCard({
       className={cn(
         "pointer-events-auto absolute flex flex-col gap-1 overflow-hidden rounded-lg border bg-card p-3 text-left shadow-sm transition-colors hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
         isMini && "items-center justify-center p-0",
+        isSelected && "border-primary ring-2 ring-primary/30",
       )}
       style={{
         transform: `translate3d(${screenX}px, ${screenY}px, 0)`,

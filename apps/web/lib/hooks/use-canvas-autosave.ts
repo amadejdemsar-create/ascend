@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useUpdateLayout, useUpsertNodes } from "@/lib/hooks/use-canvas";
 import type { CanvasNodeItem } from "@/lib/hooks/use-canvas";
-import { isCardRect } from "@/components/context/canvas/canvas-scene-utils";
+import {
+  isCardRect,
+  sanitizeAppStateForPersist,
+} from "@/components/context/canvas/canvas-scene-utils";
 
 const AUTOSAVE_DELAY_MS = 1500;
 const FLUSH_BEFORE_UNLOAD = true;
@@ -108,12 +111,15 @@ export function useCanvasAutosave({ layoutId, initialNodes }: Args) {
 
       // 2) Persist the canvas blob (best-effort; the server enforces
       //    the 2 MiB cap and rejects oversize with a clear error).
+      //    Sanitize appState to strip Map/Set and transient fields that
+      //    don't survive JSON round-trip (Bug 1 fix).
+      const cleanAppState = sanitizeAppStateForPersist(scene.appState);
       await updateLayout.mutateAsync({
         id: layoutId,
         input: {
           canvas: {
             elements: scene.elements as never,
-            appState: scene.appState as never,
+            appState: cleanAppState as never,
             files: scene.files as never,
           },
         },

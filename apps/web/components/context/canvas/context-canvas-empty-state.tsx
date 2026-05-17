@@ -10,7 +10,7 @@ interface Props {
 
 /**
  * Wave 9: Centered card shown on an empty canvas layout. Two affordances:
- *   - Hint to drag entries from the sidebar.
+ *   - Hint to use the "+ Add card" toolbar button to place specific entries.
  *   - Quick-add button that drops the 5 most-recently-updated entries
  *     into a row at the canvas origin (implemented in Phase 5).
  */
@@ -29,8 +29,8 @@ export function ContextCanvasEmptyState({
             Your canvas is empty
           </h3>
           <p className="text-sm text-muted-foreground">
-            Drag entries from the sidebar to start arranging them spatially,
-            or use the quick-add to drop your 5 most recent.
+            Use the &ldquo;+ Add card&rdquo; button above to place specific
+            entries, or quick-add your 5 most recent.
           </p>
         </div>
         <Button
