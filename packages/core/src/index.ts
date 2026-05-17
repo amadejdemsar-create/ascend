@@ -9,3 +9,19 @@ export * from "./schemas/index";
 export * from "./constants/index";
 export { parseWikilinks } from "./wikilink";
 export type { ParsedWikilink } from "./wikilink";
+
+// Wave 10 types (no Zod runtime; pure TypeScript)
+export type {
+  ExternalDataShape,
+  ExternalDataFieldType,
+  ExternalDataField,
+  ExternalDataRow,
+  ExternalDataQueryResult,
+  ExternalDataAdapter,
+} from "./types/external-data";
+export {
+  EXTERNAL_VIRTUAL_ID_PREFIX,
+  makeVirtualExternalEntryId,
+  parseVirtualExternalEntryId,
+  isVirtualExternalEntryId,
+} from "./types/external-data";

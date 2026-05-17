@@ -67,6 +67,7 @@ enum ContextEntryType {
   AREA
   DATABASE
   RECORD
+  EXTERNAL_DATABASE // Wave 10: read-only virtual database backed by ExternalDataSource
 }
 
 enum ContextLinkType {
@@ -142,6 +143,11 @@ model User {
   // Wave 9: Spatial canvas
   canvasLayouts CanvasLayout[]
   canvasNodes   CanvasNode[]
+
+  // Wave 10: Extensibility (MCP federation + external data)
+  mcpServerConnections McpServerConnection[]
+  mcpServerToolCache   McpServerToolCache[]
+  externalDataSources  ExternalDataSource[]
 
   @@index([defaultWorkspaceId])
 }
@@ -467,6 +473,12 @@ model ContextEntry {
   // have contextEntryId @unique pointing here).
   database    Database?
   databaseRow DatabaseRow?
+
+  // Wave 10: 1:1 with ExternalDataSource. When the entry's type is
+  // EXTERNAL_DATABASE, this FK points to the connection that backs it.
+  // Nullable so the FK exists only for EXTERNAL_DATABASE entries.
+  externalDataSourceId String?             @unique
+  externalDataSource   ExternalDataSource? @relation(fields: [externalDataSourceId], references: [id], onDelete: SetNull)
 
   // Wave 9: back-relation from CanvasNode (one entry can appear in many
   // canvas layouts, but at most once per layout via the composite unique).
@@ -1054,6 +1066,11 @@ model Workspace {
   canvasLayouts CanvasLayout[]
   canvasNodes   CanvasNode[]
 
+  // Wave 10: Extensibility (MCP federation + external data)
+  mcpServerConnections McpServerConnection[]
+  mcpServerToolCache   McpServerToolCache[]
+  externalDataSources  ExternalDataSource[]
+
   @@index([ownerId])
 }
 
@@ -1150,4 +1167,132 @@ model CanvasNode {
   @@index([userId])
   @@index([workspaceId])
   @@index([contextEntryId])
+}
+
+// =====================================================================
+// Wave 10: Extensibility — MCP federation + external data
+//
+// Two parallel surfaces:
+//
+//  1. McpServerConnection + McpServerToolCache power the MCP federation
+//     proxy: Ascend's /api/mcp surfaces these connections' tools
+//     (prefixed with the connection slug) alongside its own 79 tools.
+//     One-direction: Ascend's /api/mcp proxies tool/call to these
+//     servers, but Ascend's own tool handlers NEVER call them (DZ-28).
+//
+//  2. ExternalDataSource powers EXTERNAL_DATABASE ContextEntries (e.g.,
+//     GitHub Issues / PRs as virtual Wave 5 databases). Read-only, with
+//     PAT auth, on-demand fetch with 5-min LRU cache.
+//
+// Both rely on the new lib/services/secrets-service.ts for AES-256-GCM
+// encryption of credentials at rest (key = SECRETS_ENCRYPTION_KEY env).
+//
+// All workspace-scoped per Wave 8 rules. CASCADE FKs on userId/workspaceId.
+// =====================================================================
+
+enum McpServerTransport {
+  HTTP_STREAMABLE
+  SSE
+}
+
+enum McpServerAuthType {
+  NONE
+  API_KEY
+  BEARER
+}
+
+enum ExternalDataProvider {
+  GITHUB
+  // Future: LINEAR, SLACK, NOTION
+}
+
+enum ExternalDataAuthType {
+  PAT
+  // Future: OAUTH
+}
+
+model McpServerConnection {
+  id                   String             @id @default(cuid())
+  userId               String
+  workspaceId          String
+  // User-facing label, 1-50 chars
+  name                 String
+  // Tool prefix, 1-30 chars, kebab-case [a-z0-9-]+
+  slug                 String
+  transport            McpServerTransport @default(HTTP_STREAMABLE)
+  // Upstream MCP endpoint URL, 1-2000 chars
+  endpoint             String
+  authType             McpServerAuthType  @default(NONE)
+  // AES-256-GCM ciphertext via secretsService. Base64-joined iv.ct.tag.
+  // Null when authType=NONE. Size capped at 4096 bytes via raw-SQL CHECK.
+  encryptedCredentials String?
+  enabled              Boolean            @default(true)
+  // Last successful tools/list timestamp + last error message.
+  lastListedAt         DateTime?
+  lastListError        String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  toolCache McpServerToolCache[]
+
+  // slug is the prefix delimiter for tool federation; must be unique
+  // per user so /api/mcp can route deterministically.
+  @@unique([userId, slug])
+  @@index([userId, enabled])
+  @@index([workspaceId])
+}
+
+model McpServerToolCache {
+  id                    String   @id @default(cuid())
+  mcpServerConnectionId String
+  userId                String
+  workspaceId           String
+  // Upstream tool name, UN-prefixed. The /api/mcp route adds the slug
+  // prefix at tools/list time.
+  toolName              String
+  description           String?
+  // Full JSON Schema as the upstream emitted it. Size capped at 32 KiB
+  // via raw-SQL CHECK (per-tool, not per-connection).
+  inputSchema           Json
+  cachedAt              DateTime @default(now())
+
+  connection McpServerConnection @relation(fields: [mcpServerConnectionId], references: [id], onDelete: Cascade)
+  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace  Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([mcpServerConnectionId, toolName])
+  @@index([userId])
+  @@index([workspaceId])
+}
+
+model ExternalDataSource {
+  id                   String               @id @default(cuid())
+  userId               String
+  workspaceId          String
+  provider             ExternalDataProvider
+  // User-facing label, 1-100 chars
+  name                 String
+  authType             ExternalDataAuthType @default(PAT)
+  // AES-256-GCM ciphertext via secretsService. Required for PAT auth.
+  // Size capped at 4096 bytes via raw-SQL CHECK.
+  encryptedCredentials String
+  // Per-provider config (e.g., GitHub: { scope, orgSlug?, repoFilter? }
+  // and per-shape cached schemas). Size capped at 16 KiB via CHECK.
+  config               Json
+  enabled              Boolean              @default(true)
+  lastRefreshedAt      DateTime?
+  lastRefreshError     String?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  // 1:1 with ContextEntry (the EXTERNAL_DATABASE-typed entry). Back-ref
+  // from ContextEntry.externalDataSourceId.
+  contextEntry ContextEntry?
+
+  @@index([userId, provider])
+  @@index([workspaceId])
 }
