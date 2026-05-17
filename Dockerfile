@@ -43,6 +43,11 @@ ENV DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholde
 # Dokploy's runtime AUTH_JWT_SECRET takes precedence when the container
 # starts (this env is not copied into the runner stage).
 ENV AUTH_JWT_SECRET="build-time-placeholder-not-used-at-runtime-min-32-chars"
+# Wave 10: secrets-service.ts has the same module-init pattern, requiring
+# exactly 64 hex chars (32 bytes). Distinctness check additionally requires
+# this value differ from AUTH_JWT_SECRET / CRDT_JWT_SECRET / CRDT_PERSIST_SECRET.
+# A unique 64-char hex placeholder satisfies both invariants at build time.
+ENV SECRETS_ENCRYPTION_KEY="000000000000000000000000000000000000000000000000000000000000aaaa"
 ARG NEXT_PUBLIC_API_KEY
 ENV NEXT_PUBLIC_API_KEY=${NEXT_PUBLIC_API_KEY}
 RUN pnpm --filter @ascend/web exec prisma generate
