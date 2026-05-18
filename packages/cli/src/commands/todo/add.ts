@@ -22,6 +22,7 @@ import { makeClient } from "../../client.js";
 import { CliUsageError } from "../../errors.js";
 import {
   dueColored,
+  parseDateInput,
   renderRecord,
   resolveOutputMode,
   truncate,
@@ -65,52 +66,6 @@ interface CreatedTodo {
 
 const VALID_PRIORITIES = new Set(["LOW", "MEDIUM", "HIGH"]);
 
-/**
- * Parse a user-supplied date string into an ISO datetime. Accepts:
- *   - "today" / "tomorrow"
- *   - "YYYY-MM-DD" (interpreted as 17:00 local time for next-day-feel)
- *   - any ISO 8601 datetime
- *
- * Throws CliUsageError on garbage input.
- */
-function parseDueDate(input: string): string {
-  const trimmed = input.trim().toLowerCase();
-  const now = new Date();
-  if (trimmed === "today") {
-    const d = new Date(now);
-    d.setHours(17, 0, 0, 0);
-    return d.toISOString();
-  }
-  if (trimmed === "tomorrow") {
-    const d = new Date(now);
-    d.setDate(d.getDate() + 1);
-    d.setHours(17, 0, 0, 0);
-    return d.toISOString();
-  }
-  // YYYY-MM-DD → 17:00 local
-  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
-  if (dateOnly) {
-    const d = new Date(
-      Number(dateOnly[1]),
-      Number(dateOnly[2]) - 1,
-      Number(dateOnly[3]),
-      17,
-      0,
-      0,
-      0,
-    );
-    return d.toISOString();
-  }
-  const parsed = new Date(input);
-  if (Number.isNaN(parsed.getTime())) {
-    throw new CliUsageError(
-      `Invalid --due value "${input}". Use "tomorrow", "2026-05-20", or an ISO 8601 datetime.`,
-      "due",
-    );
-  }
-  return parsed.toISOString();
-}
-
 export function buildTodoAddCommand(parent: Command): Command {
   return new Command("add")
     .description("Create a new todo.")
@@ -137,7 +92,7 @@ export function buildTodoAddCommand(parent: Command): Command {
       if (opts.description) body.description = opts.description;
       if (opts.category) body.categoryId = opts.category;
       if (opts.goal) body.goalId = opts.goal;
-      if (opts.due) body.dueDate = parseDueDate(opts.due);
+      if (opts.due) body.dueDate = parseDateInput(opts.due, "due").iso;
       if (opts.priority) {
         const upper = opts.priority.toUpperCase();
         if (!VALID_PRIORITIES.has(upper)) {

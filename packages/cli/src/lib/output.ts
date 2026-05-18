@@ -17,6 +17,8 @@
 import { formatDistanceToNow, isPast, isToday, parseISO } from "date-fns";
 import pc from "picocolors";
 
+import { CliUsageError } from "../errors.js";
+
 /**
  * Common output-format flag set added to every typed command.
  * Phase 6 will codify these via a commander helper; for now each
@@ -141,6 +143,112 @@ export function renderList<T>(args: {
     case "pretty":
       process.stdout.write(`${args.pretty(args.rows)}\n`);
   }
+}
+
+/**
+ * Borderless table chars used across all CLI tables. Inlined so each
+ * command doesn't redeclare the same 16 keys.
+ */
+export const compactTableChars = {
+  top: "",
+  "top-mid": "",
+  "top-left": "",
+  "top-right": "",
+  bottom: "",
+  "bottom-mid": "",
+  "bottom-left": "",
+  "bottom-right": "",
+  left: "",
+  "left-mid": "",
+  mid: "",
+  "mid-mid": "",
+  right: "",
+  "right-mid": "",
+  middle: " ",
+} as const;
+
+/**
+ * Parse a user-supplied date string into a JS Date + ISO string.
+ *
+ * Accepts:
+ *   - "today" / "tomorrow" / "yesterday" — anchored at 17:00 local
+ *   - "YYYY-MM-DD" — anchored at 17:00 local
+ *   - any ISO 8601 datetime
+ *
+ * The 17:00 local anchor matches the web app's "scheduled-for-today"
+ * convention so a CLI `--due today` shows up at the right slot in the
+ * calendar.
+ *
+ * Throws CliUsageError with the flag name on garbage input.
+ */
+export function parseDateInput(
+  input: string,
+  flagName = "date",
+): { date: Date; iso: string } {
+  const trimmed = input.trim().toLowerCase();
+  const now = new Date();
+  if (trimmed === "today") {
+    const d = new Date(now);
+    d.setHours(17, 0, 0, 0);
+    return { date: d, iso: d.toISOString() };
+  }
+  if (trimmed === "tomorrow") {
+    const d = new Date(now);
+    d.setDate(d.getDate() + 1);
+    d.setHours(17, 0, 0, 0);
+    return { date: d, iso: d.toISOString() };
+  }
+  if (trimmed === "yesterday") {
+    const d = new Date(now);
+    d.setDate(d.getDate() - 1);
+    d.setHours(17, 0, 0, 0);
+    return { date: d, iso: d.toISOString() };
+  }
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+  if (dateOnly) {
+    const d = new Date(
+      Number(dateOnly[1]),
+      Number(dateOnly[2]) - 1,
+      Number(dateOnly[3]),
+      17,
+      0,
+      0,
+      0,
+    );
+    return { date: d, iso: d.toISOString() };
+  }
+  const parsed = new Date(input);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new CliUsageError(
+      `Invalid --${flagName} value "${input}". Use "today", "tomorrow", "YYYY-MM-DD", or an ISO 8601 datetime.`,
+      flagName,
+    );
+  }
+  return { date: parsed, iso: parsed.toISOString() };
+}
+
+/**
+ * Render a horizontal progress bar with the given percent (0-100). Uses
+ * unicode block characters so each cell is one char wide. Width defaults
+ * to 10 cells; the percent label is appended outside the bar.
+ *
+ * Examples (width=10):
+ *   0   → ░░░░░░░░░░   0%
+ *   45  → ████░░░░░░  45%
+ *   100 → ██████████ 100%
+ *
+ * Colors: green at 100, yellow at 50-99, dim at 0-49. NO_COLOR respected
+ * via picocolors.
+ */
+export function progressBar(percent: number, width = 10): string {
+  const clamped = Math.max(0, Math.min(100, Math.round(percent)));
+  const filled = Math.round((clamped / 100) * width);
+  const empty = width - filled;
+  const bar = "█".repeat(filled) + "░".repeat(empty);
+  const label = `${clamped}%`.padStart(4);
+  const colored =
+    clamped === 100 ? pc.green(bar) : clamped >= 50 ? pc.yellow(bar) : pc.dim(bar);
+  return `${colored} ${pc.dim(label)}`;
 }
 
 /** Single-record render with the same three modes. */
