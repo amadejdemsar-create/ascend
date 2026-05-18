@@ -26,12 +26,28 @@ export default defineConfig({
   // npm tarball is self-contained. `noExternal` is the tsup mechanism
   // to FORCE inclusion of named packages that would otherwise be
   // marked external because they appear in package.json deps.
+  // Only the workspace packages are inlined. The third-party deps
+  // (commander, cli-table3, date-fns, picocolors, @inquirer/prompts,
+  // open) stay external because:
+  //   - commander + cli-table3 are CJS packages whose internals call
+  //     require("events") etc., which esbuild's ESM-output __require
+  //     shim cannot satisfy ("Dynamic require of 'events' is not
+  //     supported" at runtime). Documented at
+  //     https://github.com/evanw/esbuild/issues/1921.
+  //   - @inquirer/prompts is large + only used on prompt paths.
+  //   - date-fns is large + tree-shakes poorly when bundled.
+  //   - picocolors is tiny enough that the win isn't worth it.
   noExternal: ["@ascend/api-client", "@ascend/core"],
   // tsup preserves the shebang from src/cli.ts automatically in ESM
   // output, so we don't need an explicit `banner` config.
   outDir: "dist",
   clean: true,
-  splitting: false,
+  // Code-splitting on: cli.ts dynamic-imports each namespace's
+  // command index. esbuild emits one entry chunk + per-namespace
+  // chunks so `ascend todo list` only evaluates the todo chunk
+  // (and the shared lib chunk), not goal/context/calendar/mcp.
+  // The bin shebang stays attached to cli.js.
+  splitting: true,
   // Source maps would be useful for end-user bug reports but we keep
   // the tarball small for v1; add `sourcemap: true` if users start
   // reporting stack traces with no line numbers.
