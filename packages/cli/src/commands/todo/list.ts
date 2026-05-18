@@ -23,6 +23,7 @@ import { resolveAuth } from "../../auth.js";
 import { makeClient } from "../../client.js";
 import { CliUsageError } from "../../errors.js";
 import {
+  compactTableChars,
   dueColored,
   renderList,
   resolveOutputMode,
@@ -109,6 +110,9 @@ export function buildTodoListCommand(parent: Command): Command {
         ? `/api/todos?${qs.toString()}`
         : "/api/todos";
       const all = await client.get<TodoRow[]>(path);
+      // Client-side slice: /api/todos does not accept a `limit` query
+      // param (todoFiltersSchema has no limit field). Server-side limit
+      // would require extending the schema + route; tracked in BACKLOG.
       const limit = opts.limit ? Number(opts.limit) : 50;
       const rows = Number.isFinite(limit) && limit > 0 ? all.slice(0, limit) : all;
 
@@ -130,23 +134,7 @@ export function buildTodoListCommand(parent: Command): Command {
               pc.dim("due"),
               pc.dim("id"),
             ],
-            chars: {
-              top: "",
-              "top-mid": "",
-              "top-left": "",
-              "top-right": "",
-              bottom: "",
-              "bottom-mid": "",
-              "bottom-left": "",
-              "bottom-right": "",
-              left: "",
-              "left-mid": "",
-              mid: "",
-              "mid-mid": "",
-              right: "",
-              "right-mid": "",
-              middle: " ",
-            },
+            chars: { ...compactTableChars },
             style: { "padding-left": 0, "padding-right": 1, border: [], head: [] },
           });
           for (const t of todos) {

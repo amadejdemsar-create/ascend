@@ -15,13 +15,12 @@
  */
 
 import { Command } from "commander";
-import { input, password } from "@inquirer/prompts";
 import pc from "picocolors";
 
 import { DEFAULT_BASE_URL } from "../auth.js";
 import { saveConfig, loadConfig } from "../config.js";
 import { makeClient } from "../client.js";
-import { ApiCallError, MissingAuthError, wrapUnknown } from "../errors.js";
+import { ApiCallError, CliUsageError, MissingAuthError, wrapUnknown } from "../errors.js";
 
 interface MeResponse {
   user: { id: string; email: string | null; name: string | null };
@@ -51,6 +50,10 @@ export function registerLoginCommand(program: Command): void {
       if (parent.baseUrl) baseUrl = parent.baseUrl.trim();
       else if (envBaseUrl) baseUrl = envBaseUrl;
       else {
+        // Lazy-load @inquirer/prompts only when we actually need an
+        // interactive prompt. Saves ~150ms on `ascend login --api-key`
+        // non-interactive runs and on `ascend --help`.
+        const { input } = await import("@inquirer/prompts");
         const prompted = await input({
           message: "Ascend endpoint:",
           default: existing?.baseUrl ?? DEFAULT_BASE_URL,
@@ -65,6 +68,7 @@ export function registerLoginCommand(program: Command): void {
       if (parent.apiKey) apiKey = parent.apiKey.trim();
       else if (envApiKey) apiKey = envApiKey;
       else {
+        const { password } = await import("@inquirer/prompts");
         apiKey = (
           await password({
             message: "Ascend API key:",
@@ -89,10 +93,13 @@ export function registerLoginCommand(program: Command): void {
       } catch (err) {
         const cliErr = wrapUnknown(err);
         if (cliErr instanceof ApiCallError && cliErr.status === 401) {
-          process.stderr.write(
-            `${pc.red("✗")} Invalid API key. Generate a new one at ${baseUrl}/settings.\n`,
+          // Re-raise as a usage error so the top-level dispatcher in
+          // cli.ts handles the message + exit code. Avoids bypassing
+          // wrapUnknown's normalization path with a direct process.exit.
+          throw new CliUsageError(
+            `Invalid API key. Generate a new one at ${baseUrl}/settings.`,
+            "api-key",
           );
-          process.exit(1);
         }
         throw cliErr;
       }

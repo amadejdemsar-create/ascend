@@ -5,23 +5,46 @@
  * opens `${baseUrl}/${route}`. Leading slashes on the route are
  * tolerated; query strings are passed through verbatim.
  *
- * Uses the cross-platform `open` package which dispatches to `open` on
- * macOS, `xdg-open` on Linux, and `start` on Windows.
+ * Uses the cross-platform `open` package (lazy-loaded inside the
+ * action so `ascend --help` doesn't pay its startup cost) which
+ * dispatches to `open` on macOS, `xdg-open` on Linux, `start` on
+ * Windows.
  *
- * Note: no auth headers are sent — this just launches the user's
- * default browser at the URL. The web app handles its own
- * authentication via cookies (you must already be logged into the web
- * app for the page to render).
+ * No auth required. The command resolves only the base URL (flag →
+ * env → config → default), so a user who hasn't run `ascend login`
+ * can still use `ascend open todos` to jump to the web app's home
+ * page. The browser handles its own session cookie auth.
  */
 
 import { Command } from "commander";
-import open from "open";
 import pc from "picocolors";
 
-import { resolveAuth } from "../auth.js";
+import { DEFAULT_BASE_URL } from "../auth.js";
+import { loadConfig } from "../config.js";
 
 interface OpenOpts {
   print?: boolean;
+}
+
+interface ParentOpts {
+  baseUrl?: string;
+}
+
+/**
+ * Resolve only the base URL, without requiring an API key. Skips the
+ * full `resolveAuth` chain so users who haven't logged in can still
+ * use `ascend open` as a browser launcher.
+ *
+ * Resolution order: flag → env → config → hardcoded default. Same
+ * order as `resolveAuth` but only on the baseUrl half.
+ */
+function resolveBaseUrl(flagBaseUrl?: string): string {
+  if (flagBaseUrl?.trim()) return flagBaseUrl.trim();
+  const env = process.env.ASCEND_BASE_URL?.trim();
+  if (env) return env;
+  const cfg = loadConfig();
+  if (cfg?.baseUrl) return cfg.baseUrl;
+  return DEFAULT_BASE_URL;
 }
 
 export function registerOpenCommand(program: Command): void {
@@ -34,17 +57,10 @@ export function registerOpenCommand(program: Command): void {
       "Print the URL instead of launching the browser. Useful for piping into curl, qrencode, etc.",
     )
     .action(async (route: string | undefined, opts: OpenOpts) => {
-      const parent = program.opts<{ apiKey?: string; baseUrl?: string }>();
-      // We only need the baseUrl, but resolveAuth checks that the user
-      // has a configured Ascend account. That's the right behavior:
-      // calling `ascend open todos` from a clean shell should explain
-      // they need to run `ascend login` first.
-      const auth = resolveAuth({
-        flagApiKey: parent.apiKey,
-        flagBaseUrl: parent.baseUrl,
-      });
+      const parent = program.opts<ParentOpts>();
+      const baseUrl = resolveBaseUrl(parent.baseUrl);
 
-      const cleanedBase = auth.baseUrl.replace(/\/+$/, "");
+      const cleanedBase = baseUrl.replace(/\/+$/, "");
       const cleanedRoute = (route ?? "").replace(/^\/+/, "");
       const url = cleanedRoute ? `${cleanedBase}/${cleanedRoute}` : cleanedBase;
 
@@ -53,6 +69,10 @@ export function registerOpenCommand(program: Command): void {
         return;
       }
 
+      // Lazy-load the cross-platform `open` package: it's ~150KB
+      // resolved and only used here. Saves startup time on every other
+      // command.
+      const { default: open } = await import("open");
       process.stdout.write(`${pc.dim("→")} Opening ${pc.cyan(url)}\n`);
       await open(url);
     });

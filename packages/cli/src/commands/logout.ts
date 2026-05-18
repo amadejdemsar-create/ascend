@@ -10,7 +10,6 @@
  */
 
 import { Command } from "commander";
-import { confirm } from "@inquirer/prompts";
 import pc from "picocolors";
 
 import { clearConfig, configPath, loadConfig } from "../config.js";
@@ -34,6 +33,9 @@ export function registerLogoutCommand(program: Command): void {
       }
 
       if (!opts.yes) {
+        // Lazy: @inquirer/prompts is the biggest single dep in the
+        // bundle; only load it when we actually need to prompt.
+        const { confirm } = await import("@inquirer/prompts");
         const proceed = await confirm({
           message: `Delete ${configPath()}?`,
           default: true,
