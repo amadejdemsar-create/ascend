@@ -19,6 +19,8 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { wrapUnknown } from "./errors.js";
+
 // Resolve package.json relative to this compiled file. `import.meta.url`
 // is the absolute file URL of dist/cli.js at runtime; package.json lives
 // one level up.
@@ -51,7 +53,7 @@ program
 // Phase 1 ships only the version + help scaffolding.
 
 program.parseAsync(process.argv).catch((err: unknown) => {
-  const message = err instanceof Error ? err.message : String(err);
-  console.error(`ascend: ${message}`);
-  process.exit(1);
+  const cliErr = wrapUnknown(err);
+  process.stderr.write(`ascend: ${cliErr.message}\n`);
+  process.exit(cliErr.exitCode);
 });
