@@ -23,6 +23,7 @@ import { wrapUnknown } from "./errors.js";
 import { registerLoginCommand } from "./commands/login.js";
 import { registerLogoutCommand } from "./commands/logout.js";
 import { registerWhoamiCommand } from "./commands/whoami.js";
+import { registerTodoCommands } from "./commands/todo/index.js";
 
 // Resolve package.json relative to this compiled file. `import.meta.url`
 // is the absolute file URL of dist/cli.js at runtime; package.json lives
@@ -54,11 +55,11 @@ registerLoginCommand(program);
 registerLogoutCommand(program);
 registerWhoamiCommand(program);
 
-// Typed domain commands land in Phases 4-6 via:
-//   registerTodoCommands(program);
-//   registerGoalCommands(program);
-//   registerContextCommands(program);
-//   etc.
+// Todo commands (Phase 4): add / list / done / big3.
+registerTodoCommands(program);
+
+// Remaining typed domains (goal, context, today, calendar) and the
+// mcp + open commands land in Phases 5-6.
 
 program.parseAsync(process.argv).catch((err: unknown) => {
   const cliErr = wrapUnknown(err);
