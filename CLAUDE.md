@@ -429,7 +429,8 @@ Board/Kanban view components exist (`goal-board-*.tsx`) but are dead code; remov
 | CLI MCP escape hatch (list-tools, call) | `packages/cli/src/commands/mcp/` |
 | CLI `open <route>` launcher | `packages/cli/src/commands/open.ts` |
 | CLI auth commands (login, logout, whoami) | `packages/cli/src/commands/{login,logout,whoami}.ts` |
-| CLI build config (tsup, bundles workspace deps) | `packages/cli/tsup.config.ts` |
+| CLI build config (tsup, CJS output, splitting on, date-fns inlined) | `packages/cli/tsup.config.ts` |
+| CLI version constant (build-time, replaces import.meta.url path) | `packages/cli/src/version.ts` |
 | CLI README (install, command reference, auth model, exit codes, troubleshooting, publish flow) | `packages/cli/README.md` |
 
 ## Cross-Platform Rules (Wave 0+)

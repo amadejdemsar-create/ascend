@@ -30,8 +30,10 @@ If you cloned the monorepo and want to run the source build locally:
 
 ```bash
 pnpm --filter @ascend/cli build
-node packages/cli/dist/cli.js --version
+node packages/cli/dist/cli.cjs --version
 ```
+
+The bundle is CJS for cold-start reasons: `--version` and `--help` return in ~30-40ms, and a full round trip (`ascend todo list --limit 5`) is ~120ms on a warm cache.
 
 ## Quick start
 

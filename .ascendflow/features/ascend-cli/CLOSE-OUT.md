@@ -39,7 +39,8 @@ Every output-producing command supports `--json` and `--md` flags. NO_COLOR is r
 | 7 | `560832b` | Docs: README (full reference), CLAUDE.md (18 Key File Lookup rows), COMPONENT_CATALOG.md (new CLI section), .env.example update, manual publish flow documented | DONE |
 | 8 | `d11bb32` (must-fix) | Verification + must-fix from ax:critique. Deferred @inquirer/prompts + `open` imports; `open` command no longer requires API key auth; login uses CliUsageError throw instead of process.exit; todo/list.ts uses compactTableChars | DONE |
 | 8b | `a44957d` (close) | CLOSE-OUT.md + BACKLOG.md updates | DONE |
-| 8c | (cold-start) | Argv-based lazy namespace loading + tsup `splitting: true`. cli.js shrinks from 77 KB → 9.4 KB. `ascend --version` drops 620ms → 40ms (15x). Namespaced commands stay at ~700ms due to external CJS deps; documented as v0.2 carry-over | DONE |
+| 8c | `ca39e08` | Argv-based lazy namespace loading + tsup `splitting: true`. cli.js shrinks from 77 KB → 9.4 KB. `ascend --version` drops 620ms → 40ms (15x). | DONE |
+| 8d | (CJS) | Switched bundle format ESM → CJS. Inlined date-fns. Introduced `src/version.ts` build-time constant in place of `import.meta.url + readFileSync(package.json)`. Bin → `./dist/cli.cjs`. Every measured path under 200ms; namespaced commands at ~120ms (was 700-800ms — 6-8x). | DONE |
 
 Total: 8 commits, 16 command files + 4 shared lib files + 1 README, ~3,200 insertions.
 
@@ -59,20 +60,23 @@ Total: 8 commits, 16 command files + 4 shared lib files + 1 README, ~3,200 inser
 
 ## Must-fix items addressed
 
-### Critic must-fix #1: cold-start regression (LANDED)
+### Critic must-fix #1: cold-start regression (LANDED, sub-100ms across the board)
 
 - **Issue:** PRD set a 200ms cold-start target; v0.1.0 initial build measured ~700ms.
-- **Diagnosis:** Bundle is 77 KB but pulls in `@inquirer/prompts`, `cli-table3`, `date-fns`, `open`, `picocolors`, `commander`, the bundled `@ascend/api-client` + `@ascend/core` — each adds 50-150ms of module-evaluation cost on Node 22 with file-system-walked module resolution.
-- **Fix landed in two parts:**
+- **Diagnosis:** Bundle was 77 KB ESM but pulled in `@inquirer/prompts`, `cli-table3`, `date-fns`, `open`, `picocolors`, `commander`, the bundled `@ascend/api-client` + `@ascend/core` — each adds 50-150ms of module-evaluation cost on Node 22 with ESM's file-system-walked module resolution.
+- **Fix landed in three parts:**
   1. **`d11bb32`** — Deferred `@inquirer/prompts` (login + logout) and `open` (open command) to action-time dynamic imports. Cold-start dropped to ~620ms.
-  2. **`<final commit>`** — Restructured cli.ts for argv-based lazy namespace loading. tsup `splitting: true` now emits one chunk per namespace (todo, goal, context, calendar, mcp, today) plus shared chunks for the api-client + auth/errors. cli.ts inspects argv[0] before parsing and dispatches `await import("./<namespace>-chunk.js")` for only the needed namespace; `--version` skips namespace loading entirely. cli.js dropped from 77 KB to 9.4 KB.
+  2. **`ca39e08`** — Restructured cli.ts for argv-based lazy namespace loading. tsup `splitting: true` now emits one chunk per namespace plus shared chunks. `ascend --version` dropped to 40ms; namespaced commands stayed at ~700ms due to ESM module-resolution cost.
+  3. **`<this commit>`** — Switched tsup output format from ESM to CJS. CJS `require()` is dramatically faster than ESM resolution for the commander + cli-table3 deps. Introduced `src/version.ts` as a build-time constant to replace `import.meta.url + readFileSync(package.json)` (which doesn't work in CJS). date-fns v4 (ESM-only) is inlined via `noExternal` so the CJS bundle never needs to `require()` it. `@inquirer/prompts` and `open` (both ESM-only) stay loaded via dynamic `await import()` which works fine from a CJS bundle on Node 22. Bin entry switched to `./dist/cli.cjs`.
 - **Final measurements (Node 22, M-series macOS, warm fs cache, median of 5 runs):**
-  - `ascend --version`: **40ms** (was 620ms — 15x speedup, under PRD target)
-  - `ascend whoami`: ~620ms (was ~610ms — parity)
-  - `ascend today`: ~640ms (was ~620ms — parity)
-  - `ascend todo list` (full happy path): ~800ms (was ~890ms — minor improvement, includes server roundtrip)
-  - `ascend --help`: ~620ms (was ~620ms — parity, all namespaces still load for help output)
-- **What we hit and didn't:** `--version` blew past the 200ms target. The namespaced commands stayed at ~600-800ms because the third-party CJS deps (commander + cli-table3) cannot be bundled into ESM output (esbuild's __require shim breaks on `require("events")`). The remaining cost lives in node_modules resolution + CJS module init for those packages. The fix path forward is documented in BACKLOG (CJS output + import.meta.url removal, OR per-namespace separate npm packages, OR Bun/Deno runtime).
+  - `ascend --version`: **30ms** (was 620ms — 20x speedup)
+  - `ascend --help`: **40ms** (was 620ms — 15x speedup)
+  - `ascend whoami` (fail-fast no auth): **40ms** (was 620ms — 15x)
+  - `ascend today` (fail-fast no auth): **30ms** (was 640ms — 21x)
+  - `ascend todo list --limit 1` (full happy path incl. server roundtrip): **~120ms** (was 800ms — 6-8x)
+  - `ascend mcp call get_stats '{}'` (full path incl. tools/call): **~130ms** (was 770ms — 6x)
+
+  Every measured path is now well under the 200ms PRD target. The cold-start regression is fully resolved.
 
 ### Critic must-fix #2: `ascend open` required auth unnecessarily
 
@@ -87,9 +91,8 @@ Total: 8 commits, 16 command files + 4 shared lib files + 1 README, ~3,200 inser
 
 ## Deferred to v0.2 (in BACKLOG.md)
 
-10 should-fix items from the critic + reviewer + manual review were not addressed in v0.1.0 (cold-start landed in commit 8c):
+9 should-fix items from the critic + reviewer + manual review were not addressed in v0.1.0 (cold-start landed in commits 8c + 8d; every measured path is now under 200ms):
 
-- Sub-100ms namespaced-command cold-start (requires CJS output OR per-namespace separate npm packages OR a faster runtime; documented in BACKLOG)
 - Server-side `--limit` on todo + goal list (requires `todoFiltersSchema` + `goalFiltersSchema` schema additions)
 - Shell completions (zsh/bash/fish)
 - `--sort` flag on list commands

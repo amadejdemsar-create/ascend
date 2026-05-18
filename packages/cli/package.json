@@ -5,7 +5,7 @@
   "description": "Ascend command-line interface. Read + write goals, todos, context, and federated MCP tools from the terminal.",
   "type": "module",
   "bin": {
-    "ascend": "./dist/cli.js"
+    "ascend": "./dist/cli.cjs"
   },
   "files": [
     "dist",
@@ -18,7 +18,7 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "ascend": "node dist/cli.js"
+    "ascend": "node dist/cli.cjs"
   },
   "dependencies": {
     "@ascend/api-client": "workspace:*",

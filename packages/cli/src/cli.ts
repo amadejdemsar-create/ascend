@@ -44,23 +44,13 @@
  */
 
 import { Command } from "commander";
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 
 import { wrapUnknown } from "./errors.js";
 import { registerLoginCommand } from "./commands/login.js";
 import { registerLogoutCommand } from "./commands/logout.js";
 import { registerWhoamiCommand } from "./commands/whoami.js";
 import { registerOpenCommand } from "./commands/open.js";
-
-// Resolve package.json relative to this compiled file. `import.meta.url`
-// is the absolute file URL of dist/cli.js at runtime; package.json lives
-// one level up.
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const pkg = JSON.parse(
-  readFileSync(resolve(__dirname, "..", "package.json"), "utf-8"),
-) as { version: string };
+import { VERSION } from "./version.js";
 
 const program = new Command();
 
@@ -69,7 +59,7 @@ program
   .description(
     "Ascend command-line interface. Manage goals, todos, context, and federated MCP tools from your terminal.",
   )
-  .version(pkg.version, "-v, --version", "Print the CLI version and exit.")
+  .version(VERSION, "-v, --version", "Print the CLI version and exit.")
   .option(
     "--api-key <key>",
     "API key for the Ascend account. Overrides ASCEND_API_KEY env var and ~/.ascend/config.json.",
