@@ -1,8 +1,24 @@
 {
   "name": "@ascend/cli",
   "version": "0.1.0",
-  "private": true,
   "description": "Ascend command-line interface. Read + write goals, todos, context, and federated MCP tools from the terminal.",
+  "keywords": [
+    "ascend",
+    "cli",
+    "productivity",
+    "goals",
+    "todos",
+    "mcp"
+  ],
+  "homepage": "https://github.com/amadejdemsar-create/ascend/tree/main/packages/cli#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/amadejdemsar-create/ascend.git",
+    "directory": "packages/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/amadejdemsar-create/ascend/issues"
+  },
   "type": "module",
   "bin": {
     "ascend": "./dist/cli.cjs"
@@ -18,20 +34,21 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "ascend": "node dist/cli.cjs"
+    "ascend": "node dist/cli.cjs",
+    "prepublishOnly": "pnpm build"
   },
   "dependencies": {
-    "@ascend/api-client": "workspace:*",
-    "@ascend/core": "workspace:*",
     "@inquirer/prompts": "^7.3.1",
     "cli-table3": "^0.6.5",
     "commander": "^14.0.0",
-    "date-fns": "^4.1.0",
     "open": "^10.1.0",
     "picocolors": "^1.1.1"
   },
   "devDependencies": {
+    "@ascend/api-client": "workspace:*",
+    "@ascend/core": "workspace:*",
     "@types/node": "^22.10.0",
+    "date-fns": "^4.1.0",
     "tsup": "^8.3.5",
     "typescript": "^5.9.3"
   }
