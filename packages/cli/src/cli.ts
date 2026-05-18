@@ -20,6 +20,9 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { wrapUnknown } from "./errors.js";
+import { registerLoginCommand } from "./commands/login.js";
+import { registerLogoutCommand } from "./commands/logout.js";
+import { registerWhoamiCommand } from "./commands/whoami.js";
 
 // Resolve package.json relative to this compiled file. `import.meta.url`
 // is the absolute file URL of dist/cli.js at runtime; package.json lives
@@ -46,11 +49,16 @@ program
     "Ascend endpoint. Overrides ASCEND_BASE_URL env var and ~/.ascend/config.json. Defaults to https://ascend.nativeai.agency.",
   );
 
-// Subcommands land in Phases 3+ via:
-//   import { registerTodoCommands } from "./commands/todo/index.js";
+// Auth commands (Phase 3).
+registerLoginCommand(program);
+registerLogoutCommand(program);
+registerWhoamiCommand(program);
+
+// Typed domain commands land in Phases 4-6 via:
 //   registerTodoCommands(program);
-//
-// Phase 1 ships only the version + help scaffolding.
+//   registerGoalCommands(program);
+//   registerContextCommands(program);
+//   etc.
 
 program.parseAsync(process.argv).catch((err: unknown) => {
   const cliErr = wrapUnknown(err);
