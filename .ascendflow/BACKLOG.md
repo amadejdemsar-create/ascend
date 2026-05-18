@@ -2,7 +2,42 @@
 
 Deferred features and initiatives that have been explicitly scoped but not yet implemented. When you want to pick one up, run `/ax:plan <slug>` to create a full PRD + TASKS.md.
 
-Last updated: 17. 5. 2026
+Last updated: 18. 5. 2026
+
+---
+
+## Ascend CLI (@ascend/cli) — SHIPPED 18. 5. 2026
+
+v0.1.0 ships a 9-command CLI as the third surface alongside the web UI and the MCP server. Lives at `packages/cli/`, distributed as the `ascend` binary. Built across 8 phases (commits `00f309e` → `d11bb32`). Tsup-bundled ESM, Node 22+, ~77 KB dist size.
+
+Commands shipped:
+- **Auth:** `login` (interactive or flag-only), `logout` (with `-y`), `whoami` (with `--json`, `--refresh`).
+- **Headline:** `today` / `dashboard` — 4-section morning view (Big 3, agenda, weekly focus, streaks + XP).
+- **Todos:** `todo add | list | done | big3 [set]` — natural-language `--due`, status icons, ★ prefix for Big 3, prefix-to-id resolution.
+- **Goals:** `goal list | show | progress` — unicode progress bars, SMART fields in detail view.
+- **Context:** `context search | add | get` — hybrid + text + semantic search modes, `--stdin` support, link-aware detail panel.
+- **Calendar:** `calendar day | week | agenda` — Monday-first 7-column grid, hourly day timeline, flat agenda.
+- **MCP escape hatch:** `mcp list-tools [--filter]` (86+ native + federated tools), `mcp call <tool> [args]` (inline / `--args-file` / `--stdin`).
+- **Browser:** `open [route] [--print]` — no-auth required (resolves base URL only).
+
+Output: pretty / `--json` / `--md` on every command. NO_COLOR honored. Exit codes documented (1 usage, 2 api, 3 network).
+
+Audits at close: `ascend-reviewer` **PASS WITH NOTES** (3 stylistic notes, 2 addressed in `d11bb32`, 1 deferred). `ascend-critic` **GOOD** (2 must-fix, both addressed in `d11bb32`).
+
+### Ascend CLI carry-overs (v0.2 target)
+
+- **Cold-start refactor.** v0.1.0 cold-start is ~620ms; ax:critique flagged the 200ms PRD target. The deferred `@inquirer/prompts` + `open` imports landed in `d11bb32` (~80ms shaved), but the bulk of the cost is in commander + cli-table3 + date-fns + picocolors + the bundled @ascend/api-client + @ascend/core. Real fix: split tsup output per command, dispatcher dynamic-imports only the dispatched command's bundle. Estimated drop to under 150ms.
+- **Server-side `--limit` on todo + goal list.** `todoFiltersSchema` and `goalFiltersSchema` in `packages/core/src/schemas/` do not include a `limit` field. The CLI currently client-side-slices after downloading the full list. For users with hundreds of todos this is wasteful. Add `limit: z.coerce.number().int().min(1).max(200).optional()` to both schemas, plumb through the service `take` parameter, and pass `?limit=N` from the CLI.
+- **Shell completions** (`zsh`, `bash`, `fish`). Commander supports this via `commander-completion` or a custom `.createHelp()` extension. 6 namespaces × 20+ leaf commands deserve tab completion.
+- **`--sort` flag on list commands.** Every backend list endpoint already orderBy's. Expose `--sort created | updated | priority | due` on `todo list` and `goal list` at parity with `gh issue list --sort`.
+- **`calendar week` adapts to terminal width.** Currently `colWidths: 20 × 7 = 140 chars` overflows narrow terminals. Read `process.stdout.columns` and shrink columns / fall back to a stacked layout under 120 cols.
+- **`--verbose` / `--debug` flag.** Dump request/response bodies, headers, timing to stderr. Drop-in equivalent of `gh --verbose` / `stripe --debug`.
+- **Interactive Big 3 picker.** `ascend todo big3 set` currently requires copy-pasting ids from the previous `todo list` output. An `@inquirer/prompts` checkbox picker would be much more ergonomic, only on the interactive path; keep the explicit-id form for scripts.
+- **`context add` content-optional.** Currently requires `--content` or `--stdin`. `gh issue create -t "Bug"` ships title-only; mirror that.
+- **`ascend` with no args shows version inline.** Top of `--help` should include `Ascend CLI v0.1.0` so users know what they're running without running `--version`.
+- **Tag-triggered npm publish.** v0.1.0 ships via manual `pnpm publish --filter @ascend/cli`. A GitHub Actions workflow keyed on `cli-v*` tags would automate the release once NPM_TOKEN is configured in repo secrets.
+- **Server-side prefix search.** `goal show <prefix>` and `context get <prefix>` currently download the full list to resolve the prefix. A server-side endpoint (`GET /api/goals?idPrefix=abc`) would be O(1) instead of O(N).
+- **Telemetry (opt-in only).** Anonymous command counts / error rates could help prioritize v0.2. Must be opt-in, must be off-by-default, must be a single switchable env var.
 
 ---
 
