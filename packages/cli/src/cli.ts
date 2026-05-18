@@ -28,6 +28,8 @@ import { registerGoalCommands } from "./commands/goal/index.js";
 import { registerContextCommands } from "./commands/context/index.js";
 import { registerTodayCommand } from "./commands/today.js";
 import { registerCalendarCommands } from "./commands/calendar/index.js";
+import { registerMcpCommands } from "./commands/mcp/index.js";
+import { registerOpenCommand } from "./commands/open.js";
 
 // Resolve package.json relative to this compiled file. `import.meta.url`
 // is the absolute file URL of dist/cli.js at runtime; package.json lives
@@ -68,7 +70,9 @@ registerContextCommands(program);
 registerTodayCommand(program);
 registerCalendarCommands(program);
 
-// Remaining mcp escape hatch + open commands land in Phase 6.
+// MCP escape hatch + open (Phase 6).
+registerMcpCommands(program);
+registerOpenCommand(program);
 
 program.parseAsync(process.argv).catch((err: unknown) => {
   const cliErr = wrapUnknown(err);
