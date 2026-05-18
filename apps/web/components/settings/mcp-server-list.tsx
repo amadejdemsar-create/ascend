@@ -92,14 +92,7 @@ export function McpServerList() {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-base font-semibold">MCP servers</h2>
-          <p className="text-sm text-muted-foreground">
-            External MCP servers whose tools appear alongside
-            Ascend&apos;s.
-          </p>
-        </div>
+      <div className="flex items-center justify-end">
         <Button onClick={() => setEditing(null)} size="sm">
           <Plus className="mr-1.5 size-3.5" aria-hidden="true" />
           Add server

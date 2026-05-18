@@ -72,13 +72,7 @@ export function ExternalSourceList() {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-base font-semibold">Integrations</h2>
-          <p className="text-sm text-muted-foreground">
-            Read-only external data sources surface as virtual databases.
-          </p>
-        </div>
+      <div className="flex items-center justify-end">
         <Button onClick={() => setAddOpen(true)} size="sm">
           <Plus className="mr-1.5 size-3.5" aria-hidden="true" />
           Add integration

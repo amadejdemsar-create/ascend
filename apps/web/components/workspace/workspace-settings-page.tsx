@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
-import { Check, Pencil, Trash2, X } from "lucide-react";
+import { ArrowLeft, Check, Pencil, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,13 @@ export function WorkspaceSettingsPage() {
   if (!workspaceId || workspace.isPending) {
     return (
       <div>
+        <Link
+          href="/settings"
+          className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="size-3.5" aria-hidden="true" />
+          Settings
+        </Link>
         <PageHeader
           title="Workspace"
           subtitle="Manage your workspace name and members."
@@ -69,6 +77,13 @@ export function WorkspaceSettingsPage() {
 
   return (
     <div>
+      <Link
+        href="/settings"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="size-3.5" aria-hidden="true" />
+        Settings
+      </Link>
       <PageHeader
         title="Workspace"
         subtitle="Manage your workspace name and members."
