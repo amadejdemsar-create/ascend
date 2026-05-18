@@ -413,6 +413,24 @@ Board/Kanban view components exist (`goal-board-*.tsx`) but are dead code; remov
 | Activity feed hooks | `apps/web/lib/hooks/use-activity.ts` |
 | Current user hook | `apps/web/lib/hooks/use-me.ts` |
 | Workspace API routes | `apps/web/app/api/workspaces/**/route.ts` |
+| CLI entry + global flags + version + lazy command registration | `packages/cli/src/cli.ts` |
+| CLI auth chain (flag → env → config) + fingerprint helper | `packages/cli/src/auth.ts` |
+| CLI config file (~/.ascend/config.json, mode 0600) | `packages/cli/src/config.ts` |
+| CLI ApiClient wrapper (error normalization, exit codes) | `packages/cli/src/client.ts` |
+| CLI error classes + exit codes (1 usage, 2 api, 3 network) | `packages/cli/src/errors.ts` |
+| CLI shared output lib (table chars, progress bar, date parsing, json/md/pretty fork) | `packages/cli/src/lib/output.ts` |
+| CLI prefix-to-id resolver (cuids are awkward to type in full) | `packages/cli/src/lib/resolve-id.ts` |
+| CLI MCP JSON-RPC transport + federated-name classifier | `packages/cli/src/lib/mcp.ts` |
+| CLI todo commands (add, list, done, big3) | `packages/cli/src/commands/todo/` |
+| CLI goal commands (list, show, progress) | `packages/cli/src/commands/goal/` |
+| CLI context commands (search, add, get) | `packages/cli/src/commands/context/` |
+| CLI calendar commands (day, week, agenda) | `packages/cli/src/commands/calendar/` |
+| CLI today/dashboard command | `packages/cli/src/commands/today.ts` |
+| CLI MCP escape hatch (list-tools, call) | `packages/cli/src/commands/mcp/` |
+| CLI `open <route>` launcher | `packages/cli/src/commands/open.ts` |
+| CLI auth commands (login, logout, whoami) | `packages/cli/src/commands/{login,logout,whoami}.ts` |
+| CLI build config (tsup, bundles workspace deps) | `packages/cli/tsup.config.ts` |
+| CLI README (install, command reference, auth model, exit codes, troubleshooting, publish flow) | `packages/cli/README.md` |
 
 ## Cross-Platform Rules (Wave 0+)
 

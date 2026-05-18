@@ -269,6 +269,51 @@ Location: `components/settings/`. Three sections for the settings page.
 
 ---
 
+## CLI Commands (`@ascend/cli`)
+
+The Ascend CLI is the third surface alongside the web app (UI) and MCP server (AI agents). It lives at `packages/cli/` and ships as the `ascend` binary. Every command is a thin presentation layer over the existing REST + MCP endpoints; no business logic lives in the CLI.
+
+**Entry point + global plumbing:**
+
+| File | Purpose |
+|------|---------|
+| `packages/cli/src/cli.ts` | Commander entry, global flags, version, command registration |
+| `packages/cli/src/auth.ts` | Resolve API key + base URL from flag → env → config |
+| `packages/cli/src/config.ts` | Read/write `~/.ascend/config.json` (mode 0600) |
+| `packages/cli/src/client.ts` | Wraps `@ascend/api-client`, normalizes errors to exit codes |
+| `packages/cli/src/errors.ts` | `CliError`, `MissingAuthError`, `CliUsageError`, `ApiCallError`, `NetworkError` + `wrapUnknown` |
+| `packages/cli/src/lib/output.ts` | `renderList`, `renderRecord`, `progressBar`, `parseDateInput`, `compactTableChars`, `statusIcon`, `dueColored`, color rules |
+| `packages/cli/src/lib/resolve-id.ts` | Generic prefix-to-id resolver with ambiguous + not-found errors |
+| `packages/cli/src/lib/mcp.ts` | JSON-RPC client for `/api/mcp` + `classifyToolName` (native vs federated) |
+
+**Command files (one Commander instance per subcommand, aggregated by `index.ts` files):**
+
+| File | Command |
+|------|---------|
+| `packages/cli/src/commands/login.ts` | `ascend login` (prompted or non-interactive) |
+| `packages/cli/src/commands/logout.ts` | `ascend logout` |
+| `packages/cli/src/commands/whoami.ts` | `ascend whoami [--json] [--refresh]` |
+| `packages/cli/src/commands/today.ts` | `ascend today` / `ascend dashboard` (4-section morning view) |
+| `packages/cli/src/commands/open.ts` | `ascend open [route] [--print]` |
+| `packages/cli/src/commands/todo/{add,list,done,big3,index}.ts` | `ascend todo *` |
+| `packages/cli/src/commands/goal/{list,show,progress,index}.ts` | `ascend goal *` |
+| `packages/cli/src/commands/context/{search,add,get,index}.ts` | `ascend context *` |
+| `packages/cli/src/commands/calendar/{day,week,agenda,index}.ts` | `ascend calendar *` |
+| `packages/cli/src/commands/mcp/{list-tools,call,index}.ts` | `ascend mcp *` |
+
+**Patterns to copy from when adding new commands:**
+
+- New typed namespace (e.g. `ascend category`): copy `commands/todo/index.ts` + one subcommand as a template. Each subcommand exports `build<Name>Command(parent: Command): Command`; the index aggregates them.
+- New domain-list command (e.g. `ascend focus list`): copy `commands/todo/list.ts`. It owns the filter validation, table rendering, and `--json`/`--md` fork.
+- New domain-detail command (e.g. `ascend focus show <id>`): copy `commands/goal/show.ts`. It demonstrates the prefix-to-id resolution path and the sectioned-pretty layout.
+- New MCP-only command: just call `mcp call <tool> '<json>'` — don't write a wrapper unless the tool is high-frequency enough to justify a typed alias.
+
+**Do not duplicate:**
+
+- `console.log` / `console.error` in command files. Always route through `lib/output.ts`. Phase 6 audited and removed all of them.
+- Date parsing. Use `parseDateInput(input, flagName)` from `lib/output.ts` — handles "today", "tomorrow", "yesterday", "YYYY-MM-DD", and ISO datetime with a single consistent error message.
+- cli-table3 chars maps. Use `compactTableChars` from `lib/output.ts`.
+
 ## How to Use This Catalog
 
 1. **Before creating a new component**, search this catalog for the closest match.
